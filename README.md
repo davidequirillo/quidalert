@@ -1,4 +1,4 @@
 # dynalert
 
-*together we are stronger*
+*"Together we are stronger"*
 
