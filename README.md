@@ -9,7 +9,7 @@ This system can be largely extended to manage virtually all alert types, in orde
 
 The server side system can be installed on a generic host, at which all properly configured clients will connect to (it’s sufficient to set server name in the client config file before installing the client on the relative device). 
 
-IDEA: each user is allowed to send an alert, but we must find a solution about alert validation (user credibility), for example a system based on votes. 
+IDEA: each user is allowed to send an alert, but we must find a solution about alert validation (user credibility), for example a system based on votes for standard users and manual assignment for specific user groups (for example max reliability for alerts coming from civil protection users, etc.).
 
 IDEA: admins will connect to the server via a desktop app to do additional real-time operations (such as sending a message to specific users, viewing streaming video coming from a client or from a drone flying over the event location). 
 
