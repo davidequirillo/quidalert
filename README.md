@@ -19,7 +19,7 @@ The website will be useful for other management operations (signup, user managem
 
 ## 🔌 Installation
 
-See [INSTALL.md]:/INSTALL.md
+See [INSTALL.md]: /INSTALL.md
 
 ## 🔒 Ethical Disclaimer
 
@@ -28,4 +28,4 @@ Dynalert must be used in compliance with the laws and regulations in the place w
 ## 📄 License
 
 This project is released under the GPLv3 license.
-See the [LICENSE]:/LICENSE file for details.
+See the [LICENSE]: /LICENSE file for details.
