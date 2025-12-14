@@ -19,13 +19,13 @@ The website will be useful for other management operations (signup, user managem
 
 ## 🔌 Installation
 
-See [INSTALL.md]: /INSTALL.md
+See INSTALL.md
 
 ## 🔒 Ethical Disclaimer
 
-Dynalert must be used in compliance with the laws and regulations in the place where it will be installed. See [disclaimer.md]:/disclaimer.md for details
+Dynalert must be used in compliance with the laws and regulations in the place where it will be installed. See "disclaimer.md" file for details
 
 ## 📄 License
 
 This project is released under the GPLv3 license.
-See the [LICENSE]: /LICENSE file for details.
+See the LICENSE file for details.
