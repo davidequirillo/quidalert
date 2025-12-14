@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+  {
+    "label": "Client: Flutter run (Chrome)",
+    "type": "shell",
+    "command": "flutter run -d chrome",
+    "options": { "cwd": "${workspaceFolder}/client/dynalert_flutter" },
+    "problemMatcher": []
+  },
+  {
+    "label": "Client: Flutter pub get",
+    "type": "shell",
+    "command": "flutter pub get",
+    "options": { "cwd": "${workspaceFolder}/client/dynalert_flutter" },
+    "problemMatcher": []
+  },
+  {
+    "label": "Server: Run (Conda env)",
+    "type": "shell",
+    "command": "conda run -n dynalert_env python app.py",
+    "options": { "cwd": "${workspaceFolder}/server" },
+    "problemMatcher": []
+  }]
+}
