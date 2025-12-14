@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+  {
+    "name": "Debug Server (Python)",
+    "type": "debugpy",
+    "request": "launch",
+    "program": "${workspaceFolder}/server/app.py",
+    "console": "integratedTerminal"
+  },
+  {
+    "name": "Debug Client (Flutter - Chrome)",
+    "type": "dart",
+    "request": "launch",
+    "cwd": "${workspaceFolder}/client/dynalert_flutter",
+    "deviceId": "chrome"
+  }, 
+{
+    "name": "Debug Client (Flutter - Android)",
+    "type": "dart",
+    "request": "launch",
+    "cwd": "${workspaceFolder}/client/dynalert_flutter",
+    "deviceId": "emulator-5554"
+  }]
+}

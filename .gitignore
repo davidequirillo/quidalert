@@ -1,0 +1,11 @@
+## GLOBAL ##
+
+# VS Code personal
+.vscode/settings.json
+
+# OS common files
+.DS_Store
+Thumbs.db
+
+# CLIENT gitignore in "client" directory
+# SERVER gitignore in "server" directory

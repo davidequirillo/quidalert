@@ -1,0 +1,16 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Conda / env
+.env/
+.conda/
+conda-meta/
+
+# Test / coverage
+.coverage
+.pytest_cache/
+
+# Logs
+*.log

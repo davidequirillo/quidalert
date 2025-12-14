@@ -1,0 +1,19 @@
+{
+  "folders": [
+    { "path": "." }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.dart_tool": true,
+      "**/build": true,
+      "**/__pycache__": true,
+      "**/*.pyc": true
+    },
+    "search.exclude": {
+      "**/.dart_tool": true,
+      "**/build": true,
+      "**/__pycache__": true,
+      "**/.git": true
+    }
+  }
+}
