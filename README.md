@@ -2,6 +2,8 @@
 
 *"Together we are stronger"*
 
+NOTE: the project is under development
+
 Dinalert is a network alert manager: when the server receives an alert from a connected client (mostly a mobile device), it takes some decisions based on alert description, and then it sends a push notification to all geolocalized nearby clients.
 Clients can receive different notification instructions based on user account type (citizen, military, police, firemen, civil protection).
 
