@@ -15,6 +15,8 @@ Each user is allowed to send an alert, but we must find a solution about alert v
 
 Admins will connect to the server via a desktop app to do additional real-time operations (such as sending a message to specific users, viewing streaming video coming from a client or from a drone flying over the event location).
 
+We can have 1 server (nginx) and 3 backend (api backend, website backend, streaming signaling server). 
+
 ## 🔌 Installation
 
 See INSTALL.md
