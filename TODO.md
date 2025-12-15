@@ -1,8 +1,8 @@
 # TODO
 
-- The user opens the mobile application for the first time and the disclaimer/terms of use page appears in a page. It must be accepted to go on (it appears only the first time, after that the user acceptance is stored).
+- The user opens the mobile application for the first time and the "terms of use" page (coming from the server associated to the app) appears in a window. It must be accepted to go on (it appears only the first time, after that the user acceptance is stored).
 
-- After that, a login page appears. In the login page there is a button to change the server. There is also a link to reset password, and a link to register the account (registration api).
+- After that, a login page appears. There is also a link to reset password, and a link to register the account
 
 - Implement the registration page
 
