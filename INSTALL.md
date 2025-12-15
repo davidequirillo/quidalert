@@ -14,23 +14,23 @@ Download Dynalert App from the app store (Play Store for Android devices or Appl
 
 Install Git for Windows
 
-[https://git-scm.com/install/windows]: (https://git-scm.com/install/windows)
+[https://git-scm.com/install/windows](https://git-scm.com/install/windows)
 
 Install VSCode IDE
 
-[https://code.visualstudio.com/]: (https://code.visualstudio.com/)
+[https://code.visualstudio.com/](https://code.visualstudio.com/)
 
 ### Client
 
 Install Flutter SDK
 
-[https://docs.flutter.dev/get-started]: (https://docs.flutter.dev/get-started)
+[https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
 
 ### Server
 
 Install miniconda:
 
-[https://www.anaconda.com/download/success]: (https://www.anaconda.com/download/success)
+[https://www.anaconda.com/download/success](https://www.anaconda.com/download/success)
 
 On miniconda prompt (terminal), go to dynalert folder and write:
 
