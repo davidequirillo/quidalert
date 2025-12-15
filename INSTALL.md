@@ -1,16 +1,6 @@
 # Installation
 
-## End-Users
-
-### Client
-
-Download Dynalert App from the app store (Play Store for Android devices or Apple Store for iOS devices). (under construction)
-
-### Server (for admin)
-
-(under construction)
-
-## Developers only 
+## Technical/system users and developers
 
 Install Git for Windows
 
@@ -25,6 +15,8 @@ Install VSCode IDE
 Install Flutter SDK
 
 [https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
+
+Change client config file, setting server name and port, TLS/SSL certificate. Compile the app, distribute and install it
 
 ### Server
 
