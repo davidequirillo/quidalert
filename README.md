@@ -7,7 +7,7 @@ Clients can receive different notification instructions based on user account ty
 
 This system can be largely extended to manage virtually all alert types, in order to have a security defensive system that works 360 degrees, giving specific real-time instructions to user groups when an alert happens, receiving signals from network sensors (for example, smoke or meteo sensors), eventually sending active commands to some devices (patrol drones, or others), to help and lead peoples to safe zones, and working in a parallel way too, if many alert happen at the same time. Ideally the system could use artificial intelligence ("algorithmic" machine alearning or neural networks) to optimize the active response to any events.
 
-The server side system can be installed on a generic host, at which all properly configured clients will connect to (it’s sufficient to set server name in the client config file before installing the client on the relative device). 
+The server side system can be installed on a generic machine, at which all clients will connect to (it’s sufficient to set server name in the client config file before compiling and installing the client on a mobile or desktop device). 
 
 ## 💡 Concepts
 
@@ -21,7 +21,7 @@ See INSTALL.md
 
 ## 🔒 Ethical Disclaimer
 
-Dynalert must be used in compliance with the laws and regulations in the place where it will be installed. See "disclaimer.md" file for details
+Dynalert must be used in compliance with the existing laws and regulations. See "disclaimer.md" file for details
 
 ## 📄 License
 
