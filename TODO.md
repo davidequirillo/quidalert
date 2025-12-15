@@ -4,7 +4,7 @@
 
 - All developers should use the same environment as much as possible (VS Code IDE, Android emulator, Chrome, conda, etc.) for the following reasons: 
     - it's the most widely used and supported environment at the moment, and it's "light".
-    - it's simpler and more convenient to manage (development and debugging tasks are already defined by us, and the Git repository is more easy to manage)
+    - it's simpler and more convenient to manage (development and debugging tasks are already defined by us, and the Git repository via VSCode is easier to manage)
 
 - Don't ask questions to AI/LLM that give away clues relative to this project, for now.
 
