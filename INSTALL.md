@@ -1,6 +1,6 @@
 # Installation
 
-## Technical/system users and developers
+## Technical users and developers
 
 Install Git for Windows
 
