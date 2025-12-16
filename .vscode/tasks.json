@@ -16,10 +16,10 @@
     "problemMatcher": []
   },
   {
-    "label": "Server: Run (Conda env)",
+    "label": "Server: Run (FastAPI)",
     "type": "shell",
-    "command": "conda run -n dynalert_env python app.py",
-    "options": { "cwd": "${workspaceFolder}/server" },
+    "command": "conda run -n dynalert_env python main.py",
+    "options": { "cwd": "${workspaceFolder}/server/dynalert_api" },
     "problemMatcher": []
   }]
 }

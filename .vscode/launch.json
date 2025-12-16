@@ -2,10 +2,10 @@
   "version": "0.2.0",
   "configurations": [
   {
-    "name": "Debug Server (Python)",
+    "name": "Debug Server (FastAPI)",
     "type": "debugpy",
     "request": "launch",
-    "program": "${workspaceFolder}/server/app.py",
+    "program": "${workspaceFolder}/server/dynalert_api/main.py",
     "console": "integratedTerminal"
   },
   {
