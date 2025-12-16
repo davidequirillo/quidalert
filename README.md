@@ -25,7 +25,7 @@ Idea of server-side architecture: 1 server (nginx) and 3 backends (api backend, 
 
 See INSTALL.md
 
-## 🔒 Ethical Disclaimer
+## 🔒 Disclaimer
 
 Dynalert must be used in compliance with the existing laws and regulations. The author assumes no responsibility for any damage caused by unethical, improper, incorrect, or unlawful use of the software, or by the inability to use it, or by any malfunction of it.
 
