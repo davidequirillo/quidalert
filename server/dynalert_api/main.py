@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# Dynalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Copyright (C) 2025  Davide Quirillo
+# Licensed under the GNU GPL v3 or later. See LICENSE for details.
+
 from etc import dev_config
 import config 
 import sys
