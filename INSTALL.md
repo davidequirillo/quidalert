@@ -34,6 +34,22 @@ conda env create -f server/environment.yml
 conda activate dynalert_env
 ```
 
+Install Postgres DBMS and create database "dynalert_db".
+
+Copy ".env.example" to ".env" file and change environment variables useful for development.
+
+Change settings for production in "config.py" file.
+
+Initialize alembic
+```
+alembic init migrations
+```
+
+Do all migrations (to build the entire database) using migration sources previously created from the models
+```
+alembic upgrade head
+```
+
 ### Debugging (run)
 
 Clone repository 

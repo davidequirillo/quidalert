@@ -3,10 +3,8 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Conda / env
-.env/
-.conda/
-conda-meta/
+# Local environment file (es. developing variables)
+.env
 
 # Test / coverage
 .coverage
