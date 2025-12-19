@@ -7,3 +7,8 @@
 SERVER_NAME = "server name" # the server name (publicly accessible)
 SERVER_PORT = 80 # the server port (publicly accessible) 
 APP_LOG_LEVEL = 'error' # 'debug', 'error'
+DB_HOST = ""
+DB_USER = ""
+DB_PASS = ""
+DB_PORT = 5432
+DB_NAME = "dynalert_db"
