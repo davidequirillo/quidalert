@@ -16,6 +16,13 @@
     "problemMatcher": []
   },
   {
+    "label": "Client: Flutter gen-l10n",
+    "type": "shell",
+    "command": "flutter gen-l10n",
+    "options": { "cwd": "${workspaceFolder}/client/dynalert_flutter" },
+    "problemMatcher": []
+  },
+  {
     "label": "Server: Run (FastAPI)",
     "type": "shell",
     "command": "conda run -n dynalert_env python main.py",
