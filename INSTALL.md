@@ -24,17 +24,17 @@ Install miniconda:
 
 [https://www.anaconda.com/download/success](https://www.anaconda.com/download/success)
 
-On miniconda prompt (terminal), go to dynalert folder and write:
+On miniconda prompt (terminal), go to quidalert folder and write:
 
 ```
 conda env create -f server/environment.yml
 ```
 
 ```
-conda activate dynalert_env
+conda activate quidalert_env
 ```
 
-Install Postgres DBMS and create database "dynalert_db".
+Install Postgres DBMS and create database "quidalert_db".
 
 Copy ".env.example" to ".env" file and change environment variables useful for development.
 
@@ -54,10 +54,10 @@ alembic upgrade head
 
 Clone repository 
 
-Go to dynalert local folder and write the following command to open the entire project workspace with VS Code:
+Go to quidalert local folder and write the following command to open the entire project workspace with VS Code:
 
 ```
-code .dynalert.code-workspace
+code .quidalert.code-workspace
 ```
 
 NOTE: code workspace has been configured to ignore some useless folders from the programming IDE view (for example “build” directories)
