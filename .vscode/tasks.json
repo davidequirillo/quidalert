@@ -5,28 +5,28 @@
     "label": "Client: Flutter run (Chrome)",
     "type": "shell",
     "command": "flutter run -d chrome",
-    "options": { "cwd": "${workspaceFolder}/client/dynalert_flutter" },
+    "options": { "cwd": "${workspaceFolder}/client/quidalert_flutter" },
     "problemMatcher": []
   },
   {
     "label": "Client: Flutter pub get",
     "type": "shell",
     "command": "flutter pub get",
-    "options": { "cwd": "${workspaceFolder}/client/dynalert_flutter" },
+    "options": { "cwd": "${workspaceFolder}/client/quidalert_flutter" },
     "problemMatcher": []
   },
   {
     "label": "Client: Flutter gen-l10n",
     "type": "shell",
     "command": "flutter gen-l10n",
-    "options": { "cwd": "${workspaceFolder}/client/dynalert_flutter" },
+    "options": { "cwd": "${workspaceFolder}/client/quidalert_flutter" },
     "problemMatcher": []
   },
   {
     "label": "Server: Run (FastAPI)",
     "type": "shell",
-    "command": "conda run -n dynalert_env python main.py",
-    "options": { "cwd": "${workspaceFolder}/server/dynalert_api" },
+    "command": "conda run -n quidalert_env python main.py",
+    "options": { "cwd": "${workspaceFolder}/server/quidalert_api" },
     "problemMatcher": []
   }]
 }

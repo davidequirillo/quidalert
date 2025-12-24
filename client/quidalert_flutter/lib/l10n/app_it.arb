@@ -1,0 +1,12 @@
+{
+  "@@locale": "it",
+  "menuHome": "Home",
+  "menuLogin": "Login",
+  "menuLogout": "Logout",
+  "menuRequest": "Richiesta",
+  "menuRecents": "Recenti",
+  "menuSettings": "Impostazioni",
+  "menuTerms": "Termini legali",
+  "menuProfile": "Profilo",
+  "menuAdmin": "Admin"
+}
