@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Quidalert: needs internet access permission to function properly -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="quidalert_flutter"
         android:name="${applicationName}"

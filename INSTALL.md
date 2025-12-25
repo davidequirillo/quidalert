@@ -16,7 +16,9 @@ Install Flutter SDK
 
 [https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
 
-Change client config file, setting server name and port, TLS/SSL certificate. Compile the app, distribute and install it
+On terminal, go to "quidalert/client/quidalert_flutter" folder:
+
+Change apiBaseUrl in "lib/config.dart", (TODO: TLS/SSL certificate support). Compile the app and distribute it (or install it in the client device).
 
 ### Server
 
@@ -24,10 +26,10 @@ Install miniconda:
 
 [https://www.anaconda.com/download/success](https://www.anaconda.com/download/success)
 
-On miniconda prompt (terminal), go to quidalert folder and write:
+On miniconda prompt (terminal), go to "quidalert/server/quidalert_api" folder and write:
 
 ```
-conda env create -f server/environment.yml
+conda env create -f environment.yml
 ```
 
 ```
@@ -36,9 +38,9 @@ conda activate quidalert_env
 
 Install Postgres DBMS and create database "quidalert_db".
 
-Copy ".env.example" to ".env" file and change environment variables useful for development.
+Copy ".env.example" to ".env" file and change environment variables (useful for development).
 
-Change settings for production in "config.py" file.
+Change settings for production in config.py file.
 
 Initialize alembic
 ```

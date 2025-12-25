@@ -5,14 +5,33 @@
 import 'package:flutter/material.dart';
 import 'package:quidalert_flutter/config.dart' as config;
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class TermsPage extends StatelessWidget {
   const TermsPage({super.key});
 
   Future<String> _loadFromServer() async {
-    final uri = Uri.parse('${config.apiUrl}/terms');
-    await Future.delayed(const Duration(seconds: 2));
-    return 'Data from server';
+    final uri = Uri.parse('${config.apiBaseUrl}/terms');
+    final http.Response response;
+    try {
+      response = await http.get(uri, headers: {"Accept": "application/json"});
+    } catch (e) {
+      debugPrint('Request error: cannot receive or read response');
+      return 'Network error';
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      debugPrint('HTTP ${response.statusCode}: ${response.body}');
+      return 'Network error';
+    } else {
+      final decoded = jsonDecode(response.body);
+      final message = (decoded as Map<String, dynamic>)['message'];
+      if (message is! String) {
+        throw Exception(
+          'JSON not valid: message not present or is not a string',
+        );
+      }
+      return message;
+    }
   }
 
   @override

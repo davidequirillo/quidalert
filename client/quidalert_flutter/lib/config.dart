@@ -2,4 +2,4 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-const apiUrl = 'http://localhost:8080/api';
+const apiBaseUrl = 'http://localhost:8080/api';

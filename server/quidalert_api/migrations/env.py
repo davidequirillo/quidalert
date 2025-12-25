@@ -10,6 +10,7 @@ from alembic import context
 import os
 from sqlmodel import SQLModel
 from lib import models
+from config import APP_MODE, DB_URL
 
 # quidalert: load database settings from .env file
 from dotenv import load_dotenv
@@ -19,9 +20,13 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-# quidalert: set the database url from environment variable
-os.environ["DATABASE_URL"] = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+# quidalert: set the database url from environment variable or from config.py
+db_mode = APP_MODE
+if (db_mode != "production"):
+    db_url = os.getenv("DB_URL")
+else:
+    db_url = DB_URL
+config.set_main_option("sqlalchemy.url", f"{db_url}")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

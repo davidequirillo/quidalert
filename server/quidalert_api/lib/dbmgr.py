@@ -4,16 +4,10 @@
 
 from sqlmodel import create_engine, Session
 
-engine = None
-
-# Initialize the database pool/connection
-def init(host, port, db_name, user, password):
-    global engine    
-    db_url = f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+def get_engine(db_url):
     engine = create_engine(db_url, echo=True) # echo=True for logging to console
     return engine
 
-# Obtain a session for database operations
-def get_session():
+def get_session(engine):
     with Session(engine) as session:
         yield session
