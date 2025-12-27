@@ -1,12 +1,11 @@
 {
   "@@locale": "en",
-  "menuHome": "Home",
-  "menuLogin": "Login",
-  "menuLogout": "Logout",
+  "buttonAccept": "Accept",
+  "buttonReject": "Reject",
   "menuRequest": "Request",
   "menuRecents": "Recents",
   "menuSettings": "Settings",
   "menuTerms": "Legal terms",
   "menuProfile": "Profile",
-  "menuAdmin": "Admin"
+  "textLoadingErr": "Loading error"
 }

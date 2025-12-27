@@ -9,13 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get menuHome => 'Home';
+  String get buttonAccept => 'Accept';
 
   @override
-  String get menuLogin => 'Login';
-
-  @override
-  String get menuLogout => 'Logout';
+  String get buttonReject => 'Reject';
 
   @override
   String get menuRequest => 'Request';
@@ -33,5 +30,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuProfile => 'Profile';
 
   @override
-  String get menuAdmin => 'Admin';
+  String get textLoadingErr => 'Loading error';
 }

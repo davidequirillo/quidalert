@@ -3,18 +3,31 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
+import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/config.dart' as config;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class TermsPage extends StatelessWidget {
-  const TermsPage({super.key});
+  final bool isAccepted;
+  final VoidCallback cbAccept; // Accept Callback
+  final VoidCallback cbReject; // Reject Callback
 
-  Future<String> _loadFromServer() async {
+  const TermsPage({
+    super.key,
+    required this.isAccepted,
+    required this.cbAccept,
+    required this.cbReject,
+  });
+
+  Future<String> _loadFromServer({String? lang}) async {
     final uri = Uri.parse('${config.apiBaseUrl}/terms');
     final http.Response response;
     try {
-      response = await http.get(uri, headers: {"Accept": "application/json"});
+      response = await http.get(
+        uri,
+        headers: {"Accept": "application/json", "Accept-Language": "$lang"},
+      );
     } catch (e) {
       debugPrint('Request error: cannot receive or read response');
       return 'Network error';
@@ -36,19 +49,70 @@ class TermsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final languageCode = locale.languageCode;
     return FutureBuilder<String>(
-      future: _loadFromServer(),
+      future: _loadFromServer(lang: languageCode),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return const Center(child: Text('Loading error'));
+          return Center(child: Text(loc.textLoadingErr));
         }
-        return Center(
-          child: Text(snapshot.data!, style: const TextStyle(fontSize: 20)),
+        return Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    child: Text(snapshot.data!, style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: cbAccept,
+                    child: Text(loc.buttonAccept),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: cbReject,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    child: Text(loc.buttonReject),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
+  } // build
+}
+
+class InfoPage extends StatelessWidget {
+  final bool isAccepted;
+  final VoidCallback cbRetryTerms; // retry terms callback
+  final VoidCallback cbRetryLogin; // retry login callback
+
+  const InfoPage({
+    super.key,
+    required this.isAccepted,
+    required this.cbRetryTerms,
+    required this.cbRetryLogin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text("Hello World!");
   }
 }

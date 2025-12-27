@@ -95,23 +95,17 @@ abstract class AppLocalizations {
     Locale('it')
   ];
 
-  /// No description provided for @menuHome.
+  /// No description provided for @buttonAccept.
   ///
   /// In en, this message translates to:
-  /// **'Home'**
-  String get menuHome;
+  /// **'Accept'**
+  String get buttonAccept;
 
-  /// No description provided for @menuLogin.
+  /// No description provided for @buttonReject.
   ///
   /// In en, this message translates to:
-  /// **'Login'**
-  String get menuLogin;
-
-  /// No description provided for @menuLogout.
-  ///
-  /// In en, this message translates to:
-  /// **'Logout'**
-  String get menuLogout;
+  /// **'Reject'**
+  String get buttonReject;
 
   /// No description provided for @menuRequest.
   ///
@@ -143,11 +137,11 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get menuProfile;
 
-  /// No description provided for @menuAdmin.
+  /// No description provided for @textLoadingErr.
   ///
   /// In en, this message translates to:
-  /// **'Admin'**
-  String get menuAdmin;
+  /// **'Loading error'**
+  String get textLoadingErr;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

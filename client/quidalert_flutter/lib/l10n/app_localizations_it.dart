@@ -9,13 +9,10 @@ class AppLocalizationsIt extends AppLocalizations {
   AppLocalizationsIt([String locale = 'it']) : super(locale);
 
   @override
-  String get menuHome => 'Home';
+  String get buttonAccept => 'Accetta';
 
   @override
-  String get menuLogin => 'Login';
-
-  @override
-  String get menuLogout => 'Logout';
+  String get buttonReject => 'Rifiuta';
 
   @override
   String get menuRequest => 'Richiesta';
@@ -33,5 +30,5 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuProfile => 'Profilo';
 
   @override
-  String get menuAdmin => 'Admin';
+  String get textLoadingErr => 'Errore di caricamento';
 }
