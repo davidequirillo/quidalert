@@ -1,3 +1,3 @@
-# quidalert_flutter
+# Quidalert app
 
 "Quidalert client, built with Flutter"

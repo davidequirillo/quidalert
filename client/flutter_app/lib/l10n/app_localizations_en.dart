@@ -30,5 +30,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuProfile => 'Profile';
 
   @override
-  String get textLoadingErr => 'Loading error';
+  String get textLoadingError => 'Loading error';
 }

@@ -137,11 +137,11 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get menuProfile;
 
-  /// No description provided for @textLoadingErr.
+  /// No description provided for @textLoadingError.
   ///
   /// In en, this message translates to:
   /// **'Loading error'**
-  String get textLoadingErr;
+  String get textLoadingError;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

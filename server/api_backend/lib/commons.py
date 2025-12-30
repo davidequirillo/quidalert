@@ -13,3 +13,4 @@ class AppSettings:
     cors_allow_origins = [
         f'https://{server_name}:{server_port}'
     ]
+    languages = ["en", "it"]

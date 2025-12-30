@@ -4,7 +4,9 @@
 
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends
+from fastapi import (FastAPI, Depends, 
+    Request, Response, HTTPException)
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlmodel import Session, select
@@ -50,8 +52,16 @@ def get_db_session():
     yield from get_session(engine)
 
 @app.get("/api/terms")
-async def get_terms():
-    return {"message": "Terms and conditions content"}
+async def get_terms(request: Request, response: Response):
+    lang = request.headers.get('Accept-Language');
+    if not lang in AppSettings.languages:
+        lang = "en"
+    response.headers["Content-Type"] = "text/markdown; charset=utf-8"
+    files_dir = os.path.join(os.path.dirname(__file__), "..")
+    fpath = os.path.join(files_dir, f"files/terms_{lang}.md")
+    if not os.path.exists(fpath):
+        fpath += ".example"
+    return FileResponse(fpath)
 
 @app.get("/api/users")
 async def get_users(db_session: Session = Depends(get_session)):

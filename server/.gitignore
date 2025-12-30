@@ -12,3 +12,7 @@ __pycache__/
 
 # Logs
 *.log
+
+# Files (upload, etc.)
+files/terms_en_example.txt
+files/terms_it_example.txt

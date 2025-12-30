@@ -5,21 +5,21 @@
     "name": "Debug Server (FastAPI)",
     "type": "debugpy",
     "request": "launch",
-    "program": "${workspaceFolder}/server/quidalert_api/main.py",
+    "program": "${workspaceFolder}/server/api_backend/main.py",
     "console": "integratedTerminal"
   },
   {
     "name": "Debug Client (Flutter - Chrome)",
     "type": "dart",
     "request": "launch",
-    "cwd": "${workspaceFolder}/client/quidalert_flutter",
+    "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "chrome"
   }, 
 {
     "name": "Debug Client (Flutter - Android)",
     "type": "dart",
     "request": "launch",
-    "cwd": "${workspaceFolder}/client/quidalert_flutter",
+    "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "emulator-5554"
   }]
 }
