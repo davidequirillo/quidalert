@@ -7,5 +7,5 @@
   "menuSettings": "Settings",
   "menuTerms": "Legal terms",
   "menuProfile": "Profile",
-  "textLoadingErr": "Loading error"
+  "textLoadingError": "Loading error"
 }

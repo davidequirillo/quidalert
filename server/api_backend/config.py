@@ -6,7 +6,7 @@ APP_MODE = "development" # "development" or "production"
 
 # The following configurations are only for production
 
-SERVER_NAME = "server name" # the server name (publicly accessible)
+SERVER_NAME = "server name" # the server name (publicly accessible, for example the reverse proxy)
 SERVER_PORT = 8080 # the server port (publicly accessible) 
 APP_LOG_LEVEL = 'error' # 'debug', 'error'
 # The database connection URL

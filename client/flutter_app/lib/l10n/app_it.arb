@@ -7,5 +7,5 @@
   "menuSettings": "Impostazioni",
   "menuTerms": "Termini legali",
   "menuProfile": "Profilo",
-  "textLoadingErr": "Errore di caricamento"
+  "textLoadingError": "Errore di caricamento"
 }

@@ -16,9 +16,9 @@ Install Flutter SDK
 
 [https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
 
-On terminal, go to "quidalert/client/quidalert_flutter" folder:
+On terminal, go to "quidalert/client/flutter_app" folder:
 
-Change apiBaseUrl in "lib/config.dart", (TODO: TLS/SSL certificate support). Compile the app and distribute it (or install it in the client device).
+Change apiBaseUrl in "lib/config.dart", to connect to the correct server, (TODO: TLS/SSL certificate support). Compile the app and distribute it (or install it in the client device).
 
 ### Server
 
@@ -26,7 +26,7 @@ Install miniconda:
 
 [https://www.anaconda.com/download/success](https://www.anaconda.com/download/success)
 
-On miniconda prompt (terminal), go to "quidalert/server/quidalert_api" folder and write:
+On miniconda prompt (terminal), go to "quidalert/server/api_backend" folder and write:
 
 ```
 conda env create -f environment.yml

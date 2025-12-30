@@ -4,7 +4,7 @@
 
 from typing import Optional
 from sqlmodel import SQLModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 
 class UserBase(SQLModel, table=False):
     email: str = Field(index=True, nullable=False, unique=True)
@@ -12,7 +12,7 @@ class UserBase(SQLModel, table=False):
     surname: str = Field(nullable=False)
 
 class User(UserBase, table=True):
-    __tablename__ = "users"
+    __tablename__: str = 'users'
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
     hashed_password: str = Field(nullable=False)
     geolocated_at: Optional[float] = Field(default=None, nullable=True)
@@ -21,8 +21,8 @@ class UserOut(UserBase, table=False):
     id: int # ID is required in output model
 
 class Alert(SQLModel, table=True):
-    __tablename__ = "alerts"
+    __tablename__: str = "alerts"
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
     user_id: int = Field(foreign_key="users.id", nullable=False)
     message: str = Field(nullable=False)
-    created_at: Optional[datetime] = Field(default_factory=lambda:datetime.now(datetime.timezone.utc), nullable=False)
+    created_at: Optional[datetime] = Field(default_factory=lambda:datetime.now(timezone.utc), nullable=False)

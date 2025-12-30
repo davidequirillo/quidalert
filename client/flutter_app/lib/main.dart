@@ -208,6 +208,7 @@ class _HomePageState extends State<HomePage> {
     if (currentPage == SubPage.info) {
       return InfoPage(
         isAccepted: termsAccepted,
+        isLogged: isLoggedIn,
         cbRetryTerms: () {
           setState(() {
             currentPage = SubPage.terms;
@@ -215,7 +216,11 @@ class _HomePageState extends State<HomePage> {
         },
         cbRetryLogin: () {
           setState(() {
-            currentPage = SubPage.login;
+            if (termsAccepted) {
+              currentPage = SubPage.login;
+            } else {
+              currentPage = SubPage.terms;
+            }
           });
         },
       );

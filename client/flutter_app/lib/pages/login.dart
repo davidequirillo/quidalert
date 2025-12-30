@@ -11,6 +11,6 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text("");
+    return Text("This is the login page");
   }
 }
