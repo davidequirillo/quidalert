@@ -31,7 +31,7 @@ class TermsPage extends StatelessWidget {
       return 'Network error';
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      debugPrint('HTTP ${response.statusCode}: ${response.body}');
+      debugPrint("HTTP ${response.statusCode}: ${response.body}");
       return 'Network error';
     } else {
       return response.body;
@@ -50,7 +50,7 @@ class TermsPage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          debugPrint('Error: ${snapshot.error}');
+          debugPrint("Error: ${snapshot.error}");
           return Center(child: Text(loc.textLoadingError));
         }
         return Padding(
