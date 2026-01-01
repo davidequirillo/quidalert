@@ -5,7 +5,8 @@
     "name": "Debug Server (FastAPI)",
     "type": "debugpy",
     "request": "launch",
-    "program": "${workspaceFolder}/server/api_backend/main.py",
+    "cwd": "${workspaceFolder}/server/api_backend",
+    "program": "main.py",
     "console": "integratedTerminal"
   },
   {

@@ -4,7 +4,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jose/jose.dart';
 import 'pages/terms.dart';
 import 'pages/login.dart';
 import 'pages/request.dart';
@@ -12,7 +16,7 @@ import 'pages/recents.dart';
 import 'pages/settings.dart';
 
 void main() {
-  debugPrint('Hello from main()'); // a debug log
+  debugPrint('Hello from main()');
   runApp(const QuidalertWidget());
 }
 
@@ -56,24 +60,102 @@ enum SubPage { login, terms, info, request, recents, settings }
 class _HomePageState extends State<HomePage> {
   SubPage currentPage = SubPage.terms;
   bool termsAccepted = false;
-  bool isLoggedIn = false;
+  bool isLoadingPrefs = true;
+  String? refreshToken;
+  String? accessToken;
+  final _secureStorage = FlutterSecureStorage();
 
-  void setLoginFlag() {
+  @override
+  void initState() {
+    super.initState();
+    refreshToken = null;
+    accessToken = null;
+    _init();
+  }
+
+  Future<void> _init() async {
+    await loadPrefs();
+    await loadRefreshToken();
+    await getAccessToken();
+  }
+
+  Future<void> loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    termsAccepted = prefs.getBool('termsAccepted') ?? false;
     setState(() {
-      isLoggedIn = true;
+      isLoadingPrefs = false;
     });
   }
 
-  void setLogoutFlag() {
+  Future<void> saveRefreshToken(String? token) async {
+    if (refreshToken != null) {
+      await _secureStorage.write(key: 'refreshToken', value: token);
+      if (kDebugMode) {
+        debugPrint('RefreshToken saved');
+      }
+    }
+  }
+
+  Future<void> loadRefreshToken() async {
+    final token = await _secureStorage.read(key: 'refreshToken');
+    if (kDebugMode) {
+      debugPrint('RefreshToken: $refreshToken');
+    }
+    setState(() => refreshToken = token);
+  }
+
+  Future<void> deleteRefreshToken() async {
+    await _secureStorage.delete(key: 'refreshToken');
+    if (kDebugMode) {
+      debugPrint('RefreshToken deleted');
+    }
+  }
+
+  bool _isTokenExpired(String token) {
+    final jwt = JsonWebToken.unverified(token);
+    final exp = jwt.claims.getTyped('exp');
+    if (exp == null) return true;
+    final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+    return DateTime.now().toUtc().isAfter(expiry);
+  }
+
+  bool isLoggedIn() {
+    if (refreshToken == null) {
+      return false;
+    } else if (_isTokenExpired(refreshToken!)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  Future<void> getAccessToken() async {
+    // Call an API to the server, using refresh token as input
+    // Note: it gets a new refresh token too
+    final aToken = null; // from api result
+    final rToken = null; // from api result
+    await saveRefreshToken(rToken);
     setState(() {
-      isLoggedIn = false;
+      accessToken = aToken;
+      refreshToken = rToken;
+    });
+    if (kDebugMode) {
+      debugPrint('Access token refreshed');
+    }
+  }
+
+  Future<void> saveTermsAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('termsAccepted', true);
+    setState(() {
+      termsAccepted = true;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-
+    final loggedIn = isLoggedIn();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue,
@@ -91,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
-            if (termsAccepted && (!isLoggedIn))
+            if (termsAccepted && (!loggedIn))
               ListTile(
                 leading: Icon(Icons.login),
                 title: Text('Login'),
@@ -100,7 +182,7 @@ class _HomePageState extends State<HomePage> {
                   setState(() => currentPage = SubPage.login);
                 },
               ),
-            if (termsAccepted && isLoggedIn)
+            if (termsAccepted && loggedIn)
               ListTile(
                 leading: Icon(Icons.logout),
                 title: Text('Logout'),
@@ -121,7 +203,7 @@ class _HomePageState extends State<HomePage> {
                   setState(() => currentPage = SubPage.info);
                 },
               ),
-            if (termsAccepted && isLoggedIn)
+            if (termsAccepted && loggedIn)
               ListTile(
                 leading: Icon(Icons.request_page),
                 title: Text(loc.menuRequest),
@@ -130,7 +212,7 @@ class _HomePageState extends State<HomePage> {
                   setState(() => currentPage = SubPage.request);
                 },
               ),
-            if (termsAccepted && isLoggedIn)
+            if (termsAccepted && loggedIn)
               ListTile(
                 leading: Icon(Icons.history),
                 title: Text(loc.menuRecents),
@@ -160,8 +242,10 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: _buildCurrentPage(), // current page is based on the widget state
-      bottomNavigationBar: termsAccepted && isLoggedIn
+      body: isLoadingPrefs
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : _buildCurrentPage(), // current page is based on the widget state
+      bottomNavigationBar: termsAccepted && loggedIn
           ? BottomNavigationBar(
               items: [
                 BottomNavigationBarItem(
@@ -174,7 +258,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
               onTap: (index) {
-                debugPrint('Pressed footer: section ${index + 1}');
                 if (index == 0) {
                   setState(() => currentPage = SubPage.request);
                 } else {
@@ -187,16 +270,12 @@ class _HomePageState extends State<HomePage> {
   } // build method
 
   Widget _buildCurrentPage() {
+    final loggedIn = isLoggedIn();
     // 1) At app boot: current page is "terms"
     if (currentPage == SubPage.terms) {
       return TermsPage(
         isAccepted: termsAccepted,
-        cbAccept: () {
-          setState(() {
-            termsAccepted = true;
-            currentPage = SubPage.login;
-          });
-        },
+        cbAccept: () => saveTermsAccepted(),
         cbReject: () {
           setState(() {
             currentPage = SubPage.info;
@@ -208,7 +287,7 @@ class _HomePageState extends State<HomePage> {
     if (currentPage == SubPage.info) {
       return InfoPage(
         isAccepted: termsAccepted,
-        isLogged: isLoggedIn,
+        isLogged: loggedIn,
         cbRetryTerms: () {
           setState(() {
             currentPage = SubPage.terms;
@@ -226,18 +305,15 @@ class _HomePageState extends State<HomePage> {
       );
     }
     // 3) Legal terms accepted but not logged
-    if ((currentPage == SubPage.login) && termsAccepted && !isLoggedIn) {
+    if ((currentPage == SubPage.login) && termsAccepted && !loggedIn) {
       return LoginPage(
         cbLoginSuccess: () {
-          setState(() {
-            isLoggedIn = true;
-            currentPage = SubPage.request;
-          });
+          currentPage = SubPage.request;
         },
       );
     }
     // 4) Legal terms accepted and logged in
-    if ((currentPage == SubPage.request) && termsAccepted && isLoggedIn) {
+    if ((currentPage == SubPage.request) && termsAccepted && loggedIn) {
       return RequestPage();
     }
     // 5) Menu
