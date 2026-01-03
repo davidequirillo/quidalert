@@ -16,9 +16,20 @@ Install Flutter SDK
 
 [https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
 
-On terminal, go to "quidalert/client/flutter_app" folder:
+On terminal, go to "quidalert/client/flutter_app" folder and call this commands:
 
-Change apiBaseUrl in "lib/config.dart", to connect to the correct server, (TODO: TLS/SSL certificate support). Compile the app and distribute it (or install it in the client device).
+```
+flutter clean
+
+flutter pub get
+
+dart run rename_app:main all="My App Name"
+```
+Note: the last renaming instruction, useful to change the current app name with a new custom desired name ("My App Name" for example), is necessary only if you want to distribute the app (for android, for ios, etc.). Otherwise, for testing purposes, the renaming is optional.
+
+In "lib/config.dart, change appName, and change apiBaseUrl, to connect to the correct server.
+
+Compile the app, eventually distribute it (or install it in the mobile/client device manually).
 
 ### Server
 

@@ -3,12 +3,19 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
+import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/widgets/common.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Text("");
+    final loc = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: CAppBar(title: loc.menuSettings),
+      drawer: const CAppDrawer(),
+      body: const Center(child: Text('settings blah blah blah')),
+    );
   }
 }

@@ -2,10 +2,16 @@
   "@@locale": "en",
   "buttonAccept": "Accept",
   "buttonReject": "Reject",
+  "labelDoNotHaveAccount": "Don't have an account? Sign Up",
+  "labelPasswordForgotten": "Forgot password?",
+  "labelRegistration": "Registration",
+  "labelShowPassword": "Show password",
   "menuRequest": "Request",
   "menuRecents": "Recents",
   "menuSettings": "Settings",
   "menuTerms": "Legal terms",
   "menuProfile": "Profile",
-  "textLoadingError": "Loading error"
+  "textInvalidCredentials": "Email or password not valid",
+  "textLoadingError": "Loading error",
+  "textUnknownState": "Unknown state"
 }

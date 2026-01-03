@@ -107,6 +107,30 @@ abstract class AppLocalizations {
   /// **'Reject'**
   String get buttonReject;
 
+  /// No description provided for @labelDoNotHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Sign Up'**
+  String get labelDoNotHaveAccount;
+
+  /// No description provided for @labelPasswordForgotten.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot password?'**
+  String get labelPasswordForgotten;
+
+  /// No description provided for @labelRegistration.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration'**
+  String get labelRegistration;
+
+  /// No description provided for @labelShowPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get labelShowPassword;
+
   /// No description provided for @menuRequest.
   ///
   /// In en, this message translates to:
@@ -137,11 +161,23 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get menuProfile;
 
+  /// No description provided for @textInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password not valid'**
+  String get textInvalidCredentials;
+
   /// No description provided for @textLoadingError.
   ///
   /// In en, this message translates to:
   /// **'Loading error'**
   String get textLoadingError;
+
+  /// No description provided for @textUnknownState.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown state'**
+  String get textUnknownState;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

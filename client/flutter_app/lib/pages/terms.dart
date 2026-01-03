@@ -4,22 +4,30 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/services/shared.dart';
+import 'package:quidalert_flutter/widgets/common.dart';
 import 'package:quidalert_flutter/config.dart' as config;
 import 'package:http/http.dart' as http;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 class TermsPage extends StatelessWidget {
-  final bool isAccepted;
-  final VoidCallback cbAccept; // Accept Callback
-  final VoidCallback cbReject; // Reject Callback
+  const TermsPage({super.key});
 
-  const TermsPage({
-    super.key,
-    required this.isAccepted,
-    required this.cbAccept,
-    required this.cbReject,
-  });
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: CAppBar(title: loc.menuTerms),
+      drawer: const CAppDrawer(),
+      body: TermsBody(),
+    ); // build
+  }
+}
+
+class TermsBody extends StatelessWidget {
+  const TermsBody({super.key});
 
   Future<String> _loadFromServer({String? lang}) async {
     final url = Uri.parse('${config.apiBaseUrl}/terms');
@@ -40,6 +48,8 @@ class TermsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shared = context.read<SharedVars>();
+    bool termsAccepted = shared.termsAccepted;
     final loc = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
     final languageCode = locale.languageCode;
@@ -59,17 +69,21 @@ class TermsPage extends StatelessWidget {
             children: [
               Expanded(child: Markdown(data: snapshot.data!)),
               const SizedBox(height: 10),
-              if (!isAccepted)
+              if (!termsAccepted)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: cbAccept,
+                      onPressed: () {
+                        shared.setTermsAcceptedAndSave();
+                        Navigator.pushReplacementNamed(context, '/login');
+                      },
                       child: Text(loc.buttonAccept),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
-                      onPressed: cbReject,
+                      onPressed: () =>
+                          Navigator.pushReplacementNamed(context, '/info'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
@@ -83,22 +97,24 @@ class TermsPage extends StatelessWidget {
         );
       },
     );
-  } // build
+  }
 }
 
 class InfoPage extends StatelessWidget {
-  final bool isAccepted;
-  final bool isLogged;
-  final VoidCallback cbRetryTerms; // retry terms callback
-  final VoidCallback cbRetryLogin; // retry login callback
+  const InfoPage({super.key});
 
-  const InfoPage({
-    super.key,
-    required this.isAccepted,
-    required this.isLogged,
-    required this.cbRetryTerms,
-    required this.cbRetryLogin,
-  });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CAppBar(title: 'Info'),
+      drawer: const CAppDrawer(),
+      body: InfoBody(),
+    ); // build
+  }
+}
+
+class InfoBody extends StatelessWidget {
+  const InfoBody({super.key});
 
   Future<String> _fetchMarkdown({String? lang}) async {
     final String assetPath = 'info_$lang.md';
@@ -108,6 +124,8 @@ class InfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shared = context.read<SharedVars>();
+    bool termsAccepted = shared.termsAccepted;
     final loc = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
     final languageCode = locale.languageCode;
@@ -131,10 +149,14 @@ class InfoPage extends StatelessWidget {
                   onTapLink: (text, href, title) {
                     switch (href) {
                       case '/terms':
-                        cbRetryTerms();
+                        Navigator.pushReplacementNamed(context, '/terms');
                         break;
                       case '/login':
-                        cbRetryLogin();
+                        if (termsAccepted) {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        } else {
+                          Navigator.pushReplacementNamed(context, '/terms');
+                        }
                         break;
                     }
                   },

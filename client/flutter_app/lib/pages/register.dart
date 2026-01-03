@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
 
-class RecentsPage extends StatelessWidget {
-  const RecentsPage({super.key});
+class RegisterPage extends StatelessWidget {
+  const RegisterPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuRecents),
+      appBar: CAppBar(title: loc.labelRegistration),
       drawer: const CAppDrawer(),
-      body: const Center(child: Text('Recents blah blah blah')),
+      body: const Center(child: Text('Register blah blah blah')),
     );
   }
 }
