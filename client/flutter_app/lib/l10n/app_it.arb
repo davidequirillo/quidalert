@@ -2,10 +2,16 @@
   "@@locale": "it",
   "buttonAccept": "Accetta",
   "buttonReject": "Rifiuta",
+  "labelDoNotHaveAccount": "Non hai un account? Registrati",
+  "labelPasswordForgotten": "Password dimenticata?",
+  "labelRegistration": "Registrazione",
+  "labelShowPassword": "Mostra password",
   "menuRequest": "Richiesta",
   "menuRecents": "Recenti",
   "menuSettings": "Impostazioni",
   "menuTerms": "Termini legali",
   "menuProfile": "Profilo",
-  "textLoadingError": "Errore di caricamento"
+  "textInvalidCredentials": "Email o password non valide",
+  "textLoadingError": "Errore di caricamento",
+  "textUnknownState": "Stato sconosciuto"
 }

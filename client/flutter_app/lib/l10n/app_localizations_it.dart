@@ -15,6 +15,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonReject => 'Rifiuta';
 
   @override
+  String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
+
+  @override
+  String get labelPasswordForgotten => 'Password dimenticata?';
+
+  @override
+  String get labelRegistration => 'Registrazione';
+
+  @override
+  String get labelShowPassword => 'Mostra password';
+
+  @override
   String get menuRequest => 'Richiesta';
 
   @override
@@ -30,5 +42,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuProfile => 'Profilo';
 
   @override
+  String get textInvalidCredentials => 'Email o password non valide';
+
+  @override
   String get textLoadingError => 'Errore di caricamento';
+
+  @override
+  String get textUnknownState => 'Stato sconosciuto';
 }
