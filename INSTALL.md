@@ -25,11 +25,11 @@ flutter pub get
 
 dart run rename_app:main all="My App Name"
 ```
-Note: the last renaming instruction, useful to change the current app name with a new custom desired name ("My App Name" for example), is necessary only if you want to distribute the app (for android, for ios, etc.). Otherwise, for testing purposes, the renaming is optional.
+Note: the last renaming instruction, is useful to change the "distribution app name" with a new custom desired name ("My App Name" for example), and it's necessary only if you want to distribute the app to the public (for android store, ios store, etc.). Otherwise, for testing purposes, this specific renaming is optional.
 
-In "lib/config.dart", change appName, and change apiBaseUrl, to connect to the correct server.
+In "lib/config.dart", change appName (optional), and change apiBaseUrl, to connect to the correct server.
 
-Compile the app, eventually distribute it (or install it in the mobile/client device manually).
+Compile the app, distribute it (or install it in the mobile/client device manually).
 
 ### Server
 
