@@ -5,14 +5,14 @@
 import os
 from dotenv import load_dotenv
 from fastapi import (FastAPI, Depends, 
-    Request, Response, HTTPException)
+    Request, Response, HTTPException, status)
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlmodel import Session, select
 import config
 from lib.commons import AppSettings
-from lib.models import User, UserBase
+from lib.models import get_password_hash, UserBase, UserIn, User, UserOut
 from lib.dbmgr import get_session, get_engine
 
 def init_settings():
@@ -64,24 +64,17 @@ async def get_terms(request: Request, response: Response):
     return FileResponse(fpath)
 
 @app.get("/api/users")
-async def get_users(db_session: Session = Depends(get_session)):
+async def get_users(db_session: Session = Depends(get_db_session)):
     users = db_session.exec(select(User)).all()
     return users
 
 @app.get("/api/user/{user_id}")
-async def get_user(user_id: str, db_session: Session = Depends(get_session)):
+async def get_user(user_id: str, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
-@app.post("/api/user")
-def create_user(user: User, db_session: Session = Depends(get_session)):
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
-
 @app.delete("/api/user/{user_id}")
-def delete_user(user_id: str, db_session: Session = Depends(get_session)):
+def delete_user(user_id: str, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         db_session.delete(user)
@@ -90,7 +83,7 @@ def delete_user(user_id: str, db_session: Session = Depends(get_session)):
     return {"message": "User not found"}
 
 @app.put("/api/user/{user_id}")
-def update_user(user_id: str, user_new: UserBase, db_session: Session = Depends(get_session)):
+def update_user(user_id: str, user_new: UserBase, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         user.firstname = user_new.firstname
@@ -100,3 +93,25 @@ def update_user(user_id: str, user_new: UserBase, db_session: Session = Depends(
         db_session.refresh(user)
         return user
     return {"message": "User not found"}
+
+@app.post("/api/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register_user(user_in: UserIn, db_session: Session = Depends(get_db_session)):
+    existing_user = db_session.exec(
+        select(User).where(User.email == user_in.email)
+    ).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+    password_hashed = get_password_hash(user_in.password)
+    user = User(
+        firstname=user_in.firstname,
+        surname=user_in.surname,
+        email=user_in.email,
+        password_hash=password_hashed,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
