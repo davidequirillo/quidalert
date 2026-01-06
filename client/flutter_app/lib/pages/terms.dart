@@ -61,7 +61,7 @@ class TermsBody extends StatelessWidget {
         }
         if (snapshot.hasError) {
           debugPrint("Error: ${snapshot.error}");
-          return Center(child: Text(loc.textLoadingError));
+          return Center(child: Text(loc.errorLoading));
         }
         return Padding(
           padding: EdgeInsets.all(16.0),
@@ -137,12 +137,15 @@ class InfoBody extends StatelessWidget {
         }
         if (snapshot.hasError) {
           debugPrint("Error: ${snapshot.error}");
-          return Center(child: Text(loc.textLoadingError));
+          return Center(child: Text(loc.errorLoading));
         }
         return Padding(
           padding: EdgeInsets.all(16.0),
           child: Column(
             children: [
+              Text(
+                '${loc.labelCompetentTerritory}: ${config.competentTerritory}',
+              ),
               Expanded(
                 child: Markdown(
                   data: snapshot.data!,

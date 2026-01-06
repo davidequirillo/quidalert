@@ -1,3 +1,7 @@
+// Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+// Copyright (C) 2025  Davide Quirillo
+// Licensed under the GNU GPL v3 or later. See LICENSE for details.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/services/shared.dart';
@@ -19,7 +23,7 @@ class StartupPage extends StatelessWidget {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (termsAccepted == false) {
-        Navigator.pushReplacementNamed(context, '/terms');
+        Navigator.pushReplacementNamed(context, '/info');
       } else if (!isLoggedIn) {
         Navigator.pushReplacementNamed(context, '/login');
       } else {

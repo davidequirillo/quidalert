@@ -15,7 +15,9 @@ For simple testing, the server-side system can also be installed on a generic ma
 
 ## 💡 Concepts
 
-Each user is allowed to send an alert, but we must find a solution about alert validation (user credibility), for example a system based on votes for standard users and manual assignment for specific user groups (for example max reliability for alerts coming from civil protection users, public officers can give max reliability to some standard users, etc.).
+Each user is allowed to send an alert, but we must find a solution about alert validation (user credibility), for example a system based on votes.
+
+User account registration will be admitted using white lists.
 
 Admins will connect to the server via a desktop app to do additional real-time operations (such as sending a message to specific users, viewing streaming video coming from a client or from a drone flying over the event location).
 

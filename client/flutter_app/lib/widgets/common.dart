@@ -1,3 +1,7 @@
+// Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+// Copyright (C) 2025  Davide Quirillo
+// Licensed under the GNU GPL v3 or later. See LICENSE for details.
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
@@ -105,6 +109,41 @@ class CAppDrawer extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class GotoIfAlertDialog extends StatelessWidget {
+  final String title;
+  final String content;
+  final bool condition;
+  final String route;
+
+  const GotoIfAlertDialog({
+    super.key,
+    required this.title,
+    required this.content,
+    required this.condition,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: [
+        TextButton(
+          onPressed: () {
+            if (condition) {
+              Navigator.pushReplacementNamed(context, route);
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text("OK"),
+        ),
+      ],
     );
   }
 }

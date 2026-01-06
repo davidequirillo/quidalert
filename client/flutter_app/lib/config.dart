@@ -4,3 +4,7 @@
 
 const appName = 'Quidalert';
 const apiBaseUrl = 'http://localhost:8080/api';
+
+// The competent territory: example "Rome", "Milan", "Lombardy", "New York", etc.
+// It's simply an information for the user
+const competentTerritory = 'Italy';

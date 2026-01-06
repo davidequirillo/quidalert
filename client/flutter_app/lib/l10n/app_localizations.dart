@@ -101,17 +101,125 @@ abstract class AppLocalizations {
   /// **'Accept'**
   String get buttonAccept;
 
+  /// No description provided for @buttonCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get buttonCancel;
+
   /// No description provided for @buttonReject.
   ///
   /// In en, this message translates to:
   /// **'Reject'**
   String get buttonReject;
 
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorGeneric;
+
+  /// No description provided for @errorBadRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Bad Request'**
+  String get errorBadRequest;
+
+  /// No description provided for @errorEmailAlreadyRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'Email already registered'**
+  String get errorEmailAlreadyRegistered;
+
+  /// No description provided for @errorInvalidCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Email or password not valid'**
+  String get errorInvalidCredentials;
+
+  /// No description provided for @errorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading error'**
+  String get errorLoading;
+
+  /// No description provided for @errorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error'**
+  String get errorNetwork;
+
+  /// No description provided for @errorPasswordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get errorPasswordsDoNotMatch;
+
+  /// No description provided for @errorPasswordMissingUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least an uppercase character'**
+  String get errorPasswordMissingUppercase;
+
+  /// No description provided for @errorPasswordMissingLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least a lowercase character'**
+  String get errorPasswordMissingLowercase;
+
+  /// No description provided for @errorPasswordMissingDigit.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least a digit'**
+  String get errorPasswordMissingDigit;
+
+  /// No description provided for @errorPasswordMissingSpecial.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least a special character'**
+  String get errorPasswordMissingSpecial;
+
+  /// No description provided for @errorStringNotValid.
+  ///
+  /// In en, this message translates to:
+  /// **'String not valid'**
+  String get errorStringNotValid;
+
+  /// No description provided for @errorStringTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'String too long'**
+  String get errorStringTooLong;
+
+  /// No description provided for @errorStringTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'String too short'**
+  String get errorStringTooShort;
+
+  /// No description provided for @errorUnknownState.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown state'**
+  String get errorUnknownState;
+
+  /// No description provided for @labelCompetentTerritory.
+  ///
+  /// In en, this message translates to:
+  /// **'Competent territory'**
+  String get labelCompetentTerritory;
+
   /// No description provided for @labelDoNotHaveAccount.
   ///
   /// In en, this message translates to:
   /// **'Don\'t have an account? Sign Up'**
   String get labelDoNotHaveAccount;
+
+  /// No description provided for @labelFirstname.
+  ///
+  /// In en, this message translates to:
+  /// **'Firstname'**
+  String get labelFirstname;
 
   /// No description provided for @labelPasswordForgotten.
   ///
@@ -130,6 +238,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show password'**
   String get labelShowPassword;
+
+  /// No description provided for @labelSurname.
+  ///
+  /// In en, this message translates to:
+  /// **'Surname'**
+  String get labelSurname;
 
   /// No description provided for @menuRequest.
   ///
@@ -161,23 +275,17 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get menuProfile;
 
-  /// No description provided for @textInvalidCredentials.
+  /// No description provided for @successRegistration.
   ///
   /// In en, this message translates to:
-  /// **'Email or password not valid'**
-  String get textInvalidCredentials;
+  /// **'A verification mail message has been sent to your email address. You must verify it clicking on the relative link contained in it.'**
+  String get successRegistration;
 
-  /// No description provided for @textLoadingError.
+  /// No description provided for @successGeneric.
   ///
   /// In en, this message translates to:
-  /// **'Loading error'**
-  String get textLoadingError;
-
-  /// No description provided for @textUnknownState.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown state'**
-  String get textUnknownState;
+  /// **'Operation done'**
+  String get successGeneric;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

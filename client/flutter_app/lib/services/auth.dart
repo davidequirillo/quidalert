@@ -102,11 +102,12 @@ class AuthClient extends ChangeNotifier {
         refreshToken = null;
       }
       accessToken = null;
-    }
-    final aToken = null; // from api result
-    accessToken = aToken;
-    if (kDebugMode) {
-      debugPrint('Access token refreshed');
+    } else {
+      final aToken = null; // from api result
+      accessToken = aToken;
+      if (kDebugMode) {
+        debugPrint('Access token refreshed');
+      }
     }
   }
 

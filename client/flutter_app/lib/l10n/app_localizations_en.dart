@@ -12,10 +12,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonAccept => 'Accept';
 
   @override
+  String get buttonCancel => 'Cancel';
+
+  @override
   String get buttonReject => 'Reject';
 
   @override
+  String get errorGeneric => 'Error';
+
+  @override
+  String get errorBadRequest => 'Bad Request';
+
+  @override
+  String get errorEmailAlreadyRegistered => 'Email already registered';
+
+  @override
+  String get errorInvalidCredentials => 'Email or password not valid';
+
+  @override
+  String get errorLoading => 'Loading error';
+
+  @override
+  String get errorNetwork => 'Network error';
+
+  @override
+  String get errorPasswordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get errorPasswordMissingUppercase => 'Password must contain at least an uppercase character';
+
+  @override
+  String get errorPasswordMissingLowercase => 'Password must contain at least a lowercase character';
+
+  @override
+  String get errorPasswordMissingDigit => 'Password must contain at least a digit';
+
+  @override
+  String get errorPasswordMissingSpecial => 'Password must contain at least a special character';
+
+  @override
+  String get errorStringNotValid => 'String not valid';
+
+  @override
+  String get errorStringTooLong => 'String too long';
+
+  @override
+  String get errorStringTooShort => 'String too short';
+
+  @override
+  String get errorUnknownState => 'Unknown state';
+
+  @override
+  String get labelCompetentTerritory => 'Competent territory';
+
+  @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
+
+  @override
+  String get labelFirstname => 'Firstname';
 
   @override
   String get labelPasswordForgotten => 'Forgot password?';
@@ -25,6 +79,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelShowPassword => 'Show password';
+
+  @override
+  String get labelSurname => 'Surname';
 
   @override
   String get menuRequest => 'Request';
@@ -42,11 +99,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuProfile => 'Profile';
 
   @override
-  String get textInvalidCredentials => 'Email or password not valid';
+  String get successRegistration => 'A verification mail message has been sent to your email address. You must verify it clicking on the relative link contained in it.';
 
   @override
-  String get textLoadingError => 'Loading error';
-
-  @override
-  String get textUnknownState => 'Unknown state';
+  String get successGeneric => 'Operation done';
 }

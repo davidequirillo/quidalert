@@ -68,11 +68,6 @@ class _LoginBodyState extends State<LoginBody> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'Login',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
-              ),
-              SizedBox(height: 20),
               TextField(
                 controller: _usernameController,
                 decoration: InputDecoration(
