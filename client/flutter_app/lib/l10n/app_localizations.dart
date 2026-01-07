@@ -203,11 +203,11 @@ abstract class AppLocalizations {
   /// **'Unknown state'**
   String get errorUnknownState;
 
-  /// No description provided for @labelCompetentTerritory.
+  /// No description provided for @labelCompetenceTerritory.
   ///
   /// In en, this message translates to:
-  /// **'Competent territory'**
-  String get labelCompetentTerritory;
+  /// **'Competence territory'**
+  String get labelCompetenceTerritory;
 
   /// No description provided for @labelDoNotHaveAccount.
   ///

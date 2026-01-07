@@ -44,7 +44,7 @@ String? validateDescription(
 String? validatePassword(
   BuildContext context,
   String? value, {
-  int minLength = 8,
+  int minLength = 10,
   bool requireUppercase = true,
   bool requireLowercase = true,
   bool requireDigit = true,
@@ -67,7 +67,7 @@ String? validatePassword(
     return l10n.errorPasswordMissingDigit;
   }
   if (requireSpecialChar &&
-      !value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-]'))) {
+      !value.contains(RegExp(r'[!@#\$%\^&*()\[\],;+=.?":{}|<>_\-]'))) {
     return l10n.errorPasswordMissingSpecial;
   }
   return null;

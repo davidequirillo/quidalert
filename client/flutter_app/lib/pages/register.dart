@@ -51,6 +51,8 @@ class _RegisterBodyState extends State<RegisterBody> {
   }
 
   void submit() {
+    final locale = Localizations.localeOf(context);
+    final languageCode = locale.languageCode;
     if (!_formKey.currentState!.validate()) return;
     final fname = _firstnameController.text.trim();
     final sname = _surnameController.text.trim();
@@ -61,6 +63,7 @@ class _RegisterBodyState extends State<RegisterBody> {
       "surname": sname,
       "email": email,
       "password": password,
+      "language": languageCode,
     };
     _doRegistration(fields);
   }

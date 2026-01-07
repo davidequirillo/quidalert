@@ -6,6 +6,7 @@ import config
 
 class AppSettings:
     is_development = False
+    protocol = "https"
     server_name = config.SERVER_NAME
     server_port = config.SERVER_PORT
     app_log_level = config.APP_LOG_LEVEL
@@ -13,4 +14,7 @@ class AppSettings:
     cors_allow_origins = [
         f'https://{server_name}:{server_port}'
     ]
-    languages = ["en", "it"]
+    adminpass = config.ADMINPASS
+    smtp_host = config.SMTP_HOST
+    smtp_port = config.SMTP_PORT
+    smtp_from = config.SMTP_FROM
