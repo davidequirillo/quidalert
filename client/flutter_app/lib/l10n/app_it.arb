@@ -18,7 +18,7 @@
   "errorStringTooLong": "Stringa troppo lunga",
   "errorStringTooShort": "Stringa troppo corta",
   "errorUnknownState": "Stato sconosciuto",
-  "labelCompetentTerritory": "Territorio di competenza",
+  "labelCompetenceTerritory": "Territorio di competenza",
   "labelDoNotHaveAccount": "Non hai un account? Registrati",
   "labelFirstname": "Nome",
   "labelPasswordForgotten": "Password dimenticata?",

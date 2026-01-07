@@ -63,7 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnknownState => 'Unknown state';
 
   @override
-  String get labelCompetentTerritory => 'Competent territory';
+  String get labelCompetenceTerritory => 'Competence territory';
 
   @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';

@@ -144,7 +144,7 @@ class InfoBody extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                '${loc.labelCompetentTerritory}: ${config.competentTerritory}',
+                '${loc.labelCompetenceTerritory}: ${config.competenceTerritory}',
               ),
               Expanded(
                 child: Markdown(
