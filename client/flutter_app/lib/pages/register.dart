@@ -94,15 +94,12 @@ class _RegisterBodyState extends State<RegisterBody> {
     }
     if (registerError != null) {
       switch (registerError) {
-        case 'Email already registered':
-          endMessage = loc.errorEmailAlreadyRegistered;
         case 'Network error':
           endMessage = loc.errorNetwork;
         default:
           endMessage = loc.errorBadRequest;
       }
       endTitle = loc.errorGeneric;
-      endMessage = registerError;
     } else {
       endTitle = loc.successGeneric;
       endMessage = loc.successRegistration;

@@ -9,6 +9,7 @@
   "errorInvalidCredentials": "Email o password non valide",
   "errorLoading": "Errore di caricamento",
   "errorNetwork": "Errore di rete",
+  "errorRegNotAuthorized": "Registrazione non autorizzata: chiedere all'autorità territoriale competente",
   "errorPasswordsDoNotMatch": "Le password non corrispondono",
   "errorPasswordMissingUppercase": "La password deve contenere almeno una lettera maiuscola",
   "errorPasswordMissingLowercase": "La password deve contenere almeno una lettera minuscola",
@@ -30,6 +31,7 @@
   "menuSettings": "Impostazioni",
   "menuTerms": "Termini legali",
   "menuProfile": "Profilo",
-  "successRegistration": "Una mail di verifica è stata inviata al tuo indirizzo email. Per completare la registrazione, fai click sul link di verifica contenuto nella mail.",
+  "successLogin": "Login effettuato con successo",
+  "successRegistration": "Se l'indirizzo email è valido, riceverai una mail con link di attivazione. In caso di mancata ricezione di essa, recarsi presso l'autorità territoriale competente",
   "successGeneric": "Operazione effettuata"
 }

@@ -36,6 +36,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNetwork => 'Network error';
 
   @override
+  String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
+
+  @override
   String get errorPasswordsDoNotMatch => 'Passwords do not match';
 
   @override
@@ -99,7 +102,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuProfile => 'Profile';
 
   @override
-  String get successRegistration => 'A verification mail message has been sent to your email address. You must verify it clicking on the relative link contained in it.';
+  String get successLogin => 'Login successful';
+
+  @override
+  String get successRegistration => 'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority';
 
   @override
   String get successGeneric => 'Operation done';

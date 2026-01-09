@@ -1,8 +1,8 @@
 """users, alerts, whitelist tables
 
-Revision ID: 0aa6af845d63
+Revision ID: ab221c9c347e
 Revises: 
-Create Date: 2026-01-07 17:54:37.680809
+Create Date: 2026-01-09 01:57:47.023954
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0aa6af845d63'
+revision: str = 'ab221c9c347e'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,12 +33,18 @@ def upgrade() -> None:
     sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('activation_expires_at', sa.DateTime(), nullable=True),
+    sa.Column('reset_expires_at', sa.DateTime(), nullable=True),
+    sa.Column('reset_attempts', sa.Integer(), nullable=False),
+    sa.Column('reset_locked_until', sa.DateTime(), nullable=True),
+    sa.Column('last_reset_done_at', sa.DateTime(), nullable=True),
+    sa.Column('last_reset_asked_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('gps_lat', sa.Float(), nullable=True),
     sa.Column('gps_lon', sa.Float(), nullable=True),
     sa.Column('activation_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('activation_expires_at', sa.DateTime(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('reset_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
@@ -46,6 +52,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=False),
+    sa.Column('severity', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('is_closed', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
