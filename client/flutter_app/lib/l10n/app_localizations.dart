@@ -149,6 +149,12 @@ abstract class AppLocalizations {
   /// **'Network error'**
   String get errorNetwork;
 
+  /// No description provided for @errorRegNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration not authorized: ask to competent territorial authority'**
+  String get errorRegNotAuthorized;
+
   /// No description provided for @errorPasswordsDoNotMatch.
   ///
   /// In en, this message translates to:
@@ -275,10 +281,16 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get menuProfile;
 
+  /// No description provided for @successLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Login successful'**
+  String get successLogin;
+
   /// No description provided for @successRegistration.
   ///
   /// In en, this message translates to:
-  /// **'A verification mail message has been sent to your email address. You must verify it clicking on the relative link contained in it.'**
+  /// **'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority'**
   String get successRegistration;
 
   /// No description provided for @successGeneric.

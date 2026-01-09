@@ -2,11 +2,14 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/config.dart' as config;
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -32,7 +35,6 @@ class _LoginBodyState extends State<LoginBody> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool showPasswordFlag = false;
-  String? loginError;
 
   @override
   void dispose() {
@@ -41,19 +43,56 @@ class _LoginBodyState extends State<LoginBody> {
     super.dispose();
   }
 
-  void _doLogin() async {
+  void submit() {
+    final email = _usernameController.text.trim();
+    final password = _passwordController.text;
+    _doLogin(email, password);
+  }
+
+  void _doLogin(String email, String password) async {
     final loc = AppLocalizations.of(context)!;
-    final authClient = context.read<AuthClient>();
-    debugPrint(loc.menuProfile);
-    debugPrint(authClient.isLoggedIn().toString());
-    // we will set loginError string, based on api error code
-    // (using if or switch statements)
+    String? loginError;
+    String endMessage;
+    String endTitle;
+    final http.Response response;
+    try {
+      final url = Uri.parse('${config.apiBaseUrl}/login');
+      response = await http.post(url, body: "");
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        debugPrint("HTTP ${response.statusCode}: ${response.body}");
+        loginError = jsonDecode(response.body)['detail'];
+      } else {
+        loginError = null;
+      }
+    } catch (e) {
+      debugPrint('Error: cannot receive or read response');
+      loginError = "Network error";
+    }
+    if (loginError != null) {
+      switch (loginError) {
+        case 'Invalid credentials':
+          endMessage = loc.errorInvalidCredentials;
+        case 'Network error':
+          endMessage = loc.errorNetwork;
+        default:
+          endMessage = loc.errorBadRequest;
+      }
+      endTitle = loc.errorGeneric;
+    } else {
+      endTitle = loc.successGeneric;
+      endMessage = loc.successLogin;
+    }
     if (loginError != null) {
       if (!mounted) return;
-      // change state with setState
-      //
-    } else {
-      Navigator.pushReplacementNamed(context, '/request');
+      await showDialog(
+        context: context,
+        builder: (_) => GotoIfAlertDialog(
+          title: endTitle,
+          content: endMessage,
+          condition: (loginError == null),
+          route: "/request",
+        ),
+      );
     }
   }
 
@@ -104,13 +143,11 @@ class _LoginBodyState extends State<LoginBody> {
                 height: 30,
                 child: ElevatedButton(
                   onPressed: () {
-                    _doLogin();
+                    submit();
                   },
                   child: Text('Login', style: TextStyle(fontSize: 16)),
                 ),
               ),
-              if (loginError != null)
-                Text(loginError!, style: const TextStyle(color: Colors.red)),
               SizedBox(height: 20),
               InkWell(
                 onTap: () {

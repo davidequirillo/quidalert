@@ -9,6 +9,7 @@
   "errorInvalidCredentials": "Email or password not valid",
   "errorLoading": "Loading error",
   "errorNetwork": "Network error",
+  "errorRegNotAuthorized": "Registration not authorized: ask to competent territorial authority",
   "errorPasswordsDoNotMatch": "Passwords do not match",
   "errorPasswordMissingUppercase": "Password must contain at least an uppercase character",
   "errorPasswordMissingLowercase": "Password must contain at least a lowercase character",
@@ -30,6 +31,7 @@
   "menuSettings": "Settings",
   "menuTerms": "Legal terms",
   "menuProfile": "Profile",
-  "successRegistration": "A verification mail message has been sent to your email address. You must verify it clicking on the relative link contained in it.",
+  "successLogin": "Login successful",
+  "successRegistration": "If email address is valid, you will receive an activation mail message. If you don't receive it, ask to the competent territorial authority",
   "successGeneric": "Operation done"
 }

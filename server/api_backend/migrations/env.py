@@ -9,7 +9,7 @@ from alembic import context
 # quidalert note: we also write "import sqlmodel" in script.py.mako file
 import os
 from sqlmodel import SQLModel
-from lib import models
+from models import general
 from config import APP_MODE, DB_URL
 
 # quidalert: load database settings from .env file

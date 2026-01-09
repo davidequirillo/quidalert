@@ -32,7 +32,7 @@ Change "competenceTerritory" too, to inform the public about the zone where your
 
 Compile the app, distribute it (or install it in the mobile/client device manually).
 
-### Server
+### Backend
 
 Install miniconda:
 
@@ -74,6 +74,8 @@ For local testing/development purposes, we can set a fake local smtp server (see
 python -m aiosmtpd -n -l localhost:1025
 ```
 
+In config.py, change for security reasons EMAIL_PEPPER and OTP_PEPPER
+
 ### Debugging (run)
 
 Clone repository 
@@ -91,3 +93,31 @@ To run (debug) client and server, go to VS Code menu -> View -> Run.
 - Choose "Debug - Server (Python)" and click to play to debug the server.
 
 Obviously they can be executed together, in parallel, to test the entire system.
+
+### Production (run)
+
+In the backend machine (behind nginx reverse proxy):
+
+```
+uvicorn main:app --host 127.0.0.1 --port 8000 --no-access-log
+```
+In nginx reverse proxy (to forward the request id to the backend framework):
+
+```
+map $http_x_request_id $req_id {
+    default $http_x_request_id;
+    ""      $request_id;
+}
+
+proxy_set_header X-Request-ID $req_id;
+```
+To log the request_id in nginx too:
+
+```
+log_format main_ext '$remote_addr - $remote_user [$time_local] '
+                   '"$request" $status $body_bytes_sent '
+                   'req_id=$req_id '
+                   '"$http_user_agent"';
+
+access_log /var/log/nginx/access.log main_ext;
+```

@@ -154,6 +154,13 @@ class InfoBody extends StatelessWidget {
                       case '/terms':
                         Navigator.pushReplacementNamed(context, '/terms');
                         break;
+                      case '/register':
+                        if (termsAccepted) {
+                          Navigator.pushReplacementNamed(context, '/register');
+                        } else {
+                          Navigator.pushReplacementNamed(context, '/terms');
+                        }
+                        break;
                       case '/login':
                         if (termsAccepted) {
                           Navigator.pushReplacementNamed(context, '/login');

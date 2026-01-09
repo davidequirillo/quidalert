@@ -18,3 +18,5 @@ class AppSettings:
     smtp_host = config.SMTP_HOST
     smtp_port = config.SMTP_PORT
     smtp_from = config.SMTP_FROM
+    email_pepper = config.EMAIL_PEPPER
+    otp_pepper = config.OTP_PEPPER
