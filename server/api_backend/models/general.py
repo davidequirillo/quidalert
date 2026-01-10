@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum
 from pydantic import EmailStr, field_validator, model_validator
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column, DateTime
 
 class UserType(str, Enum):
     fireman = "fireman"
@@ -71,7 +71,9 @@ class UserOut(UserBase, table=False):
     reset_locked_until: Optional[datetime] = Field(default=None)
     last_reset_done_at: Optional[datetime] = Field(default=None)
     last_reset_asked_at: Optional[datetime] = Field(default=None)
-    created_at: Optional[datetime] = Field(default_factory=lambda:datetime.now(timezone.utc), nullable=False)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False
+    )
 
     @field_validator("type")
     @classmethod
@@ -133,7 +135,7 @@ class Alert(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", nullable=False)
     description: str = Field(default="", nullable=False, min_length=0, max_length=256)
     severity: Optional[int] = Field(default=0, nullable=False)
-    created_at: Optional[datetime] = Field(default_factory=lambda:datetime.now(timezone.utc), nullable=False)
+    created_at: datetime = Field(default_factory=lambda:datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
     @field_validator("severity")
@@ -150,6 +152,7 @@ class WhiteRecordIn(SQLModel, table=False):
     surname: Optional[str] = Field(nullable=True, max_length=64)
     email: EmailStr = Field(index=True, nullable=False, unique=True, min_length=3, max_length=128)
     type: str = Field(default=UserType.citizen, nullable=False) 
+    created_at: datetime = Field(default_factory=lambda:datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
 
     @field_validator("type")
     @classmethod

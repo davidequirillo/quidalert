@@ -3,9 +3,10 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from sqlmodel import create_engine, Session
+from core.commons import AppSettings
 
 def get_engine(db_url):
-    engine = create_engine(db_url, echo=True) # echo=True for logging to console
+    engine = create_engine(db_url, echo=AppSettings.db_engine_log)
     return engine
 
 def get_session(engine):

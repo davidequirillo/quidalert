@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
 from dotenv import load_dotenv
 from fastapi import (FastAPI, Depends, 
     Request, Response, HTTPException, status, BackgroundTasks)
@@ -25,7 +25,7 @@ import services.localization as i18n
 from models.general import (UserBase, UserIn, User, UserOut, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm)
 from services.security import (get_password_hash, check_password_with_hash,  
-    generate_activation_token, activation_expiry, ensure_utc,
+    generate_activation_token, activation_expiry, now_tz_naive, ensure_tz_aware,
     generate_reset_code, reset_code_expiry, otp_hmac, otp_verify, 
     RESET_LOCK_HOURS, COOLDOWN_SECONDS)
 from core.dbmgr import get_session, get_engine
@@ -42,6 +42,7 @@ def init_settings():
         AppSettings.server_port = int(os.environ.get("PORT", default=AppSettings.server_port))
         AppSettings.app_log_level = os.environ.get("APP_LOG_LEVEL", default=AppSettings.app_log_level)
         AppSettings.db_url = os.environ.get("DB_URL", default=AppSettings.db_url)
+        AppSettings.db_engine_log = os.environ.get("DB_ENGINE_LOG", "False").lower() in ("true", "1", "yes")
         AppSettings.smtp_host = os.environ.get("SMTP_HOST", default=AppSettings.smtp_host)
         AppSettings.smtp_port = int(os.environ.get("SMTP_PORT", default=AppSettings.smtp_port))
         AppSettings.smtp_from = os.environ.get("SMTP_FROM", default=AppSettings.smtp_from)
@@ -91,12 +92,14 @@ async def get_terms(request: Request, response: Response):
         fpath += ".example"
     return FileResponse(fpath)
 
-@app.get("/api/user/{user_id}") # login will be required
+# todo: login and admin privileges will be required
+@app.get("/api/user/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def get_user(user_id: str, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
-@app.delete("/api/user/{user_id}") # login will be required
+# todo: login and admin privileges will be required
+@app.delete("/api/user/{user_id}")
 def delete_user(user_id: str, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
@@ -105,7 +108,8 @@ def delete_user(user_id: str, db_session: Session = Depends(get_db_session)):
         return {"message": "User deleted"}
     return {"message": "User not found"}
 
-@app.put("/api/user/{user_id}") # login will be required
+# todo: login and admin privileges will be required
+@app.put("/api/user/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 def update_user(user_id: str, user_new: UserBase, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
@@ -138,11 +142,12 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     password_hashed = get_password_hash(user_in.password)
     act_token = generate_activation_token()
     act_expires_at = activation_expiry()
-    now = datetime.now(timezone.utc)
+    now = now_tz_naive()
     if (existing_user and (not existing_user.is_active)):
-        if ((existing_user.activation_expires_at) and 
-            (ensure_utc(existing_user.activation_expires_at) < now)):
+        if (existing_user.activation_expires_at and 
+            (existing_user.activation_expires_at < now)):
                 db_session.delete(existing_user)
+                db_session.commit()
                 log_delete_user_to_refresh_registration(existing_user.email)
         else:
             return { "message": reg_message }
@@ -164,6 +169,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
 
 @app.get("/activate", response_class=HTMLResponse)
 def activate_user(request: Request, email: str, token: str, db_session: Session = Depends(get_db_session)):
+    now = now_tz_naive()
     user = db_session.exec(
         select(User).where(User.email == email)).first()
     if not user:
@@ -181,7 +187,7 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
         style_class="warning"
         title=i18n.langmap[user.language]["act_already_title"]
         message=i18n.langmap[user.language]["act_already"]
-    elif (not user.activation_expires_at) or (ensure_utc(user.activation_expires_at) < datetime.now(timezone.utc)):
+    elif (not user.activation_expires_at) or (user.activation_expires_at < now):
         language=user.language
         style_class="error"
         title=i18n.langmap[user.language]["act_expired_title"]
@@ -194,7 +200,6 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
         user.is_active = True
         db_session.add(user)
         db_session.commit()
-        db_session.refresh(user)
 
     return templates.TemplateResponse(
         "activation_result.html",
@@ -216,13 +221,13 @@ def request_password_reset(data: PasswordResetRequest, background_tasks: Backgro
         select(User).where(User.email == data.email)).first()
     if not user:
         return {"message": mail_exists_str }
-    now = datetime.now(timezone.utc)
-    if user.reset_locked_until and ensure_utc(user.reset_locked_until) > now:
+    now = now_tz_naive()
+    if user.reset_locked_until and (now < user.reset_locked_until):
         return {"message": mail_exists_str }
     
     if ((not user.reset_code_hash) or 
         (not user.reset_expires_at) or 
-            (now > ensure_utc(user.reset_expires_at))):
+            (now > user.reset_expires_at)):
                 code = generate_reset_code()
                 code_hash = otp_hmac(code) 
                 expires_at = reset_code_expiry()
@@ -249,15 +254,15 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Code or email not valid",
         )
-    now = datetime.now(timezone.utc)
-    if user.reset_locked_until and ensure_utc(user.reset_locked_until) > now:
+    now = now_tz_naive()
+    if user.reset_locked_until and now < user.reset_locked_until:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Code or email not valid",
         )
     if ((not user.reset_code_hash) or 
             (not user.reset_expires_at) or 
-                (ensure_utc(user.reset_expires_at) < now)):
+                (user.reset_expires_at < now)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Code or email not valid"
@@ -286,7 +291,6 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
     user.last_reset_done_at = now
     db_session.add(user)
     db_session.commit()
-    db_session.refresh(user)
     log_password_reset_success(user.email)
 
     background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
