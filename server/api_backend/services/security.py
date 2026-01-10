@@ -10,7 +10,10 @@ import hashlib
 import hmac
 from core.commons import AppSettings
 
-def ensure_utc(dt: datetime) -> datetime:
+def now_tz_naive():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+    
+def ensure_tz_aware(dt: datetime) -> datetime:
     if dt is None:
         raise Exception("datetime is None")
     if dt.tzinfo is None:
@@ -39,14 +42,16 @@ def generate_activation_token() -> str:
     return secrets.token_urlsafe(ACTIVATION_TOKEN_BYTES)
 
 def activation_expiry() -> datetime:
-    return datetime.now(timezone.utc) + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    return now + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
 
 def generate_reset_code() -> str:
     # 8 digits, zero padded
     return str(secrets.randbelow(10**8)).zfill(8)
 
 def reset_code_expiry() -> datetime:
-    return datetime.now(timezone.utc) + timedelta(minutes=RESET_CODE_TTL_MINUTES)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    return now + timedelta(minutes=RESET_CODE_TTL_MINUTES)
 
 def get_email_hash(email: str) -> str:
     normalized = email.strip().lower()

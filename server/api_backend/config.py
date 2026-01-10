@@ -10,14 +10,22 @@ SERVER_NAME = "myservername" # the server name (publicly accessible, for example
 SERVER_PORT = 8080 # the server port (publicly accessible) 
 APP_LOG_LEVEL = 'error' # 'debug', 'error'
 
-# The database connection URL
+# The database connection URL and db engine logging
 DB_URL = "postgresql://DB_USER:DB_PASS@DB_HOST:DB_PORT/quidalert_db"
+DB_ENGINE_LOG = False
+
+# Password of the first user (admin)
 ADMINPASS = "Password!123"
+
+# Mail sender configuration
 SMTP_HOST = "mailserver" # to send activation mail messages to clients
 SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
 
-# Pepper string is useful for email hashing (to log email address securely) 
-EMAIL_PEPPER = "ZK2s8F7Q9mP1X4vR0Jw3B6YH5kD8nT2A" # change it
+# Security configurations
+# Pepper string is useful for email hashing (to log email address securely)
+# Change it for security 
+EMAIL_PEPPER = "ZK2s8F7Q9mP1X4vR0Jw3B6YH5kD8nT2A"
 # OTP pepper is useful for verification code hashing
-OTP_PEPPER ="5y9yN0xv6F9pZk2t7Zl1D6+Kx2z5Hc+6p9LxEw==" # change it
+# Change it for security
+OTP_PEPPER ="5y9yN0xv6F9pZk2t7Zl1D6+Kx2z5Hc+6p9LxEw=="

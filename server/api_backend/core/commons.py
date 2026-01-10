@@ -11,6 +11,7 @@ class AppSettings:
     server_port = config.SERVER_PORT
     app_log_level = config.APP_LOG_LEVEL
     db_url = config.DB_URL
+    db_engine_log = config.DB_ENGINE_LOG
     cors_allow_origins = [
         f'https://{server_name}:{server_port}'
     ]
