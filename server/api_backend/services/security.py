@@ -26,7 +26,7 @@ def get_password_hash(password):
         bcrypt.gensalt(),
     ).decode(encoding="utf-8")
 
-def check_password_with_hash(plain_password, hashed_password):
+def check_password_against_hash(plain_password, hashed_password):
     return bcrypt.checkpw(
         bytes(plain_password, encoding="utf-8"),
         bytes(hashed_password, encoding="utf-8"),
@@ -35,8 +35,8 @@ def check_password_with_hash(plain_password, hashed_password):
 ACTIVATION_TOKEN_BYTES = 32
 ACTIVATION_TOKEN_TTL_HOURS = 24
 RESET_CODE_TTL_MINUTES = 10
-RESET_LOCK_HOURS = 24
-COOLDOWN_SECONDS = 60
+RESET_LOCK_HOURS = 2
+MAIL_COOLDOWN_SECONDS = 180
 
 def generate_activation_token() -> str:
     return secrets.token_urlsafe(ACTIVATION_TOKEN_BYTES)
@@ -55,16 +55,16 @@ def reset_code_expiry() -> datetime:
 
 def get_email_hash(email: str) -> str:
     normalized = email.strip().lower()
-    material = (AppSettings.email_pepper + normalized).encode("utf-8")
-    return hashlib.sha256(material).hexdigest()
+    bytes_str = (AppSettings.email_pepper + normalized).encode("utf-8")
+    return hashlib.sha256(bytes_str).hexdigest()
 
-def check_email_hash(email: str, expected_hash_hex: str) -> bool:
+def check_email_against_hash(email: str, expected_hash_hex: str) -> bool:
     computed = get_email_hash(email)
     return hmac.compare_digest(computed, expected_hash_hex)
 
 # useful to calculate "reset code hash"
 def otp_hmac(code: str) -> str:
-    mac = hmac.new(AppSettings.otp_pepper.encode("utf-8"),
+    mac = hmac.new(key=AppSettings.otp_pepper.encode("utf-8"),
         msg=code.encode("utf-8"),
         digestmod=hashlib.sha256,
     )

@@ -69,8 +69,9 @@ class UserOut(UserBase, table=False):
     reset_expires_at: Optional[datetime] = Field(default=None)
     reset_attempts: int = Field(default=0, nullable=False)
     reset_locked_until: Optional[datetime] = Field(default=None)
-    last_reset_done_at: Optional[datetime] = Field(default=None)
-    last_reset_asked_at: Optional[datetime] = Field(default=None)
+    last_reset_mail_code_at: Optional[datetime] = Field(default=None)
+    last_reset_done_at: Optional[datetime] = Field(default=None)   
+    last_reset_mail_confirmation_at: Optional[datetime] = Field(default=None)  
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False
     )
@@ -91,6 +92,7 @@ class UserOut(UserBase, table=False):
         
 class User(UserOut, table=True):
     __tablename__: str = 'users'
+    email_hash: str = Field(index=True, unique=True, nullable=False)
     password_hash: str = Field(nullable=False)
     gps_lat: float | None = Field(default=None, nullable=True)
     gps_lon: float | None = Field(default=None, nullable=True)
@@ -125,10 +127,30 @@ class PasswordResetRequest(SQLModel):
     email: EmailStr
 
 class PasswordResetConfirm(SQLModel):
-    email: EmailStr
-    code: str
-    new_password: str
-    
+    email: EmailStr = Field(min_length=3, max_length=128)
+    code: str = Field(min_length=8, max_length=8)
+    new_password: str = Field(min_length=10, max_length=256)
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, value: str) -> str:
+        if not re.fullmatch(r"\d{8}", value):
+            raise ValueError("Code must be a 8-digit number")
+        return value
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password(cls, s):
+        if not re.search(r"[A-Z]", s):
+            raise ValueError("Password must contain at least an uppercase character")
+        if not re.search(r"[a-z]", s):
+            raise ValueError("Password must contain at least a lowercase character")
+        if not re.search(r"[0-9]", s):
+            raise ValueError("Password must contain at least a digit")
+        if not re.search(r"[!@#$%\^&*()\[\],;+=.?\":{}|<>_\-]", s):
+            raise ValueError("Password must contain a special character")
+        return s    
+
 class Alert(SQLModel, table=True):
     __tablename__: str = "alerts"
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)

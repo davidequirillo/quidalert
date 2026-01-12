@@ -24,6 +24,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorBadRequest => 'Richiesta non accettata';
 
   @override
+  String get errorCodeOrEmailNotValid => 'Codice o indirizzo email non valido';
+
+  @override
+  String get errorDigitOnly => 'Sono ammesse solo cifre';
+
+  @override
   String get errorEmailAlreadyRegistered => 'Email già registrata';
 
   @override
@@ -69,10 +75,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelCompetenceTerritory => 'Territorio di competenza';
 
   @override
+  String get labelConfirmPassword => 'Conferma password';
+
+  @override
+  String get labelConfirmNewPassword => 'Conferma nuova password';
+
+  @override
   String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
 
   @override
   String get labelFirstname => 'Nome';
+
+  @override
+  String get labelNewPassword => 'Nuova password';
 
   @override
   String get labelPasswordForgotten => 'Password dimenticata?';
@@ -85,6 +100,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelSurname => 'Cognome';
+
+  @override
+  String get labelVerificationCode => 'Codice di verifica';
 
   @override
   String get menuRequest => 'Richiesta';
@@ -106,6 +124,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get successRegistration => 'Se l\'indirizzo email è valido, riceverai una mail con link di attivazione. In caso di mancata ricezione di essa, recarsi presso l\'autorità territoriale competente';
+
+  @override
+  String get successResetRequest => 'Se l\'indirizzo email è valido, riceverai un codice di verifica via email, da riportare qui con la nuova password';
+
+  @override
+  String get successPasswordChanged => 'Password modificata con successo';
 
   @override
   String get successGeneric => 'Operazione effettuata';

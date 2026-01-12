@@ -15,7 +15,7 @@ class RecentsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuRecents),
       drawer: const CAppDrawer(),
-      body: const Center(child: Text('Recents blah blah blah')),
+      body: const Center(child: Text('Recents alerts')),
     );
   }
 }

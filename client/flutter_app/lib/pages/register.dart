@@ -184,7 +184,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                   TextFormField(
                     controller: _rePasswordController,
                     decoration: InputDecoration(
-                      labelText: 'Confirm password',
+                      labelText: loc.labelConfirmPassword,
                       border: OutlineInputBorder(),
                     ),
                     validator: (value) {

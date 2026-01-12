@@ -33,11 +33,9 @@ class AuthClient extends ChangeNotifier {
   }
 
   Future<void> saveRefreshToken() async {
-    if (refreshToken != null) {
-      await _secureStorage.write(key: 'refreshToken', value: refreshToken);
-      if (kDebugMode) {
-        debugPrint('Refresh token saved');
-      }
+    await _secureStorage.write(key: 'refreshToken', value: refreshToken);
+    if (kDebugMode) {
+      debugPrint('Refresh token saved');
     }
   }
 
@@ -84,11 +82,15 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
-  Future<void> setTokens(String rtok, String atok) async {
+  Future<void> setTokens(String? rtok, String? atok) async {
     // Set refresh token and access token (from login success)
     refreshToken = rtok;
     accessToken = atok;
-    saveRefreshToken();
+    if (refreshToken != null) {
+      saveRefreshToken();
+    } else {
+      deleteRefreshToken();
+    }
   }
 
   Future<void> getAccessToken() async {
@@ -201,11 +203,7 @@ class AuthClient extends ChangeNotifier {
     if (resp.body == "") {
       String? rtoken = null;
       String? atoken = null;
-      if ((rtoken != null) && (atoken != null)) {
-        refreshToken = rtoken; // we set auth tokens
-        accessToken = atoken;
-        saveRefreshToken();
-      }
+      setTokens(rtoken, atoken);
     }
     return resp;
   }

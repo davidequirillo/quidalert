@@ -17,6 +17,7 @@ import config
 from core.logging import setup_logging
 from core.commons import AppSettings
 from core.security_events import (
+    log_password_reset_code_generation,
     log_password_reset_success,
     log_password_reset_locked,
     log_delete_user_to_refresh_registration
@@ -24,10 +25,10 @@ from core.security_events import (
 import services.localization as i18n
 from models.general import (UserBase, UserIn, User, UserOut, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm)
-from services.security import (get_password_hash, check_password_with_hash,  
-    generate_activation_token, activation_expiry, now_tz_naive, ensure_tz_aware,
-    generate_reset_code, reset_code_expiry, otp_hmac, otp_verify, 
-    RESET_LOCK_HOURS, COOLDOWN_SECONDS)
+from services.security import (get_password_hash, check_password_against_hash,  
+    generate_activation_token, activation_expiry, now_tz_naive,
+    generate_reset_code, reset_code_expiry, otp_hmac, otp_verify, get_email_hash, check_email_against_hash,
+    RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS)
 from core.dbmgr import get_session, get_engine
 from services.network import send_activation_mail, send_reset_code_mail, send_reset_successful_mail
 
@@ -93,7 +94,7 @@ async def get_terms(request: Request, response: Response):
     return FileResponse(fpath)
 
 # todo: login and admin privileges will be required
-@app.get("/api/user/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
+@app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 async def get_user(user_id: str, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
@@ -109,7 +110,7 @@ def delete_user(user_id: str, db_session: Session = Depends(get_db_session)):
     return {"message": "User not found"}
 
 # todo: login and admin privileges will be required
-@app.put("/api/user/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
+@app.put("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 def update_user(user_id: str, user_new: UserBase, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
@@ -155,6 +156,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         firstname=user_in.firstname,
         surname=user_in.surname,
         email=user_in.email,
+        email_hash=get_email_hash(user_in.email),
         language=user_in.language,
         password_hash=password_hashed,
         is_admin = is_an_admin,
@@ -167,7 +169,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
     return { "message": reg_message }
 
-@app.get("/activate", response_class=HTMLResponse)
+@app.get("/api/activate", response_class=HTMLResponse)
 def activate_user(request: Request, email: str, token: str, db_session: Session = Depends(get_db_session)):
     now = now_tz_naive()
     user = db_session.exec(
@@ -214,17 +216,17 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
         },
     )
 
-@app.post("/password-reset/request")
+@app.post("/api/password-reset/request")
 def request_password_reset(data: PasswordResetRequest, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
-    mail_exists_str = "If email exists, you will receive a mail verification code"
+    if_mail_exists_str = "If email exists, you will receive a mail verification code"
     user = db_session.exec(
         select(User).where(User.email == data.email)).first()
-    if not user:
-        return {"message": mail_exists_str }
+    if (not user) or (not user.is_active):
+        return {"message": if_mail_exists_str }
     now = now_tz_naive()
     if user.reset_locked_until and (now < user.reset_locked_until):
-        return {"message": mail_exists_str }
-    
+        return {"message": if_mail_exists_str }
+    code = None
     if ((not user.reset_code_hash) or 
         (not user.reset_expires_at) or 
             (now > user.reset_expires_at)):
@@ -233,23 +235,20 @@ def request_password_reset(data: PasswordResetRequest, background_tasks: Backgro
                 expires_at = reset_code_expiry()
                 user.reset_code_hash = code_hash
                 user.reset_expires_at = expires_at
-    # Cooldown check to avoid potential DoS attacks to the mail service
-    can_send = ((not user.last_reset_asked_at) or 
-        ((now - user.last_reset_asked_at).total_seconds() > COOLDOWN_SECONDS)) 
-    if can_send:
-        user.last_reset_asked_at = now
-    db_session.add(user)
-    db_session.commit()  
-    if can_send: 
+                log_password_reset_code_generation(user.email)
+    if code:
+        user.last_reset_mail_code_at = now
+        db_session.add(user)
+        db_session.commit()   
         background_tasks.add_task(send_reset_code_mail, user.email, code, user.language)
     
-    return {"message": mail_exists_str}
+    return {"message": if_mail_exists_str}
 
-@app.post("/password-reset/confirm")
+@app.post("/api/password-reset/confirm")
 def confirm_password_reset(data: PasswordResetConfirm, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
     user = db_session.exec(
         select(User).where(User.email == data.email)).first()
-    if not user:
+    if (not user) or (not user.is_active):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Code or email not valid",
@@ -262,15 +261,15 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
         )
     if ((not user.reset_code_hash) or 
             (not user.reset_expires_at) or 
-                (user.reset_expires_at < now)):
+                (now > user.reset_expires_at)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Code or email not valid"
         )
-    if (otp_verify(data.code, user.reset_code_hash)):
+    if (not otp_verify(data.code, user.reset_code_hash)):
         user.reset_attempts += 1
         if user.reset_attempts > 3:
-            user.reset_code = None
+            user.reset_code_hash = None
             user.reset_expires_at = None
             user.reset_locked_until = now + timedelta(hours=RESET_LOCK_HOURS)
             user.reset_attempts = 0
@@ -282,17 +281,22 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
             detail="Code or email not valid",
         )
     
-    hashed = get_password_hash(data.new_password)
-    user.password_hash = hashed
-    user.reset_code = None
+    hashedpass = get_password_hash(data.new_password)
+    user.password_hash = hashedpass
+    user.reset_code_hash = None
     user.reset_expires_at = None
     user.reset_locked_until = None
     user.reset_attempts = 0
     user.last_reset_done_at = now
+    # Cooldown check to avoid potential DoS attacks to the mail service
+    can_send = ((not user.last_reset_mail_confirmation_at) or 
+        ((now - user.last_reset_mail_confirmation_at).total_seconds() > MAIL_COOLDOWN_SECONDS)) 
+    if can_send:
+        user.last_reset_mail_confirmation_at = now
     db_session.add(user)
     db_session.commit()
     log_password_reset_success(user.email)
-
-    background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
+    if can_send:
+        background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
 
     return {"message": "Password reset successful"}
