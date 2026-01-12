@@ -122,8 +122,20 @@ abstract class AppLocalizations {
   /// No description provided for @errorBadRequest.
   ///
   /// In en, this message translates to:
-  /// **'Bad Request'**
+  /// **'Bad request'**
   String get errorBadRequest;
+
+  /// No description provided for @errorCodeOrEmailNotValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Code or email not valid'**
+  String get errorCodeOrEmailNotValid;
+
+  /// No description provided for @errorDigitOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only digits are admitted'**
+  String get errorDigitOnly;
 
   /// No description provided for @errorEmailAlreadyRegistered.
   ///
@@ -215,6 +227,18 @@ abstract class AppLocalizations {
   /// **'Competence territory'**
   String get labelCompetenceTerritory;
 
+  /// No description provided for @labelConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get labelConfirmPassword;
+
+  /// No description provided for @labelConfirmNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get labelConfirmNewPassword;
+
   /// No description provided for @labelDoNotHaveAccount.
   ///
   /// In en, this message translates to:
@@ -226,6 +250,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Firstname'**
   String get labelFirstname;
+
+  /// No description provided for @labelNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'New password'**
+  String get labelNewPassword;
 
   /// No description provided for @labelPasswordForgotten.
   ///
@@ -250,6 +280,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Surname'**
   String get labelSurname;
+
+  /// No description provided for @labelVerificationCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get labelVerificationCode;
 
   /// No description provided for @menuRequest.
   ///
@@ -292,6 +328,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority'**
   String get successRegistration;
+
+  /// No description provided for @successResetRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'If email address is valid, you will receive a verification code to your email address. The code must be inserted here with the new password'**
+  String get successResetRequest;
+
+  /// No description provided for @successPasswordChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Password changed successfully'**
+  String get successPasswordChanged;
 
   /// No description provided for @successGeneric.
   ///

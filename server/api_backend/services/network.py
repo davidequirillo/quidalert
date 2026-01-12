@@ -17,7 +17,7 @@ def send_activation_mail(email: str, token: str, lang: str):
     prot = AppSettings.protocol
     sname = AppSettings.server_name
     sport = AppSettings.server_port
-    act_url = f"{prot}://{sname}:{sport}/activate?email={email}&token={token}"
+    act_url = f"{prot}://{sname}:{sport}/api/activate?email={email}&token={token}"
     msg = EmailMessage()
     msg["Subject"] = langmap[lang]["reg_subject"]
     msg["From"] = AppSettings.smtp_from

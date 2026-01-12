@@ -85,3 +85,26 @@ String? validateEmail(BuildContext context, String? value) {
   }
   return null;
 }
+
+String? validateDigitCode(
+  BuildContext context,
+  String? value, {
+  int min = 8,
+  int max = 32,
+}) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  final text = value.trim();
+  if (!RegExp(r'^\d+$').hasMatch(text)) {
+    return l10n.errorDigitOnly;
+  }
+  if (text.length < min) {
+    return l10n.errorStringTooShort;
+  }
+  if (text.length > max) {
+    return l10n.errorStringTooLong;
+  }
+  return null;
+}

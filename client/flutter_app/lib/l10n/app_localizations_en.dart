@@ -21,7 +21,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorGeneric => 'Error';
 
   @override
-  String get errorBadRequest => 'Bad Request';
+  String get errorBadRequest => 'Bad request';
+
+  @override
+  String get errorCodeOrEmailNotValid => 'Code or email not valid';
+
+  @override
+  String get errorDigitOnly => 'Only digits are admitted';
 
   @override
   String get errorEmailAlreadyRegistered => 'Email already registered';
@@ -69,10 +75,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelCompetenceTerritory => 'Competence territory';
 
   @override
+  String get labelConfirmPassword => 'Confirm password';
+
+  @override
+  String get labelConfirmNewPassword => 'Confirm new password';
+
+  @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
 
   @override
   String get labelFirstname => 'Firstname';
+
+  @override
+  String get labelNewPassword => 'New password';
 
   @override
   String get labelPasswordForgotten => 'Forgot password?';
@@ -85,6 +100,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelSurname => 'Surname';
+
+  @override
+  String get labelVerificationCode => 'Verification code';
 
   @override
   String get menuRequest => 'Request';
@@ -106,6 +124,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successRegistration => 'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority';
+
+  @override
+  String get successResetRequest => 'If email address is valid, you will receive a verification code to your email address. The code must be inserted here with the new password';
+
+  @override
+  String get successPasswordChanged => 'Password changed successfully';
 
   @override
   String get successGeneric => 'Operation done';

@@ -1,8 +1,8 @@
-"""users, alerts, whitelist tables
+"""create initial tables: users, alerts, whitelist
 
-Revision ID: ab221c9c347e
+Revision ID: 469c02c62f51
 Revises: 
-Create Date: 2026-01-09 01:57:47.023954
+Create Date: 2026-01-12 01:22:19.549389
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ab221c9c347e'
+revision: str = '469c02c62f51'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -37,9 +37,11 @@ def upgrade() -> None:
     sa.Column('reset_expires_at', sa.DateTime(), nullable=True),
     sa.Column('reset_attempts', sa.Integer(), nullable=False),
     sa.Column('reset_locked_until', sa.DateTime(), nullable=True),
+    sa.Column('last_reset_mail_code_at', sa.DateTime(), nullable=True),
     sa.Column('last_reset_done_at', sa.DateTime(), nullable=True),
-    sa.Column('last_reset_asked_at', sa.DateTime(), nullable=True),
+    sa.Column('last_reset_mail_confirmation_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('email_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('gps_lat', sa.Float(), nullable=True),
     sa.Column('gps_lon', sa.Float(), nullable=True),
@@ -48,6 +50,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+    op.create_index(op.f('ix_users_email_hash'), 'users', ['email_hash'], unique=True)
     op.create_table('alerts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -63,6 +66,7 @@ def upgrade() -> None:
     sa.Column('surname', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('registrant_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['registrant_id'], ['users.id'], ),
@@ -78,6 +82,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_whitelist_email'), table_name='whitelist')
     op.drop_table('whitelist')
     op.drop_table('alerts')
+    op.drop_index(op.f('ix_users_email_hash'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     # ### end Alembic commands ###

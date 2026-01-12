@@ -32,8 +32,19 @@ def log_delete_user_to_refresh_registration(email: str):
         extra={
             "ip": get_client_ip(),
             "request_id": get_request_id(),
-            "email_hash": get_email_hash(email),
-            "ua": get_client_ua()
+            "ua": get_client_ua(),
+            "email_hash": get_email_hash(email)
+        }
+    )
+
+def log_password_reset_code_generation(email: str):
+    logger.warning(
+        "password_reset_code_generation",
+        extra={
+            "ip": get_client_ip(),
+            "request_id": get_request_id(),
+            "ua": get_client_ua,
+            "email_hash": get_email_hash(email)
         }
     )
 
@@ -43,8 +54,8 @@ def log_password_reset_success(email: str):
         extra={
             "ip": get_client_ip(),
             "request_id": get_request_id(),
-            "email_hash": get_email_hash(email),
-            "ua": get_client_ua()
+            "ua": get_client_ua(),
+            "email_hash": get_email_hash(email)
         }
     )
 
@@ -54,8 +65,8 @@ def log_password_reset_fail(email: str, reason: str, attempts: int | None = None
         extra={
             "ip": get_client_ip(),
             "request_id": get_request_id(),
-            "email_hash": get_email_hash(email),
             "ua": get_client_ua,
+            "email_hash": get_email_hash(email),
             "reason": reason,
             "attempts": attempts
         }
@@ -67,7 +78,7 @@ def log_password_reset_locked(email: str):
         extra={
             "ip": get_client_ip(),
             "request_id": get_request_id(),
-            "email_hash": get_email_hash(email),
             "ua": get_client_ua,
+            "email_hash": get_email_hash(email)
         }
     )
