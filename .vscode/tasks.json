@@ -25,7 +25,7 @@
   {
     "label": "Server: Run (FastAPI)",
     "type": "shell",
-    "command": "conda run -n quidalert_env python main.py",
+    "command": "conda run -n quidalert_env python start.py",
     "options": { "cwd": "${workspaceFolder}/server/api_backend" },
     "problemMatcher": []
   }]

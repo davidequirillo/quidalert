@@ -50,31 +50,37 @@ conda activate quidalert_env
 
 Install Postgres DBMS and create database "quidalert_db".
 
-Copy ".env.example" to ".env" file and change environment variables (useful for development).
+Change default settings in config.py file.
 
-Change settings in config.py file. Obviously, for a real case use, set APP_MODE equal to "production".
+Copy ".env.example" to ".env" file and change the desired environment variables (useful for development).
+
+For security reasons, the following variables are omitted in config.py. Instead, They must be set as system/service environment variables (in production) or in .env file (in development):
+
+APP_MODE ("development" or "production")  
+ADMIN_PASS  
+OTP_PEPPER, EMAIL_PEPPER, JWT_SECRET_KEY
+
+See ".env.example" for additional info about those variables.
 
 Initialize alembic
 ```
 alembic init migrations
 ```
 
-Do all migrations (to build the entire database) using migration sources previously created from the models
+Do all migrations (to build the entire database) from existent migration sources using the following command:
 ```
 alembic upgrade head
 ```
 
-IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using the password you choose in api_backend "config.py" (see variable named ADMINPASS). Don't use the default password provided, for security.  
-In addition, always for security reasons, after you have registered the first admin user, immediately reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
+IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using your custom password you have placed in ADMIN_PASS environment variable.  
+After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
 
-NOTE: User registration requires a smtp server to send activation code to user email address. So, in a real production system, set correct smtp host and port in "config.py" file.  
+NOTE: User registration requires a smtp server to send activation code to user email address. So, in a real production system, set correct SMTP_HOST and SMTP_PORT in "config.py" file or as environment variables.  
 For local testing/development purposes, we can set a fake local smtp server (see .env file) which prints the mail on the screen, as the following:
 
 ```
 python -m aiosmtpd -n -l localhost:1025
 ```
-
-In config.py, change for security reasons EMAIL_PEPPER and OTP_PEPPER
 
 ### Debugging (run)
 
@@ -94,14 +100,15 @@ To run (debug) client and server, go to VS Code menu -> View -> Run.
 
 Obviously they can be executed together, in parallel, to test the entire system.
 
-### Production (run)
+### Notes about production (run)
 
 In the backend machine (behind nginx reverse proxy):
 
 ```
 uvicorn main:app --host 127.0.0.1 --port 8000 --no-access-log
 ```
-In nginx reverse proxy (to forward the request id to the backend framework):
+
+In nginx reverse proxy machine we do this, to forward the request id to the backend framework:
 
 ```
 map $http_x_request_id $req_id {

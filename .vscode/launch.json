@@ -6,7 +6,7 @@
     "type": "debugpy",
     "request": "launch",
     "cwd": "${workspaceFolder}/server/api_backend",
-    "program": "main.py",
+    "program": "start.py",
     "console": "integratedTerminal"
   },
   {

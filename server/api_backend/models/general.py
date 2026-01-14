@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum
 from pydantic import EmailStr, field_validator, model_validator
-from sqlmodel import SQLModel, Field, Column, DateTime
+from sqlmodel import SQLModel, Field
 
 class UserType(str, Enum):
     fireman = "fireman"
@@ -72,6 +72,12 @@ class UserOut(UserBase, table=False):
     last_reset_mail_code_at: Optional[datetime] = Field(default=None)
     last_reset_done_at: Optional[datetime] = Field(default=None)   
     last_reset_mail_confirmation_at: Optional[datetime] = Field(default=None)  
+    login_expires_at: Optional[datetime] = Field(default=None)
+    login_attempts: int = Field(default=0, nullable=False)
+    login_locked_until: Optional[datetime] = Field(default=None)
+    last_login_mail_code_at: Optional[datetime] = Field(default=None)
+    last_login_done_at: Optional[datetime] = Field(default=None)   
+    last_login_mail_confirmation_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False
     )
@@ -98,6 +104,7 @@ class User(UserOut, table=True):
     gps_lon: float | None = Field(default=None, nullable=True)
     activation_code: Optional[str] = Field(default=None)    
     reset_code_hash: Optional[str] = Field(default=None)
+    login_code_hash: Optional[str] = Field(default=None)
     
     @field_validator("gps_lat")
     @classmethod
@@ -128,14 +135,14 @@ class PasswordResetRequest(SQLModel):
 
 class PasswordResetConfirm(SQLModel):
     email: EmailStr = Field(min_length=3, max_length=128)
-    code: str = Field(min_length=8, max_length=8)
+    code: str = Field(min_length=10, max_length=10)
     new_password: str = Field(min_length=10, max_length=256)
 
     @field_validator("code")
     @classmethod
     def validate_code(cls, value: str) -> str:
-        if not re.fullmatch(r"\d{8}", value):
-            raise ValueError("Code must be a 8-digit number")
+        if not re.fullmatch(r"\d{10}", value):
+            raise ValueError(f"Code must be a 10-digit number")
         return value
 
     @field_validator("new_password")

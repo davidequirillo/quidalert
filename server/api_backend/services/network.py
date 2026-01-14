@@ -4,23 +4,23 @@
 
 import smtplib
 from email.message import EmailMessage
-from core.commons import AppSettings
+from core.settings import settings
 from services.localization import (langmap, 
     localize_activation_mail, localize_reset_code_mail, 
     localize_reset_successful_mail)
 
 def send_mail_message(data):
-    with smtplib.SMTP(AppSettings.smtp_host, AppSettings.smtp_port) as server:
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
         server.send_message(data)
 
 def send_activation_mail(email: str, token: str, lang: str):
-    prot = AppSettings.protocol
-    sname = AppSettings.server_name
-    sport = AppSettings.server_port
+    prot = settings.protocol
+    sname = settings.server_name
+    sport = settings.server_port
     act_url = f"{prot}://{sname}:{sport}/api/activate?email={email}&token={token}"
     msg = EmailMessage()
     msg["Subject"] = langmap[lang]["reg_subject"]
-    msg["From"] = AppSettings.smtp_from
+    msg["From"] = settings.smtp_from
     msg["To"] = email
     msg.set_content(localize_activation_mail(act_url, lang))     
     send_mail_message(msg)
@@ -28,7 +28,7 @@ def send_activation_mail(email: str, token: str, lang: str):
 def send_reset_code_mail(email: str, code: str, lang: str):
     msg = EmailMessage()
     msg["Subject"] = langmap[lang]["reset_code_subject"]
-    msg["From"] = AppSettings.smtp_from
+    msg["From"] = settings.smtp_from
     msg["To"] = email
     msg.set_content(localize_reset_code_mail(code, lang))     
     send_mail_message(msg)
@@ -36,7 +36,7 @@ def send_reset_code_mail(email: str, code: str, lang: str):
 def send_reset_successful_mail(email: str, lang: str):
     msg = EmailMessage()
     msg["Subject"] = langmap[lang]["reset_done_subject"]
-    msg["From"] = AppSettings.smtp_from
+    msg["From"] = settings.smtp_from
     msg["To"] = email
     msg.set_content(localize_reset_successful_mail(lang))     
     send_mail_message(msg)
