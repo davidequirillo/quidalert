@@ -206,7 +206,7 @@ class _ResetBodyState extends State<ResetBody> {
                         border: OutlineInputBorder(),
                       ),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      maxLength: 8,
+                      maxLength: 10,
                       validator: (value) {
                         return validateDigitCode(context, value);
                       },

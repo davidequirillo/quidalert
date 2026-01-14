@@ -5,27 +5,21 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# quidalert: custom import (os and our models module)
+# quidalert: custom import (os, our models, and settings)
 # quidalert note: we also write "import sqlmodel" in script.py.mako file
 import os
 from sqlmodel import SQLModel
 from models import general
-from config import APP_MODE, DB_URL
-
-# quidalert: load database settings from .env file
-from dotenv import load_dotenv
-load_dotenv()
+from core.settings import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# quidalert: set the database url from environment variable or from config.py
-db_mode = APP_MODE
-if (db_mode != "production"):
-    db_url = os.getenv("DB_URL")
-else:
-    db_url = DB_URL
+# quidalert: set the database url from app settings (from environment variables)
+app_mode = settings.app_mode
+db_url = settings.db_url
+
 config.set_main_option("sqlalchemy.url", f"{db_url}")
 
 # Interpret the config file for Python logging.

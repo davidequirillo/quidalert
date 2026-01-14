@@ -4,18 +4,17 @@
 
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
 from fastapi import (FastAPI, Depends, 
     Request, Response, HTTPException, status, BackgroundTasks)
 from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
 from sqlmodel import Session, select
 from fastapi.templating import Jinja2Templates
-import config
+from core.settings import settings
 from core.logging import setup_logging
-from core.commons import AppSettings
 from core.security_events import (
     log_password_reset_code_generation,
     log_password_reset_success,
@@ -28,36 +27,19 @@ from models.general import (UserBase, UserIn, User, UserOut, UserLanguage,
 from services.security import (get_password_hash, check_password_against_hash,  
     generate_activation_token, activation_expiry, now_tz_naive,
     generate_reset_code, reset_code_expiry, otp_hmac, otp_verify, get_email_hash, check_email_against_hash,
-    RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS)
+    RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS,
+    create_access_token, create_refresh_token, decode_token)
 from core.dbmgr import get_session, get_engine
 from services.network import send_activation_mail, send_reset_code_mail, send_reset_successful_mail
 
-api_dirname = os.path.dirname(__file__)
-
 def init_settings():
-    if config.APP_MODE != "production":
-        load_dotenv()
-        AppSettings.is_development = True
-        AppSettings.protocol = "http"
-        AppSettings.server_name = os.environ.get("HOST", default=AppSettings.server_name)
-        AppSettings.server_port = int(os.environ.get("PORT", default=AppSettings.server_port))
-        AppSettings.app_log_level = os.environ.get("APP_LOG_LEVEL", default=AppSettings.app_log_level)
-        AppSettings.db_url = os.environ.get("DB_URL", default=AppSettings.db_url)
-        AppSettings.db_engine_log = os.environ.get("DB_ENGINE_LOG", "False").lower() in ("true", "1", "yes")
-        AppSettings.smtp_host = os.environ.get("SMTP_HOST", default=AppSettings.smtp_host)
-        AppSettings.smtp_port = int(os.environ.get("SMTP_PORT", default=AppSettings.smtp_port))
-        AppSettings.smtp_from = os.environ.get("SMTP_FROM", default=AppSettings.smtp_from)
-        AppSettings.email_pepper = os.environ.get("EMAIL_PEPPER", default=AppSettings.email_pepper)
-        AppSettings.otp_pepper = os.environ.get("OTP_PEPPER", AppSettings.otp_pepper)
-    else:
-        pass # production settings are already in AppSettings from config.py
     setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up api framework...")
     init_settings()
-    app.state.db_engine = get_engine(AppSettings.db_url)
+    app.state.db_engine = get_engine(settings.db_url)
     yield
     print("Shutting down api framework...")
     app.state.db_engine.dispose()
@@ -65,12 +47,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-if (config.APP_MODE != "production"):
-    AppSettings.cors_allow_origins = ["*"]
-
 app.add_middleware(RequestContextMiddleware)
 app.add_middleware(CORSMiddleware,
-    allow_origins=AppSettings.cors_allow_origins, 
+    allow_origins=settings.cors_allow_origins, 
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"])
@@ -79,11 +58,33 @@ def get_db_session():
     engine = app.state.db_engine
     yield from get_session(engine)
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Bearer"})
+
+async def get_current_user(token: str = Depends(oauth2_scheme),
+                    db_session: Session = Depends(get_session)):
+    token_data = decode_token(token)
+    if token_data is None:
+        raise credentials_exception
+    email_hash: str = token_data.get("sub")
+    if email_hash is None:
+        raise credentials_exception
+        
+    statement = select(User).where(User.email_hash == email_hash)
+    user = db_session.exec(statement).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+api_dirname = os.path.dirname(__file__)
 templates = Jinja2Templates(directory=os.path.join(api_dirname, "templates"))
 
 @app.get("/api/terms")
 async def get_terms(request: Request, response: Response):
-    lang = request.headers.get('Accept-Language');
+    lang = request.headers.get('Accept-Language')
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
     response.headers["Content-Type"] = "text/markdown; charset=utf-8"
@@ -92,16 +93,34 @@ async def get_terms(request: Request, response: Response):
     if not os.path.exists(fpath):
         fpath += ".example"
     return FileResponse(fpath)
+ 
+@app.post("/api/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), 
+                session: Session = Depends(get_db_session)):
+    q = select(User).where(User.email == form_data.username)
+    user = session.exec(q).first()
+    if ((not user) or (not user.is_active) or 
+            (not check_password_against_hash(form_data.password, user.password_hash))):
+        raise credentials_exception
+    access_token = create_access_token(user.email_hash)
+    refresh_token = create_refresh_token(user.email_hash)
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
-# todo: login and admin privileges will be required
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-async def get_user(user_id: str, db_session: Session = Depends(get_db_session)):
+async def get_user(user_id: str, 
+                current_user: User = Depends(get_current_user),
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise credentials_exception
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
-# todo: login and admin privileges will be required
 @app.delete("/api/user/{user_id}")
-def delete_user(user_id: str, db_session: Session = Depends(get_db_session)):
+def delete_user(user_id: str, 
+                current_user: User = Depends(get_current_user), 
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise credentials_exception
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         db_session.delete(user)
@@ -109,9 +128,12 @@ def delete_user(user_id: str, db_session: Session = Depends(get_db_session)):
         return {"message": "User deleted"}
     return {"message": "User not found"}
 
-# todo: login and admin privileges will be required
 @app.put("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-def update_user(user_id: str, user_new: UserBase, db_session: Session = Depends(get_db_session)):
+def update_user(user_id: str, user_new: UserBase, 
+                current_user: User = Depends(get_current_user), 
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise credentials_exception
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         user.firstname = user_new.firstname
@@ -129,7 +151,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     is_an_admin = False
     # If database is empty and password is correct we insert the admin
     if db_session.exec(select(User).limit(1)).first() is None:
-        if (user_in.password == AppSettings.adminpass):
+        if (user_in.password == settings.admin_pass):
             is_an_admin = True
     else: # else we check the email address existence in a whitelist
         pass

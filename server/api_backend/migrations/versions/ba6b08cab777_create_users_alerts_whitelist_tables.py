@@ -1,8 +1,8 @@
-"""create initial tables: users, alerts, whitelist
+"""create users, alerts, whitelist tables
 
-Revision ID: 469c02c62f51
+Revision ID: ba6b08cab777
 Revises: 
-Create Date: 2026-01-12 01:22:19.549389
+Create Date: 2026-01-15 00:37:40.626536
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '469c02c62f51'
+revision: str = 'ba6b08cab777'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -40,6 +40,12 @@ def upgrade() -> None:
     sa.Column('last_reset_mail_code_at', sa.DateTime(), nullable=True),
     sa.Column('last_reset_done_at', sa.DateTime(), nullable=True),
     sa.Column('last_reset_mail_confirmation_at', sa.DateTime(), nullable=True),
+    sa.Column('login_expires_at', sa.DateTime(), nullable=True),
+    sa.Column('login_attempts', sa.Integer(), nullable=False),
+    sa.Column('login_locked_until', sa.DateTime(), nullable=True),
+    sa.Column('last_login_mail_code_at', sa.DateTime(), nullable=True),
+    sa.Column('last_login_done_at', sa.DateTime(), nullable=True),
+    sa.Column('last_login_mail_confirmation_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('email_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -47,6 +53,7 @@ def upgrade() -> None:
     sa.Column('gps_lon', sa.Float(), nullable=True),
     sa.Column('activation_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('reset_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('login_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)

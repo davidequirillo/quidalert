@@ -8,11 +8,10 @@ import os
 from dotenv import load_dotenv
 import uvicorn
 import api
-from config import APP_MODE
 
 app = api.app
 
-if (__name__ ==  "__main__") and (APP_MODE != "production"):
+if (__name__ ==  "__main__"):
     load_dotenv()
     
     h = os.environ["HOST"]

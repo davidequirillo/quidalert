@@ -89,7 +89,7 @@ String? validateEmail(BuildContext context, String? value) {
 String? validateDigitCode(
   BuildContext context,
   String? value, {
-  int min = 8,
+  int min = 10,
   int max = 32,
 }) {
   final l10n = AppLocalizations.of(context)!;
