@@ -72,12 +72,9 @@ class UserOut(UserBase, table=False):
     last_reset_mail_code_at: Optional[datetime] = Field(default=None)
     last_reset_done_at: Optional[datetime] = Field(default=None)   
     last_reset_mail_confirmation_at: Optional[datetime] = Field(default=None)  
-    login_expires_at: Optional[datetime] = Field(default=None)
     login_attempts: int = Field(default=0, nullable=False)
     login_locked_until: Optional[datetime] = Field(default=None)
-    last_login_mail_code_at: Optional[datetime] = Field(default=None)
     last_login_done_at: Optional[datetime] = Field(default=None)   
-    last_login_mail_confirmation_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False
     )
