@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     server_port: int = config.SERVER_PORT
     app_log_level: str = config.APP_LOG_LEVEL
     db_url: str = config.DB_URL
-    db_engine_enable_log: str = config.DB_ENGINE_LOG
-    db_engine_log: bool = False
+    db_engine_log_enabled: str = config.DB_ENGINE_LOG_ENABLED
+    db_engine_echo: bool = False
     cors_allow_origins: list = []
     smtp_host: str = config.SMTP_HOST
     smtp_port: int = config.SMTP_PORT
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
 try:
     settings = Settings()
-    settings.db_engine_log = settings.db_engine_enable_log.lower() in ("true", "1", "yes")
+    settings.db_engine_echo = settings.db_engine_log_enabled.lower() in ("true", "1", "yes")
     if (settings.app_mode != "production"):
         settings.cors_allow_origins = ["*"]
     else:

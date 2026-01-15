@@ -10,7 +10,7 @@ APP_LOG_LEVEL = 'error' # 'debug', 'error'
 
 # The database connection URL and db engine logging
 DB_URL = "postgresql://DB_USER:DB_PASS@DB_HOST:DB_PORT/quidalert_db"
-DB_ENGINE_LOG = "no"
+DB_ENGINE_LOG_ENABLED = "no"
 
 # Mail sender configuration
 SMTP_HOST = "mailserver" # to send activation mail messages to clients
