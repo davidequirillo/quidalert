@@ -32,7 +32,11 @@ class HomeBody extends StatefulWidget {
 class _HomeBodyState extends State<HomeBody> {
   Future<void> _refreshProfile() async {
     final authClient = context.read<AuthClient>();
-    await authClient.refresh();
+    try {
+      await authClient.refreshTokens();
+    } catch (e) {
+      // Ignore errors here, they will be handled in fetchProfile
+    }
     setState(() {
       // it triggers rebuild to fetch profile again});
     });
@@ -41,7 +45,9 @@ class _HomeBodyState extends State<HomeBody> {
   Future<Map<String, dynamic>> fetchProfile() async {
     final authClient = context.read<AuthClient>();
     try {
-      final response = await authClient.get('/user/profile');
+      final response = await authClient.get('/user/profile', {
+        'Content-Type': 'application/json',
+      });
       if (response.statusCode == 200) {
         // Success
       } else if (response.statusCode == 401) {
@@ -50,8 +56,12 @@ class _HomeBodyState extends State<HomeBody> {
         throw Exception('Bad request');
       }
       return json.decode(response.body);
+    } on InvalidTokenException {
+      throw Exception('Token expired or not valid');
+    } on ExpiredTokenException {
+      throw Exception('Token expired or not valid');
     } catch (e) {
-      throw Exception('Network error $e');
+      throw Exception('Network error: $e');
     }
   }
 
@@ -78,7 +88,7 @@ class _HomeBodyState extends State<HomeBody> {
             });
             return Text("Token expired or not valid");
           }
-          return Text(snapshot.error.toString());
+          return Text("Cannot fetch profile due to network error");
         }
         if (snapshot.hasData) {
           final data = snapshot.data!;
