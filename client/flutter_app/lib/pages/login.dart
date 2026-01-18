@@ -2,14 +2,12 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
-import 'package:quidalert_flutter/config.dart' as config;
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -51,16 +49,21 @@ class _LoginBodyState extends State<LoginBody> {
 
   void _doLogin(String email, String password) async {
     final loc = AppLocalizations.of(context)!;
+    final authClient = context.read<AuthClient>();
     String? loginError;
     String endMessage;
     String endTitle;
     final http.Response response;
     try {
-      final url = Uri.parse('${config.apiBaseUrl}/login');
-      response = await http.post(url, body: "");
+      response = await authClient.login(email, password);
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        debugPrint("HTTP ${response.statusCode}: ${response.body}");
-        loginError = jsonDecode(response.body)['detail'];
+        if (response.statusCode == 422) {
+          loginError = 'Invalid credentials';
+        } else if (response.statusCode == 401) {
+          loginError = 'Invalid credentials';
+        } else {
+          loginError = 'Unknown error';
+        }
       } else {
         loginError = null;
       }
@@ -82,18 +85,16 @@ class _LoginBodyState extends State<LoginBody> {
       endTitle = loc.successGeneric;
       endMessage = loc.successLogin;
     }
-    if (loginError != null) {
-      if (!mounted) return;
-      await showDialog(
-        context: context,
-        builder: (_) => GotoIfAlertDialog(
-          title: endTitle,
-          content: endMessage,
-          condition: (loginError == null),
-          route: "/request",
-        ),
-      );
-    }
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (_) => GotoIfAlertDialog(
+        title: endTitle,
+        content: endMessage,
+        condition: (loginError == null),
+        route: "/home",
+      ),
+    );
   }
 
   @override

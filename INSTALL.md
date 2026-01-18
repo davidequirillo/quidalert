@@ -58,7 +58,8 @@ For security reasons, the following variables are omitted in config.py. Instead,
 
 APP_MODE ("development" or "production")  
 ADMIN_PASS  
-OTP_PEPPER, EMAIL_PEPPER, JWT_SECRET_KEY
+OTP_PEPPER, EMAIL_PEPPER, GLOBAL_PEPPER
+JWT_SECRET_KEY
 
 See ".env.example" for additional info about those variables.
 

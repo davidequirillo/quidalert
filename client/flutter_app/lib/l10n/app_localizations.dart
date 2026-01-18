@@ -116,7 +116,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:
-  /// **'Error'**
+  /// **'Generic error'**
   String get errorGeneric;
 
   /// No description provided for @errorBadRequest.
@@ -250,6 +250,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Firstname'**
   String get labelFirstname;
+
+  /// No description provided for @labelLastRefreshAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Last refresh at'**
+  String get labelLastRefreshAt;
 
   /// No description provided for @labelNewPassword.
   ///

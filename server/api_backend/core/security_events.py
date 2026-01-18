@@ -2,10 +2,10 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-from fastapi import Request
-from core.logging import get_security_logger
 from middleware.request_ctx import request_id_ctx, client_ip_ctx, client_ua_ctx
+from core.logging import get_security_logger
 from services.security import get_email_hash
+
 logger = get_security_logger()
 
 def get_client_ip() -> str | None:
@@ -26,59 +26,70 @@ def get_client_ua() -> str | None:
     except LookupError:
         return None
 
-def log_delete_user_to_refresh_registration(email: str):
+def log_deleted_user_to_renew_registration(email: str):
     logger.info(
-        "delete_user_to_refresh_registration",
+        "deleted_user_to_renew_registration",
         extra={
-            "ip": get_client_ip(),
+            "client_ip": get_client_ip(),
             "request_id": get_request_id(),
-            "ua": get_client_ua(),
+            "user_agent": get_client_ua(),
             "email_hash": get_email_hash(email)
         }
     )
 
-def log_password_reset_code_generation(email: str):
+def log_password_reset_code_generation(user_id: str):
     logger.warning(
         "password_reset_code_generation",
         extra={
-            "ip": get_client_ip(),
+            "client_ip": get_client_ip(),
             "request_id": get_request_id(),
-            "ua": get_client_ua,
-            "email_hash": get_email_hash(email)
+            "user_agent": get_client_ua,
+            "user_id": user_id
         }
     )
 
-def log_password_reset_success(email: str):
+def log_password_reset_successful(user_id: str):
     logger.info(
-        "password_reset_confirm_success",
+        "password_reset_confirm_successful",
         extra={
-            "ip": get_client_ip(),
+            "client_ip": get_client_ip(),
             "request_id": get_request_id(),
-            "ua": get_client_ua(),
-            "email_hash": get_email_hash(email)
+            "user_agent": get_client_ua(),
+            "user_id": user_id
         }
     )
 
-def log_password_reset_fail(email: str, reason: str, attempts: int | None = None):
+def log_password_reset_failed(user_id: str, reason: str, attempts: int | None = None):
     logger.warning(
-        "password_reset_confirm_fail",
+        "password_reset_confirm_failed",
         extra={
-            "ip": get_client_ip(),
+            "client_ip": get_client_ip(),
             "request_id": get_request_id(),
-            "ua": get_client_ua,
-            "email_hash": get_email_hash(email),
+            "user_agent": get_client_ua,
+            "user_id": user_id,
             "reason": reason,
             "attempts": attempts
         }
     )
 
-def log_password_reset_locked(email: str):
+def log_password_reset_locked(user_id: str):
     logger.warning(
         "password_reset_locked",
         extra={
-            "ip": get_client_ip(),
+            "client_ip": get_client_ip(),
             "request_id": get_request_id(),
-            "ua": get_client_ua,
-            "email_hash": get_email_hash(email)
+            "user_agent": get_client_ua,
+            "user_id": user_id
+        }
+    )
+
+def log_login_successful(user_id: str):
+    logger.info(
+        "login_successful",
+        extra={
+            "client_ip": get_client_ip(),
+            "request_id": get_request_id(),
+            "user_agent": get_client_ua(),
+            "user_id": user_id
         }
     )

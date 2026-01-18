@@ -6,8 +6,10 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum
-from pydantic import EmailStr, field_validator, model_validator
+import uuid as uuid_pkg
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 from sqlmodel import SQLModel, Field
+from services.security import now_tz_naive
 
 class UserType(str, Enum):
     fireman = "fireman"
@@ -59,7 +61,11 @@ class UserIn(UserBase, table=False):
         return s
 
 class UserOut(UserBase, table=False):
-    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
+    id: uuid_pkg.UUID = Field(
+        default_factory=uuid_pkg.uuid4,
+        primary_key=True,
+        nullable=False
+    )
     is_admin: bool = Field(default=False, nullable=False)
     is_official: bool = Field(default=False, nullable=True)
     type: str = Field(default=UserType.citizen, nullable=False)
@@ -70,13 +76,15 @@ class UserOut(UserBase, table=False):
     reset_attempts: int = Field(default=0, nullable=False)
     reset_locked_until: Optional[datetime] = Field(default=None)
     last_reset_mail_code_at: Optional[datetime] = Field(default=None)
-    last_reset_done_at: Optional[datetime] = Field(default=None)   
+    last_reset_done_at: datetime = Field(
+        default_factory=lambda: now_tz_naive(), nullable=False   
+    )
     last_reset_mail_confirmation_at: Optional[datetime] = Field(default=None)  
-    login_attempts: int = Field(default=0, nullable=False)
-    login_locked_until: Optional[datetime] = Field(default=None)
     last_login_done_at: Optional[datetime] = Field(default=None)   
+    last_login_mail_confirmation_at: Optional[datetime] = Field(default=None)
+    last_refresh_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False
+        default_factory=lambda: now_tz_naive(), nullable=False
     )
 
     @field_validator("type")
@@ -95,13 +103,13 @@ class UserOut(UserBase, table=False):
         
 class User(UserOut, table=True):
     __tablename__: str = 'users'
+    # todo: insert foreign key to whitelist table
     email_hash: str = Field(index=True, unique=True, nullable=False)
     password_hash: str = Field(nullable=False)
     gps_lat: float | None = Field(default=None, nullable=True)
     gps_lon: float | None = Field(default=None, nullable=True)
     activation_code: Optional[str] = Field(default=None)    
     reset_code_hash: Optional[str] = Field(default=None)
-    login_code_hash: Optional[str] = Field(default=None)
     
     @field_validator("gps_lat")
     @classmethod
@@ -127,10 +135,10 @@ class User(UserOut, table=True):
             raise ValueError("Latitude and Longitude must have either a value or be None")
         return self
 
-class PasswordResetRequest(SQLModel):
+class PasswordResetRequest(BaseModel):
     email: EmailStr
 
-class PasswordResetConfirm(SQLModel):
+class PasswordResetConfirm(BaseModel):
     email: EmailStr = Field(min_length=3, max_length=128)
     code: str = Field(min_length=10, max_length=10)
     new_password: str = Field(min_length=10, max_length=256)
@@ -155,13 +163,38 @@ class PasswordResetConfirm(SQLModel):
             raise ValueError("Password must contain a special character")
         return s    
 
+class RefreshToken(SQLModel, table=True):
+    __tablename__: str = 'refresh_tokens'
+    
+    id: uuid_pkg.UUID = Field(
+        default_factory=uuid_pkg.uuid4,
+        primary_key=True,
+        nullable=False
+    )
+    user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+    raw_hash: str = Field(nullable=False) # a random token hash    
+    ip_address: Optional[str] = Field(default=None)
+    device_info: Optional[str] = Field(default=None)
+    updated_at: datetime = Field(
+        default_factory=lambda: now_tz_naive()
+    )
+    is_revoked: bool = Field(default=False)
+
+class LoginSchema(BaseModel):
+    email: EmailStr
+    password: str
+    device_model: Optional[str] = None
+
+class RefreshTokenWrapper(BaseModel):
+    refresh_token: str
+
 class Alert(SQLModel, table=True):
     __tablename__: str = "alerts"
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    user_id: int = Field(foreign_key="users.id", nullable=False)
+    user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
     description: str = Field(default="", nullable=False, min_length=0, max_length=256)
     severity: Optional[int] = Field(default=0, nullable=False)
-    created_at: datetime = Field(default_factory=lambda:datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
     @field_validator("severity")
@@ -179,6 +212,7 @@ class WhiteRecordIn(SQLModel, table=False):
     email: EmailStr = Field(index=True, nullable=False, unique=True, min_length=3, max_length=128)
     type: str = Field(default=UserType.citizen, nullable=False) 
     created_at: datetime = Field(default_factory=lambda:datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
+    # todo: probably address, phone etc.
 
     @field_validator("type")
     @classmethod
@@ -190,4 +224,3 @@ class WhiteRecordIn(SQLModel, table=False):
 class WhiteRecord(WhiteRecordIn, table=True):
     __tablename__: str = 'whitelist'
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    registrant_id: int = Field(foreign_key="users.id", nullable=False)

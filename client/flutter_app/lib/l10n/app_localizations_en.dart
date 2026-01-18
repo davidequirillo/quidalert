@@ -18,7 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonReject => 'Reject';
 
   @override
-  String get errorGeneric => 'Error';
+  String get errorGeneric => 'Generic error';
 
   @override
   String get errorBadRequest => 'Bad request';
@@ -85,6 +85,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelFirstname => 'Firstname';
+
+  @override
+  String get labelLastRefreshAt => 'Last refresh at';
 
   @override
   String get labelNewPassword => 'New password';

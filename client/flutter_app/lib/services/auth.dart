@@ -4,10 +4,25 @@
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quidalert_flutter/config.dart' as config;
+
+class ExpiredTokenException implements Exception {
+  final String message;
+  ExpiredTokenException([this.message = 'Token has expired']);
+  @override
+  String toString() => 'ExpiredTokenException: $message';
+}
+
+class InvalidTokenException implements Exception {
+  final String message;
+  InvalidTokenException([this.message = 'Token is not valid']);
+  @override
+  String toString() => 'InvalidTokenException: $message';
+}
 
 class AuthClient extends ChangeNotifier {
   final String baseUrl = config.apiBaseUrl;
@@ -26,8 +41,16 @@ class AuthClient extends ChangeNotifier {
 
   Future<void> _init() async {
     await loadRefreshToken(); // load local refresh token
-    await getRefreshToken(); // get new refresh token
-    await getAccessToken(); // get access token
+    try {
+      await refreshTokens(); // get new auth tokens if needed
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error during AuthClient init: $e');
+      }
+      refreshToken = null;
+      accessToken = null;
+    }
+    await refreshTokens(); // get new auth tokens if needed
     initDone = true;
     notifyListeners();
   }
@@ -62,28 +85,68 @@ class AuthClient extends ChangeNotifier {
     return DateTime.now().toUtc().isAfter(expiry);
   }
 
-  Future<void> getRefreshToken() async {
-    // Get a new refresh token (api/auth/refresh), using current refresh token as input
-    if (refreshToken == null) return;
+  Future<void> refreshTokens() async {
+    // Get new refresh and access tokens (api/auth/refresh),
+    // using current refresh token as api input
+    if (refreshToken == null) {
+      accessToken = null;
+      return;
+    }
     if (_isTokenExpired(refreshToken!)) {
       if (kDebugMode) {
         debugPrint('Refresh token expired');
       }
       await deleteRefreshToken();
       refreshToken = null;
-      return;
+      accessToken = null;
+      throw ExpiredTokenException();
     }
-    refreshToken = null; // from api result
-    if (refreshToken != null) {
-      await _secureStorage.write(key: 'refreshToken', value: refreshToken);
+    final uri = Uri.parse('$baseUrl/auth/refresh');
+    try {
+      final resp = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({'refresh_token': refreshToken}),
+      );
+      if (resp.statusCode < 200 || resp.statusCode >= 300) {
+        await deleteRefreshToken();
+        refreshToken = null;
+        accessToken = null;
+        if (_isTokenNotValidResponse(resp)) {
+          if (kDebugMode) {
+            debugPrint('Refresh token not valid');
+          }
+          throw InvalidTokenException();
+        } else if (_isTokenExpiredResponse(resp)) {
+          if (kDebugMode) {
+            debugPrint('Refresh token expired');
+          }
+          throw ExpiredTokenException();
+        } else {
+          if (kDebugMode) {
+            debugPrint(
+              "Cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
+            );
+          }
+          throw Exception('Cannot refresh tokens');
+        }
+      }
+      final response = jsonDecode(resp.body);
       if (kDebugMode) {
-        debugPrint('Refresh token refreshed');
+        debugPrint('Tokens refreshed successfully');
+      }
+      String? rToken = response['refresh_token'];
+      String? aToken = response['access_token'];
+      setTokens(rToken, aToken);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Refresh tokens, network error: cannot refresh tokens: $e');
       }
     }
   }
 
   Future<void> setTokens(String? rtok, String? atok) async {
-    // Set refresh token and access token (from login success)
+    // Set refresh token and access token (from login, or refresh api)
     refreshToken = rtok;
     accessToken = atok;
     if (refreshToken != null) {
@@ -93,72 +156,69 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
-  Future<void> getAccessToken() async {
-    // Get a new access token (api/auth/access), using refresh token as input
-    if ((refreshToken == null) || (_isTokenExpired(refreshToken!))) {
-      if (refreshToken != null) {
-        if (kDebugMode) {
-          debugPrint('Error: cannot get access token (refresh token expired)');
-        }
-        await deleteRefreshToken();
-        refreshToken = null;
-      }
-      accessToken = null;
-    } else {
-      final aToken = null; // from api result
-      accessToken = aToken;
-      if (kDebugMode) {
-        debugPrint('Access token refreshed');
-      }
-    }
-  }
-
   bool isLoggedIn() {
-    return (refreshToken != null) && (!_isTokenExpired(refreshToken!));
+    return (refreshToken != null) &&
+        (!_isTokenExpired(refreshToken!)) &&
+        (accessToken != null);
   }
 
   Future<http.Response> get(String relPath) async {
+    Map<String, String> headers = {'Content-Type': 'application/json'};
+    final merged = {
+      ..._authHeaders(),
+      ...headers,
+    }; // or if (headers != null) ...headers}
     final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.get(uri, headers: _authHeaders());
-    if (_isAccessTokenExpiredResponse(resp)) {
-      await getAccessToken();
-      if (accessToken == null) {
-        throw Exception('Error: cannot refresh access token');
+    final resp = await http.get(uri, headers: merged);
+    if (kDebugMode) {
+      debugPrint('GET (auth), access token used: $accessToken');
+    }
+    if (_isTokenExpiredResponse(resp)) {
+      await refresh();
+      final newMerged = {..._authHeaders(), ...headers};
+      if (kDebugMode) {
+        debugPrint('GET (auth), access token used: $accessToken');
       }
-      final retryResp = await http.get(uri, headers: _authHeaders());
+      final retryResp = await http.get(uri, headers: newMerged);
+      if (kDebugMode) {
+        debugPrint("GET (auth), ${jsonDecode(resp.body)}");
+      }
       return retryResp;
+    }
+    if (kDebugMode) {
+      debugPrint("GET (auth), ${jsonDecode(resp.body)}");
     }
     return resp;
   }
 
   Future<http.Response> delete(String relPath) async {
+    Map<String, String> headers = {'Content-Type': 'application/json'};
+    final merged = {..._authHeaders(), ...headers};
     final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.delete(uri, headers: _authHeaders());
-    if (_isAccessTokenExpiredResponse(resp)) {
-      await getAccessToken();
-      if (accessToken == null) {
-        throw Exception('Error: cannot refresh access token');
-      }
-      final retryResp = await http.delete(uri, headers: _authHeaders());
+    final resp = await http.delete(uri, headers: merged);
+    if (_isTokenExpiredResponse(resp)) {
+      await refresh();
+      final newMerged = {..._authHeaders(), ...headers};
+      final retryResp = await http.get(uri, headers: newMerged);
       return retryResp;
     }
     return resp;
   }
 
   Future<http.Response> put(
+    BuildContext context,
     String relPath, {
     Map<String, String>? headers,
     Object? body,
   }) async {
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
+    Map<String, String> headers = {'Content-Type': 'application/json'};
+    final merged = {..._authHeaders(), ...headers};
     final uri = Uri.parse('$baseUrl$relPath');
     final resp = await http.put(uri, headers: merged, body: body);
-    if (_isAccessTokenExpiredResponse(resp)) {
-      await getAccessToken();
-      if (accessToken == null) {
-        throw Exception('Error: cannot refresh access token');
-      }
-      final retryResp = await http.put(uri, headers: merged, body: body);
+    if (_isTokenExpiredResponse(resp)) {
+      await refresh();
+      final newMerged = {..._authHeaders(), ...headers};
+      final retryResp = await http.put(uri, headers: newMerged, body: body);
       return retryResp;
     }
     return resp;
@@ -169,49 +229,101 @@ class AuthClient extends ChangeNotifier {
     Map<String, String>? headers,
     Object? body,
   }) async {
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
+    Map<String, String> headers = {'Content-Type': 'application/json'};
+    final merged = {..._authHeaders(), ...headers};
     final uri = Uri.parse('$baseUrl$relPath');
     final resp = await http.post(uri, headers: merged, body: body);
-    if (_isAccessTokenExpiredResponse(resp)) {
-      await getAccessToken();
-      if (accessToken == null) {
-        throw Exception('Error: cannot refresh access token');
-      }
-      final retryResp = await http.post(uri, headers: merged, body: body);
+    if (_isTokenExpiredResponse(resp)) {
+      await refresh();
+      final newMerged = {..._authHeaders(), ...headers};
+      final retryResp = await http.post(uri, headers: newMerged, body: body);
       return retryResp;
     }
     return resp;
   }
 
   Map<String, String> _authHeaders() =>
-      accessToken == null ? {} : {'Authorization': 'Bearer $accessToken'};
+      (accessToken == null) ? {} : {'Authorization': 'Bearer $accessToken'};
 
-  bool _isAccessTokenExpiredResponse(http.Response resp) {
+  bool _isTokenExpiredResponse(http.Response resp) {
     if (resp.statusCode != 401) return false;
     try {
       final data = jsonDecode(resp.body);
-      return data['error'] == 'access_token_expired';
+      return (data['detail'] == 'Token expired');
     } catch (_) {
       return false;
     }
   }
 
-  Future<http.Response> login() async {
-    const relPath = "/api/login";
-    final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.get(uri);
-    if (resp.body == "") {
-      String? rtoken = null;
-      String? atoken = null;
-      setTokens(rtoken, atoken);
+  bool _isTokenNotValidResponse(http.Response resp) {
+    if (resp.statusCode != 401) return false;
+    try {
+      final data = jsonDecode(resp.body);
+      return (data['detail'] == 'Token not valid');
+    } catch (_) {
+      return false;
     }
+  }
+
+  Future<http.Response> login(String email, String password) async {
+    const relPath = "/auth/login";
+    final uri = Uri.parse('$baseUrl$relPath');
+    final resp = await http.post(
+      uri,
+      body: json.encode({'email': email, 'password': password}),
+      headers: {"Content-Type": "application/json"},
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      if (kDebugMode) {
+        debugPrint("Login, HTTP ${resp.statusCode}: ${resp.body}");
+      }
+      return resp;
+    }
+    final data = jsonDecode(resp.body);
+    String? rtoken = data['refresh_token'];
+    String? atoken = data['access_token'];
+    if (kDebugMode) {
+      debugPrint('Login successful');
+    }
+    setTokens(rtoken, atoken);
     return resp;
   }
 
   Future<http.Response> logout() async {
-    const relPath = "/api/logout";
+    const relPath = "/auth/revoke";
     final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.get(uri);
+    final resp = await http.post(
+      uri,
+      body: json.encode({'refresh_token': refreshToken}),
+      headers: {"Content-Type": "application/json"},
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      if (kDebugMode) {
+        debugPrint("Logout, HTTP ${resp.statusCode}: ${resp.body}");
+      }
+      return resp;
+    }
+    setTokens(null, null);
     return resp;
+  }
+
+  Future<void> refresh() async {
+    try {
+      await refreshTokens();
+    } on ExpiredTokenException catch (_) {
+      if (kDebugMode) {
+        debugPrint('Refresh, refresh token expired, redirecting to login page');
+      }
+    } on InvalidTokenException catch (_) {
+      if (kDebugMode) {
+        debugPrint(
+          'Refresh, refresh token not valid, redirecting to login page',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Refresh, error refreshing tokens: $e');
+      }
+    }
   }
 }

@@ -5,17 +5,19 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import jwt
-from jwt.exceptions import InvalidTokenError
 import bcrypt
 import secrets
-import hashlib
 import hashlib
 import hmac
 from core.settings import settings
 
 def now_tz_naive():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
-    
+    return datetime.now(timezone.utc).replace(tzinfo=None, microsecond=0)
+
+def from_timestamp_to_datetime_tz_naive(timestamp: int) -> datetime:
+    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    return dt.replace(tzinfo=None, microsecond=0)
+
 def ensure_tz_aware(dt: datetime) -> datetime:
     if dt is None:
         raise Exception("datetime is None")
@@ -35,17 +37,29 @@ def check_password_against_hash(plain_password, hashed_password):
         bytes(hashed_password, encoding="utf-8"),
     )
 
+RANDOM_TOKEN_BYTES = 32
 ACTIVATION_TOKEN_BYTES = 32
 ACTIVATION_TOKEN_TTL_HOURS = 24
 RESET_CODE_TTL_MINUTES = 10
 RESET_LOCK_HOURS = 24
 MAIL_COOLDOWN_SECONDS = 180
 
+def generate_random_token() -> str:
+    return secrets.token_urlsafe(RANDOM_TOKEN_BYTES)
+
+def get_token_hash(token): 
+    bytes_str = (settings.global_pepper + token).encode("utf-8")
+    return hashlib.sha256(bytes_str).hexdigest()
+
+def check_token_against_hash(token: str, expected_hash_hex: str) -> bool:
+    computed = get_token_hash(token)
+    return hmac.compare_digest(computed, expected_hash_hex)
+
 def generate_activation_token() -> str:
     return secrets.token_urlsafe(ACTIVATION_TOKEN_BYTES)
 
 def activation_expiry() -> datetime:
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = now_tz_naive()
     return now + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
 
 def generate_reset_code() -> str:
@@ -53,7 +67,7 @@ def generate_reset_code() -> str:
     return str(secrets.randbelow(10**10)).zfill(10)
 
 def reset_code_expiry() -> datetime:
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = now_tz_naive()
     return now + timedelta(minutes=RESET_CODE_TTL_MINUTES)
 
 def get_email_hash(email: str) -> str:
@@ -76,27 +90,39 @@ def otp_hmac(code: str) -> str:
 def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
-ACCESS_TOKEN_TTL_MINUTES = 60
+ACCESS_TOKEN_TTL_MINUTES = 10
 REFRESH_TOKEN_TTL_DAYS = 180
+MAX_ACTIVE_REFRESH_TOKENS = 6
 JWT_ALGORITHM = "HS256"
 
-def create_access_token(subject, expires_delta: Optional[timedelta] = None):
-    expire = now_tz_naive() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
+def create_access_token(subject: str, expires_delta: Optional[timedelta] = None):
+    now = now_tz_naive()
+    expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
+        "type": "access",
+        "iat": now,
         "exp": expire
     }
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
 
-def create_refresh_token(sub):
-    rtoken = create_access_token(sub, expires_delta=timedelta(days=REFRESH_TOKEN_TTL_DAYS))
-    return rtoken
+def create_refresh_token(subject: str, token_id: str, raw_code: str, created_at: Optional[datetime], expires_delta: Optional[timedelta] = None):
+    if created_at is None:
+        created_at = now_tz_naive()
+    expire = created_at + (expires_delta or timedelta(days=REFRESH_TOKEN_TTL_DAYS))
+    data = {
+        "sub": subject,
+        "type": "refresh",
+        "jti": token_id,
+        "raw": raw_code,
+        "iat": created_at,
+        "exp": expire
+    }
+    token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
+    return token
 
 def decode_token(token):
-    try:
-        data = jwt.decode(token, settings.jwt_secret_key, 
-                algorithms=[JWT_ALGORITHM])
-        return data
-    except InvalidTokenError:
-        return None
+    data = jwt.decode(token, settings.jwt_secret_key, 
+        algorithms=[JWT_ALGORITHM])
+    return data

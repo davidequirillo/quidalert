@@ -6,7 +6,7 @@
 
 SERVER_NAME = "myservername" # the server name (publicly accessible, for example the reverse proxy)
 SERVER_PORT = 8080 # the server port (publicly accessible) 
-APP_LOG_LEVEL = 'error' # 'debug', 'error'
+APP_LOG_LEVEL = 'warning' # 'info', 'warning'
 
 # The database connection URL and db engine logging
 DB_URL = "postgresql://DB_USER:DB_PASS@DB_HOST:DB_PORT/quidalert_db"
@@ -18,5 +18,5 @@ SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
 
 # A note about security configurations:
-# variables APP_MODE, ADMIN_PASS, OTP_PEPPER, EMAIL_PEPPER, JWT_SECRET_KEY
-# must be set as system environment variables (for production) or in .env file (for development)
+# variables APP_MODE, ADMIN_PASS, OTP_PEPPER, EMAIL_PEPPER, GLOBAL_PEPPER, JWT_SECRET_KEY
+# must be set as system environment variables (for production) or in ".env" file (for development)

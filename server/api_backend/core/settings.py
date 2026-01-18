@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     admin_pass: str = "" # from environment (system or .env)
     email_pepper: str = "" # from environment (system or .env)
     otp_pepper: str = "" # from environment (system or .env)
+    global_pepper: str = "" # from environment (system or .env)
     jwt_secret_key: str = "" # from environment (system or .env)
     app_mode: str = "production"
     protocol: str = "https"
@@ -52,6 +53,10 @@ if (not settings.otp_pepper) or (settings.otp_pepper==""):
 
 if (not settings.email_pepper) or (settings.email_pepper==""):
     print(f"Configuration error: environment var EMAIL_PEPPER not found")
+    raise SystemExit(1)
+
+if (not settings.global_pepper) or (settings.global_pepper==""):
+    print(f"Configuration error: environment var GLOBAL_PEPPER not found")
     raise SystemExit(1)
 
 if (not settings.jwt_secret_key) or (settings.jwt_secret_key==""):
