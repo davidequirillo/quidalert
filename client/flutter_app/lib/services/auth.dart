@@ -186,7 +186,7 @@ class AuthClient extends ChangeNotifier {
       debugPrint('GET (auth), access token used: $accessToken');
     }
     if (_isTokenExpiredResponse(resp)) {
-      await refresh();
+      await refreshTokens();
       final newMerged = {..._authHeaders(), if (headers != null) ...headers};
       if (kDebugMode) {
         debugPrint('GET (auth), access token used: $accessToken');
@@ -211,7 +211,7 @@ class AuthClient extends ChangeNotifier {
     final uri = Uri.parse('$baseUrl$relPath');
     final resp = await http.delete(uri, headers: merged);
     if (_isTokenExpiredResponse(resp)) {
-      await refresh();
+      await refreshTokens();
       final newMerged = {..._authHeaders(), if (headers != null) ...headers};
       final retryResp = await http.get(uri, headers: newMerged);
       return retryResp;
@@ -229,7 +229,7 @@ class AuthClient extends ChangeNotifier {
     final uri = Uri.parse('$baseUrl$relPath');
     final resp = await http.put(uri, headers: merged, body: body);
     if (_isTokenExpiredResponse(resp)) {
-      await refresh();
+      await refreshTokens();
       final newMerged = {..._authHeaders(), if (headers != null) ...headers};
       final retryResp = await http.put(uri, headers: newMerged, body: body);
       return retryResp;
@@ -246,7 +246,7 @@ class AuthClient extends ChangeNotifier {
     final uri = Uri.parse('$baseUrl$relPath');
     final resp = await http.post(uri, headers: merged, body: body);
     if (_isTokenExpiredResponse(resp)) {
-      await refresh();
+      await refreshTokens();
       final newMerged = {..._authHeaders(), if (headers != null) ...headers};
       final retryResp = await http.post(uri, headers: newMerged, body: body);
       return retryResp;
