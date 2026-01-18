@@ -257,6 +257,12 @@ abstract class AppLocalizations {
   /// **'Last refresh at'**
   String get labelLastRefreshAt;
 
+  /// No description provided for @labelNewAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'New alert'**
+  String get labelNewAlert;
+
   /// No description provided for @labelNewPassword.
   ///
   /// In en, this message translates to:
@@ -268,6 +274,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Forgot password?'**
   String get labelPasswordForgotten;
+
+  /// No description provided for @labelRecents.
+  ///
+  /// In en, this message translates to:
+  /// **'Recents'**
+  String get labelRecents;
 
   /// No description provided for @labelRegistration.
   ///
@@ -328,6 +340,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Login successful'**
   String get successLogin;
+
+  /// No description provided for @successLoginAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of logging in)'**
+  String get successLoginAdvice;
 
   /// No description provided for @successRegistration.
   ///

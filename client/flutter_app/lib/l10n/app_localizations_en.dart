@@ -90,10 +90,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelLastRefreshAt => 'Last refresh at';
 
   @override
+  String get labelNewAlert => 'New alert';
+
+  @override
   String get labelNewPassword => 'New password';
 
   @override
   String get labelPasswordForgotten => 'Forgot password?';
+
+  @override
+  String get labelRecents => 'Recents';
 
   @override
   String get labelRegistration => 'Registration';
@@ -124,6 +130,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successLogin => 'Login successful';
+
+  @override
+  String get successLoginAdvice => 'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of logging in)';
 
   @override
   String get successRegistration => 'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority';
