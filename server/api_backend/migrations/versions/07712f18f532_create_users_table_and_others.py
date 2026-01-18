@@ -1,8 +1,8 @@
-"""create users, alerts, whitelist tables
+"""create users table and others
 
-Revision ID: ba6b08cab777
+Revision ID: 07712f18f532
 Revises: 
-Create Date: 2026-01-15 00:37:40.626536
+Create Date: 2026-01-17 11:37:21.771085
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'ba6b08cab777'
+revision: str = '07712f18f532'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('surname', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('language', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('is_official', sa.Boolean(), nullable=True),
     sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -38,14 +38,11 @@ def upgrade() -> None:
     sa.Column('reset_attempts', sa.Integer(), nullable=False),
     sa.Column('reset_locked_until', sa.DateTime(), nullable=True),
     sa.Column('last_reset_mail_code_at', sa.DateTime(), nullable=True),
-    sa.Column('last_reset_done_at', sa.DateTime(), nullable=True),
+    sa.Column('last_reset_done_at', sa.DateTime(), nullable=False),
     sa.Column('last_reset_mail_confirmation_at', sa.DateTime(), nullable=True),
-    sa.Column('login_expires_at', sa.DateTime(), nullable=True),
-    sa.Column('login_attempts', sa.Integer(), nullable=False),
-    sa.Column('login_locked_until', sa.DateTime(), nullable=True),
-    sa.Column('last_login_mail_code_at', sa.DateTime(), nullable=True),
     sa.Column('last_login_done_at', sa.DateTime(), nullable=True),
     sa.Column('last_login_mail_confirmation_at', sa.DateTime(), nullable=True),
+    sa.Column('last_refresh_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('email_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -53,21 +50,10 @@ def upgrade() -> None:
     sa.Column('gps_lon', sa.Float(), nullable=True),
     sa.Column('activation_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('reset_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('login_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_email_hash'), 'users', ['email_hash'], unique=True)
-    op.create_table('alerts',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=False),
-    sa.Column('severity', sa.Integer(), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('is_closed', sa.Boolean(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
     op.create_table('whitelist',
     sa.Column('firstname', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
     sa.Column('surname', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
@@ -75,20 +61,44 @@ def upgrade() -> None:
     sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('registrant_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['registrant_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_whitelist_email'), 'whitelist', ['email'], unique=True)
+    op.create_table('alerts',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=False),
+    sa.Column('severity', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('is_closed', sa.Boolean(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_alerts_user_id'), 'alerts', ['user_id'], unique=False)
+    op.create_table('refresh_tokens',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('raw_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('ip_address', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('device_info', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
+    sa.Column('is_revoked', sa.Boolean(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_refresh_tokens_user_id'), 'refresh_tokens', ['user_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_refresh_tokens_user_id'), table_name='refresh_tokens')
+    op.drop_table('refresh_tokens')
+    op.drop_index(op.f('ix_alerts_user_id'), table_name='alerts')
+    op.drop_table('alerts')
     op.drop_index(op.f('ix_whitelist_email'), table_name='whitelist')
     op.drop_table('whitelist')
-    op.drop_table('alerts')
     op.drop_index(op.f('ix_users_email_hash'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

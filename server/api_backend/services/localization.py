@@ -14,6 +14,7 @@ langmap = {
         "act_not_valid": "Activation code not valid",
         "act_done_title": "Activation done successfully",
         "act_done": "Activation done successfully. Now you can login using the app",
+        "login_successful_subject": "Successful login notification",
         "mail_ignore": "If you have received this message for an error, please ignore it",
         "reg_subject": "Activate your account",
         "reset_code_subject": "Password reset verification code",
@@ -27,6 +28,7 @@ langmap = {
         "act_not_valid": "Codice di attivazione non valido",
         "act_done_title": "Attivazione completata con successo",
         "act_done": "Attivazione completata con successo. Ora puoi fare l'accesso (login) mediante app",
+        "login_successful_subject": "Notifica di accesso (login) effettuato con successo",
         "mail_ignore": "Se hai ricevuto questo messaggio per errore, ignoralo",
         "reg_subject": "Attiva il tuo account",
         "reset_code_subject": "Codice di verifica del reset password",
@@ -86,7 +88,7 @@ def localize_reset_successful_mail(lang: str):
 
 hai modificato la password con successo.
 
-Se non sei stato tu, si raccomanda di effettuare subito un nuovo reset della password (nell'app, schermata di login, password dimenticata).
+Se non sei stato tu, si raccomanda di effettuare al più presto un nuovo reset della password (nell'app, schermata di login, "password dimenticata").
 
 Se il problema persiste, contattare l'autorità territoriale competente.
 """
@@ -95,9 +97,29 @@ Se il problema persiste, contattare l'autorità territoriale competente.
         
 you have changed your password successfully.
 
-If it wasn't you, we recommend to do a new password reset immediately (in the app, login page, forgot password).
+If it wasn't you, we recommend to do a new password reset immediately (in the app, login page, "forgot password").
 
 If the problem persists, please contact the competent territorial authority
+"""
+    
+def localize_login_successful_mail(lang: str):
+    if (lang == UserLanguage.it):
+        return f"""Ciao,
+
+hai effettuato l'accesso (login) con successo.
+
+Se non sei stato tu, si raccomanda di modificare al più presto la password (nell'app, schermata di login, "password dimenticata").
+
+Se il problema persiste, contattare l'autorità territoriale competente.
+"""
+    else: 
+        return f"""Hello,
+
+you have logged in successfully.
+
+If it wasn't you, we recommend to change your password immediately (in the app, login page, "forgot password").
+
+If the problem persists, please contact the competent territorial authority.
 """
 
 def localize_empty_string(): # I'm including this for visual convenience.

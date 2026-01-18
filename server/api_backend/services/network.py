@@ -7,7 +7,9 @@ from email.message import EmailMessage
 from core.settings import settings
 from services.localization import (langmap, 
     localize_activation_mail, localize_reset_code_mail, 
-    localize_reset_successful_mail)
+    localize_reset_successful_mail, 
+    localize_login_successful_mail
+    )
 
 def send_mail_message(data):
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
@@ -39,4 +41,12 @@ def send_reset_successful_mail(email: str, lang: str):
     msg["From"] = settings.smtp_from
     msg["To"] = email
     msg.set_content(localize_reset_successful_mail(lang))     
+    send_mail_message(msg)
+
+def send_login_successful_mail(email: str, lang: str):
+    msg = EmailMessage()
+    msg["Subject"] = langmap[lang]["login_successful_subject"]
+    msg["From"] = settings.smtp_from
+    msg["To"] = email
+    msg.set_content(localize_login_successful_mail(lang))
     send_mail_message(msg)

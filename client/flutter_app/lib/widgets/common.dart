@@ -60,8 +60,9 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.logout),
               title: Text('Logout'),
               onTap: () {
-                // authClient.logout()
+                authClient.logout();
                 Navigator.of(context).pop();
+                Navigator.pushReplacementNamed(context, '/login');
               },
             ),
 
@@ -69,7 +70,7 @@ class CAppDrawer extends StatelessWidget {
 
           if (true)
             ListTile(
-              leading: Icon(Icons.home),
+              leading: Icon(Icons.info),
               title: Text("Info"),
               onTap: () {
                 Navigator.pushReplacementNamed(context, '/info');
@@ -77,18 +78,10 @@ class CAppDrawer extends StatelessWidget {
             ),
           if (termsAccepted && isLoggedIn)
             ListTile(
-              leading: Icon(Icons.request_page),
-              title: Text(loc.menuRequest),
+              leading: Icon(Icons.home),
+              title: Text("Home"),
               onTap: () {
-                Navigator.pushReplacementNamed(context, '/request');
-              },
-            ),
-          if (termsAccepted && isLoggedIn)
-            ListTile(
-              leading: Icon(Icons.history),
-              title: Text(loc.menuRecents),
-              onTap: () {
-                Navigator.pushReplacementNamed(context, '/recents');
+                Navigator.pushReplacementNamed(context, '/home');
               },
             ),
           if (termsAccepted && isLoggedIn)

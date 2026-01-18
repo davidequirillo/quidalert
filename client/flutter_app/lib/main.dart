@@ -14,6 +14,7 @@ import 'pages/terms.dart';
 import 'pages/register.dart';
 import 'pages/reset.dart';
 import 'pages/login.dart';
+import 'pages/home.dart';
 import 'pages/request.dart';
 import 'pages/recents.dart';
 import 'pages/settings.dart';
@@ -63,6 +64,7 @@ class QuidalertWidget extends StatelessWidget {
         '/register': (_) => const RegisterPage(),
         '/reset': (_) => const ResetPage(),
         '/login': (_) => const LoginPage(),
+        '/home': (_) => const HomePage(),
         '/request': (_) => const RequestPage(),
         '/recents': (_) => const RecentsPage(),
         '/settings': (_) => const SettingsPage(),

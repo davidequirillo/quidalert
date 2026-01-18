@@ -84,7 +84,6 @@ class _ResetBodyState extends State<ResetBody> {
         body: jsonBody,
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        debugPrint("HTTP ${response.statusCode}: ${response.body}");
         requestError = jsonDecode(response.body)['detail'];
       } else {
         requestError = null;
@@ -135,7 +134,6 @@ class _ResetBodyState extends State<ResetBody> {
         body: jsonBody,
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        debugPrint("HTTP ${response.statusCode}: ${response.body}");
         resetError = jsonDecode(response.body)['detail'];
       } else {
         resetError = null;

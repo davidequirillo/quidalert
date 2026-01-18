@@ -18,7 +18,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonReject => 'Rifiuta';
 
   @override
-  String get errorGeneric => 'Errore';
+  String get errorGeneric => 'Errore generico';
 
   @override
   String get errorBadRequest => 'Richiesta non accettata';
@@ -85,6 +85,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelFirstname => 'Nome';
+
+  @override
+  String get labelLastRefreshAt => 'Data dell\'ultima refresh';
 
   @override
   String get labelNewPassword => 'Nuova password';

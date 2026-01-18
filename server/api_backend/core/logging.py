@@ -3,10 +3,11 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import logging
+from core.settings import settings
 
 class DefaultExtrasFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        for k in ("client_ip", "request_id", "ua", "email_hash"):
+        for k in ("client_ip", "request_id", "user_agent", "email_hash", "user_id"):
             if not hasattr(record, k):
                 setattr(record, k, "-")
         return True
@@ -17,13 +18,21 @@ def setup_logging():
 
     formatter = logging.Formatter(
         fmt="%(asctime)s %(levelname)s %(name)s "
-            "ip=%(client_ip)s req_id=%(request_id)s ua=%(ua)s email_hash=%(email_hash)s "
-            "%(message)s"
+            "ip=%(client_ip)s req_id=%(request_id)s ua=%(user_agent)s email_hash=%(email_hash)s user_id=%(user_id)s %(message)s"
     )
     handler.setFormatter(formatter)
 
     root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    if settings.app_log_level.lower() == 'debug':
+        root.setLevel(logging.DEBUG)
+    elif settings.app_log_level.lower() == 'info':
+        root.setLevel(logging.INFO)
+    elif settings.app_log_level.lower() == 'warning':
+        root.setLevel(logging.WARNING)
+    elif settings.app_log_level.lower() == 'error':
+        root.setLevel(logging.ERROR)
+    else:
+        root.setLevel(logging.INFO)
     root.handlers.clear()
     root.addHandler(handler)
 

@@ -83,7 +83,6 @@ class _RegisterBodyState extends State<RegisterBody> {
         body: jsonBody,
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        debugPrint("HTTP ${response.statusCode}: ${response.body}");
         registerError = jsonDecode(response.body)['detail'];
       } else {
         registerError = null;
