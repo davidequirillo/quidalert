@@ -92,6 +92,18 @@ class _HomeBodyState extends State<HomeBody> {
                 icon: Icon(Icons.refresh),
                 label: Text("Refresh"),
               ),
+              SizedBox(height: 15),
+              ElevatedButton.icon(
+                onPressed: _refreshProfile,
+                icon: Icon(Icons.add_alert),
+                label: Text(loc.labelNewAlert),
+              ),
+              SizedBox(height: 15),
+              ElevatedButton.icon(
+                onPressed: _refreshProfile,
+                icon: Icon(Icons.history),
+                label: Text(loc.labelRecents),
+              ),
             ],
           );
         }

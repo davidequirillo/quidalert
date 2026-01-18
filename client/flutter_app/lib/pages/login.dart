@@ -82,8 +82,8 @@ class _LoginBodyState extends State<LoginBody> {
       }
       endTitle = loc.errorGeneric;
     } else {
-      endTitle = loc.successGeneric;
-      endMessage = loc.successLogin;
+      endTitle = loc.successLogin;
+      endMessage = '${loc.successLogin}. ${loc.successLoginAdvice}';
     }
     if (!mounted) return;
     await showDialog(
