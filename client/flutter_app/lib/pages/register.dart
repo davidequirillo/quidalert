@@ -50,7 +50,7 @@ class _RegisterBodyState extends State<RegisterBody> {
     super.dispose();
   }
 
-  void submit() {
+  Future<void> submit() async {
     final locale = Localizations.localeOf(context);
     final languageCode = locale.languageCode;
     if (!_formKey.currentState!.validate()) return;
@@ -65,10 +65,10 @@ class _RegisterBodyState extends State<RegisterBody> {
       "password": password,
       "language": languageCode,
     };
-    _doRegistration(fields);
+    await _doRegistration(fields);
   }
 
-  void _doRegistration(Map<String, dynamic> data) async {
+  Future<void> _doRegistration(Map<String, dynamic> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
     String? registerError;

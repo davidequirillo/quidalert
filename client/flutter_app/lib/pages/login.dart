@@ -41,13 +41,13 @@ class _LoginBodyState extends State<LoginBody> {
     super.dispose();
   }
 
-  void submit() {
+  Future<void> submit() async {
     final email = _usernameController.text.trim();
     final password = _passwordController.text;
-    _doLogin(email, password);
+    await _doLogin(email, password);
   }
 
-  void _doLogin(String email, String password) async {
+  Future<void> _doLogin(String email, String password) async {
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
     String? loginError;
