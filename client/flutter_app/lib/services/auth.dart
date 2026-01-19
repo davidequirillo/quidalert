@@ -150,6 +150,9 @@ class AuthClient extends ChangeNotifier {
       String? rToken = response['refresh_token'];
       String? aToken = response['access_token'];
       setTokens(rToken, aToken);
+      if (kDebugMode) {
+        debugPrint('The refresh token is: $refreshToken');
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Try refresh tokens, network error: $e');

@@ -49,14 +49,14 @@ class _ResetBodyState extends State<ResetBody> {
     super.dispose();
   }
 
-  void submit() {
+  Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     final email = _emailController.text.trim();
     String code = "";
     String newPassword = "";
     if (!resetRequestIsSent) {
       final fields = {"email": email};
-      _doPasswordResetRequest(fields);
+      await _doPasswordResetRequest(fields);
     } else {
       code = _codeController.text.trim();
       newPassword = _passwordController.text;
@@ -65,11 +65,11 @@ class _ResetBodyState extends State<ResetBody> {
         "code": code,
         "new_password": newPassword,
       };
-      _doPasswordResetConfirmation(fields);
+      await _doPasswordResetConfirmation(fields);
     }
   }
 
-  void _doPasswordResetRequest(Map<String, dynamic> data) async {
+  Future<void> _doPasswordResetRequest(Map<String, dynamic> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
     String? requestError;
@@ -119,7 +119,7 @@ class _ResetBodyState extends State<ResetBody> {
     });
   }
 
-  void _doPasswordResetConfirmation(Map<String, dynamic> data) async {
+  Future<void> _doPasswordResetConfirmation(Map<String, dynamic> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
     String? resetError;
