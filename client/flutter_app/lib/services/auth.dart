@@ -158,7 +158,7 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
-  Future<void> setTokens(String? rtok, String? atok) async {
+  void setTokens(String? rtok, String? atok) {
     // Set refresh token and access token (from login, or refresh api)
     refreshToken = rtok;
     accessToken = atok;
@@ -193,7 +193,7 @@ class AuthClient extends ChangeNotifier {
       }
       final retryResp = await http.get(uri, headers: newMerged);
       if (kDebugMode) {
-        debugPrint("GET (auth), ${jsonDecode(resp.body)}");
+        debugPrint("GET (auth), ${jsonDecode(retryResp.body)}");
       }
       return retryResp;
     }
