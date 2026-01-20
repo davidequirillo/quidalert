@@ -24,6 +24,20 @@ class InvalidTokenException implements Exception {
   String toString() => 'InvalidTokenException: $message';
 }
 
+class BadRequestException implements Exception {
+  final String message;
+  BadRequestException([this.message = 'Bad request']);
+  @override
+  String toString() => 'BadRequestException: $message';
+}
+
+class NetworkException implements Exception {
+  final String message;
+  NetworkException([this.message = 'Network error']);
+  @override
+  String toString() => 'NetworkException: $message';
+}
+
 class AuthClient extends ChangeNotifier {
   final String baseUrl = config.apiBaseUrl;
   final FlutterSecureStorage _secureStorage;
@@ -47,14 +61,10 @@ class AuthClient extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('AuthClient init, refresh token not valid');
       }
-      refreshToken = null;
-      accessToken = null;
     } on ExpiredTokenException catch (_) {
       if (kDebugMode) {
         debugPrint('AuthClient init, refresh token expired');
       }
-      refreshToken = null;
-      accessToken = null;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('AuthClient init, cannot refresh tokens: $e');
@@ -108,9 +118,7 @@ class AuthClient extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('Try refresh tokens, local check, refresh_token expired)');
       }
-      await deleteRefreshToken();
-      refreshToken = null;
-      accessToken = null;
+      setTokens(null, null);
       throw ExpiredTokenException();
     }
     final uri = Uri.parse('$baseUrl/auth/refresh');
@@ -121,26 +129,31 @@ class AuthClient extends ChangeNotifier {
         body: json.encode({'refresh_token': refreshToken}),
       );
       if (resp.statusCode < 200 || resp.statusCode >= 300) {
-        await deleteRefreshToken();
-        refreshToken = null;
-        accessToken = null;
-        if (_isTokenNotValidResponse(resp)) {
-          if (kDebugMode) {
-            debugPrint('Try refresh tokens, refresh_token not valid');
-          }
-          throw InvalidTokenException();
-        } else if (_isTokenExpiredResponse(resp)) {
+        if (_isTokenExpiredResponse(resp)) {
+          setTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token expired');
           }
           throw ExpiredTokenException();
+        } else if (_isTokenNotValidResponse(resp)) {
+          setTokens(null, null);
+          if (kDebugMode) {
+            debugPrint('Try refresh tokens, refresh_token not valid');
+          }
+          throw InvalidTokenException();
+        } else if (_isTokenWrongOrNullResponse(resp)) {
+          setTokens(null, null);
+          if (kDebugMode) {
+            debugPrint('Try refresh tokens, refresh_token wrong or null');
+          }
+          throw InvalidTokenException();
         } else {
           if (kDebugMode) {
             debugPrint(
               "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
             );
           }
-          throw Exception('Cannot refresh tokens');
+          throw BadRequestException;
         }
       }
       final response = jsonDecode(resp.body);
@@ -157,7 +170,7 @@ class AuthClient extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('Try refresh tokens, network error: $e');
       }
-      throw Exception('Network error during token refresh');
+      throw NetworkException;
     }
   }
 
@@ -278,6 +291,11 @@ class AuthClient extends ChangeNotifier {
     } catch (_) {
       return false;
     }
+  }
+
+  bool _isTokenWrongOrNullResponse(http.Response resp) {
+    if (resp.statusCode != 401) return false;
+    return true;
   }
 
   Future<http.Response> login(String email, String password) async {

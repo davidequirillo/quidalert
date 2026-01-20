@@ -221,6 +221,12 @@ abstract class AppLocalizations {
   /// **'Unknown state'**
   String get errorUnknownState;
 
+  /// No description provided for @errorSessionNotValidOrExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Session not valid or expired'**
+  String get errorSessionNotValidOrExpired;
+
   /// No description provided for @labelCompetenceTerritory.
   ///
   /// In en, this message translates to:

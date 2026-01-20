@@ -72,6 +72,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorUnknownState => 'Stato sconosciuto';
 
   @override
+  String get errorSessionNotValidOrExpired => 'Sessione non valida o scaduta';
+
+  @override
   String get labelCompetenceTerritory => 'Territorio di competenza';
 
   @override
