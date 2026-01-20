@@ -21,6 +21,7 @@
   "errorStringNotValid": "Stringa non valida",
   "errorStringTooLong": "Stringa troppo lunga",
   "errorStringTooShort": "Stringa troppo corta",
+  "errorSessionNotValidOrExpired": "Sessione non valida o scaduta",
   "errorUnknownState": "Stato sconosciuto",
   "labelCompetenceTerritory": "Territorio di competenza",
   "labelConfirmPassword": "Conferma password",

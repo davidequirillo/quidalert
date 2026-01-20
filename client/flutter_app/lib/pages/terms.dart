@@ -60,7 +60,7 @@ class TermsBody extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          debugPrint("Error: ${snapshot.error}");
+          debugPrint("${snapshot.error}");
           return Center(child: Text(loc.errorLoading));
         }
         return Padding(

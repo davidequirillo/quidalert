@@ -91,7 +91,7 @@ def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
 ACCESS_TOKEN_TTL_MINUTES = 60
-REFRESH_TOKEN_TTL_DAYS = 180
+REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
 MAX_ACTIVE_REFRESH_TOKENS = 6
 JWT_ALGORITHM = "HS256"
 
@@ -110,7 +110,7 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
 def create_refresh_token(subject: str, token_id: str, raw_code: str, created_at: Optional[datetime], expires_delta: Optional[timedelta] = None):
     if created_at is None:
         created_at = now_tz_naive()
-    expire = created_at + (expires_delta or timedelta(days=REFRESH_TOKEN_TTL_DAYS))
+    expire = created_at + (expires_delta or timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
         "type": "refresh",

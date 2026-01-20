@@ -72,6 +72,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnknownState => 'Unknown state';
 
   @override
+  String get errorSessionNotValidOrExpired => 'Session not valid or expired';
+
+  @override
   String get labelCompetenceTerritory => 'Competence territory';
 
   @override

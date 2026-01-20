@@ -51,17 +51,17 @@ class _HomeBodyState extends State<HomeBody> {
       if (response.statusCode == 200) {
         // Success
       } else if (response.statusCode == 401) {
-        throw Exception('Token expired or not valid');
+        throw InvalidTokenException();
       } else {
-        throw Exception('Bad request');
+        throw BadRequestException();
       }
       return json.decode(response.body);
-    } on InvalidTokenException {
-      throw Exception('Token expired or not valid');
-    } on ExpiredTokenException {
-      throw Exception('Token expired or not valid');
+    } on InvalidTokenException catch (_) {
+      throw InvalidTokenException();
+    } on ExpiredTokenException catch (_) {
+      throw ExpiredTokenException();
     } catch (e) {
-      throw Exception('Network error: $e');
+      rethrow;
     }
   }
 
@@ -79,16 +79,17 @@ class _HomeBodyState extends State<HomeBody> {
           return CircularProgressIndicator();
         }
         if (snapshot.hasError) {
-          if (snapshot.error == 'Bad request') {
-            return Text(loc.errorBadRequest);
-          }
-          if (snapshot.error == 'Token expired or not valid') {
+          if ((snapshot.error.toString().startsWith("InvalidToken")) ||
+              (snapshot.error.toString().startsWith("ExpiredToken"))) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               goToLoginPage();
             });
-            return Text("Token expired or not valid");
+            return Text(loc.errorSessionNotValidOrExpired);
           }
-          return Text("Cannot fetch profile due to network error");
+          if (snapshot.error.toString().startsWith("BadRequest")) {
+            return Text(loc.errorBadRequest);
+          }
+          return Text(loc.errorNetwork);
         }
         if (snapshot.hasData) {
           final data = snapshot.data!;

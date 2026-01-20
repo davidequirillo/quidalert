@@ -22,6 +22,7 @@
   "errorStringTooLong": "String too long",
   "errorStringTooShort": "String too short",
   "errorUnknownState": "Unknown state",
+  "errorSessionNotValidOrExpired": "Session not valid or expired",
   "labelCompetenceTerritory": "Competence territory",
   "labelConfirmPassword": "Confirm password",
   "labelConfirmNewPassword": "Confirm new password",
