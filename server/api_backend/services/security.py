@@ -90,8 +90,8 @@ def otp_hmac(code: str) -> str:
 def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
-ACCESS_TOKEN_TTL_MINUTES = 60
-REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
+ACCESS_TOKEN_TTL_MINUTES = 2
+REFRESH_TOKEN_TTL_MINUTES = 5 # 180 days
 MAX_ACTIVE_REFRESH_TOKENS = 6
 JWT_ALGORITHM = "HS256"
 
