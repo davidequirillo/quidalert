@@ -44,25 +44,11 @@ class _HomeBodyState extends State<HomeBody> {
 
   Future<Map<String, dynamic>> fetchProfile() async {
     final authClient = context.read<AuthClient>();
-    try {
-      final response = await authClient.get('/user/profile', {
-        'Content-Type': 'application/json',
-      });
-      if (response.statusCode == 200) {
-        // Success
-      } else if (response.statusCode == 401) {
-        throw InvalidTokenException();
-      } else {
-        throw BadRequestException();
-      }
-      return json.decode(response.body);
-    } on InvalidTokenException catch (_) {
-      throw InvalidTokenException();
-    } on ExpiredTokenException catch (_) {
-      throw ExpiredTokenException();
-    } catch (e) {
-      rethrow;
-    }
+    final response = await authClient.doProtectedApiRequest(
+      "get",
+      '/user/profile',
+    );
+    return json.decode(response.body);
   }
 
   void goToLoginPage() {
@@ -79,8 +65,7 @@ class _HomeBodyState extends State<HomeBody> {
           return CircularProgressIndicator();
         }
         if (snapshot.hasError) {
-          if ((snapshot.error.toString().startsWith("InvalidToken")) ||
-              (snapshot.error.toString().startsWith("ExpiredToken"))) {
+          if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               goToLoginPage();
             });

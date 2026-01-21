@@ -87,6 +87,9 @@ token_expired_exception = HTTPException(
 credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials")
+permission_exception = HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied")
 
 async def get_current_user(access_token: str = Depends(oauth2_scheme),
                     db_session: Session = Depends(get_db_session)):
@@ -276,7 +279,7 @@ async def get_user(user_id: str,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if not current_user.is_admin:
-        raise credentials_exception
+        raise permission_exception
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
@@ -285,7 +288,7 @@ def delete_user(user_id: str,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
     if not current_user.is_admin:
-        raise credentials_exception
+        raise permission_exception
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         db_session.delete(user)
@@ -298,7 +301,7 @@ def update_user(user_id: str, user_new: UserBase,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
     if not current_user.is_admin:
-        raise credentials_exception
+        raise permission_exception
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         user.firstname = user_new.firstname

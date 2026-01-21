@@ -3,8 +3,8 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -24,6 +24,20 @@ class InvalidTokenException implements Exception {
   String toString() => 'InvalidTokenException: $message';
 }
 
+class PermissionDeniedException implements Exception {
+  final String message;
+  PermissionDeniedException([this.message = 'Permission denied']);
+  @override
+  String toString() => 'PermissionDeniedException: $message';
+}
+
+class GenericNotAuthorizedException implements Exception {
+  final String message;
+  GenericNotAuthorizedException([this.message = 'Not authorized']);
+  @override
+  String toString() => 'GenericNotAuthorizedException: $message';
+}
+
 class BadRequestException implements Exception {
   final String message;
   BadRequestException([this.message = 'Bad request']);
@@ -39,6 +53,8 @@ class NetworkException implements Exception {
 }
 
 class AuthClient extends ChangeNotifier {
+  static String msgTokenExpired = 'Token expired';
+  static String msgTokenNotValid = 'Token not valid';
   final String baseUrl = config.apiBaseUrl;
   final FlutterSecureStorage _secureStorage;
   String? refreshToken;
@@ -64,6 +80,10 @@ class AuthClient extends ChangeNotifier {
     } on ExpiredTokenException catch (_) {
       if (kDebugMode) {
         debugPrint('AuthClient init, refresh token expired');
+      }
+    } on BadRequestException catch (_) {
+      if (kDebugMode) {
+        debugPrint('AuthClient init, bad request during token refresh');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -128,20 +148,22 @@ class AuthClient extends ChangeNotifier {
         headers: {"Content-Type": "application/json"},
         body: json.encode({'refresh_token': refreshToken}),
       );
+      final jsonResp = jsonDecode(resp.body);
+      final String respMessage = jsonResp['detail'] ?? '';
       if (resp.statusCode < 200 || resp.statusCode >= 300) {
-        if (_isTokenExpiredResponse(resp)) {
+        if (resp.statusCode == 401 && respMessage == msgTokenExpired) {
           setTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token expired');
           }
           throw ExpiredTokenException();
-        } else if (_isTokenNotValidResponse(resp)) {
+        } else if (resp.statusCode == 401 && respMessage == msgTokenNotValid) {
           setTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token not valid');
           }
           throw InvalidTokenException();
-        } else if (_isTokenWrongOrNullResponse(resp)) {
+        } else if (resp.statusCode == 401) {
           setTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token wrong or null');
@@ -156,12 +178,11 @@ class AuthClient extends ChangeNotifier {
           throw BadRequestException;
         }
       }
-      final response = jsonDecode(resp.body);
       if (kDebugMode) {
         debugPrint('Try refresh tokens, tokens refreshed successfully');
       }
-      String? rToken = response['refresh_token'];
-      String? aToken = response['access_token'];
+      String? rToken = jsonResp['refresh_token'];
+      String? aToken = jsonResp['access_token'];
       setTokens(rToken, aToken);
       if (kDebugMode) {
         debugPrint('The refresh token is: $refreshToken');
@@ -191,112 +212,52 @@ class AuthClient extends ChangeNotifier {
         (accessToken != null);
   }
 
-  Future<http.Response> get(
-    String relPath,
-    Map<String, String>? headers,
-  ) async {
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
-    final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.get(uri, headers: merged);
-    if (kDebugMode) {
-      debugPrint('GET (auth), access token used: $accessToken');
-    }
-    if (_isTokenExpiredResponse(resp)) {
-      await refreshTokens();
-      final newMerged = {..._authHeaders(), if (headers != null) ...headers};
-      if (kDebugMode) {
-        debugPrint('GET (auth), access token used: $accessToken');
-      }
-      final retryResp = await http.get(uri, headers: newMerged);
-      if (kDebugMode) {
-        debugPrint("GET (auth), ${jsonDecode(retryResp.body)}");
-      }
-      return retryResp;
-    }
-    if (kDebugMode) {
-      debugPrint("GET (auth), ${jsonDecode(resp.body)}");
-    }
-    return resp;
-  }
-
-  Future<http.Response> delete(
-    String relPath,
-    Map<String, String>? headers,
-  ) async {
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
-    final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.delete(uri, headers: merged);
-    if (_isTokenExpiredResponse(resp)) {
-      await refreshTokens();
-      final newMerged = {..._authHeaders(), if (headers != null) ...headers};
-      final retryResp = await http.get(uri, headers: newMerged);
-      return retryResp;
-    }
-    return resp;
-  }
-
-  Future<http.Response> put(
-    BuildContext context,
-    String relPath, {
-    Map<String, String>? headers,
-    Object? body,
+  Future<http.Response> sendRawFileUploadRequest(
+    String url,
+    File file, {
+    Map<String, String> headers = const {},
   }) async {
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
-    final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.put(uri, headers: merged, body: body);
-    if (_isTokenExpiredResponse(resp)) {
-      await refreshTokens();
-      final newMerged = {..._authHeaders(), if (headers != null) ...headers};
-      final retryResp = await http.put(uri, headers: newMerged, body: body);
-      return retryResp;
-    }
+    final uri = Uri.parse(url);
+    final fileBytes = await file.readAsBytes();
+    headers.putIfAbsent('content-type', () => 'application/octet-stream');
+    final resp = await http.post(uri, headers: headers, body: fileBytes);
     return resp;
   }
 
-  Future<http.Response> post(
-    String relPath, {
-    Map<String, String>? headers,
-    Object? body,
+  Future<http.Response> sendJsonRequest(
+    String method,
+    String url, {
+    Map<String, String> headers = const {},
+    Map<String, dynamic> body = const {},
   }) async {
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
-    final uri = Uri.parse('$baseUrl$relPath');
-    final resp = await http.post(uri, headers: merged, body: body);
-    if (_isTokenExpiredResponse(resp)) {
-      await refreshTokens();
-      final newMerged = {..._authHeaders(), if (headers != null) ...headers};
-      final retryResp = await http.post(uri, headers: newMerged, body: body);
-      return retryResp;
+    final payload = jsonEncode(body);
+    headers.putIfAbsent(
+      'content-type',
+      () => 'application/json; charset=utf-8',
+    );
+    final uri = Uri.parse(url);
+    late http.Response resp;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        resp = await http.get(uri, headers: headers);
+        break;
+      case 'POST':
+        resp = await http.post(uri, headers: headers, body: payload);
+        break;
+      case 'PUT':
+        resp = await http.put(uri, headers: headers, body: payload);
+        break;
+      case 'DELETE':
+        resp = await http.delete(uri, headers: headers);
+        break;
+      default:
+        throw ArgumentError('Unsupported HTTP method: $method');
     }
     return resp;
   }
 
   Map<String, String> _authHeaders() =>
       (accessToken == null) ? {} : {'Authorization': 'Bearer $accessToken'};
-
-  bool _isTokenExpiredResponse(http.Response resp) {
-    if (resp.statusCode != 401) return false;
-    try {
-      final data = jsonDecode(resp.body);
-      return (data['detail'] == 'Token expired');
-    } catch (_) {
-      return false;
-    }
-  }
-
-  bool _isTokenNotValidResponse(http.Response resp) {
-    if (resp.statusCode != 401) return false;
-    try {
-      final data = jsonDecode(resp.body);
-      return (data['detail'] == 'Token not valid');
-    } catch (_) {
-      return false;
-    }
-  }
-
-  bool _isTokenWrongOrNullResponse(http.Response resp) {
-    if (resp.statusCode != 401) return false;
-    return true;
-  }
 
   Future<http.Response> login(String email, String password) async {
     const relPath = "/auth/login";
@@ -332,11 +293,96 @@ class AuthClient extends ChangeNotifier {
     );
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       if (kDebugMode) {
-        debugPrint("Logout, HTTP ${resp.statusCode}: ${resp.body}");
+        debugPrint("Logout error, HTTP ${resp.statusCode}: ${resp.body}");
       }
       return resp;
     }
     setTokens(null, null);
     return resp;
+  }
+
+  Future<http.Response> doProtectedApiRequest(
+    String method,
+    String relPath, {
+    Map<String, String>? headers,
+    Map<String, dynamic>? body,
+    File? file,
+  }) async {
+    final m = method.toUpperCase();
+    late http.Response resp;
+    final merged = {..._authHeaders(), if (headers != null) ...headers};
+    final b = body ?? {};
+    final url = '$baseUrl$relPath';
+    try {
+      if (file != null) {
+        resp = await sendRawFileUploadRequest(url, file, headers: merged);
+      } else {
+        resp = await sendJsonRequest(method, url, headers: merged, body: b);
+      }
+      final jsonResp = jsonDecode(resp.body);
+      final String respMessage = jsonResp['detail'] ?? '';
+      bool isNotAuthorized = (resp.statusCode == 401);
+      final bool isExpired =
+          (resp.statusCode == 401) && (respMessage == msgTokenExpired);
+      bool isForbidden = (resp.statusCode == 403);
+      if ((!isExpired) && (isNotAuthorized)) {
+        throw InvalidTokenException('$m (auth), access token not valid');
+      } else if (isForbidden) {
+        throw PermissionDeniedException('$m (auth), permission denied');
+      } else if ((!isExpired) &&
+          (resp.statusCode < 200 || resp.statusCode >= 300)) {
+        throw BadRequestException('$m (auth), bad request');
+      }
+      if (kDebugMode) {
+        debugPrint('$m (auth), access token: $accessToken');
+      }
+      if (isExpired) {
+        await refreshTokens();
+        final newMerged = {..._authHeaders(), if (headers != null) ...headers};
+        if (kDebugMode) {
+          debugPrint('$m (retry auth), access token: $accessToken');
+        }
+        if (file != null) {
+          resp = await sendRawFileUploadRequest(url, file, headers: newMerged);
+        } else {
+          resp = await sendJsonRequest(
+            method,
+            url,
+            headers: newMerged,
+            body: b,
+          );
+        }
+        bool isNotAuthorized = (resp.statusCode == 401);
+        bool isForbidden = (resp.statusCode == 403);
+        if (isNotAuthorized) {
+          throw InvalidTokenException(
+            '$m (retry auth), access token not valid',
+          );
+        } else if (isForbidden) {
+          throw PermissionDeniedException('$m (retry auth), permission denied');
+        } else if (resp.statusCode < 200 || resp.statusCode >= 300) {
+          throw BadRequestException('$m (retry auth), bad request');
+        }
+      }
+      if (kDebugMode) {
+        debugPrint("$m (response), ${jsonDecode(resp.body)}");
+      }
+      return resp;
+    } on ExpiredTokenException catch (_) {
+      throw GenericNotAuthorizedException();
+    } on InvalidTokenException catch (_) {
+      throw GenericNotAuthorizedException();
+    } on PermissionDeniedException catch (_) {
+      throw GenericNotAuthorizedException();
+    } on BadRequestException catch (_) {
+      rethrow;
+    } on NetworkException catch (_) {
+      rethrow;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('$m (auth), unexpected error: $e');
+      }
+      throw Exception("$m (auth), unexpected error: $e");
+    }
   }
 }
