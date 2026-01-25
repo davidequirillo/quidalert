@@ -25,6 +25,14 @@ def get_client_ua() -> str | None:
         return client_ua_ctx.get()
     except LookupError:
         return None
+    
+def get_base_extra(user_id: str) -> dict:
+    return {
+        "client_ip": get_client_ip(),
+        "request_id": get_request_id(),
+        "user_agent": get_client_ua(),
+        "user_id": user_id
+    }
 
 def log_deleted_user_to_renew_registration(email: str):
     logger.info(
@@ -40,23 +48,13 @@ def log_deleted_user_to_renew_registration(email: str):
 def log_password_reset_code_generation(user_id: str):
     logger.warning(
         "password_reset_code_generation",
-        extra={
-            "client_ip": get_client_ip(),
-            "request_id": get_request_id(),
-            "user_agent": get_client_ua,
-            "user_id": user_id
-        }
+        extra=get_base_extra(user_id)
     )
 
 def log_password_reset_successful(user_id: str):
     logger.info(
         "password_reset_confirm_successful",
-        extra={
-            "client_ip": get_client_ip(),
-            "request_id": get_request_id(),
-            "user_agent": get_client_ua(),
-            "user_id": user_id
-        }
+        extra=get_base_extra(user_id)
     )
 
 def log_password_reset_failed(user_id: str, reason: str, attempts: int | None = None):
@@ -75,21 +73,29 @@ def log_password_reset_failed(user_id: str, reason: str, attempts: int | None = 
 def log_password_reset_locked(user_id: str):
     logger.warning(
         "password_reset_locked",
-        extra={
-            "client_ip": get_client_ip(),
-            "request_id": get_request_id(),
-            "user_agent": get_client_ua,
-            "user_id": user_id
-        }
+        extra=get_base_extra(user_id)
     )
 
 def log_login_successful(user_id: str):
     logger.info(
         "login_successful",
-        extra={
-            "client_ip": get_client_ip(),
-            "request_id": get_request_id(),
-            "user_agent": get_client_ua(),
-            "user_id": user_id
-        }
+        extra=get_base_extra(user_id)
+    )
+
+def log_login_code_generation(user_id: str):
+    logger.info(
+        "login_code_generation",
+        extra=get_base_extra(user_id)
+    )
+
+def log_login_locked(user_id: str):
+    logger.warning(
+        "login_locked",
+        extra=get_base_extra(user_id)
+    )
+
+def log_login_token_generation(user_id: str):
+    logger.info(
+        "login_token_generation",
+        extra=get_base_extra(user_id)
     )

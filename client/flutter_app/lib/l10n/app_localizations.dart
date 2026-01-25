@@ -125,6 +125,12 @@ abstract class AppLocalizations {
   /// **'Bad request'**
   String get errorBadRequest;
 
+  /// No description provided for @errorCodeNotValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Code not valid'**
+  String get errorCodeNotValid;
+
   /// No description provided for @errorCodeOrEmailNotValid.
   ///
   /// In en, this message translates to:
@@ -154,6 +160,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading error'**
   String get errorLoading;
+
+  /// No description provided for @errorLoginLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts, login is locked for 24 hours'**
+  String get errorLoginLocked;
 
   /// No description provided for @errorNetwork.
   ///
@@ -311,11 +323,11 @@ abstract class AppLocalizations {
   /// **'Verification code'**
   String get labelVerificationCode;
 
-  /// No description provided for @menuRequest.
+  /// No description provided for @menuNewAlert.
   ///
   /// In en, this message translates to:
-  /// **'Request'**
-  String get menuRequest;
+  /// **'New Alert'**
+  String get menuNewAlert;
 
   /// No description provided for @menuRecents.
   ///

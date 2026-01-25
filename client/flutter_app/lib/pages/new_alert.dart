@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
 
-class RequestPage extends StatelessWidget {
-  const RequestPage({super.key});
+class NewAlertPage extends StatelessWidget {
+  const NewAlertPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuRequest),
+      appBar: CAppBar(title: loc.menuNewAlert, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: const Center(child: Text('request blah blah blah')),
+      body: const Center(child: Text('new alert blah blah blah')),
     );
   }
 }

@@ -90,13 +90,17 @@ class _HomeBodyState extends State<HomeBody> {
               ),
               SizedBox(height: 15),
               ElevatedButton.icon(
-                onPressed: _refreshProfile,
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/alerts/new');
+                },
                 icon: Icon(Icons.add_alert),
                 label: Text(loc.labelNewAlert),
               ),
               SizedBox(height: 15),
               ElevatedButton.icon(
-                onPressed: _refreshProfile,
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/alerts/recents');
+                },
                 icon: Icon(Icons.history),
                 label: Text(loc.labelRecents),
               ),

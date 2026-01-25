@@ -11,18 +11,34 @@ import 'package:quidalert_flutter/services/auth.dart';
 class CAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
-  const CAppBar({super.key, required this.title});
+  const CAppBar({super.key, required this.title, this.showBackButton = false});
+
+  final bool showBackButton;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.blue,
-      foregroundColor: Colors.white,
-      title: Text(title),
-    );
+    if (showBackButton) {
+      return AppBar(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        title: Text(title),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      );
+    } else {
+      return AppBar(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        title: Text(title),
+      );
+    }
   }
 }
 

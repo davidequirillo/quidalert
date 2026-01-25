@@ -95,6 +95,7 @@ class _RegisterBodyState extends State<RegisterBody> {
       switch (registerError) {
         case 'Network error':
           endMessage = loc.errorNetwork;
+          break;
         default:
           endMessage = loc.errorBadRequest;
       }

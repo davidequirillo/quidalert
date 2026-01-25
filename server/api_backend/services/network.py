@@ -8,7 +8,8 @@ from core.settings import settings
 from services.localization import (langmap, 
     localize_activation_mail, localize_reset_code_mail, 
     localize_reset_successful_mail, 
-    localize_login_successful_mail
+    localize_login_successful_mail,
+    localize_login_code_mail
     )
 
 def send_mail_message(data):
@@ -49,4 +50,12 @@ def send_login_successful_mail(email: str, lang: str):
     msg["From"] = settings.smtp_from
     msg["To"] = email
     msg.set_content(localize_login_successful_mail(lang))
+    send_mail_message(msg)
+
+def send_login_code_mail(email: str, code: str, lang: str):
+    msg = EmailMessage()
+    msg["Subject"] = langmap[lang]["login_code_subject"]
+    msg["From"] = settings.smtp_from
+    msg["To"] = email
+    msg.set_content(localize_login_code_mail(code, lang))     
     send_mail_message(msg)

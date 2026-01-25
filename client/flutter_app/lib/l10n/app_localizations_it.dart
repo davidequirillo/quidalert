@@ -24,6 +24,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorBadRequest => 'Richiesta non accettata';
 
   @override
+  String get errorCodeNotValid => 'Codice non valido';
+
+  @override
   String get errorCodeOrEmailNotValid => 'Codice o indirizzo email non valido';
 
   @override
@@ -37,6 +40,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorLoading => 'Errore di caricamento';
+
+  @override
+  String get errorLoginLocked => 'Troppi tentativi, l\'accesso (login) è bloccato per 24 ore';
 
   @override
   String get errorNetwork => 'Errore di rete';
@@ -117,7 +123,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelVerificationCode => 'Codice di verifica';
 
   @override
-  String get menuRequest => 'Richiesta';
+  String get menuNewAlert => 'New Alert';
 
   @override
   String get menuRecents => 'Recenti';

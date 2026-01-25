@@ -67,7 +67,8 @@ class UserOut(UserBase, table=False):
         nullable=False
     )
     is_admin: bool = Field(default=False, nullable=False)
-    is_official: bool = Field(default=False, nullable=True)
+    is_official: bool = Field(default=False, nullable=False)
+    is_chief: bool = Field(default=False, nullable=False)
     type: str = Field(default=UserType.citizen, nullable=False)
     status: str = Field(default=UserStatus.ok, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
@@ -80,6 +81,10 @@ class UserOut(UserBase, table=False):
         default_factory=lambda: now_tz_naive(), nullable=False   
     )
     last_reset_mail_confirmation_at: Optional[datetime] = Field(default=None)  
+    login_expires_at: Optional[datetime] = Field(default=None)
+    login_2fa_attempts: int = Field(default=0, nullable=False)
+    login_locked_until: Optional[datetime] = Field(default=None)
+    last_login_mail_code_at: Optional[datetime] = Field(default=None) 
     last_login_done_at: Optional[datetime] = Field(default=None)   
     last_login_mail_confirmation_at: Optional[datetime] = Field(default=None)
     last_refresh_at: Optional[datetime] = Field(default=None)
@@ -110,6 +115,7 @@ class User(UserOut, table=True):
     gps_lon: float | None = Field(default=None, nullable=True)
     activation_code: Optional[str] = Field(default=None)    
     reset_code_hash: Optional[str] = Field(default=None)
+    login_code_hash: Optional[str] = Field(default=None)
     
     @field_validator("gps_lat")
     @classmethod
@@ -183,7 +189,18 @@ class RefreshToken(SQLModel, table=True):
 class LoginSchema(BaseModel):
     email: EmailStr
     password: str
+    login_code: Optional[str] = Field(default=None, min_length=6, max_length=6) # 2FA code
+    login_token: Optional[str] = None # jwt token to skip 2FA
     device_model: Optional[str] = None
+
+    @field_validator("login_code")
+    @classmethod
+    def validate_login_code(cls, value: str) -> str:
+        if (value is None):
+            return value
+        if not re.fullmatch(r"\d{6}", value):
+            raise ValueError(f"Code must be a 6-digit number")
+        return value
 
 class RefreshTokenWrapper(BaseModel):
     refresh_token: str

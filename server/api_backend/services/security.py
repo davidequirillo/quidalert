@@ -40,8 +40,9 @@ def check_password_against_hash(plain_password, hashed_password):
 RANDOM_TOKEN_BYTES = 32
 ACTIVATION_TOKEN_BYTES = 32
 ACTIVATION_TOKEN_TTL_HOURS = 24
-RESET_CODE_TTL_MINUTES = 10
+OTP_CODE_TTL_MINUTES = 10
 RESET_LOCK_HOURS = 24
+LOGIN_LOCK_HOURS = 24
 MAIL_COOLDOWN_SECONDS = 180
 
 def generate_random_token() -> str:
@@ -62,13 +63,12 @@ def activation_expiry() -> datetime:
     now = now_tz_naive()
     return now + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
 
-def generate_reset_code() -> str:
-    # 10 digits, zero padded
-    return str(secrets.randbelow(10**10)).zfill(10)
+def generate_otp_code(length: int) -> str:
+    return str(secrets.randbelow(10**length)).zfill(length)
 
-def reset_code_expiry() -> datetime:
+def otp_expiry() -> datetime:
     now = now_tz_naive()
-    return now + timedelta(minutes=RESET_CODE_TTL_MINUTES)
+    return now + timedelta(minutes=OTP_CODE_TTL_MINUTES)
 
 def get_email_hash(email: str) -> str:
     normalized = email.strip().lower()
@@ -90,8 +90,9 @@ def otp_hmac(code: str) -> str:
 def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
-ACCESS_TOKEN_TTL_MINUTES = 2
-REFRESH_TOKEN_TTL_MINUTES = 5 # 180 days
+ACCESS_TOKEN_TTL_MINUTES = 60
+REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 210  # 210 days
+LOGIN_TOKEN_TTL_MINUTES = 60 * 24 * 180  # 180 days
 MAX_ACTIVE_REFRESH_TOKENS = 6
 JWT_ALGORITHM = "HS256"
 
@@ -117,6 +118,18 @@ def create_refresh_token(subject: str, token_id: str, raw_code: str, created_at:
         "jti": token_id,
         "raw": raw_code,
         "iat": created_at,
+        "exp": expire
+    }
+    token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
+    return token
+
+def create_login_token(subject: str, expires_delta: Optional[timedelta] = None):
+    now = now_tz_naive()
+    expire = now + (expires_delta or timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES))
+    data = {
+        "sub": subject,
+        "type": "login",
+        "iat": now,
         "exp": expire
     }
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)

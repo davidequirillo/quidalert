@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from models.general import UserLanguage
-from services.security import RESET_CODE_TTL_MINUTES
+from services.security import OTP_CODE_TTL_MINUTES
 
 langmap = {
     "en": {
@@ -14,6 +14,7 @@ langmap = {
         "act_not_valid": "Activation code not valid",
         "act_done_title": "Activation done successfully",
         "act_done": "Activation done successfully. Now you can login using the app",
+        "login_code_subject": "Login verification code",
         "login_successful_subject": "Successful login notification",
         "mail_ignore": "If you have received this message for an error, please ignore it",
         "reg_subject": "Activate your account",
@@ -28,6 +29,7 @@ langmap = {
         "act_not_valid": "Codice di attivazione non valido",
         "act_done_title": "Attivazione completata con successo",
         "act_done": "Attivazione completata con successo. Ora puoi fare l'accesso (login) mediante app",
+        "login_code_subject": "Codice di verifica per l'accesso (login)",
         "login_successful_subject": "Notifica di accesso (login) effettuato con successo",
         "mail_ignore": "Se hai ricevuto questo messaggio per errore, ignoralo",
         "reg_subject": "Attiva il tuo account",
@@ -66,7 +68,7 @@ Il tuo codice di verifica è:
 
 {code}
 
-Questo codice è valido per {RESET_CODE_TTL_MINUTES} minuti.
+Questo codice è valido per {OTP_CODE_TTL_MINUTES} minuti.
 Se non hai richiesto tu il reset, puoi ignorare questo messaggio.
 """
     else: 
@@ -78,7 +80,7 @@ Your verification code is:
 
 {code}
 
-This code is valid for {RESET_CODE_TTL_MINUTES} minutes.
+This code is valid for {OTP_CODE_TTL_MINUTES} minutes.
 If you haven't asked the reset, you can ignore this message.
 """
     
@@ -122,5 +124,31 @@ If it wasn't you, we recommend to change your password immediately (in the app, 
 If the problem persists, please contact the competent territorial authority.
 """
 
+def localize_login_code_mail(code: str, lang: str):
+    if (lang == UserLanguage.it):
+        return f"""Ciao,
+
+Per completare l'accesso (login), inserisci il codice di verifica.
+
+Il tuo codice di verifica è:
+
+{code}
+
+Questo codice è valido per {OTP_CODE_TTL_MINUTES} minuti.
+Se non hai richiesto tu l'accesso (login), ti raccomandiamo di modificare al più presto la password (nell'app, schermata di login, "password dimenticata").
+"""
+    else: 
+        return f"""Hello, 
+        
+To complete the login, enter the verification code.
+
+Your verification code is:
+
+{code}
+
+This code is valid for {OTP_CODE_TTL_MINUTES} minutes.
+If you haven't asked the login, we recommend to change your password immediately (in the app, login page, "forgot password").
+"""
+    
 def localize_empty_string(): # I'm including this for visual convenience.
     return ""
