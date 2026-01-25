@@ -378,7 +378,6 @@ class AuthClient extends ChangeNotifier {
       return resp;
     }
     setAuthTokens(null, null);
-    setLoginToken(null);
     return resp;
   }
 
