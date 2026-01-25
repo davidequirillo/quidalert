@@ -10,12 +10,13 @@ import 'config.dart' as config;
 import 'services/shared.dart';
 import 'services/auth.dart';
 import 'pages/startup.dart';
-import 'pages/terms.dart';
+import 'pages/terms_info.dart';
 import 'pages/register.dart';
 import 'pages/reset.dart';
 import 'pages/login.dart';
+import 'pages/two_fa.dart';
 import 'pages/home.dart';
-import 'pages/request.dart';
+import 'pages/new_alert.dart';
 import 'pages/recents.dart';
 import 'pages/settings.dart';
 
@@ -64,9 +65,10 @@ class QuidalertWidget extends StatelessWidget {
         '/register': (_) => const RegisterPage(),
         '/reset': (_) => const ResetPage(),
         '/login': (_) => const LoginPage(),
+        '/2fa': (_) => const TwoFAPage(),
         '/home': (_) => const HomePage(),
-        '/request': (_) => const RequestPage(),
-        '/recents': (_) => const RecentsPage(),
+        '/alerts/new': (_) => const NewAlertPage(),
+        '/alerts/recents': (_) => const RecentsPage(),
         '/settings': (_) => const SettingsPage(),
       },
     );

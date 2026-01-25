@@ -13,7 +13,7 @@ class RecentsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuRecents),
+      appBar: CAppBar(title: loc.menuRecents, showBackButton: true),
       drawer: const CAppDrawer(),
       body: const Center(child: Text('Recents alerts')),
     );

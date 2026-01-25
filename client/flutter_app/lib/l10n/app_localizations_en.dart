@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorBadRequest => 'Bad request';
 
   @override
+  String get errorCodeNotValid => 'Code not valid';
+
+  @override
   String get errorCodeOrEmailNotValid => 'Code or email not valid';
 
   @override
@@ -37,6 +40,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorLoading => 'Loading error';
+
+  @override
+  String get errorLoginLocked => 'Too many attempts, login is locked for 24 hours';
 
   @override
   String get errorNetwork => 'Network error';
@@ -117,7 +123,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelVerificationCode => 'Verification code';
 
   @override
-  String get menuRequest => 'Request';
+  String get menuNewAlert => 'New Alert';
 
   @override
   String get menuRecents => 'Recents';

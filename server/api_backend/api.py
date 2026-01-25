@@ -27,25 +27,28 @@ from core.security_events import (
     log_password_reset_successful,
     log_password_reset_locked,
     log_deleted_user_to_renew_registration,
-    log_login_successful
+    log_login_successful,
+    log_login_code_generation,
+    log_login_locked,
+    log_login_token_generation
 )
 import services.localization as i18n
 from models.general import (LoginSchema, RefreshTokenWrapper, UserBase, UserIn, User, UserOut, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken)
 from services.security import (
-    get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
+    LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
     generate_activation_token, activation_expiry, 
     now_tz_naive, from_timestamp_to_datetime_tz_naive, 
-    generate_reset_code, reset_code_expiry, otp_hmac, otp_verify, get_email_hash, check_email_against_hash,
+    generate_otp_code, otp_expiry, otp_hmac, otp_verify, get_email_hash, check_email_against_hash,
     RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS,
     create_access_token, create_refresh_token, decode_token, MAX_ACTIVE_REFRESH_TOKENS,
-    check_token_against_hash
+    check_token_against_hash, create_login_token
     )
 from core.dbmgr import get_session, get_engine
 from services.network import (
     send_activation_mail, send_reset_code_mail, send_reset_successful_mail,
-    send_login_successful_mail
+    send_login_successful_mail, send_login_code_mail
     )
 
 def init_settings():
@@ -87,6 +90,17 @@ token_expired_exception = HTTPException(
 credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials")
+# Two factor required response: we define it as a response 
+# We don't use "HttpException" in this particular case
+two_factor_required_response = Response(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content="2FA required")
+two_factor_locked_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="2FA locked")
+two_factor_not_valid_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="2FA code not valid")
 permission_exception = HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied")
@@ -147,6 +161,23 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
     if not check_token_against_hash(token_raw_secret, refresh_token.raw_hash):
         raise InvalidJTIError
     return (user, refresh_token) # user and db refresh token
+
+def check_login_token(token_data: dict | None, user: User):
+    if token_data is None:
+        return False
+    user_id = token_data.get("sub")
+    token_iat = token_data.get("iat")
+    token_exp = token_data.get("exp")
+    token_type = token_data.get("type")
+    if (not user_id) or (not token_iat) or (not token_exp) \
+            or (not token_type) or (token_type != "login"):
+        return False
+    if user_id != str(user.id):
+        return False
+    token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)
+    if token_iat_dt < user.last_reset_done_at:
+        return False
+    return True
 
 @app.post("/api/auth/refresh")
 async def refresh_auth_tokens(
@@ -228,18 +259,82 @@ async def get_terms(request: Request, response: Response):
 async def login(data: LoginSchema,
             background_tasks: BackgroundTasks,
             db_session: Session = Depends(get_db_session)):
+    now = now_tz_naive()
+    new_login_token = None
     q = select(User).where(User.email == data.email)
     user = db_session.exec(q).first()
     if ((not user) or (not user.is_active) or 
             (not check_password_against_hash(data.password, user.password_hash))):
         raise credentials_exception
+    # if the 2FA code is present, we must verify it to generate a login token
+    if data.login_code:
+        if user.login_locked_until and now < user.login_locked_until:
+            raise two_factor_locked_exception
+        if ((not user.login_code_hash) or 
+                (not user.login_expires_at) or 
+                    (now > user.login_expires_at)):
+            raise two_factor_not_valid_exception
+        if (not otp_verify(data.login_code, user.login_code_hash)):
+            user.login_2fa_attempts += 1
+            if user.login_2fa_attempts > 3:
+                user.login_code_hash = None
+                user.login_expires_at = None
+                user.login_locked_until = now + timedelta(hours=LOGIN_LOCK_HOURS)
+                user.login_2fa_attempts = 0
+                log_login_locked(str(user.id))
+            db_session.add(user)
+            db_session.commit()
+            raise two_factor_not_valid_exception
+        new_login_token = create_login_token(str(user.id))
+        user.login_code_hash = None
+        user.login_expires_at = None
+        user.login_locked_until = None
+        user.login_2fa_attempts = 0
+        skip_2fa = True # 2FA verified successfully
+        log_login_token_generation(str(user.id))
+    # if a valid login_token is provided, we skip 2FA check
+    elif data.login_token:
+        try:
+            token_data = decode_token(data.login_token)
+        except ExpiredSignatureError:
+            skip_2fa = False
+        except InvalidTokenError:
+            skip_2fa = False
+        except:
+            token_data = None
+        if check_login_token(token_data, user):
+            skip_2fa = True
+        else:
+            skip_2fa = False
+    else:
+        skip_2fa = False
+    if (not skip_2fa):
+        # check if login has locked due to too many failed attempts
+        if user.login_locked_until and (now < user.login_locked_until):
+            raise two_factor_locked_exception
+        code = None
+        # generate and send 2FA code here
+        if ((not user.login_code_hash) or 
+            (not user.login_expires_at) or 
+            (now > user.login_expires_at)):
+                code = generate_otp_code(6)
+                code_hash = otp_hmac(code) 
+                expires_at = otp_expiry()
+                user.login_code_hash = code_hash
+                user.login_expires_at = expires_at
+                log_login_code_generation(str(user.id))
+        if code:
+            user.last_login_mail_code_at = now
+            db_session.add(user)
+            db_session.commit()   
+            background_tasks.add_task(send_login_code_mail, user.email, code, user.language)
+        return two_factor_required_response
     q = select(RefreshToken).where(RefreshToken.user_id == user.id).order_by(desc(RefreshToken.updated_at))
     active_tokens = db_session.exec(q).all()
     if len(active_tokens) >= MAX_ACTIVE_REFRESH_TOKENS:
         oldest_token = active_tokens[-1]
         db_session.delete(oldest_token)
         db_session.flush()
-    now = now_tz_naive()
     refresh_token_id = uuid_pkg.uuid4()
     raw_random_str = generate_random_token()
     raw_str_hash = get_token_hash(raw_random_str)
@@ -268,7 +363,7 @@ async def login(data: LoginSchema,
     log_login_successful(str(user.id))
     if can_send:
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
-    return {"access_token": atoken, "refresh_token": rtoken, "token_type": "bearer"}
+    return {"access_token": atoken, "refresh_token": rtoken, "login_token": new_login_token, "token_type": "bearer"}
 
 @app.get("/api/user/profile", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 async def get_profile(current_user: User = Depends(get_current_user)):
@@ -423,9 +518,9 @@ def request_password_reset(data: PasswordResetRequest, background_tasks: Backgro
     if ((not user.reset_code_hash) or 
         (not user.reset_expires_at) or 
             (now > user.reset_expires_at)):
-                code = generate_reset_code()
+                code = generate_otp_code(10)
                 code_hash = otp_hmac(code) 
-                expires_at = reset_code_expiry()
+                expires_at = otp_expiry()
                 user.reset_code_hash = code_hash
                 user.reset_expires_at = expires_at
                 log_password_reset_code_generation(str(user.id))

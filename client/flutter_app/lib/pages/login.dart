@@ -44,10 +44,11 @@ class _LoginBodyState extends State<LoginBody> {
   Future<void> submit() async {
     final email = _usernameController.text.trim();
     final password = _passwordController.text;
-    await _doLogin(email, password);
+    final code = null;
+    await _doLogin(email, password, code: code);
   }
 
-  Future<void> _doLogin(String email, String password) async {
+  Future<void> _doLogin(String email, String password, {String? code}) async {
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
     String? loginError;
@@ -55,10 +56,13 @@ class _LoginBodyState extends State<LoginBody> {
     String endTitle;
     final http.Response response;
     try {
-      response = await authClient.login(email, password);
+      response = await authClient.login(email, password, code: code);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         if (response.statusCode == 422) {
           loginError = 'Invalid credentials';
+        } else if ((response.statusCode == 401) &&
+            (response.body.contains('2FA required'))) {
+          loginError = '2FA required'; // Handled separately
         } else if (response.statusCode == 401) {
           loginError = 'Invalid credentials';
         } else {
@@ -73,10 +77,21 @@ class _LoginBodyState extends State<LoginBody> {
     }
     if (loginError != null) {
       switch (loginError) {
+        case '2FA required':
+          endMessage = "2FA is required";
+          if (!mounted) return;
+          await Navigator.pushReplacementNamed(
+            context,
+            '/2fa',
+            arguments: {'email': email, 'password': password},
+          );
+          return;
         case 'Invalid credentials':
           endMessage = loc.errorInvalidCredentials;
+          break;
         case 'Network error':
           endMessage = loc.errorNetwork;
+          break;
         default:
           endMessage = loc.errorBadRequest;
       }

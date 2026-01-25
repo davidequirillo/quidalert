@@ -96,6 +96,7 @@ class _ResetBodyState extends State<ResetBody> {
       switch (requestError) {
         case 'Network error':
           endMessage = loc.errorNetwork;
+          break;
         default:
           endMessage = loc.errorBadRequest;
       }
@@ -146,8 +147,10 @@ class _ResetBodyState extends State<ResetBody> {
       switch (resetError) {
         case 'Network error':
           endMessage = loc.errorNetwork;
+          break;
         case 'Code or email not valid':
           endMessage = loc.errorCodeOrEmailNotValid;
+          break;
         default:
           endMessage = loc.errorBadRequest;
       }
@@ -206,7 +209,7 @@ class _ResetBodyState extends State<ResetBody> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       maxLength: 10,
                       validator: (value) {
-                        return validateDigitCode(context, value);
+                        return validateDigitCode(context, value, min: 10);
                       },
                     ),
                   SizedBox(height: 5),
