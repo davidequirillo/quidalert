@@ -81,8 +81,8 @@ class _TwoFABodyState extends State<TwoFABody> {
       }
       endTitle = loc.errorGeneric;
     } else {
-      endTitle = loc.successGeneric;
-      endMessage = loc.successLogin;
+      endTitle = loc.successLogin;
+      endMessage = '${loc.successLogin}. ${loc.successLoginAdvice}';
     }
     if (!mounted) return;
     await showDialog(
@@ -116,6 +116,11 @@ class _TwoFABodyState extends State<TwoFABody> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  Text(
+                    loc.labelEnterVerificationMailCode,
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  SizedBox(height: 15),
                   TextFormField(
                     controller: _codeController,
                     decoration: InputDecoration(

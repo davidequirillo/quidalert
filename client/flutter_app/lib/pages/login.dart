@@ -63,6 +63,9 @@ class _LoginBodyState extends State<LoginBody> {
         } else if ((response.statusCode == 401) &&
             (response.body.contains('2FA required'))) {
           loginError = '2FA required'; // Handled separately
+        } else if (response.statusCode == 401 &&
+            (response.body.contains('2FA locked'))) {
+          loginError = '2FA locked';
         } else if (response.statusCode == 401) {
           loginError = 'Invalid credentials';
         } else {
@@ -86,6 +89,9 @@ class _LoginBodyState extends State<LoginBody> {
             arguments: {'email': email, 'password': password},
           );
           return;
+        case '2FA locked':
+          endMessage = loc.errorLoginLocked;
+          break;
         case 'Invalid credentials':
           endMessage = loc.errorInvalidCredentials;
           break;

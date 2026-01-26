@@ -50,6 +50,12 @@ from services.network import (
     send_activation_mail, send_reset_code_mail, send_reset_successful_mail,
     send_login_successful_mail, send_login_code_mail
     )
+from core.exceptions import (
+    token_expired_exception, token_not_valid_exception,
+    credentials_exception, two_factor_locked_exception,
+    two_factor_not_valid_exception, two_factor_required_response,
+    permission_exception
+    )
 
 def init_settings():
     setup_logging()
@@ -79,58 +85,32 @@ def get_db_session():
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
-token_not_valid_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token not valid",
-            headers={"WWW-Authenticate": "Bearer"})
-token_expired_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired",
-            headers={"WWW-Authenticate": "Bearer"})
-credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials")
-# Two factor required response: we define it as a response 
-# We don't use "HttpException" in this particular case
-two_factor_required_response = Response(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content="2FA required")
-two_factor_locked_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="2FA locked")
-two_factor_not_valid_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="2FA code not valid")
-permission_exception = HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied")
-
 async def get_current_user(access_token: str = Depends(oauth2_scheme),
                     db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(access_token)
     except ExpiredSignatureError:
-        raise token_expired_exception # we raise a specific error
+        raise token_expired_exception() # we raise a specific error
     except InvalidTokenError:
-        raise token_not_valid_exception
+        raise token_not_valid_exception()
     except:
         token_data = None
     if token_data is None:
-        raise token_not_valid_exception
+        raise token_not_valid_exception() 
     user_id = token_data.get("sub")
     token_iat = token_data.get("iat")
     token_exp = token_data.get("exp")
     token_type = token_data.get("type")
     if (not user_id) or (not token_iat) or (not token_exp) or \
         (not token_type) or (token_type != "access"): 
-            raise token_not_valid_exception 
+            raise token_not_valid_exception() 
     statement = select(User).where(User.id == user_id)
     user = db_session.exec(statement).first()
     if user is None:
-        raise token_not_valid_exception
+        raise token_not_valid_exception()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)   
     if token_iat_dt < user.last_reset_done_at:
-        raise token_expired_exception    
+        raise token_expired_exception()    
     return user
 
 def check_refresh_token(token_data: dict | None, db_session: Session):
@@ -186,17 +166,17 @@ async def refresh_auth_tokens(
     try:
         token_data = decode_token(wrapper.refresh_token)
     except ExpiredSignatureError:
-        raise token_expired_exception
+        raise token_expired_exception()
     except InvalidTokenError:
-        raise token_not_valid_exception
+        raise token_not_valid_exception()
     except:
         token_data = None
     try: # check token validity (it returns user and database refresh token)
         user, rtoken = check_refresh_token(token_data, db_session)
     except InvalidIssuedAtError or ExpiredSignatureError:
-        raise token_expired_exception
+        raise token_expired_exception()
     except:
-        raise token_not_valid_exception
+        raise token_not_valid_exception()
     now = now_tz_naive()
     new_raw_secret = generate_random_token()
     new_raw_secret_hash = get_token_hash(new_raw_secret)
@@ -224,17 +204,17 @@ async def logout(
     try:
         token_data = decode_token(wrapper.refresh_token)
     except ExpiredSignatureError:
-        raise token_expired_exception # we raise specific error
+        raise token_expired_exception()
     except InvalidTokenError:
-        raise token_not_valid_exception
+        raise token_not_valid_exception()
     except:
         token_data = None
     try: # check token validity (it returns user and database refresh token)
         _, rtoken = check_refresh_token(token_data, db_session)
     except InvalidIssuedAtError or ExpiredSignatureError:
-        raise token_expired_exception
+        raise token_expired_exception()
     except:
-        raise token_not_valid_exception
+        raise token_not_valid_exception()
     rtoken.is_revoked = True
     db_session.add(rtoken)
     db_session.commit()    
@@ -265,15 +245,15 @@ async def login(data: LoginSchema,
     user = db_session.exec(q).first()
     if ((not user) or (not user.is_active) or 
             (not check_password_against_hash(data.password, user.password_hash))):
-        raise credentials_exception
+        raise credentials_exception()
     # if the 2FA code is present, we must verify it to generate a login token
     if data.login_code:
         if user.login_locked_until and now < user.login_locked_until:
-            raise two_factor_locked_exception
+            raise two_factor_locked_exception()
         if ((not user.login_code_hash) or 
                 (not user.login_expires_at) or 
                     (now > user.login_expires_at)):
-            raise two_factor_not_valid_exception
+            raise two_factor_not_valid_exception()
         if (not otp_verify(data.login_code, user.login_code_hash)):
             user.login_2fa_attempts += 1
             if user.login_2fa_attempts > 3:
@@ -284,7 +264,7 @@ async def login(data: LoginSchema,
                 log_login_locked(str(user.id))
             db_session.add(user)
             db_session.commit()
-            raise two_factor_not_valid_exception
+            raise two_factor_not_valid_exception()
         new_login_token = create_login_token(str(user.id))
         user.login_code_hash = None
         user.login_expires_at = None
@@ -297,9 +277,9 @@ async def login(data: LoginSchema,
         try:
             token_data = decode_token(data.login_token)
         except ExpiredSignatureError:
-            skip_2fa = False
+            token_data = None
         except InvalidTokenError:
-            skip_2fa = False
+            token_data = None
         except:
             token_data = None
         if check_login_token(token_data, user):
@@ -311,7 +291,7 @@ async def login(data: LoginSchema,
     if (not skip_2fa):
         # check if login has locked due to too many failed attempts
         if user.login_locked_until and (now < user.login_locked_until):
-            raise two_factor_locked_exception
+            raise two_factor_locked_exception()
         code = None
         # generate and send 2FA code here
         if ((not user.login_code_hash) or 
@@ -322,13 +302,13 @@ async def login(data: LoginSchema,
                 expires_at = otp_expiry()
                 user.login_code_hash = code_hash
                 user.login_expires_at = expires_at
-                log_login_code_generation(str(user.id))
+                log_login_code_generation(str(user.id)) 
         if code:
             user.last_login_mail_code_at = now
             db_session.add(user)
-            db_session.commit()   
+            db_session.commit()
             background_tasks.add_task(send_login_code_mail, user.email, code, user.language)
-        return two_factor_required_response
+        return two_factor_required_response()
     q = select(RefreshToken).where(RefreshToken.user_id == user.id).order_by(desc(RefreshToken.updated_at))
     active_tokens = db_session.exec(q).all()
     if len(active_tokens) >= MAX_ACTIVE_REFRESH_TOKENS:
@@ -374,7 +354,7 @@ async def get_user(user_id: str,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if not current_user.is_admin:
-        raise permission_exception
+        raise permission_exception()
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
@@ -383,7 +363,7 @@ def delete_user(user_id: str,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
     if not current_user.is_admin:
-        raise permission_exception
+        raise permission_exception()
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         db_session.delete(user)
@@ -396,7 +376,7 @@ def update_user(user_id: str, user_new: UserBase,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
     if not current_user.is_admin:
-        raise permission_exception
+        raise permission_exception()
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         user.firstname = user_new.firstname

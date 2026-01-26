@@ -93,6 +93,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
 
   @override
+  String get labelEnterVerificationMailCode => 'Inserisci il codice di verifica che ti è stato appena inviato via email';
+
+  @override
   String get labelFirstname => 'Nome';
 
   @override
