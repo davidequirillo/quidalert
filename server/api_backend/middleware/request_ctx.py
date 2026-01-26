@@ -1,3 +1,7 @@
+# Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Copyright (C) 2025  Davide Quirillo
+# Licensed under the GNU GPL v3 or later. See LICENSE for details.
+
 import contextvars
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
