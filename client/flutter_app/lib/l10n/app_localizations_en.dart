@@ -93,6 +93,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
 
   @override
+  String get labelEnterVerificationMailCode => 'Enter the verification code just sent to you by email';
+
+  @override
   String get labelFirstname => 'Firstname';
 
   @override
@@ -141,7 +144,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get successLogin => 'Login successful';
 
   @override
-  String get successLoginAdvice => 'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of logging in)';
+  String get successLoginAdvice => 'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of login)';
 
   @override
   String get successRegistration => 'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority';

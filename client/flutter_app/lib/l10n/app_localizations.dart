@@ -263,6 +263,12 @@ abstract class AppLocalizations {
   /// **'Don\'t have an account? Sign Up'**
   String get labelDoNotHaveAccount;
 
+  /// No description provided for @labelEnterVerificationMailCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the verification code just sent to you by email'**
+  String get labelEnterVerificationMailCode;
+
   /// No description provided for @labelFirstname.
   ///
   /// In en, this message translates to:
@@ -362,7 +368,7 @@ abstract class AppLocalizations {
   /// No description provided for @successLoginAdvice.
   ///
   /// In en, this message translates to:
-  /// **'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of logging in)'**
+  /// **'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of login)'**
   String get successLoginAdvice;
 
   /// No description provided for @successRegistration.

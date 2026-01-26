@@ -29,6 +29,7 @@
   "labelConfirmPassword": "Conferma password",
   "labelConfirmNewPassword": "Conferma nuova password",
   "labelDoNotHaveAccount": "Non hai un account? Registrati",
+  "labelEnterVerificationMailCode": "Inserisci il codice di verifica che ti è stato appena inviato via email",
   "labelFirstname": "Nome",
   "labelLastRefreshAt": "Data dell'ultima refresh",
   "labelNewAlert": "Nuova allerta",
