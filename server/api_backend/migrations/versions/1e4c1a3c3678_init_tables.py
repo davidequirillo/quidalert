@@ -1,8 +1,8 @@
-"""create users table and others
+"""init tables
 
-Revision ID: 07712f18f532
+Revision ID: 1e4c1a3c3678
 Revises: 
-Create Date: 2026-01-17 11:37:21.771085
+Create Date: 2026-01-26 21:18:23.136718
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '07712f18f532'
+revision: str = '1e4c1a3c3678'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,7 +29,8 @@ def upgrade() -> None:
     sa.Column('language', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('is_admin', sa.Boolean(), nullable=False),
-    sa.Column('is_official', sa.Boolean(), nullable=True),
+    sa.Column('is_officer', sa.Boolean(), nullable=False),
+    sa.Column('is_chief', sa.Boolean(), nullable=False),
     sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
@@ -40,30 +41,33 @@ def upgrade() -> None:
     sa.Column('last_reset_mail_code_at', sa.DateTime(), nullable=True),
     sa.Column('last_reset_done_at', sa.DateTime(), nullable=False),
     sa.Column('last_reset_mail_confirmation_at', sa.DateTime(), nullable=True),
+    sa.Column('login_expires_at', sa.DateTime(), nullable=True),
+    sa.Column('login_2fa_attempts', sa.Integer(), nullable=False),
+    sa.Column('login_locked_until', sa.DateTime(), nullable=True),
+    sa.Column('last_login_mail_code_at', sa.DateTime(), nullable=True),
     sa.Column('last_login_done_at', sa.DateTime(), nullable=True),
     sa.Column('last_login_mail_confirmation_at', sa.DateTime(), nullable=True),
     sa.Column('last_refresh_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_by', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('email_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('gps_lat', sa.Float(), nullable=True),
     sa.Column('gps_lon', sa.Float(), nullable=True),
     sa.Column('activation_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('reset_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('login_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_email_hash'), 'users', ['email_hash'], unique=True)
-    op.create_table('whitelist',
-    sa.Column('firstname', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
-    sa.Column('surname', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
+    op.create_table('white_records',
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
-    sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('created_by', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('email')
     )
-    op.create_index(op.f('ix_whitelist_email'), 'whitelist', ['email'], unique=True)
     op.create_table('alerts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
@@ -97,8 +101,7 @@ def downgrade() -> None:
     op.drop_table('refresh_tokens')
     op.drop_index(op.f('ix_alerts_user_id'), table_name='alerts')
     op.drop_table('alerts')
-    op.drop_index(op.f('ix_whitelist_email'), table_name='whitelist')
-    op.drop_table('whitelist')
+    op.drop_table('white_records')
     op.drop_index(op.f('ix_users_email_hash'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

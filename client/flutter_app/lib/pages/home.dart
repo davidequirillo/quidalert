@@ -57,6 +57,7 @@ class _HomeBodyState extends State<HomeBody> {
 
   @override
   Widget build(BuildContext context) {
+    final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     return FutureBuilder<Map<String, dynamic>>(
       future: fetchProfile(),
@@ -78,6 +79,7 @@ class _HomeBodyState extends State<HomeBody> {
         }
         if (snapshot.hasData) {
           final data = snapshot.data!;
+          authClient.setUserInfo(data);
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

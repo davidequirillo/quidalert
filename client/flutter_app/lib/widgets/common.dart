@@ -8,6 +8,8 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 
+// USEFUL WIDGETS
+
 class CAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
@@ -52,6 +54,9 @@ class CAppDrawer extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     bool termsAccepted = shared.termsAccepted;
     bool isLoggedIn = authClient.isLoggedIn();
+    bool isAdmin = authClient.isAdmin();
+    bool isOfficer = authClient.isOfficer();
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -71,7 +76,7 @@ class CAppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/login');
               },
             ),
-          if (termsAccepted && isLoggedIn)
+          if (isLoggedIn)
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('Logout'),
@@ -92,7 +97,7 @@ class CAppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/info');
               },
             ),
-          if (termsAccepted && isLoggedIn)
+          if (isLoggedIn)
             ListTile(
               leading: Icon(Icons.home),
               title: Text("Home"),
@@ -100,7 +105,15 @@ class CAppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/home');
               },
             ),
-          if (termsAccepted && isLoggedIn)
+          if (isLoggedIn && (isAdmin || isOfficer))
+            ListTile(
+              leading: Icon(Icons.home),
+              title: Text("Accounts"),
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/accounts');
+              },
+            ),
+          if (isLoggedIn)
             ListTile(
               leading: Icon(Icons.settings),
               title: Text(loc.menuSettings),
@@ -182,4 +195,35 @@ class SimpleAlertDialog extends StatelessWidget {
       ],
     );
   }
+}
+
+// USEFUL FUNCTIONS
+
+Widget buildSectionLink(BuildContext context, String text, String routeName) {
+  return Card(
+    child: ListTile(
+      title: Text(
+        text,
+        style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+      ),
+      trailing: const Icon(Icons.arrow_forward, size: 16),
+      onTap: () {
+        Navigator.pushNamed(context, routeName);
+      },
+    ),
+  );
+}
+
+Widget buildSectionTitle(String title) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12.0),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.blue,
+      ),
+    ),
+  );
 }

@@ -48,6 +48,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNetwork => 'Network error';
 
   @override
+  String get errorNotAuthorized => 'Not authorized';
+
+  @override
   String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
 
   @override
@@ -81,6 +84,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Session not valid or expired';
 
   @override
+  String get labelClickToSelectFile => 'Click to select file';
+
+  @override
   String get labelCompetenceTerritory => 'Competence territory';
 
   @override
@@ -88,6 +94,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelConfirmNewPassword => 'Confirm new password';
+
+  @override
+  String get labelDetails => 'Details';
 
   @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
@@ -100,6 +109,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelLastRefreshAt => 'Last refresh at';
+
+  @override
+  String get labelLanguage => 'Language';
 
   @override
   String get labelNewAlert => 'New alert';
@@ -115,6 +127,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelRegistration => 'Registration';
+
+  @override
+  String get labelSelect => 'Select';
 
   @override
   String get labelShowPassword => 'Show password';
@@ -141,6 +156,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuProfile => 'Profile';
 
   @override
+  String get menuRegisteredUsers => 'Registered users';
+
+  @override
+  String get menuResetPrivileges => 'Reset privileges (total)';
+
+  @override
+  String get menuUploadTerms => 'Upload legal terms';
+
+  @override
+  String get menuUsers => 'Users';
+
+  @override
+  String get menuWhiteList => 'Registration white list';
+
+  @override
   String get successLogin => 'Login successful';
 
   @override
@@ -154,6 +184,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successPasswordChanged => 'Password changed successfully';
+
+  @override
+  String get successUpload => 'Upload done successfully';
 
   @override
   String get successGeneric => 'Operation done';

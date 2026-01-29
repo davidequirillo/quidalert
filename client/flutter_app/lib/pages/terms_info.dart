@@ -67,7 +67,7 @@ class TermsBody extends StatelessWidget {
           padding: EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Expanded(child: Markdown(data: snapshot.data!)),
+              Expanded(child: Markdown(data: snapshot.data!, onTapLink: null)),
               const SizedBox(height: 10),
               if (!termsAccepted)
                 Row(
@@ -117,7 +117,7 @@ class InfoBody extends StatelessWidget {
   const InfoBody({super.key});
 
   Future<String> _fetchMarkdown({String? lang}) async {
-    final String assetPath = 'info_$lang.md';
+    final String assetPath = 'assets/info_$lang.md';
     final text = await rootBundle.loadString(assetPath);
     return text;
   }
@@ -168,6 +168,8 @@ class InfoBody extends StatelessWidget {
                           Navigator.pushReplacementNamed(context, '/terms');
                         }
                         break;
+                      default:
+                        debugPrint('Unknown link: $href');
                     }
                   },
                 ),

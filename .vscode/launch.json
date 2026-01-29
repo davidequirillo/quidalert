@@ -10,17 +10,18 @@
     "console": "integratedTerminal"
   },
   {
-    "name": "Debug Client (Flutter - Chrome)",
+    "name": "Debug Client (Flutter - Windows)",
     "type": "dart",
     "request": "launch",
     "cwd": "${workspaceFolder}/client/flutter_app",
-    "deviceId": "chrome"
-  }, 
-{
+    "deviceId": "windows"
+  },  
+  {
     "name": "Debug Client (Flutter - Android)",
     "type": "dart",
     "request": "launch",
     "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "emulator-5554"
-  }]
+  }
+]
 }

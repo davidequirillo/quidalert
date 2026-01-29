@@ -61,6 +61,7 @@ class AuthClient extends ChangeNotifier {
   String? accessToken;
   String? loginToken;
   bool initDone = false;
+  Map<String, dynamic> userInfo = {};
 
   AuthClient({FlutterSecureStorage? storage})
     : _secureStorage = storage ?? FlutterSecureStorage(),
@@ -269,50 +270,6 @@ class AuthClient extends ChangeNotifier {
         (accessToken != null);
   }
 
-  Future<http.Response> sendRawFileUploadRequest(
-    String url,
-    File file, {
-    Map<String, String> headers = const {},
-  }) async {
-    final uri = Uri.parse(url);
-    final fileBytes = await file.readAsBytes();
-    headers.putIfAbsent('content-type', () => 'application/octet-stream');
-    final resp = await http.post(uri, headers: headers, body: fileBytes);
-    return resp;
-  }
-
-  Future<http.Response> sendJsonRequest(
-    String method,
-    String url, {
-    Map<String, String> headers = const {},
-    Map<String, dynamic> body = const {},
-  }) async {
-    final payload = jsonEncode(body);
-    headers.putIfAbsent(
-      'content-type',
-      () => 'application/json; charset=utf-8',
-    );
-    final uri = Uri.parse(url);
-    late http.Response resp;
-    switch (method.toUpperCase()) {
-      case 'GET':
-        resp = await http.get(uri, headers: headers);
-        break;
-      case 'POST':
-        resp = await http.post(uri, headers: headers, body: payload);
-        break;
-      case 'PUT':
-        resp = await http.put(uri, headers: headers, body: payload);
-        break;
-      case 'DELETE':
-        resp = await http.delete(uri, headers: headers);
-        break;
-      default:
-        throw ArgumentError('Unsupported HTTP method: $method');
-    }
-    return resp;
-  }
-
   Map<String, String> _authHeaders() =>
       (accessToken == null) ? {} : {'Authorization': 'Bearer $accessToken'};
 
@@ -378,6 +335,78 @@ class AuthClient extends ChangeNotifier {
       return resp;
     }
     setAuthTokens(null, null);
+    setUserInfo({});
+    return resp;
+  }
+
+  Future<http.Response> sendMultipartFileUploadRequest(
+    String url, {
+    Map<String, String> headers = const {},
+    Map<String, dynamic> fields = const {},
+    required String file,
+  }) async {
+    final String fileContentType =
+        headers['Content-Type'] ?? 'application/octet-stream';
+    headers.remove("Content-Type");
+    final uri = Uri.parse(url);
+    var request = http.MultipartRequest('POST', uri);
+    request.headers.addAll(headers);
+    request.fields.addAll(
+      fields.map((key, value) => MapEntry(key, value.toString())),
+    );
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        file,
+        contentType: http.MediaType.parse(fileContentType),
+      ),
+    );
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    return response;
+  }
+
+  Future<http.Response> sendRawFileUploadRequest(
+    String url, {
+    Map<String, String> headers = const {},
+    required String file,
+  }) async {
+    final uri = Uri.parse(url);
+    final fileBytes = await File(file).readAsBytes();
+    headers.putIfAbsent('Content-Type', () => 'application/octet-stream');
+    final resp = await http.post(uri, headers: headers, body: fileBytes);
+    return resp;
+  }
+
+  Future<http.Response> sendJsonRequest(
+    String method,
+    String url, {
+    Map<String, String> headers = const {},
+    Map<String, dynamic> body = const {},
+  }) async {
+    final payload = jsonEncode(body);
+    headers.putIfAbsent(
+      'Content-Type',
+      () => 'application/json; charset=utf-8',
+    );
+    final uri = Uri.parse(url);
+    late http.Response resp;
+    switch (method.toUpperCase()) {
+      case 'GET':
+        resp = await http.get(uri, headers: headers);
+        break;
+      case 'POST':
+        resp = await http.post(uri, headers: headers, body: payload);
+        break;
+      case 'PUT':
+        resp = await http.put(uri, headers: headers, body: payload);
+        break;
+      case 'DELETE':
+        resp = await http.delete(uri, headers: headers, body: payload);
+        break;
+      default:
+        throw ArgumentError('Unsupported HTTP method: $method');
+    }
     return resp;
   }
 
@@ -386,7 +415,7 @@ class AuthClient extends ChangeNotifier {
     String relPath, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
-    File? file,
+    String? file,
   }) async {
     final m = method.toUpperCase();
     late http.Response resp;
@@ -395,7 +424,20 @@ class AuthClient extends ChangeNotifier {
     final url = '$baseUrl$relPath';
     try {
       if (file != null) {
-        resp = await sendRawFileUploadRequest(url, file, headers: merged);
+        if ((body != null) && body.isNotEmpty) {
+          resp = await sendMultipartFileUploadRequest(
+            url,
+            headers: merged,
+            fields: b,
+            file: file,
+          );
+        } else {
+          resp = await sendRawFileUploadRequest(
+            url,
+            headers: merged,
+            file: file,
+          );
+        }
       } else {
         resp = await sendJsonRequest(method, url, headers: merged, body: b);
       }
@@ -423,7 +465,20 @@ class AuthClient extends ChangeNotifier {
           debugPrint('$m (retry auth), access token: $accessToken');
         }
         if (file != null) {
-          resp = await sendRawFileUploadRequest(url, file, headers: newMerged);
+          if ((body != null) && body.isNotEmpty) {
+            await sendMultipartFileUploadRequest(
+              url,
+              headers: newMerged,
+              fields: b,
+              file: file,
+            );
+          } else {
+            resp = await sendRawFileUploadRequest(
+              url,
+              headers: newMerged,
+              file: file,
+            );
+          }
         } else {
           resp = await sendJsonRequest(
             method,
@@ -464,5 +519,21 @@ class AuthClient extends ChangeNotifier {
       }
       throw Exception("$m (auth), unexpected error: $e");
     }
+  }
+
+  void setUserInfo(Map<String, dynamic> info) {
+    userInfo = info;
+  }
+
+  bool isAdmin() {
+    return userInfo['is_admin'] == true;
+  }
+
+  bool isOfficer() {
+    return userInfo['is_officer'] == true;
+  }
+
+  bool isChief() {
+    return userInfo['is_chief'] == true;
   }
 }

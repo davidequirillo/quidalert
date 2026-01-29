@@ -173,6 +173,12 @@ abstract class AppLocalizations {
   /// **'Network error'**
   String get errorNetwork;
 
+  /// No description provided for @errorNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized'**
+  String get errorNotAuthorized;
+
   /// No description provided for @errorRegNotAuthorized.
   ///
   /// In en, this message translates to:
@@ -239,6 +245,12 @@ abstract class AppLocalizations {
   /// **'Session not valid or expired'**
   String get errorSessionNotValidOrExpired;
 
+  /// No description provided for @labelClickToSelectFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to select file'**
+  String get labelClickToSelectFile;
+
   /// No description provided for @labelCompetenceTerritory.
   ///
   /// In en, this message translates to:
@@ -256,6 +268,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm new password'**
   String get labelConfirmNewPassword;
+
+  /// No description provided for @labelDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get labelDetails;
 
   /// No description provided for @labelDoNotHaveAccount.
   ///
@@ -280,6 +298,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last refresh at'**
   String get labelLastRefreshAt;
+
+  /// No description provided for @labelLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get labelLanguage;
 
   /// No description provided for @labelNewAlert.
   ///
@@ -310,6 +334,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration'**
   String get labelRegistration;
+
+  /// No description provided for @labelSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get labelSelect;
 
   /// No description provided for @labelShowPassword.
   ///
@@ -359,6 +389,36 @@ abstract class AppLocalizations {
   /// **'Profile'**
   String get menuProfile;
 
+  /// No description provided for @menuRegisteredUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Registered users'**
+  String get menuRegisteredUsers;
+
+  /// No description provided for @menuResetPrivileges.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset privileges (total)'**
+  String get menuResetPrivileges;
+
+  /// No description provided for @menuUploadTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload legal terms'**
+  String get menuUploadTerms;
+
+  /// No description provided for @menuUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get menuUsers;
+
+  /// No description provided for @menuWhiteList.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration white list'**
+  String get menuWhiteList;
+
   /// No description provided for @successLogin.
   ///
   /// In en, this message translates to:
@@ -388,6 +448,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password changed successfully'**
   String get successPasswordChanged;
+
+  /// No description provided for @successUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload done successfully'**
+  String get successUpload;
 
   /// No description provided for @successGeneric.
   ///

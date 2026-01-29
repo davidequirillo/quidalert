@@ -66,8 +66,9 @@ class UserOut(UserBase, table=False):
         primary_key=True,
         nullable=False
     )
+    is_superuser: bool = Field(default=False, nullable=False)
     is_admin: bool = Field(default=False, nullable=False)
-    is_official: bool = Field(default=False, nullable=False)
+    is_officer: bool = Field(default=False, nullable=False)
     is_chief: bool = Field(default=False, nullable=False)
     type: str = Field(default=UserType.citizen, nullable=False)
     status: str = Field(default=UserStatus.ok, nullable=False)
@@ -91,6 +92,8 @@ class UserOut(UserBase, table=False):
     created_at: datetime = Field(
         default_factory=lambda: now_tz_naive(), nullable=False
     )
+    updated_by: Optional[EmailStr] = Field(default=None, nullable=True)
+    updated_at: Optional[datetime] = Field(default=None, nullable=True)
 
     @field_validator("type")
     @classmethod
@@ -223,21 +226,8 @@ class Alert(SQLModel, table=True):
             raise ValueError("Severity must be between 0 and 5")
         return v
     
-class WhiteRecordIn(SQLModel, table=False):
-    firstname: Optional[str] = Field(nullable=True, max_length=64)
-    surname: Optional[str] = Field(nullable=True, max_length=64)
-    email: EmailStr = Field(index=True, nullable=False, unique=True, min_length=3, max_length=128)
-    type: str = Field(default=UserType.citizen, nullable=False) 
-    created_at: datetime = Field(default_factory=lambda:datetime.now(timezone.utc).replace(tzinfo=None), nullable=False)
-    # todo: probably address, phone etc.
-
-    @field_validator("type")
-    @classmethod
-    def validate_type(cls, s):
-        if not s in [t.value for t in UserType]:
-            raise ValueError("Wrong type")
-        return s    
-
-class WhiteRecord(WhiteRecordIn, table=True):
-    __tablename__: str = 'whitelist'
-    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
+class WhiteRecord(SQLModel, table=True):
+    __tablename__: str = 'white_records'
+    email: EmailStr = Field(primary_key=True, nullable=False, min_length=3, max_length=128)
+    created_by: EmailStr = Field(nullable=False, min_length=3, max_length=128)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)

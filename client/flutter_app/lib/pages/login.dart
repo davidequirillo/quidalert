@@ -162,7 +162,7 @@ class _LoginBodyState extends State<LoginBody> {
               ),
               SizedBox(
                 width: double.infinity,
-                height: 30,
+                height: 50,
                 child: ElevatedButton(
                   onPressed: () {
                     submit();

@@ -19,6 +19,11 @@ import 'pages/home.dart';
 import 'pages/new_alert.dart';
 import 'pages/recents.dart';
 import 'pages/settings.dart';
+import 'pages/accounts.dart';
+import 'pages/users.dart';
+import 'pages/whitelist.dart';
+import 'pages/upload_terms.dart';
+import 'pages/reset_privileges.dart';
 
 void main() {
   debugPrint('Hello from main()');
@@ -69,6 +74,11 @@ class QuidalertWidget extends StatelessWidget {
         '/home': (_) => const HomePage(),
         '/alerts/new': (_) => const NewAlertPage(),
         '/alerts/recents': (_) => const RecentsPage(),
+        '/accounts': (_) => const AccountsPage(),
+        '/accounts/users': (_) => const UsersPage(),
+        '/accounts/whitelist': (_) => const WhiteListPage(),
+        '/accounts/upload-terms': (_) => const UploadTermsPage(),
+        '/accounts/reset-privileges': (_) => const ResetPrivilegesPage(),
         '/settings': (_) => const SettingsPage(),
       },
     );
