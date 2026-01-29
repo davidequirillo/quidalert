@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
   {
-    "label": "Client: Flutter run (Chrome)",
+    "label": "Client: Flutter run (Windows)",
     "type": "shell",
-    "command": "flutter run -d chrome",
+    "command": "flutter run -d windows",
     "options": { "cwd": "${workspaceFolder}/client/flutter_app" },
     "problemMatcher": []
   },

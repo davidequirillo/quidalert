@@ -27,6 +27,8 @@ dart run rename_app:main all="My App Name"
 ```
 Note: the last renaming instruction, is useful to change the "distribution app name" with a new custom desired name ("My App Name" for example), and it's necessary only if you want to distribute the app to the public (for android store, ios store, etc.). Otherwise, for testing purposes, this specific renaming is optional.
 
+Note: in some cases, in windows operative system, you must enable "developer mode" (in windows settings), otherwise the command "flutter pub get" could return an error.
+
 In "lib/config.dart", change appName (facultative), and change apiBaseUrl, to connect to the correct relative server.  
 Change "competenceTerritory" too, to inform the public about the zone where your app can operate. 
 
@@ -96,10 +98,16 @@ code .quidalert.code-workspace
 NOTE: code workspace has been configured to ignore some useless folders from the programming IDE view (for example “build” directories)
 
 To run (debug) client and server, go to VS Code menu -> View -> Run.
-- Choose "Debug - Client (Flutter)" and click to play to debug the client.
+- Choose "Debug - Client (Flutter) Windows" and click to play to debug the client.
 - Choose "Debug - Server (Python)" and click to play to debug the server.
 
-Obviously they can be executed together, in parallel, to test the entire system.
+Obviously they can be executed together (client and server), in parallel, to test the entire system.
+
+NOTES
+- "Debug - Client (Flutter) Windows" requires Microsoft Visual Studio (C++ desktop development package).   
+- "Debug - Client (Flutter) Android" requires Android SDK
+
+Flutter Web device (Chrome) is not completely supported at the moment.
 
 ### Notes about production (run)
 

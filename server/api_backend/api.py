@@ -4,8 +4,11 @@
 
 import os
 from datetime import timedelta
-from fastapi import (FastAPI, Depends, 
-    Request, Response, HTTPException, status, BackgroundTasks)
+import html
+from fastapi import (FastAPI, Depends,
+    Request, Response, 
+    HTTPException, status, BackgroundTasks, 
+    File, UploadFile, Form)
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
@@ -54,8 +57,13 @@ from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
     two_factor_not_valid_exception, two_factor_required_response,
-    permission_exception
+    permission_exception,
+    invalid_file_type_exception, bad_file_upload_exception,
+    unsafe_file_exception, file_too_large_exception
     )
+from services.fileutils import (
+    MAX_FILE_SIZE, MAX_SMALL_FILE_SIZE, 
+    FILES_DIR)
 
 def init_settings():
     setup_logging()
@@ -84,6 +92,8 @@ def get_db_session():
     yield from get_session(engine)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+api_dirpath = os.path.dirname(__file__)
+templates = Jinja2Templates(directory=os.path.join(api_dirpath, "templates"))
 
 async def get_current_user(access_token: str = Depends(oauth2_scheme),
                     db_session: Session = Depends(get_db_session)):
@@ -220,21 +230,6 @@ async def logout(
     db_session.commit()    
     return {"detail": "Logout successful"}
 
-api_dirname = os.path.dirname(__file__)
-templates = Jinja2Templates(directory=os.path.join(api_dirname, "templates"))
-
-@app.get("/api/terms")
-async def get_terms(request: Request, response: Response):
-    lang = request.headers.get('Accept-Language')
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
-    response.headers["Content-Type"] = "text/markdown; charset=utf-8"
-    files_dir = os.path.join(os.path.dirname(__file__), "..")
-    fpath = os.path.join(files_dir, f"files/terms_{lang}.md")
-    if not os.path.exists(fpath):
-        fpath += ".example"
-    return FileResponse(fpath)
- 
 @app.post("/api/auth/login")
 async def login(data: LoginSchema,
             background_tasks: BackgroundTasks,
@@ -349,6 +344,44 @@ async def login(data: LoginSchema,
 async def get_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
+@app.get("/api/terms")
+async def get_terms(request: Request, response: Response):
+    lang = request.headers.get('Accept-Language')
+    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
+        lang = UserLanguage.en
+    response.headers["Content-Type"] = "text/markdown; charset=utf-8"
+    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
+    if not os.path.exists(fpath):
+        fpath += ".example"
+    return FileResponse(fpath)
+
+@app.post("/api/terms") # upload legal terms file (multipart/form-data)
+async def upload_terms(file: UploadFile = File(...), language: str = Form(...), current_user: User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise permission_exception()
+    if (file is None) or (file.filename is None) or (file.filename == ""):
+        raise bad_file_upload_exception()
+    if not file.filename.endswith(('.md', '.markdown')):
+        raise invalid_file_type_exception()
+    if file.content_type not in ["text/markdown", "text/plain"]:
+        raise invalid_file_type_exception()
+    content = await file.read()
+    file_size = len(content)
+    if file_size > MAX_SMALL_FILE_SIZE:
+        raise file_too_large_exception(MAX_SMALL_FILE_SIZE)
+    try:
+        text_content = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise bad_file_upload_exception()
+    safe_text = html.escape(text_content)
+    lang = language
+    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
+        lang = UserLanguage.en
+    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
+    with open(fpath, "w") as f:
+        f.write(safe_text)
+    return {"message": "Terms uploaded successfully"}
+
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 async def get_user(user_id: str, 
                 current_user: User = Depends(get_current_user),
@@ -392,10 +425,12 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     # We will return a unique registration message for almost all cases, for security
     reg_message = "If email address is valid, you will receive an activation mail message"
     is_an_admin = False
+    is_the_superuser = False
     # If database is empty and password is correct we insert the admin
     if db_session.exec(select(User).limit(1)).first() is None:
         if (user_in.password == settings.admin_pass):
             is_an_admin = True
+            is_the_superuser = True
     else: # else we check the email address existence in a whitelist
         pass
         # todo: if user_in.email is not in whitelist: 
@@ -425,6 +460,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         email_hash=get_email_hash(user_in.email),
         language=user_in.language,
         password_hash=password_hashed,
+        is_superuser=is_the_superuser,
         is_admin = is_an_admin,
         is_active=False,
         activation_code=act_token,

@@ -40,3 +40,23 @@ def two_factor_required_response(): # Note: this is not an exception, but a resp
     return Response(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content="2FA required")
+
+def file_too_large_exception(max_size: int):
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"File too large. Maximum allowed size is {max_size} bytes")
+
+def unsafe_file_exception():
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Unsafe file upload detected")
+
+def bad_file_upload_exception():
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Bad file upload")
+
+def invalid_file_type_exception():
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid file type")
