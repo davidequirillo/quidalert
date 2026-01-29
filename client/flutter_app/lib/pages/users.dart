@@ -3,11 +3,8 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'dart:convert';
-import 'package:quidalert_flutter/services/auth.dart';
 
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});
@@ -36,7 +33,7 @@ class _UsersBodyState extends State<UsersBody> {
     return Text("Users page content");
   }
 
-  // Widget helper per creare i titoli delle sezioni
+  // A test widget to create section titles
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
@@ -51,7 +48,7 @@ class _UsersBodyState extends State<UsersBody> {
     );
   }
 
-  // Widget helper per creare un form veloce con due campi
+  // A test widget to create a simple form
   Widget _buildSimpleForm(String label1, String label2) {
     return Row(
       children: [
