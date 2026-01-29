@@ -14,5 +14,5 @@ __pycache__/
 *.log
 
 # Files (upload, etc.)
-files/terms_en_example.txt
-files/terms_en_example.pdf
+files/terms_en.md
+files/terms_it.md
