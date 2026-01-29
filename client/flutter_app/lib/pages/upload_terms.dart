@@ -46,6 +46,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
 
   Future<void> _uploadToServer() async {
     String? retMessage;
+    Color retColor = Colors.blue;
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
     if (_pickedFile == null || _pickedFile!.path == null) return;
@@ -63,21 +64,28 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
         file: _pickedFile!.path!,
       );
       await Future.delayed(const Duration(seconds: 2));
-      retMessage = loc.successGeneric;
+      retMessage = loc.successUpload;
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorized;
+      retColor = Colors.red;
     } on BadRequestException catch (_) {
       retMessage = loc.errorBadRequest;
+      retColor = Colors.red;
     } on NetworkException catch (_) {
       retMessage = loc.errorNetwork;
+      retColor = Colors.red;
     } catch (e) {
       retMessage = "Error: $e";
+      retColor = Colors.red;
     } finally {
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(retMessage!)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(retMessage!), backgroundColor: retColor),
+        );
+        setState(() {
+          _pickedFile = null;
+        });
       }
     }
   }

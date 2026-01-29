@@ -3,11 +3,8 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'dart:convert';
-import 'package:quidalert_flutter/services/auth.dart';
 
 class WhiteListPage extends StatelessWidget {
   const WhiteListPage({super.key});

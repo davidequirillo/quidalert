@@ -136,6 +136,13 @@ class AuthClient extends ChangeNotifier {
     loginToken = token;
   }
 
+  Future<void> deleteLoginToken() async {
+    await _secureStorage.delete(key: 'loginToken');
+    if (kDebugMode) {
+      debugPrint('Login token deleted');
+    }
+  }
+
   Future<void> checkLoginTokenValidity() async {
     if (loginToken == null) {
       if (kDebugMode) {
@@ -149,13 +156,6 @@ class AuthClient extends ChangeNotifier {
       }
       await deleteLoginToken();
       loginToken = null;
-    }
-  }
-
-  Future<void> deleteLoginToken() async {
-    await _secureStorage.delete(key: 'loginToken');
-    if (kDebugMode) {
-      debugPrint('Login token deleted');
     }
   }
 
@@ -181,7 +181,7 @@ class AuthClient extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('Try refresh tokens, local check, refresh_token expired)');
       }
-      setAuthTokens(null, null);
+      await setAuthTokens(null, null);
       throw ExpiredTokenException();
     }
     final uri = Uri.parse('$baseUrl/auth/refresh');
@@ -195,19 +195,19 @@ class AuthClient extends ChangeNotifier {
       final String respMessage = jsonResp['detail'] ?? '';
       if (resp.statusCode < 200 || resp.statusCode >= 300) {
         if (resp.statusCode == 401 && respMessage == msgTokenExpired) {
-          setAuthTokens(null, null);
+          await setAuthTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token expired');
           }
           throw ExpiredTokenException();
         } else if (resp.statusCode == 401 && respMessage == msgTokenNotValid) {
-          setAuthTokens(null, null);
+          await setAuthTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token not valid');
           }
           throw InvalidTokenException();
         } else if (resp.statusCode == 401) {
-          setAuthTokens(null, null);
+          await setAuthTokens(null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token wrong or null');
           }
@@ -218,7 +218,7 @@ class AuthClient extends ChangeNotifier {
               "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
             );
           }
-          throw BadRequestException;
+          throw BadRequestException();
         }
       }
       if (kDebugMode) {
@@ -226,7 +226,7 @@ class AuthClient extends ChangeNotifier {
       }
       String? rToken = jsonResp['refresh_token'];
       String? aToken = jsonResp['access_token'];
-      setAuthTokens(rToken, aToken);
+      await setAuthTokens(rToken, aToken);
       if (kDebugMode) {
         debugPrint('The refresh token is: $refreshToken');
       }
@@ -234,31 +234,31 @@ class AuthClient extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('Try refresh tokens, network error: $e');
       }
-      throw NetworkException;
+      throw NetworkException();
     }
   }
 
-  void setAuthTokens(String? rtok, String? atok) {
+  Future<void> setAuthTokens(String? rtok, String? atok) async {
     // Set refresh token and access token (from login, or refresh api)
     if (rtok != null) {
       refreshToken = rtok;
       accessToken = atok;
-      saveRefreshToken();
+      await saveRefreshToken();
     } else {
       if (refreshToken != null) {
-        deleteRefreshToken();
+        await deleteRefreshToken();
       }
       accessToken = refreshToken = null;
     }
   }
 
-  void setLoginToken(String? ltok) {
+  Future<void> setLoginToken(String? ltok) async {
     if (ltok != null) {
       loginToken = ltok;
-      saveLoginToken();
+      await saveLoginToken();
     } else {
       if (loginToken != null) {
-        deleteLoginToken();
+        await deleteLoginToken();
       }
       loginToken = null;
     }
@@ -296,7 +296,7 @@ class AuthClient extends ChangeNotifier {
         debugPrint("Login, HTTP ${resp.statusCode}: ${resp.body}");
       }
       if ((resp.statusCode == 401) && resp.body.contains('2FA required')) {
-        setLoginToken(
+        await setLoginToken(
           null,
         ); // clear old login token if present, because it's invalid
       }
@@ -309,9 +309,9 @@ class AuthClient extends ChangeNotifier {
     if (kDebugMode) {
       debugPrint('Login successful');
     }
-    setAuthTokens(rtoken, atoken);
+    await setAuthTokens(rtoken, atoken);
     if ((ltoken != null) && (ltoken != "")) {
-      setLoginToken(ltoken);
+      await setLoginToken(ltoken);
     } else {
       // Login api can legitimately not return a login token
       // It happens when our local login token was valid
@@ -334,7 +334,7 @@ class AuthClient extends ChangeNotifier {
       }
       return resp;
     }
-    setAuthTokens(null, null);
+    await setAuthTokens(null, null);
     setUserInfo({});
     return resp;
   }

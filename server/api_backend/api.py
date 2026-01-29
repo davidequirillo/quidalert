@@ -378,8 +378,8 @@ async def upload_terms(file: UploadFile = File(...), language: str = Form(...), 
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
     fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
-    with open(fpath, "w") as f:
-        f.write(safe_text)
+    with open(fpath, "wb") as f:
+        f.write(safe_text.encode("utf-8"))
     return {"message": "Terms uploaded successfully"}
 
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
