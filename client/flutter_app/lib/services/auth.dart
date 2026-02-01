@@ -510,6 +510,9 @@ class AuthClient extends ChangeNotifier {
     } on PermissionDeniedException catch (_) {
       throw GenericNotAuthorizedException();
     } on BadRequestException catch (_) {
+      if (kDebugMode) {
+        debugPrint("$m (auth), bad request exception");
+      }
       rethrow;
     } on NetworkException catch (_) {
       rethrow;

@@ -36,9 +36,10 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (LoginSchema, RefreshTokenWrapper, UserBase, UserIn, User, UserOut, UserLanguage,
+from models.general import (UserBase, UserIn, User, UserOut, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm, 
-    RefreshToken)
+    RefreshToken, LoginSchema, RefreshTokenWrapper,
+    WhiteListEntry, WhiteListEntriesDict)
 from services.security import (
     LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
     generate_activation_token, activation_expiry, 
@@ -382,44 +383,6 @@ async def upload_terms(file: UploadFile = File(...), language: str = Form(...), 
         f.write(safe_text.encode("utf-8"))
     return {"message": "Terms uploaded successfully"}
 
-@app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-async def get_user(user_id: str, 
-                current_user: User = Depends(get_current_user),
-                db_session: Session = Depends(get_db_session)):
-    if not current_user.is_admin:
-        raise permission_exception()
-    user = db_session.exec(select(User).where(User.id == user_id)).first()
-    return user
-
-@app.delete("/api/user/{user_id}")
-def delete_user(user_id: str, 
-                current_user: User = Depends(get_current_user), 
-                db_session: Session = Depends(get_db_session)):
-    if not current_user.is_admin:
-        raise permission_exception()
-    user = db_session.exec(select(User).where(User.id == user_id)).first()
-    if user:
-        db_session.delete(user)
-        db_session.commit()
-        return {"message": "User deleted"}
-    return {"message": "User not found"}
-
-@app.put("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-def update_user(user_id: str, user_new: UserBase, 
-                current_user: User = Depends(get_current_user), 
-                db_session: Session = Depends(get_db_session)):
-    if not current_user.is_admin:
-        raise permission_exception()
-    user = db_session.exec(select(User).where(User.id == user_id)).first()
-    if user:
-        user.firstname = user_new.firstname
-        user.surname = user_new.surname
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
-        return user
-    return {"message": "User not found"}
-
 @app.post("/api/register")
 def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
     # We will return a unique registration message for almost all cases, for security
@@ -441,6 +404,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     if existing_user and existing_user.is_active:
         return { "message": reg_message }
     password_hashed = get_password_hash(user_in.password)
+    email_lowercase = user_in.email.lower()
     act_token = generate_activation_token()
     act_expires_at = activation_expiry()
     now = now_tz_naive()
@@ -456,8 +420,8 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     user = User(
         firstname=user_in.firstname,
         surname=user_in.surname,
-        email=user_in.email,
-        email_hash=get_email_hash(user_in.email),
+        email=email_lowercase,
+        email_hash=get_email_hash(email_lowercase),
         language=user_in.language,
         password_hash=password_hashed,
         is_superuser=is_the_superuser,
@@ -604,3 +568,88 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
         background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
 
     return {"message": "Password reset successful"}
+
+@app.get("/api/whitelist-entries")
+async def get_whitelist_entries(
+                current_user: User = Depends(get_current_user),
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise permission_exception()
+    offset = 0
+    limit = 1000
+    # select all whitelist entries with pagination (offset and limit)
+    entries = []
+    return entries
+
+@app.post("/api/whitelist-entries")
+async def add_whitelist_entries(
+                dict: WhiteListEntriesDict,
+                current_user: User = Depends(get_current_user),
+                db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_officer):
+        raise permission_exception()
+    failed_emails = []
+    added_count = 0
+    existing_count = 0
+    for e in dict.emails:
+        try:
+            if (e is None) or (e.strip() == ""):
+                continue
+            entry = WhiteListEntry(email=e.lower(), created_by=current_user.email)
+            if db_session.exec(
+                select(WhiteListEntry).where(WhiteListEntry.email == entry.email)
+            ).first():
+                existing_count += 1
+                continue # skip entry if already exists
+            db_session.add(entry)
+            added_count += 1
+        except Exception:
+            failed_emails.append(e)
+            continue
+    db_session.commit()
+    return {
+        "message": "Operation completed",
+        "total_count": len(dict.emails),
+        "added_count": added_count,
+        "existing_count": existing_count,
+        "failed_count": len(failed_emails), 
+        "failed_emails": failed_emails
+    }
+
+@app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
+async def get_user(user_id: str, 
+                current_user: User = Depends(get_current_user),
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise permission_exception()
+    user = db_session.exec(select(User).where(User.id == user_id)).first()
+    return user
+
+@app.delete("/api/user/{user_id}")
+def delete_user(user_id: str, 
+                current_user: User = Depends(get_current_user), 
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise permission_exception()
+    user = db_session.exec(select(User).where(User.id == user_id)).first()
+    if user:
+        db_session.delete(user)
+        db_session.commit()
+        return {"message": "User deleted"}
+    return {"message": "User not found"}
+
+@app.put("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
+def update_user(user_id: str, user_new: UserBase, 
+                current_user: User = Depends(get_current_user), 
+                db_session: Session = Depends(get_db_session)):
+    if not current_user.is_admin:
+        raise permission_exception()
+    user = db_session.exec(select(User).where(User.id == user_id)).first()
+    if user:
+        user.firstname = user_new.firstname
+        user.surname = user_new.surname
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+    return {"message": "User not found"}

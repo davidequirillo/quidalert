@@ -4,7 +4,7 @@
 
 import re
 from datetime import datetime, timezone
-from typing import Optional
+from typing import List, Optional
 from enum import Enum
 import uuid as uuid_pkg
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
@@ -226,8 +226,11 @@ class Alert(SQLModel, table=True):
             raise ValueError("Severity must be between 0 and 5")
         return v
     
-class WhiteRecord(SQLModel, table=True):
-    __tablename__: str = 'white_records'
+class WhiteListEntry(SQLModel, table=True):
+    __tablename__: str = 'whitelist_entries'
     email: EmailStr = Field(primary_key=True, nullable=False, min_length=3, max_length=128)
     created_by: EmailStr = Field(nullable=False, min_length=3, max_length=128)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+
+class WhiteListEntriesDict(BaseModel):
+    emails: List[str]

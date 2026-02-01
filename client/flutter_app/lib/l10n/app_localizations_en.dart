@@ -12,16 +12,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonAccept => 'Accept';
 
   @override
+  String get buttonAdd => 'Add';
+
+  @override
+  String get buttonBack => 'Back';
+
+  @override
   String get buttonCancel => 'Cancel';
 
   @override
   String get buttonReject => 'Reject';
 
   @override
+  String get buttonSearch => 'Search';
+
+  @override
   String get errorGeneric => 'Generic error';
 
   @override
   String get errorBadRequest => 'Bad request';
+
+  @override
+  String get errorCannotReadFile => 'Cannot read file';
 
   @override
   String get errorCodeNotValid => 'Code not valid';
@@ -36,6 +48,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorEmailAlreadyRegistered => 'Email already registered';
 
   @override
+  String get errorEntriesNotAdded => 'Some entries have not been added';
+
+  @override
+  String get errorError => 'Error';
+
+  @override
   String get errorInvalidCredentials => 'Email or password not valid';
 
   @override
@@ -48,7 +66,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNetwork => 'Network error';
 
   @override
+  String get errorNoEntryToAdd => 'No entry to add';
+
+  @override
   String get errorNotAuthorized => 'Not authorized';
+
+  @override
+  String get errorNotAuthorizedDoLogin => 'Not authorized, do login';
 
   @override
   String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
@@ -84,7 +108,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Session not valid or expired';
 
   @override
+  String get labelAddEmailsToWhiteList => 'Add email addressed to white list';
+
+  @override
+  String get labelAuthorizedBy => 'Authorized by';
+
+  @override
   String get labelClickToSelectFile => 'Click to select file';
+
+  @override
+  String get labelClickSearchToLoadEntries => 'Click search to get entries';
 
   @override
   String get labelCompetenceTerritory => 'Competence territory';
@@ -96,13 +129,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelConfirmNewPassword => 'Confirm new password';
 
   @override
+  String get labelCurrentWhiteListEntries => 'Current white list entries';
+
+  @override
   String get labelDetails => 'Details';
 
   @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
 
   @override
+  String get labelEmailSingle => 'Single email address';
+
+  @override
+  String get labelEmailMany => 'Many email addresses';
+
+  @override
   String get labelEnterVerificationMailCode => 'Enter the verification code just sent to you by email';
+
+  @override
+  String get labelEntriesFailed => 'Failed entries';
+
+  @override
+  String get labelEntriesTotal => 'Total entries';
+
+  @override
+  String get labelEntriesAdded => 'Added entries';
+
+  @override
+  String get labelEntriesExisting => 'Existing entries';
 
   @override
   String get labelFirstname => 'Firstname';
@@ -136,6 +190,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelSurname => 'Surname';
+
+  @override
+  String get labelNoEntryFound => 'No entry found';
 
   @override
   String get labelVerificationCode => 'Verification code';
