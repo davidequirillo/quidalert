@@ -12,16 +12,28 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonAccept => 'Accetta';
 
   @override
+  String get buttonAdd => 'Aggiungi';
+
+  @override
+  String get buttonBack => 'Indietro';
+
+  @override
   String get buttonCancel => 'Annulla';
 
   @override
   String get buttonReject => 'Rifiuta';
 
   @override
+  String get buttonSearch => 'Cerca';
+
+  @override
   String get errorGeneric => 'Errore generico';
 
   @override
   String get errorBadRequest => 'Richiesta non accettata';
+
+  @override
+  String get errorCannotReadFile => 'Errore di lettura del file';
 
   @override
   String get errorCodeNotValid => 'Codice non valido';
@@ -36,6 +48,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorEmailAlreadyRegistered => 'Email già registrata';
 
   @override
+  String get errorEntriesNotAdded => 'Alcune voci non sono state aggiunte';
+
+  @override
+  String get errorError => 'Errore';
+
+  @override
   String get errorInvalidCredentials => 'Email o password non valide';
 
   @override
@@ -48,7 +66,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorNetwork => 'Errore di rete';
 
   @override
+  String get errorNoEntryToAdd => 'Nessuna voce da aggiungere';
+
+  @override
   String get errorNotAuthorized => 'Non autorizzato';
+
+  @override
+  String get errorNotAuthorizedDoLogin => 'Non autorizzato, fai il login';
 
   @override
   String get errorRegNotAuthorized => 'Registrazione non autorizzata: chiedere all\'autorità territoriale competente';
@@ -84,7 +108,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Sessione non valida o scaduta';
 
   @override
+  String get labelAddEmailsToWhiteList => 'Aggiungi indirizzi email alla white list';
+
+  @override
+  String get labelAuthorizedBy => 'Autorizzato da';
+
+  @override
   String get labelClickToSelectFile => 'Fare click per selezionare il file';
+
+  @override
+  String get labelClickSearchToLoadEntries => 'Fare click su search per restituire le voci presenti';
 
   @override
   String get labelCompetenceTerritory => 'Territorio di competenza';
@@ -96,13 +129,34 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelConfirmNewPassword => 'Conferma nuova password';
 
   @override
+  String get labelCurrentWhiteListEntries => 'Voci presenti nella white list';
+
+  @override
   String get labelDetails => 'Dettagli';
 
   @override
   String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
 
   @override
+  String get labelEmailSingle => 'Indirizzo email singolo';
+
+  @override
+  String get labelEmailMany => 'Molti indirizzi email';
+
+  @override
   String get labelEnterVerificationMailCode => 'Inserisci il codice di verifica che ti è stato appena inviato via email';
+
+  @override
+  String get labelEntriesFailed => 'Voci fallite';
+
+  @override
+  String get labelEntriesTotal => 'Voci totali';
+
+  @override
+  String get labelEntriesAdded => 'Voci aggiunte';
+
+  @override
+  String get labelEntriesExisting => 'Voci esistenti';
 
   @override
   String get labelFirstname => 'Nome';
@@ -136,6 +190,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelSurname => 'Cognome';
+
+  @override
+  String get labelNoEntryFound => 'Nessuna voce trovata';
 
   @override
   String get labelVerificationCode => 'Codice di verifica';

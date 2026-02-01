@@ -101,6 +101,18 @@ abstract class AppLocalizations {
   /// **'Accept'**
   String get buttonAccept;
 
+  /// No description provided for @buttonAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get buttonAdd;
+
+  /// No description provided for @buttonBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get buttonBack;
+
   /// No description provided for @buttonCancel.
   ///
   /// In en, this message translates to:
@@ -113,6 +125,12 @@ abstract class AppLocalizations {
   /// **'Reject'**
   String get buttonReject;
 
+  /// No description provided for @buttonSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get buttonSearch;
+
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:
@@ -124,6 +142,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bad request'**
   String get errorBadRequest;
+
+  /// No description provided for @errorCannotReadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot read file'**
+  String get errorCannotReadFile;
 
   /// No description provided for @errorCodeNotValid.
   ///
@@ -149,6 +173,18 @@ abstract class AppLocalizations {
   /// **'Email already registered'**
   String get errorEmailAlreadyRegistered;
 
+  /// No description provided for @errorEntriesNotAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Some entries have not been added'**
+  String get errorEntriesNotAdded;
+
+  /// No description provided for @errorError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorError;
+
   /// No description provided for @errorInvalidCredentials.
   ///
   /// In en, this message translates to:
@@ -173,11 +209,23 @@ abstract class AppLocalizations {
   /// **'Network error'**
   String get errorNetwork;
 
+  /// No description provided for @errorNoEntryToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'No entry to add'**
+  String get errorNoEntryToAdd;
+
   /// No description provided for @errorNotAuthorized.
   ///
   /// In en, this message translates to:
   /// **'Not authorized'**
   String get errorNotAuthorized;
+
+  /// No description provided for @errorNotAuthorizedDoLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized, do login'**
+  String get errorNotAuthorizedDoLogin;
 
   /// No description provided for @errorRegNotAuthorized.
   ///
@@ -245,11 +293,29 @@ abstract class AppLocalizations {
   /// **'Session not valid or expired'**
   String get errorSessionNotValidOrExpired;
 
+  /// No description provided for @labelAddEmailsToWhiteList.
+  ///
+  /// In en, this message translates to:
+  /// **'Add email addressed to white list'**
+  String get labelAddEmailsToWhiteList;
+
+  /// No description provided for @labelAuthorizedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized by'**
+  String get labelAuthorizedBy;
+
   /// No description provided for @labelClickToSelectFile.
   ///
   /// In en, this message translates to:
   /// **'Click to select file'**
   String get labelClickToSelectFile;
+
+  /// No description provided for @labelClickSearchToLoadEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Click search to get entries'**
+  String get labelClickSearchToLoadEntries;
 
   /// No description provided for @labelCompetenceTerritory.
   ///
@@ -269,6 +335,12 @@ abstract class AppLocalizations {
   /// **'Confirm new password'**
   String get labelConfirmNewPassword;
 
+  /// No description provided for @labelCurrentWhiteListEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Current white list entries'**
+  String get labelCurrentWhiteListEntries;
+
   /// No description provided for @labelDetails.
   ///
   /// In en, this message translates to:
@@ -281,11 +353,47 @@ abstract class AppLocalizations {
   /// **'Don\'t have an account? Sign Up'**
   String get labelDoNotHaveAccount;
 
+  /// No description provided for @labelEmailSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single email address'**
+  String get labelEmailSingle;
+
+  /// No description provided for @labelEmailMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Many email addresses'**
+  String get labelEmailMany;
+
   /// No description provided for @labelEnterVerificationMailCode.
   ///
   /// In en, this message translates to:
   /// **'Enter the verification code just sent to you by email'**
   String get labelEnterVerificationMailCode;
+
+  /// No description provided for @labelEntriesFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed entries'**
+  String get labelEntriesFailed;
+
+  /// No description provided for @labelEntriesTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total entries'**
+  String get labelEntriesTotal;
+
+  /// No description provided for @labelEntriesAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added entries'**
+  String get labelEntriesAdded;
+
+  /// No description provided for @labelEntriesExisting.
+  ///
+  /// In en, this message translates to:
+  /// **'Existing entries'**
+  String get labelEntriesExisting;
 
   /// No description provided for @labelFirstname.
   ///
@@ -352,6 +460,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Surname'**
   String get labelSurname;
+
+  /// No description provided for @labelNoEntryFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No entry found'**
+  String get labelNoEntryFound;
 
   /// No description provided for @labelVerificationCode.
   ///

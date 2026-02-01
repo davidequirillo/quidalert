@@ -153,7 +153,7 @@ class GotoIfAlertDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(title),
-      content: Text(content),
+      content: SingleChildScrollView(child: Text(content)),
       actions: [
         TextButton(
           onPressed: () {
@@ -184,7 +184,7 @@ class SimpleAlertDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(title),
-      content: Text(content),
+      content: SingleChildScrollView(child: Text(content)),
       actions: [
         TextButton(
           onPressed: () {
@@ -198,6 +198,10 @@ class SimpleAlertDialog extends StatelessWidget {
 }
 
 // USEFUL FUNCTIONS
+
+void goToLoginPage(BuildContext context) {
+  Navigator.of(context).pushReplacementNamed('/login');
+}
 
 Widget buildSectionLink(BuildContext context, String text, String routeName) {
   return Card(
@@ -220,7 +224,7 @@ Widget buildSectionTitle(String title) {
     child: Text(
       title,
       style: const TextStyle(
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: FontWeight.bold,
         color: Colors.blue,
       ),

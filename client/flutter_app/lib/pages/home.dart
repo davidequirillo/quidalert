@@ -51,10 +51,6 @@ class _HomeBodyState extends State<HomeBody> {
     return json.decode(response.body);
   }
 
-  void goToLoginPage() {
-    Navigator.of(context).pushReplacementNamed('/login');
-  }
-
   @override
   Widget build(BuildContext context) {
     final authClient = context.read<AuthClient>();
@@ -68,7 +64,7 @@ class _HomeBodyState extends State<HomeBody> {
         if (snapshot.hasError) {
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              goToLoginPage();
+              goToLoginPage(context);
             });
             return Text(loc.errorSessionNotValidOrExpired);
           }
