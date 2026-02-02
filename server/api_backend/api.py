@@ -407,7 +407,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         if whitelist_entry:
             auth_by = whitelist_entry.created_by
             is_in_whitelist = True
-    if not is_in_whitelist:
+    if (not is_in_whitelist) and (not is_the_superuser):
         return { "message": reg_message }
     existing_user = db_session.exec(
         select(User).where(User.email == email_lowercase)
