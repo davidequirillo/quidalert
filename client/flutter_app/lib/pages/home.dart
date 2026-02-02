@@ -120,8 +120,18 @@ class _HomeBodyState extends State<HomeBody> {
           "${user['firstname']} ${user['surname']}",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          "${user['email']}\n ${loc.labelLastRefreshAt}: ${user['last_refresh_at']}",
+        subtitle: ListBody(
+          children: [
+            Text(
+              "${user['email']}\n${loc.labelLastRefreshAt}: ${user['last_refresh_at']}",
+            ),
+            Text("Superuser: ${user['is_superuser'] ? 'yes' : 'no'}"),
+            Text("Admin: ${user['is_admin'] ? 'yes' : 'no'}"),
+            Text("Officer: ${user['is_officer'] ? 'yes' : 'no'}"),
+            Text("Chief: ${user['is_chief'] ? 'yes' : 'no'}"),
+            Text("Status: ${user['status']}"),
+            Text("Type: ${user['type']}"),
+          ],
         ),
         isThreeLine: true,
       ),

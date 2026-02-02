@@ -389,22 +389,32 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     reg_message = "If email address is valid, you will receive an activation mail message"
     is_an_admin = False
     is_the_superuser = False
+    is_in_whitelist = False
+    if user_in.email and user_in.email.strip() != "":
+        email_lowercase = user_in.email.lower()
+    else:
+        email_lowercase = "" 
+    auth_by = None # authorized by
     # If database is empty and password is correct we insert the admin
     if db_session.exec(select(User).limit(1)).first() is None:
         if (user_in.password == settings.admin_pass):
             is_an_admin = True
             is_the_superuser = True
     else: # else we check the email address existence in a whitelist
-        pass
-        # todo: if user_in.email is not in whitelist: 
-        # return message
+        whitelist_entry = db_session.exec(
+            select(WhiteListEntry).where(WhiteListEntry.email == email_lowercase)
+        ).first()
+        if whitelist_entry:
+            auth_by = whitelist_entry.created_by
+            is_in_whitelist = True
+    if not is_in_whitelist:
+        return { "message": reg_message }
     existing_user = db_session.exec(
-        select(User).where(User.email == user_in.email)
+        select(User).where(User.email == email_lowercase)
     ).first()
     if existing_user and existing_user.is_active:
         return { "message": reg_message }
     password_hashed = get_password_hash(user_in.password)
-    email_lowercase = user_in.email.lower()
     act_token = generate_activation_token()
     act_expires_at = activation_expiry()
     now = now_tz_naive()
@@ -428,7 +438,8 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         is_admin = is_an_admin,
         is_active=False,
         activation_code=act_token,
-        activation_expires_at=act_expires_at
+        activation_expires_at=act_expires_at,
+        authorized_by=auth_by
     )
     db_session.add(user)
     db_session.commit()
