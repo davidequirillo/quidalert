@@ -8,6 +8,7 @@ import 'package:quidalert_flutter/widgets/common.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/pages/advice.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -51,6 +52,17 @@ class _HomeBodyState extends State<HomeBody> {
     return json.decode(response.body);
   }
 
+  Future<void> _testGpsPosition() async {
+    final loc = AppLocalizations.of(context)!;
+    await showDialog(
+      context: context,
+      builder: (context) => SimpleAlertDialog(
+        title: loc.labelGpsPositionTest,
+        content: "GPS test is not implemented yet.",
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authClient = context.read<AuthClient>();
@@ -79,14 +91,6 @@ class _HomeBodyState extends State<HomeBody> {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildProfileCard(data),
-              SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _refreshProfile,
-                icon: Icon(Icons.refresh),
-                label: Text("Refresh"),
-              ),
-              SizedBox(height: 15),
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.of(context).pushNamed('/alerts/new');
@@ -102,6 +106,28 @@ class _HomeBodyState extends State<HomeBody> {
                 icon: Icon(Icons.history),
                 label: Text(loc.labelRecents),
               ),
+              SizedBox(height: 15),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/advice');
+                },
+                icon: Icon(Icons.help),
+                label: Text(loc.labelAdvice),
+              ),
+              SizedBox(height: 15),
+              ElevatedButton.icon(
+                onPressed: _testGpsPosition,
+                icon: Icon(Icons.gps_fixed),
+                label: Text(loc.labelGpsPositionTest),
+              ),
+              SizedBox(height: 15),
+              ElevatedButton.icon(
+                onPressed: _refreshProfile,
+                icon: Icon(Icons.refresh),
+                label: Text("Refresh"),
+              ),
+              SizedBox(height: 35),
+              _buildProfileCard(data),
             ],
           );
         }

@@ -20,10 +20,13 @@ import 'pages/new_alert.dart';
 import 'pages/recents.dart';
 import 'pages/settings.dart';
 import 'pages/accounts.dart';
-import 'pages/users.dart';
-import 'pages/whitelist.dart';
+import 'pages/users/search.dart';
+import 'pages/whitelist/add_entries.dart';
+import 'pages/whitelist/search_entries.dart';
+import 'pages/whitelist/delete_entries.dart';
 import 'pages/upload_terms.dart';
-import 'pages/reset_privileges.dart';
+import 'pages/users/reset_privileges.dart';
+import 'pages/advice.dart';
 
 void main() {
   debugPrint('Hello from main()');
@@ -76,10 +79,15 @@ class QuidalertWidget extends StatelessWidget {
         '/alerts/recents': (_) => const RecentsPage(),
         '/accounts': (_) => const AccountsPage(),
         '/accounts/users': (_) => const UsersPage(),
-        '/accounts/whitelist': (_) => const WhiteListPage(),
+        '/accounts/whitelist/add-entries': (_) => const WhiteListAddPage(),
+        '/accounts/whitelist/search-entries': (_) =>
+            const WhiteListSearchPage(),
+        '/accounts/whitelist/delete-entries': (_) =>
+            const WhiteListDeletePage(),
         '/accounts/upload-terms': (_) => const UploadTermsPage(),
         '/accounts/reset-privileges': (_) => const ResetPrivilegesPage(),
         '/settings': (_) => const SettingsPage(),
+        '/advice': (_) => const AdvicePage(),
       },
     );
   }

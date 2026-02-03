@@ -13,7 +13,7 @@ class NewAlertPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuNewAlert, showBackButton: true),
+      appBar: CAppBar(title: loc.labelNewAlert, showBackButton: true),
       drawer: const CAppDrawer(),
       body: const Center(child: Text('new alert blah blah blah')),
     );

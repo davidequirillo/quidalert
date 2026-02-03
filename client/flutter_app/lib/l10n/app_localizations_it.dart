@@ -21,6 +21,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonCancel => 'Annulla';
 
   @override
+  String get buttonDelete => 'Delete';
+
+  @override
   String get buttonReject => 'Rifiuta';
 
   @override
@@ -111,6 +114,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelAddEmailsToWhiteList => 'Aggiungi indirizzi email alla white list';
 
   @override
+  String get labelAdvice => 'Consigli';
+
+  @override
+  String get labelAllMasculinePlural => 'Tutti';
+
+  @override
   String get labelAuthorizedBy => 'Autorizzato da';
 
   @override
@@ -159,7 +168,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelEntriesExisting => 'Voci esistenti';
 
   @override
+  String get labelFileSelected => 'File selezionato';
+
+  @override
   String get labelFirstname => 'Nome';
+
+  @override
+  String get labelGpsPosition => 'Posizione GPS';
+
+  @override
+  String get labelGpsPositionTest => 'Test positione GPS';
 
   @override
   String get labelLastRefreshAt => 'Data dell\'ultima refresh';
@@ -198,12 +216,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelVerificationCode => 'Codice di verifica';
 
   @override
-  String get menuNewAlert => 'New Alert';
-
-  @override
-  String get menuRecents => 'Recenti';
-
-  @override
   String get menuSettings => 'Impostazioni';
 
   @override
@@ -225,7 +237,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuUsers => 'Utenti';
 
   @override
-  String get menuWhiteList => 'White list registrazione';
+  String get menuWhiteList => 'White list per registrazione';
 
   @override
   String get successLogin => 'Login effettuato con successo';

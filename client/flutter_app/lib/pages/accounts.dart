@@ -30,7 +30,21 @@ class AccountsBody extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          buildSectionLink(context, loc.menuWhiteList, "/accounts/whitelist"),
+          buildSectionLink(
+            context,
+            '${loc.menuWhiteList} (${loc.buttonAdd})',
+            "/accounts/whitelist/add-entries",
+          ),
+          buildSectionLink(
+            context,
+            '${loc.menuWhiteList} (${loc.buttonSearch})',
+            "/accounts/whitelist/search-entries",
+          ),
+          buildSectionLink(
+            context,
+            '${loc.menuWhiteList} (${loc.buttonDelete})',
+            "/accounts/whitelist/delete-entries",
+          ),
           buildSectionLink(context, loc.menuRegisteredUsers, "/accounts/users"),
           buildSectionLink(
             context,

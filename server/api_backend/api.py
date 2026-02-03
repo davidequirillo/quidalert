@@ -589,8 +589,10 @@ async def get_whitelist_entries(
     offset = 0
     limit = 1000
     # select all whitelist entries with pagination (offset and limit)
-    entries = []
-    return entries
+    entries = db_session.exec(
+        select(WhiteListEntry).offset(offset).limit(limit)
+    ).all()
+    return {"entries": entries, "offset": offset, "size": limit }
 
 @app.post("/api/whitelist-entries")
 async def add_whitelist_entries(
