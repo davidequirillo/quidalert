@@ -8,14 +8,12 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:quidalert_flutter/utils/validator.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
-import 'package:quidalert_flutter/utils/strings.dart';
-import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/utils/fileutils.dart';
 
-class WhiteListPage extends StatelessWidget {
-  const WhiteListPage({super.key});
+class WhiteListAddPage extends StatelessWidget {
+  const WhiteListAddPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,24 +21,22 @@ class WhiteListPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: WhiteListBody(),
+      body: const WhiteListAddBody(),
     );
   }
 }
 
-class WhiteListBody extends StatefulWidget {
-  const WhiteListBody({super.key});
+class WhiteListAddBody extends StatefulWidget {
+  const WhiteListAddBody({super.key});
 
   @override
-  State<WhiteListBody> createState() => _WhiteListBodyState();
+  State<WhiteListAddBody> createState() => _WhiteListAddBodyState();
 }
 
-class _WhiteListBodyState extends State<WhiteListBody> {
+class _WhiteListAddBodyState extends State<WhiteListAddBody> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   PlatformFile? _pickedFile;
-
-  Future<List<WhiteListEntry>>? _entriesFuture;
 
   @override
   void dispose() {
@@ -49,7 +45,10 @@ class _WhiteListBodyState extends State<WhiteListBody> {
   }
 
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ["csv", "txt"],
+    );
 
     if (result != null) {
       setState(() {
@@ -58,24 +57,17 @@ class _WhiteListBodyState extends State<WhiteListBody> {
     }
   }
 
-  Future<List<WhiteListEntry>> fetchEntries() async {
-    final authClient = context.read<AuthClient>();
-    final response = await authClient.doProtectedApiRequest(
-      "get",
-      '/whitelist-entries',
+  void submit() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
-    List<dynamic> data = json.decode(response.body);
-    return data.map((item) => WhiteListEntry.fromJson(item)).toList();
-  }
-
-  Future<void> submitSearch() async {
-    setState(() {
-      _entriesFuture = fetchEntries();
+    addEntries().whenComplete(() {
+      if (mounted) {
+        Navigator.pop(context);
+      }
     });
-  }
-
-  Future<void> submitAdd() async {
-    await addEntries();
   }
 
   Future<void> addEntries() async {
@@ -93,6 +85,7 @@ class _WhiteListBodyState extends State<WhiteListBody> {
       }
     }
     if (_pickedFile != null) {
+      await Future.delayed(const Duration(seconds: 2));
       final filePath = _pickedFile!.path;
       if (filePath != null) {
         try {
@@ -147,6 +140,10 @@ class _WhiteListBodyState extends State<WhiteListBody> {
       retMessage = e.toString();
     } finally {
       if (mounted) {
+        setState(() {
+          _pickedFile = null; // reset picked file
+          _emailController.clear(); // reset email input
+        });
         await showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -164,12 +161,13 @@ class _WhiteListBodyState extends State<WhiteListBody> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          buildSectionTitle('Add/Search ${loc.labelEmailSingle}'),
+          buildSectionTitle('Add ${loc.labelEmailSingle.toLowerCase()}'),
           Form(
             key: _formKey,
             child: Column(
               children: [
-                Text('Add/Search ${loc.labelEmailSingle.toLowerCase()}'),
+                Text('Add ${loc.labelEmailSingle.toLowerCase()}'),
+                const SizedBox(height: 10),
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -181,31 +179,23 @@ class _WhiteListBodyState extends State<WhiteListBody> {
                     return validateEmail(context, value);
                   },
                 ),
-                const SizedBox(height: 15),
-                Text(
-                  'Add/Search ${loc.labelEmailMany.toLowerCase()} from CSV file',
-                ),
+                const SizedBox(height: 10),
+                Text('Add ${loc.labelEmailMany.toLowerCase()} from CSV file'),
+                const SizedBox(height: 10),
                 ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
                 if (_pickedFile != null) ...[
                   const SizedBox(height: 10),
-                  Text('Selected file: ${_pickedFile!.name}'),
+                  Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
                 ],
-                const SizedBox(height: 30),
+                const SizedBox(height: 50),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        submitAdd();
+                        submit();
                       },
                       child: Text(loc.buttonAdd),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: () {
-                        submitSearch();
-                      },
-                      child: Text(loc.buttonSearch),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton(
@@ -214,79 +204,8 @@ class _WhiteListBodyState extends State<WhiteListBody> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 15),
               ],
             ),
-          ),
-          const SizedBox(height: 30),
-          buildSectionTitle(loc.labelCurrentWhiteListEntries),
-          Expanded(
-            child: _entriesFuture == null
-                ? Center(child: Text(loc.labelClickSearchToLoadEntries))
-                : FutureBuilder<List<WhiteListEntry>>(
-                    future: _entriesFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        if (snapshot.error.toString().startsWith(
-                          "GenericNotAuthorized",
-                        )) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            goToLoginPage(context);
-                          });
-                          return Text(loc.errorSessionNotValidOrExpired);
-                        }
-                        if (snapshot.error.toString().startsWith(
-                          "BadRequest",
-                        )) {
-                          return Text(loc.errorBadRequest);
-                        }
-                        return Text(loc.errorNetwork);
-                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                        return Center(child: Text(loc.labelNoEntryFound));
-                      }
-                      final entries = snapshot.data!;
-                      return ListView.separated(
-                        itemCount: entries.length,
-                        separatorBuilder: (context, index) => const Divider(),
-                        itemBuilder: (context, index) {
-                          final entry = entries[index];
-                          // Semi tabular layout for each entry
-                          return ListTile(
-                            leading: const CircleAvatar(
-                              child: Icon(Icons.person),
-                            ),
-                            title: Text(
-                              entry.email,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${loc.labelAuthorizedBy.toLowerCase()}: ${entry.createdBy}',
-                            ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                datetimeAsStringWithoutMicroseconds(
-                                  entry.createdAt,
-                                ),
-                                style: const TextStyle(color: Colors.blue),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
           ),
         ],
       ),

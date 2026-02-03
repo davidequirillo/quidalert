@@ -21,6 +21,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonCancel => 'Cancel';
 
   @override
+  String get buttonDelete => 'Delete';
+
+  @override
   String get buttonReject => 'Reject';
 
   @override
@@ -111,6 +114,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelAddEmailsToWhiteList => 'Add email addressed to white list';
 
   @override
+  String get labelAdvice => 'Advice';
+
+  @override
+  String get labelAllMasculinePlural => 'All';
+
+  @override
   String get labelAuthorizedBy => 'Authorized by';
 
   @override
@@ -159,7 +168,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelEntriesExisting => 'Existing entries';
 
   @override
+  String get labelFileSelected => 'File selected';
+
+  @override
   String get labelFirstname => 'Firstname';
+
+  @override
+  String get labelGpsPosition => 'GPS position';
+
+  @override
+  String get labelGpsPositionTest => 'GPS position test';
 
   @override
   String get labelLastRefreshAt => 'Last refresh at';
@@ -196,12 +214,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelVerificationCode => 'Verification code';
-
-  @override
-  String get menuNewAlert => 'New Alert';
-
-  @override
-  String get menuRecents => 'Recents';
 
   @override
   String get menuSettings => 'Settings';

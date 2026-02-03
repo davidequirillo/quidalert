@@ -73,6 +73,8 @@ flutter:
   assets:
     - assets/info_it.md
     - assets/info_en.md
+    - assets/advice_it.md
+    - assets/advice_en.md
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

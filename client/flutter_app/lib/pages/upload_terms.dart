@@ -35,7 +35,10 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
   PlatformFile? _pickedFile;
 
   Future<void> _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['md'],
+    );
 
     if (result != null) {
       setState(() {
@@ -44,17 +47,25 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     }
   }
 
+  void submit() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    _uploadToServer().whenComplete(() {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
   Future<void> _uploadToServer() async {
     String? retMessage;
     Color retColor = Colors.blue;
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
     if (_pickedFile == null || _pickedFile!.path == null) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
     try {
       await authClient.doProtectedApiRequest(
         'POST',
@@ -79,7 +90,6 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
       retColor = Colors.red;
     } finally {
       if (mounted) {
-        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(retMessage!), backgroundColor: retColor),
         );
@@ -156,7 +166,11 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: (_pickedFile != null) ? _uploadToServer : null,
+              onPressed: (_pickedFile != null)
+                  ? () {
+                      submit();
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               child: const Text(
                 "Upload",

@@ -82,7 +82,7 @@ class _TwoFABodyState extends State<TwoFABody> {
       endTitle = loc.errorGeneric;
     } else {
       endTitle = loc.successLogin;
-      endMessage = '${loc.successLogin}. ${loc.successLoginAdvice}';
+      endMessage = '${loc.successLogin}. ${loc.successLogin}';
     }
     if (!mounted) return;
     await showDialog(

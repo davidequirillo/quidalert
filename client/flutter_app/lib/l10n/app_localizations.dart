@@ -119,6 +119,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get buttonCancel;
 
+  /// No description provided for @buttonDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get buttonDelete;
+
   /// No description provided for @buttonReject.
   ///
   /// In en, this message translates to:
@@ -299,6 +305,18 @@ abstract class AppLocalizations {
   /// **'Add email addressed to white list'**
   String get labelAddEmailsToWhiteList;
 
+  /// No description provided for @labelAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Advice'**
+  String get labelAdvice;
+
+  /// No description provided for @labelAllMasculinePlural.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get labelAllMasculinePlural;
+
   /// No description provided for @labelAuthorizedBy.
   ///
   /// In en, this message translates to:
@@ -395,11 +413,29 @@ abstract class AppLocalizations {
   /// **'Existing entries'**
   String get labelEntriesExisting;
 
+  /// No description provided for @labelFileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'File selected'**
+  String get labelFileSelected;
+
   /// No description provided for @labelFirstname.
   ///
   /// In en, this message translates to:
   /// **'Firstname'**
   String get labelFirstname;
+
+  /// No description provided for @labelGpsPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS position'**
+  String get labelGpsPosition;
+
+  /// No description provided for @labelGpsPositionTest.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS position test'**
+  String get labelGpsPositionTest;
 
   /// No description provided for @labelLastRefreshAt.
   ///
@@ -472,18 +508,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verification code'**
   String get labelVerificationCode;
-
-  /// No description provided for @menuNewAlert.
-  ///
-  /// In en, this message translates to:
-  /// **'New Alert'**
-  String get menuNewAlert;
-
-  /// No description provided for @menuRecents.
-  ///
-  /// In en, this message translates to:
-  /// **'Recents'**
-  String get menuRecents;
 
   /// No description provided for @menuSettings.
   ///
