@@ -26,7 +26,7 @@ class AccountsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scrollbar(
-      thumbVisibility: false,
+      thumbVisibility: true,
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [

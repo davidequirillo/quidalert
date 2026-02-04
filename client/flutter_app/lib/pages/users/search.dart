@@ -32,44 +32,4 @@ class _UsersBodyState extends State<UsersBody> {
   Widget build(BuildContext context) {
     return Text("Users page content");
   }
-
-  // A test widget to create section titles
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.blue,
-        ),
-      ),
-    );
-  }
-
-  // A test widget to create a simple form
-  Widget _buildSimpleForm(String label1, String label2) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            decoration: InputDecoration(
-              labelText: label1,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: TextFormField(
-            decoration: InputDecoration(
-              labelText: label2,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }

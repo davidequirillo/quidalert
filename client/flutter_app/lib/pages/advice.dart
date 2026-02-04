@@ -4,12 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/widgets/common.dart';
-import 'package:quidalert_flutter/config.dart' as config;
-import 'package:http/http.dart' as http;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 class AdvicePage extends StatelessWidget {
