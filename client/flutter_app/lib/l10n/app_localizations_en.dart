@@ -48,6 +48,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorDigitOnly => 'Only digits are admitted';
 
   @override
+  String get errorEmailAlreadyExist => 'Email already exists';
+
+  @override
   String get errorEmailAlreadyRegistered => 'Email already registered';
 
   @override
@@ -75,7 +78,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotAuthorized => 'Not authorized';
 
   @override
-  String get errorNotAuthorizedDoLogin => 'Not authorized, do login';
+  String get errorNotAuthorizedDoLogin => 'Not authorized, do logout and retry login';
 
   @override
   String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
@@ -216,6 +219,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelVerificationCode => 'Verification code';
 
   @override
+  String get labelWaitPlease => 'Please, wait';
+
+  @override
   String get menuSettings => 'Settings';
 
   @override
@@ -228,7 +234,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuRegisteredUsers => 'Registered users';
 
   @override
-  String get menuResetPrivileges => 'Reset privileges (total)';
+  String get menuResetPrivileges => 'Reset privileges';
 
   @override
   String get menuUploadTerms => 'Upload legal terms';

@@ -231,3 +231,19 @@ Widget buildSectionTitle(String title) {
     ),
   );
 }
+
+void showLoadingDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      content: Row(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(width: 20),
+          Expanded(child: Text(message)),
+        ],
+      ),
+    ),
+  );
+}

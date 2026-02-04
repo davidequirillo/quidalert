@@ -77,7 +77,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
       await Future.delayed(const Duration(seconds: 2));
       retMessage = loc.successUpload;
     } on GenericNotAuthorizedException catch (_) {
-      retMessage = loc.errorNotAuthorized;
+      retMessage = loc.errorNotAuthorizedDoLogin;
       retColor = Colors.red;
     } on BadRequestException catch (_) {
       retMessage = loc.errorBadRequest;
@@ -91,7 +91,11 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     } finally {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(retMessage!), backgroundColor: retColor),
+          SnackBar(
+            content: Text(retMessage!),
+            backgroundColor: retColor,
+            duration: const Duration(seconds: 4),
+          ),
         );
         setState(() {
           _pickedFile = null;

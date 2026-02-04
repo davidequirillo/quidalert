@@ -57,17 +57,79 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     }
   }
 
-  void submit() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
+  void submitMany() {
+    final loc = AppLocalizations.of(context)!;
+    showLoadingDialog(context, loc.labelWaitPlease);
     addEntries().whenComplete(() {
       if (mounted) {
         Navigator.pop(context);
       }
     });
+  }
+
+  void submitSingle() {
+    addEntry();
+  }
+
+  Future<void> addEntry() async {
+    // Implementation for adding a single entry goes here
+    final loc = AppLocalizations.of(context)!;
+    final authClient = context.read<AuthClient>();
+    String retMessage = loc.successGeneric;
+    String retTitle = loc.successGeneric;
+    List<String> emailsToAdd = [];
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    String email = _emailController.text.trim().toLowerCase();
+    emailsToAdd.add(email);
+    try {
+      final response = await authClient.doProtectedApiRequest(
+        "post",
+        '/whitelist-entries',
+        body: {"emails": emailsToAdd},
+      );
+      final Map<String, dynamic> respObj = json.decode(response.body);
+      final List<String> emailsNotAdded = List<String>.from(
+        respObj['failed_emails'],
+      );
+      final int existingCount = respObj['existing_count'];
+      if (emailsNotAdded.contains(email)) {
+        retTitle = loc.errorError;
+        retMessage = loc.errorError;
+      } else if (existingCount > 0) {
+        retTitle = loc.errorError;
+        retMessage = loc.errorEmailAlreadyExist;
+      } else {
+        retTitle = loc.successGeneric;
+        retMessage = loc.successGeneric;
+      }
+    } on GenericNotAuthorizedException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorNotAuthorizedDoLogin;
+    } on BadRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorBadRequest;
+    } on NetworkException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorNetwork;
+    } catch (e) {
+      retTitle = loc.errorError;
+      retMessage = e.toString();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _emailController.text = ''; // reset email input
+        });
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return SimpleAlertDialog(title: retTitle, content: retMessage);
+          },
+        );
+      }
+    }
+    return;
   }
 
   Future<void> addEntries() async {
@@ -76,14 +138,6 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
     List<String> emailsToAdd = [];
-    if (_emailController.text.trim().isNotEmpty) {
-      emailsToAdd.add(_emailController.text.trim().toLowerCase());
-      if (_pickedFile == null) {
-        if (!_formKey.currentState!.validate()) {
-          return; // invalid single email, stop here
-        }
-      }
-    }
     if (_pickedFile != null) {
       await Future.delayed(const Duration(seconds: 2));
       final filePath = _pickedFile!.path;
@@ -142,7 +196,6 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
       if (mounted) {
         setState(() {
           _pickedFile = null; // reset picked file
-          _emailController.clear(); // reset email input
         });
         await showDialog(
           context: context,
@@ -161,12 +214,13 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          buildSectionTitle('Add ${loc.labelEmailSingle.toLowerCase()}'),
+          buildSectionTitle(
+            '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
+          ),
           Form(
             key: _formKey,
             child: Column(
               children: [
-                Text('Add ${loc.labelEmailSingle.toLowerCase()}'),
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _emailController,
@@ -179,25 +233,45 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
                     return validateEmail(context, value);
                   },
                 ),
-                const SizedBox(height: 10),
-                Text('Add ${loc.labelEmailMany.toLowerCase()} from CSV file'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submitSingle();
+                      },
+                      child: Text(loc.buttonAdd),
+                    ),
+                    const SizedBox(width: 25),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonBack),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 25),
+                Divider(),
+                const SizedBox(height: 25),
+                buildSectionTitle(
+                  '${loc.buttonAdd} ${loc.labelEmailMany.toLowerCase()}',
+                ),
                 const SizedBox(height: 10),
                 ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
                 if (_pickedFile != null) ...[
                   const SizedBox(height: 10),
                   Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
                 ],
-                const SizedBox(height: 50),
+                const SizedBox(height: 35),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
                       onPressed: () {
-                        submit();
+                        submitMany();
                       },
                       child: Text(loc.buttonAdd),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 25),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(loc.buttonBack),

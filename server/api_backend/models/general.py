@@ -95,6 +95,7 @@ class UserOut(UserBase, table=False):
     updated_by: Optional[EmailStr] = Field(default=None, nullable=True)
     updated_at: Optional[datetime] = Field(default=None, nullable=True)
     authorized_by: Optional[EmailStr] = Field(default=None, nullable=True)
+    authorized_at: Optional[datetime] = Field(default=None, nullable=True)
 
     @field_validator("type")
     @classmethod
