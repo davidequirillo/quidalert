@@ -45,16 +45,16 @@ class AccountsBody extends StatelessWidget {
             '${loc.menuWhiteList} (${loc.buttonDelete})',
             "/accounts/whitelist/delete-entries",
           ),
-          buildSectionLink(context, loc.menuRegisteredUsers, "/accounts/users"),
+          buildSectionLink(context, loc.menuUsers, "/accounts/users"),
+          buildSectionLink(
+            context,
+            '${loc.menuUsers} (${loc.menuResetPrivileges.toLowerCase()})',
+            "/accounts/reset-privileges",
+          ),
           buildSectionLink(
             context,
             loc.menuUploadTerms,
             "/accounts/upload-terms",
-          ),
-          buildSectionLink(
-            context,
-            loc.menuResetPrivileges,
-            "/accounts/reset-privileges",
           ),
         ],
       ),

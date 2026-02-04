@@ -173,6 +173,12 @@ abstract class AppLocalizations {
   /// **'Only digits are admitted'**
   String get errorDigitOnly;
 
+  /// No description provided for @errorEmailAlreadyExist.
+  ///
+  /// In en, this message translates to:
+  /// **'Email already exists'**
+  String get errorEmailAlreadyExist;
+
   /// No description provided for @errorEmailAlreadyRegistered.
   ///
   /// In en, this message translates to:
@@ -230,7 +236,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorNotAuthorizedDoLogin.
   ///
   /// In en, this message translates to:
-  /// **'Not authorized, do login'**
+  /// **'Not authorized, do logout and retry login'**
   String get errorNotAuthorizedDoLogin;
 
   /// No description provided for @errorRegNotAuthorized.
@@ -509,6 +515,12 @@ abstract class AppLocalizations {
   /// **'Verification code'**
   String get labelVerificationCode;
 
+  /// No description provided for @labelWaitPlease.
+  ///
+  /// In en, this message translates to:
+  /// **'Please, wait'**
+  String get labelWaitPlease;
+
   /// No description provided for @menuSettings.
   ///
   /// In en, this message translates to:
@@ -536,7 +548,7 @@ abstract class AppLocalizations {
   /// No description provided for @menuResetPrivileges.
   ///
   /// In en, this message translates to:
-  /// **'Reset privileges (total)'**
+  /// **'Reset privileges'**
   String get menuResetPrivileges;
 
   /// No description provided for @menuUploadTerms.
