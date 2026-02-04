@@ -8,7 +8,6 @@ import 'package:quidalert_flutter/widgets/common.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
-import 'package:quidalert_flutter/pages/advice.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -88,47 +87,52 @@ class _HomeBodyState extends State<HomeBody> {
         if (snapshot.hasData) {
           final data = snapshot.data!;
           authClient.setUserInfo(data);
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/alerts/new');
-                },
-                icon: Icon(Icons.add_alert),
-                label: Text(loc.labelNewAlert),
+          return Scrollbar(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/alerts/new');
+                    },
+                    icon: Icon(Icons.add_alert),
+                    label: Text(loc.labelNewAlert),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/alerts/recents');
+                    },
+                    icon: Icon(Icons.history),
+                    label: Text(loc.labelRecents),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/advice');
+                    },
+                    icon: Icon(Icons.help),
+                    label: Text(loc.labelAdvice),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: _testGpsPosition,
+                    icon: Icon(Icons.gps_fixed),
+                    label: Text(loc.labelGpsPositionTest),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: _refreshProfile,
+                    icon: Icon(Icons.refresh),
+                    label: Text("Refresh"),
+                  ),
+                  SizedBox(height: 35),
+                  _buildProfileCard(data),
+                ],
               ),
-              SizedBox(height: 15),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/alerts/recents');
-                },
-                icon: Icon(Icons.history),
-                label: Text(loc.labelRecents),
-              ),
-              SizedBox(height: 15),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/advice');
-                },
-                icon: Icon(Icons.help),
-                label: Text(loc.labelAdvice),
-              ),
-              SizedBox(height: 15),
-              ElevatedButton.icon(
-                onPressed: _testGpsPosition,
-                icon: Icon(Icons.gps_fixed),
-                label: Text(loc.labelGpsPositionTest),
-              ),
-              SizedBox(height: 15),
-              ElevatedButton.icon(
-                onPressed: _refreshProfile,
-                icon: Icon(Icons.refresh),
-                label: Text("Refresh"),
-              ),
-              SizedBox(height: 35),
-              _buildProfileCard(data),
-            ],
+            ),
           );
         }
         return Text(loc.errorGeneric);
