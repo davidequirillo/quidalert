@@ -86,6 +86,14 @@ String? validateEmail(BuildContext context, String? value) {
   return null;
 }
 
+String? validateDeleteConfirmation(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim() != "DELETE") {
+    return l10n.errorStringNotValid;
+  }
+  return null;
+}
+
 String? validateDigitCode(
   BuildContext context,
   String? value, {

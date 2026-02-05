@@ -58,7 +58,7 @@ from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
     two_factor_not_valid_exception, two_factor_required_response,
-    permission_exception,
+    forbidden_exception,
     invalid_file_type_exception, bad_file_upload_exception,
     unsafe_file_exception, file_too_large_exception
     )
@@ -359,7 +359,7 @@ async def get_terms(request: Request, response: Response):
 @app.post("/api/terms") # upload legal terms file (multipart/form-data)
 async def upload_terms(file: UploadFile = File(...), language: str = Form(...), current_user: User = Depends(get_current_user)):
     if not current_user.is_admin:
-        raise permission_exception()
+        raise forbidden_exception()
     if (file is None) or (file.filename is None) or (file.filename == ""):
         raise bad_file_upload_exception()
     if not file.filename.endswith(('.md', '.markdown')):
@@ -591,7 +591,7 @@ async def get_whitelist_entries(
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
-        raise permission_exception()
+        raise forbidden_exception()
     if offset < 0:
         offset = 0
     if limit not in [10, 100, 1000]:
@@ -628,7 +628,7 @@ async def add_whitelist_entries(
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
-        raise permission_exception()
+        raise forbidden_exception()
     failed_emails = []
     added_count = 0
     existing_count = 0
@@ -647,9 +647,10 @@ async def add_whitelist_entries(
         except Exception:
             failed_emails.append(e)
             continue
-    db_session.commit()
+    if added_count > 0:
+        db_session.commit()
     return {
-        "message": "Operation completed",
+        "message": "Entries processed",
         "total_count": len(dict.emails),
         "added_count": added_count,
         "existing_count": existing_count,
@@ -657,12 +658,53 @@ async def add_whitelist_entries(
         "failed_emails": failed_emails
     }
 
+@app.delete("/api/whitelist-entries")
+async def delete_whitelist_entries(
+                email: str | None = None,
+                my_entries: str | None = None,
+                all: str | None = None,
+                current_user: User = Depends(get_current_user),
+                db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_officer):
+        raise forbidden_exception()
+    deleted_count = 0
+    total_count = 0
+    if email and (email != ""):
+        q = select(WhiteListEntry).where(WhiteListEntry.email == email.lower())
+        entry = db_session.exec(q).first()
+        if entry: # officers can delete only their own entries
+            total_count = 1
+            if (not current_user.is_admin) and (entry.created_by != current_user.email):
+                raise forbidden_exception()
+            db_session.delete(entry)
+            db_session.commit()
+            deleted_count = 1
+    elif my_entries and (my_entries.lower() == "yes"):
+        statement = delete(WhiteListEntry).where(WhiteListEntry.created_by == current_user.email) # type: ignore
+        result = db_session.exec(statement)
+        deleted_count = result.rowcount
+        total_count = deleted_count # for simplicity
+        db_session.commit()
+    elif all and (all.lower() == "yes"):
+        if not current_user.is_admin:
+            raise forbidden_exception()
+        statement = delete(WhiteListEntry).where(True) # type: ignore
+        result = db_session.exec(statement)
+        deleted_count = result.rowcount
+        total_count = deleted_count # for simplicity
+        db_session.commit()
+    return {
+        "message": "Entries deleted",
+        "total_count": total_count,
+        "deleted_count": deleted_count
+    }
+
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 async def get_user(user_id: str, 
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
-        raise permission_exception()
+        raise forbidden_exception()
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
@@ -671,7 +713,7 @@ def update_user(user_id: str, user_new: UserBase,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
-        raise permission_exception()
+        raise forbidden_exception()
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     if user:
         user.firstname = user_new.firstname

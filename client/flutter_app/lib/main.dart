@@ -28,6 +28,7 @@ import 'pages/users/reset_privileges.dart';
 import 'pages/users/search.dart';
 import 'pages/users/view.dart';
 import 'pages/advice.dart';
+import 'pages/profile/complete.dart';
 
 void main() {
   debugPrint('Hello from main()');
@@ -79,6 +80,7 @@ class QuidalertWidget extends StatelessWidget {
         '/alerts/new': (_) => const NewAlertPage(),
         '/alerts/recents': (_) => const RecentsPage(),
         '/advice': (_) => const AdvicePage(),
+        '/profile/complete': (_) => const CompleteProfilePage(),
         '/accounts': (_) => const AccountsPage(),
         '/accounts/whitelist/add-entries': (_) => const WhiteListAddPage(),
         '/accounts/whitelist/search-entries': (_) =>

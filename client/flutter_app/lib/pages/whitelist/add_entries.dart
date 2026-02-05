@@ -7,7 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:quidalert_flutter/utils/validator.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/utils/fileutils.dart';
@@ -107,6 +108,9 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
+    } on ForbiddenRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorPermissionsNotValid;
     } on BadRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorBadRequest;
@@ -168,7 +172,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         final int existingCount = respObj['existing_count'];
         retTitle = loc.successGeneric;
         retMessage =
-            '${loc.labelEntriesTotal}: $totalCount\n${loc.labelEntriesAdded}: $addedCount\n${loc.labelEntriesFailed}: $failedCount\n${loc.labelEntriesExisting}: $existingCount';
+            '${loc.labelRowsTotal}: $totalCount\n${loc.labelEntriesAdded}: $addedCount\n${loc.labelEntriesFailed}: $failedCount\n${loc.labelEntriesExisting}: $existingCount';
         if (emailsNotAdded.isNotEmpty) {
           retMessage += '\n\n${loc.labelEntriesFailed}:\n';
           for (var email in emailsNotAdded) {
@@ -183,6 +187,9 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
+    } on ForbiddenRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorPermissionsNotValid;
     } on BadRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorBadRequest;

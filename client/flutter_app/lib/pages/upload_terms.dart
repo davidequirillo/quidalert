@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 
 class UploadTermsPage extends StatelessWidget {
@@ -48,11 +49,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
   }
 
   void submit() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
+    showLoadingDialog(context, "Uploading...");
     _uploadToServer().whenComplete(() {
       if (mounted) {
         Navigator.pop(context);
@@ -78,6 +75,9 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
       retMessage = loc.successUpload;
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
+      retColor = Colors.red;
+    } on ForbiddenRequestException catch (_) {
+      retMessage = loc.errorPermissionsNotValid;
       retColor = Colors.red;
     } on BadRequestException catch (_) {
       retMessage = loc.errorBadRequest;

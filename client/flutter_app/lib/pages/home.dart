@@ -4,7 +4,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
@@ -121,6 +122,14 @@ class _HomeBodyState extends State<HomeBody> {
                     onPressed: _testGpsPosition,
                     icon: Icon(Icons.gps_fixed),
                     label: Text(loc.labelGpsPositionTest),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/profile/complete');
+                    },
+                    icon: Icon(Icons.person),
+                    label: Text(loc.labelCompleteProfile),
                   ),
                   SizedBox(height: 15),
                   ElevatedButton.icon(

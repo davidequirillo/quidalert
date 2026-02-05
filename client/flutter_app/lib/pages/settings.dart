@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
