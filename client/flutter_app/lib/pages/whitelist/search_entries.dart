@@ -6,7 +6,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/utils/validator.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/services/auth.dart';
@@ -57,6 +58,13 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
     });
   }
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _startNewSearch() {
     setState(() {
       _entries = [];
@@ -68,16 +76,9 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
     _loadPage();
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   Future<List<WhiteListEntry>> getEntries() async {
     if (searchCriteria == "email" || searchCriteria == "authorizer") {
-      if (!_formKey.currentState!.validate()) {
+      if (validateEmail(context, _emailController.text) != null) {
         return [];
       }
     }
@@ -126,6 +127,8 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
       });
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
+    } on ForbiddenRequestException catch (_) {
+      retMessage = loc.errorPermissionsNotValid;
     } on BadRequestException catch (_) {
       retMessage = loc.errorBadRequest;
     } on NetworkException catch (_) {
@@ -197,14 +200,15 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                   ),
                   if (authClient.isAdmin()) const SizedBox(width: 25),
                   if (authClient.isAdmin())
-                    ElevatedButton(
+                    ElevatedButton.icon(
                       onPressed: _isLoadingPage
                           ? null
                           : () {
                               searchCriteria = "authorizer";
                               _startNewSearch();
                             },
-                      child: Text("by Authorizer"),
+                      icon: const Icon(Icons.search),
+                      label: Text("by Authorizer"),
                     ),
                   if (authClient.isAdmin()) const SizedBox(width: 25),
                   if (authClient.isAdmin())

@@ -24,11 +24,11 @@ class InvalidTokenException implements Exception {
   String toString() => 'InvalidTokenException: $message';
 }
 
-class PermissionDeniedException implements Exception {
+class ForbiddenRequestException implements Exception {
   final String message;
-  PermissionDeniedException([this.message = 'Permission denied']);
+  ForbiddenRequestException([this.message = 'Forbidden request']);
   @override
-  String toString() => 'PermissionDeniedException: $message';
+  String toString() => 'ForbiddenRequestException: $message';
 }
 
 class GenericNotAuthorizedException implements Exception {
@@ -450,7 +450,7 @@ class AuthClient extends ChangeNotifier {
       if ((!isExpired) && (isNotAuthorized)) {
         throw InvalidTokenException('$m (auth), access token not valid');
       } else if (isForbidden) {
-        throw PermissionDeniedException('$m (auth), permission denied');
+        throw ForbiddenRequestException('$m (auth), forbidden request');
       } else if ((!isExpired) &&
           (resp.statusCode < 200 || resp.statusCode >= 300)) {
         throw BadRequestException('$m (auth), bad request');
@@ -494,7 +494,7 @@ class AuthClient extends ChangeNotifier {
             '$m (retry auth), access token not valid',
           );
         } else if (isForbidden) {
-          throw PermissionDeniedException('$m (retry auth), permission denied');
+          throw ForbiddenRequestException('$m (retry auth), forbidden request');
         } else if (resp.statusCode < 200 || resp.statusCode >= 300) {
           throw BadRequestException('$m (retry auth), bad request');
         }
@@ -507,8 +507,8 @@ class AuthClient extends ChangeNotifier {
       throw GenericNotAuthorizedException();
     } on InvalidTokenException catch (_) {
       throw GenericNotAuthorizedException();
-    } on PermissionDeniedException catch (_) {
-      throw GenericNotAuthorizedException();
+    } on ForbiddenRequestException catch (_) {
+      rethrow;
     } on BadRequestException catch (_) {
       if (kDebugMode) {
         debugPrint("$m (auth), bad request exception");

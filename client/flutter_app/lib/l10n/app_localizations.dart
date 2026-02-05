@@ -173,6 +173,12 @@ abstract class AppLocalizations {
   /// **'Only digits are admitted'**
   String get errorDigitOnly;
 
+  /// No description provided for @errorEmailNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Email not found'**
+  String get errorEmailNotFound;
+
   /// No description provided for @errorEmailAlreadyExist.
   ///
   /// In en, this message translates to:
@@ -275,6 +281,12 @@ abstract class AppLocalizations {
   /// **'Password must contain at least a special character'**
   String get errorPasswordMissingSpecial;
 
+  /// No description provided for @errorPermissionsNotValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions not valid'**
+  String get errorPermissionsNotValid;
+
   /// No description provided for @errorStringNotValid.
   ///
   /// In en, this message translates to:
@@ -347,6 +359,12 @@ abstract class AppLocalizations {
   /// **'Competence territory'**
   String get labelCompetenceTerritory;
 
+  /// No description provided for @labelCompleteProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete profile'**
+  String get labelCompleteProfile;
+
   /// No description provided for @labelConfirmPassword.
   ///
   /// In en, this message translates to:
@@ -389,11 +407,35 @@ abstract class AppLocalizations {
   /// **'Many email addresses'**
   String get labelEmailMany;
 
+  /// No description provided for @labelEntrySingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single entry'**
+  String get labelEntrySingle;
+
+  /// No description provided for @labelEntriesAuthorizedByMe.
+  ///
+  /// In en, this message translates to:
+  /// **'All entries authorized by me'**
+  String get labelEntriesAuthorizedByMe;
+
+  /// No description provided for @labelEntriesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All entries'**
+  String get labelEntriesAll;
+
   /// No description provided for @labelEnterVerificationMailCode.
   ///
   /// In en, this message translates to:
   /// **'Enter the verification code just sent to you by email'**
   String get labelEnterVerificationMailCode;
+
+  /// No description provided for @labelEntriesDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted entries'**
+  String get labelEntriesDeleted;
 
   /// No description provided for @labelEntriesFailed.
   ///
@@ -485,6 +527,12 @@ abstract class AppLocalizations {
   /// **'Registration'**
   String get labelRegistration;
 
+  /// No description provided for @labelRowsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total rows'**
+  String get labelRowsTotal;
+
   /// No description provided for @labelSelect.
   ///
   /// In en, this message translates to:
@@ -508,6 +556,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No entry found'**
   String get labelNoEntryFound;
+
+  /// No description provided for @labelTypeDeleteToConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE to confirm'**
+  String get labelTypeDeleteToConfirm;
 
   /// No description provided for @labelVerificationCode.
   ///

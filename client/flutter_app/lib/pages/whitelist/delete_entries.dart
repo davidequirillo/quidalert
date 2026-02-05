@@ -2,8 +2,13 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:provider/provider.dart';
+import 'package:quidalert_flutter/utils/validator.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
+import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 
 class WhiteListDeletePage extends StatelessWidget {
@@ -15,7 +20,7 @@ class WhiteListDeletePage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: WhiteListDeleteBody(),
+      body: const WhiteListDeleteBody(),
     );
   }
 }
@@ -28,32 +33,300 @@ class WhiteListDeleteBody extends StatefulWidget {
 }
 
 class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
+  final _formDelByEmailKey = GlobalKey<FormState>();
+  final _formDelMyEntriesKey = GlobalKey<FormState>();
+  final _formDelAllEntriesKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _confirmation1Controller = TextEditingController();
+  final _confirmation2Controller = TextEditingController();
+
   @override
   void dispose() {
+    _emailController.dispose();
+    _confirmation1Controller.dispose();
+    _confirmation2Controller.dispose();
     super.dispose();
   }
 
-  void submit() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-    deleteEntries().whenComplete(() {
+  void submitDeleteSingleEntry() {
+    if (!_formDelByEmailKey.currentState!.validate()) {
+      return;
+    }
+    deleteSingleEntry();
+  }
+
+  void submitDeleteMyEntries() {
+    if (!_formDelMyEntriesKey.currentState!.validate()) {
+      return;
+    }
+    final loc = AppLocalizations.of(context)!;
+    showLoadingDialog(context, loc.labelWaitPlease);
+    deleteMyEntries().whenComplete(() {
       if (mounted) {
         Navigator.pop(context);
       }
     });
   }
 
-  Future<void> deleteEntries() async {
-    // Implementation for deleting entries goes here
+  void submitDeleteAllEntries() {
+    if (!_formDelAllEntriesKey.currentState!.validate()) {
+      return;
+    }
+    final loc = AppLocalizations.of(context)!;
+    showLoadingDialog(context, loc.labelWaitPlease);
+    deleteAllEntries().whenComplete(() {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    });
+  }
+
+  Future<void> deleteSingleEntry() async {
+    final loc = AppLocalizations.of(context)!;
+    final authClient = context.read<AuthClient>();
+    String retMessage = loc.successGeneric;
+    String retTitle = loc.successGeneric;
+    if (!_formDelByEmailKey.currentState!.validate()) {
+      return;
+    }
+    String email = _emailController.text.trim().toLowerCase();
+    try {
+      final response = await authClient.doProtectedApiRequest(
+        "delete",
+        '/whitelist-entries?email=${Uri.encodeComponent(email)}',
+      );
+      final Map<String, dynamic> respObj = json.decode(response.body);
+      final int deletedCount = respObj['deleted_count'];
+      final int totalCount = respObj['total_count'];
+      if (totalCount > deletedCount) {
+        retTitle = loc.errorError;
+        retMessage = loc.errorError;
+      } else if (deletedCount == 0) {
+        retTitle = loc.errorError;
+        retMessage = loc.errorEmailNotFound;
+      } else {
+        retTitle = loc.successGeneric;
+        retMessage = '${loc.labelEntriesDeleted}: $deletedCount';
+      }
+    } on GenericNotAuthorizedException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorNotAuthorizedDoLogin;
+    } on ForbiddenRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorPermissionsNotValid;
+    } on BadRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorBadRequest;
+    } on NetworkException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorNetwork;
+    } catch (e) {
+      retTitle = loc.errorError;
+      retMessage = e.toString();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _emailController.text = ''; // reset email input
+        });
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return SimpleAlertDialog(title: retTitle, content: retMessage);
+          },
+        );
+      }
+    }
     return;
+  }
+
+  Future<void> deleteMyEntries() async {
+    await deleteEntries('/whitelist-entries?my_entries=yes');
+  }
+
+  Future<void> deleteAllEntries() async {
+    await deleteEntries('/whitelist-entries?all=yes');
+  }
+
+  Future<void> deleteEntries(String relativeUrl) async {
+    final loc = AppLocalizations.of(context)!;
+    final authClient = context.read<AuthClient>();
+    String retMessage = loc.successGeneric;
+    String retTitle = loc.successGeneric;
+    try {
+      final response = await authClient.doProtectedApiRequest(
+        "delete",
+        relativeUrl,
+      );
+      final Map<String, dynamic> respObj = json.decode(response.body);
+      retMessage =
+          '${loc.labelEntriesDeleted}: ${respObj['deleted_count']}\n${loc.labelEntriesTotal}: ${respObj['total_count']}';
+      retTitle = loc.successGeneric;
+    } on GenericNotAuthorizedException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorNotAuthorizedDoLogin;
+    } on ForbiddenRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorPermissionsNotValid;
+    } on BadRequestException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorBadRequest;
+    } on NetworkException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorNetwork;
+    } catch (e) {
+      retTitle = loc.errorError;
+      retMessage = e.toString();
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (relativeUrl.contains('my_entries=yes')) {
+            _confirmation1Controller.text = "";
+          } else if (relativeUrl.contains('all=yes')) {
+            _confirmation2Controller.text = "";
+          }
+        });
+        await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return SimpleAlertDialog(title: retTitle, content: retMessage);
+          },
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Implementation for building the UI goes here
-    return Text("Delete Entries Body");
+    final authClient = context.read<AuthClient>();
+    final loc = AppLocalizations.of(context)!;
+    return Scrollbar(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            buildSectionTitle(
+              '${loc.buttonDelete} ${loc.labelEntrySingle.toLowerCase()} (by email)',
+            ),
+            Form(
+              key: _formDelByEmailKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 128,
+                    validator: (value) {
+                      return validateEmail(context, value);
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submitDeleteSingleEntry();
+                        },
+                        child: Text(loc.buttonDelete),
+                      ),
+                      const SizedBox(width: 25),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonBack),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 15),
+            Divider(thickness: 0.25),
+            SizedBox(height: 15),
+            Form(
+              key: _formDelMyEntriesKey,
+              child: Column(
+                children: [
+                  buildSectionTitle(
+                    '${loc.buttonDelete} ${loc.labelEntriesAuthorizedByMe.toLowerCase()}',
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _confirmation1Controller,
+                    decoration: InputDecoration(
+                      labelText: loc.labelTypeDeleteToConfirm,
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      return validateDeleteConfirmation(context, value);
+                    },
+                  ),
+                  const SizedBox(height: 35),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submitDeleteMyEntries();
+                        },
+                        child: Text(loc.buttonDelete),
+                      ),
+                      const SizedBox(width: 25),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonBack),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 15),
+            Divider(thickness: 0.25),
+            SizedBox(height: 15),
+            if (authClient.isAdmin()) ...[
+              Form(
+                key: _formDelAllEntriesKey,
+                child: Column(
+                  children: [
+                    buildSectionTitle(
+                      '${loc.buttonDelete} ${loc.labelEntriesAll.toLowerCase()}',
+                    ),
+                    TextFormField(
+                      controller: _confirmation2Controller,
+                      decoration: InputDecoration(
+                        labelText: loc.labelTypeDeleteToConfirm,
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        return validateDeleteConfirmation(context, value);
+                      },
+                    ),
+                    const SizedBox(height: 35),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            submitDeleteAllEntries();
+                          },
+                          child: Text(loc.buttonDelete),
+                        ),
+                        const SizedBox(width: 25),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(loc.buttonBack),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

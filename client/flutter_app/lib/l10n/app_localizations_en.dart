@@ -48,6 +48,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorDigitOnly => 'Only digits are admitted';
 
   @override
+  String get errorEmailNotFound => 'Email not found';
+
+  @override
   String get errorEmailAlreadyExist => 'Email already exists';
 
   @override
@@ -99,6 +102,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorPasswordMissingSpecial => 'Password must contain at least a special character';
 
   @override
+  String get errorPermissionsNotValid => 'Permissions not valid';
+
+  @override
   String get errorStringNotValid => 'String not valid';
 
   @override
@@ -135,6 +141,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelCompetenceTerritory => 'Competence territory';
 
   @override
+  String get labelCompleteProfile => 'Complete profile';
+
+  @override
   String get labelConfirmPassword => 'Confirm password';
 
   @override
@@ -156,7 +165,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelEmailMany => 'Many email addresses';
 
   @override
+  String get labelEntrySingle => 'Single entry';
+
+  @override
+  String get labelEntriesAuthorizedByMe => 'All entries authorized by me';
+
+  @override
+  String get labelEntriesAll => 'All entries';
+
+  @override
   String get labelEnterVerificationMailCode => 'Enter the verification code just sent to you by email';
+
+  @override
+  String get labelEntriesDeleted => 'Deleted entries';
 
   @override
   String get labelEntriesFailed => 'Failed entries';
@@ -204,6 +225,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelRegistration => 'Registration';
 
   @override
+  String get labelRowsTotal => 'Total rows';
+
+  @override
   String get labelSelect => 'Select';
 
   @override
@@ -214,6 +238,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelNoEntryFound => 'No entry found';
+
+  @override
+  String get labelTypeDeleteToConfirm => 'Type DELETE to confirm';
 
   @override
   String get labelVerificationCode => 'Verification code';

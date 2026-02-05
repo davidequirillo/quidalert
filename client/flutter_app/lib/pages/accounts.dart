@@ -3,8 +3,11 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'package:quidalert_flutter/widgets/common.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
+import 'package:quidalert_flutter/widgets/components.dart';
 
 class AccountsPage extends StatelessWidget {
   const AccountsPage({super.key});
@@ -24,6 +27,7 @@ class AccountsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     return Scrollbar(
       thumbVisibility: true,
@@ -32,17 +36,17 @@ class AccountsBody extends StatelessWidget {
         children: [
           buildSectionLink(
             context,
-            '${loc.menuWhiteList} (${loc.buttonAdd})',
+            '${loc.menuWhiteList} (${loc.buttonAdd.toLowerCase()})',
             "/accounts/whitelist/add-entries",
           ),
           buildSectionLink(
             context,
-            '${loc.menuWhiteList} (${loc.buttonSearch})',
+            '${loc.menuWhiteList} (${loc.buttonSearch.toLowerCase()})',
             "/accounts/whitelist/search-entries",
           ),
           buildSectionLink(
             context,
-            '${loc.menuWhiteList} (${loc.buttonDelete})',
+            '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
             "/accounts/whitelist/delete-entries",
           ),
           buildSectionLink(context, loc.menuUsers, "/accounts/users"),
@@ -51,11 +55,12 @@ class AccountsBody extends StatelessWidget {
             '${loc.menuUsers} (${loc.menuResetPrivileges.toLowerCase()})',
             "/accounts/reset-privileges",
           ),
-          buildSectionLink(
-            context,
-            loc.menuUploadTerms,
-            "/accounts/upload-terms",
-          ),
+          if (authClient.isAdmin())
+            buildSectionLink(
+              context,
+              loc.menuUploadTerms,
+              "/accounts/upload-terms",
+            ),
         ],
       ),
     );

@@ -48,6 +48,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorDigitOnly => 'Sono ammesse solo cifre';
 
   @override
+  String get errorEmailNotFound => 'Indirizzo email non trovato';
+
+  @override
   String get errorEmailAlreadyExist => 'Email già presente';
 
   @override
@@ -99,6 +102,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorPasswordMissingSpecial => 'La password deve contenere almeno un carattere speciale';
 
   @override
+  String get errorPermissionsNotValid => 'Permessi non validi';
+
+  @override
   String get errorStringNotValid => 'Stringa non valida';
 
   @override
@@ -135,6 +141,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelCompetenceTerritory => 'Territorio di competenza';
 
   @override
+  String get labelCompleteProfile => 'Completa profilo';
+
+  @override
   String get labelConfirmPassword => 'Conferma password';
 
   @override
@@ -156,7 +165,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelEmailMany => 'Molti indirizzi email';
 
   @override
+  String get labelEntrySingle => 'Voce singola';
+
+  @override
+  String get labelEntriesAuthorizedByMe => 'Tutte le voci autorizzate da me';
+
+  @override
+  String get labelEntriesAll => 'Tutte le voci';
+
+  @override
   String get labelEnterVerificationMailCode => 'Inserisci il codice di verifica che ti è stato appena inviato via email';
+
+  @override
+  String get labelEntriesDeleted => 'Deleted entries';
 
   @override
   String get labelEntriesFailed => 'Voci fallite';
@@ -204,6 +225,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelRegistration => 'Registrazione';
 
   @override
+  String get labelRowsTotal => 'Righe totali';
+
+  @override
   String get labelSelect => 'Seleziona';
 
   @override
@@ -214,6 +238,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelNoEntryFound => 'Nessuna voce trovata';
+
+  @override
+  String get labelTypeDeleteToConfirm => 'Scrivi DELETE per confermare';
 
   @override
   String get labelVerificationCode => 'Codice di verifica';
