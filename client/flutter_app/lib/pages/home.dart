@@ -169,7 +169,7 @@ class _HomeBodyState extends State<HomeBody> {
             Text("Officer: ${user['is_officer'] ? 'yes' : 'no'}"),
             Text("Chief: ${user['is_chief'] ? 'yes' : 'no'}"),
             Text("Status: ${user['status']}"),
-            Text("Type: ${user['type']}"),
+            Text("Role: ${user['role']}"),
           ],
         ),
         isThreeLine: true,
