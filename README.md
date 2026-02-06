@@ -18,7 +18,7 @@ For simple testing, the server-side system can also be installed on a generic ma
 Each user is allowed to send an alert, but we must find a solution about alert validation (user credibility), for example a system based on votes.
 
 User account registration will be admitted using a white list prepared by admins and by officers.  
-The whitelist, in addition to preventing spam or other similar abuses, is useful for preventing users outside the system territorial jurisdiction from registering and sending alerts, or more generally, fake alerts.
+The whitelist, in addition to preventing spam or other similar abuses, is useful for preventing users outside the system territorial jurisdiction from registering and sending alerts, or more generally, it prevents fake alerts.
 
 Admin and officers can modify (promote) other users, for example they can change their role (promoting them from "citizen" to "firefighter").  
 A note about officers: unlike admins, who can edit everyone, officers can only modify their users, that is, the users they have whitelisted.
