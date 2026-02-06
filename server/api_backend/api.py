@@ -209,7 +209,7 @@ async def refresh_auth_tokens(
     }
 
 @app.post("/api/auth/revoke")
-async def logout(
+async def revoke_token(
             wrapper: RefreshTokenWrapper,
             db_session: Session = Depends(get_db_session)):
     try:
@@ -340,48 +340,6 @@ async def login(data: LoginSchema,
     if can_send:
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
     return {"access_token": atoken, "refresh_token": rtoken, "login_token": new_login_token, "token_type": "bearer"}
-
-@app.get("/api/user/profile", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-async def get_profile(current_user: User = Depends(get_current_user)):
-    return current_user
-
-@app.get("/api/terms")
-async def get_terms(request: Request, response: Response):
-    lang = request.headers.get('Accept-Language')
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
-    response.headers["Content-Type"] = "text/markdown; charset=utf-8"
-    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
-    if not os.path.exists(fpath):
-        fpath += ".example"
-    return FileResponse(fpath)
-
-@app.post("/api/terms") # upload legal terms file (multipart/form-data)
-async def upload_terms(file: UploadFile = File(...), language: str = Form(...), current_user: User = Depends(get_current_user)):
-    if not current_user.is_admin:
-        raise forbidden_exception()
-    if (file is None) or (file.filename is None) or (file.filename == ""):
-        raise bad_file_upload_exception()
-    if not file.filename.endswith(('.md', '.markdown')):
-        raise invalid_file_type_exception()
-    if file.content_type not in ["text/markdown", "text/plain"]:
-        raise invalid_file_type_exception()
-    content = await file.read()
-    file_size = len(content)
-    if file_size > MAX_SMALL_FILE_SIZE:
-        raise file_too_large_exception(MAX_SMALL_FILE_SIZE)
-    try:
-        text_content = content.decode("utf-8")
-    except UnicodeDecodeError:
-        raise bad_file_upload_exception()
-    safe_text = html.escape(text_content)
-    lang = language
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
-    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
-    with open(fpath, "wb") as f:
-        f.write(safe_text.encode("utf-8"))
-    return {"message": "Terms uploaded successfully"}
 
 @app.post("/api/register")
 def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
@@ -582,6 +540,44 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
 
     return {"message": "Password reset successful"}
 
+@app.get("/api/terms")
+async def get_terms(request: Request, response: Response):
+    lang = request.headers.get('Accept-Language')
+    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
+        lang = UserLanguage.en
+    response.headers["Content-Type"] = "text/markdown; charset=utf-8"
+    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
+    if not os.path.exists(fpath):
+        fpath += ".example"
+    return FileResponse(fpath)
+
+@app.post("/api/terms") # upload legal terms file (multipart/form-data)
+async def upload_terms(file: UploadFile = File(...), language: str = Form(...), current_user: User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise forbidden_exception()
+    if (file is None) or (file.filename is None) or (file.filename == ""):
+        raise bad_file_upload_exception()
+    if not file.filename.endswith(('.md', '.markdown')):
+        raise invalid_file_type_exception()
+    if file.content_type not in ["text/markdown", "text/plain"]:
+        raise invalid_file_type_exception()
+    content = await file.read()
+    file_size = len(content)
+    if file_size > MAX_SMALL_FILE_SIZE:
+        raise file_too_large_exception(MAX_SMALL_FILE_SIZE)
+    try:
+        text_content = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise bad_file_upload_exception()
+    safe_text = html.escape(text_content)
+    lang = language
+    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
+        lang = UserLanguage.en
+    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
+    with open(fpath, "wb") as f:
+        f.write(safe_text.encode("utf-8"))
+    return {"message": "Terms uploaded successfully"}
+
 @app.get("/api/whitelist-entries")
 async def get_whitelist_entries(
                 email: str | None = None,
@@ -699,6 +695,16 @@ async def delete_whitelist_entries(
         "deleted_count": deleted_count
     }
 
+@app.get("/api/user/profile", response_model=UserOut | None, status_code=status.HTTP_200_OK)
+async def get_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@app.put("/api/user/profile", status_code=status.HTTP_200_OK)
+async def update_profile(current_user: User = Depends(get_current_user)):
+    current_user.firstname = "test"
+    current_user.surname = "test"
+    return { "message": "Profile updated" }
+
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 async def get_user(user_id: str, 
                 current_user: User = Depends(get_current_user),
@@ -708,7 +714,7 @@ async def get_user(user_id: str,
     user = db_session.exec(select(User).where(User.id == user_id)).first()
     return user
 
-@app.put("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
+@app.put("/api/user/{user_id}")
 def update_user(user_id: str, user_new: UserBase, 
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
@@ -721,5 +727,5 @@ def update_user(user_id: str, user_new: UserBase,
         db_session.add(user)
         db_session.commit()
         db_session.refresh(user)
-        return user
+        return {"message": "User updated successfully"}
     return {"message": "User not found"}

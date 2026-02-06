@@ -11,8 +11,8 @@ from pydantic import BaseModel, EmailStr, field_validator, model_validator
 from sqlmodel import SQLModel, Field
 from services.security import now_tz_naive
 
-class UserType(str, Enum):
-    fireman = "fireman"
+class UserRole(str, Enum):
+    firefighter = "firefighter"
     wateroperator = "wateroperator"
     usar = "usar"
     alpinrescuer = "alpinerescuer"
@@ -70,7 +70,7 @@ class UserOut(UserBase, table=False):
     is_admin: bool = Field(default=False, nullable=False)
     is_officer: bool = Field(default=False, nullable=False)
     is_chief: bool = Field(default=False, nullable=False)
-    type: str = Field(default=UserType.citizen, nullable=False)
+    role: str = Field(default=UserRole.citizen, nullable=False)
     status: str = Field(default=UserStatus.ok, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
@@ -97,11 +97,11 @@ class UserOut(UserBase, table=False):
     authorized_by: Optional[EmailStr] = Field(default=None, nullable=True)
     authorized_at: Optional[datetime] = Field(default=None, nullable=True)
 
-    @field_validator("type")
+    @field_validator("role")
     @classmethod
-    def validate_type(cls, s):
-        if not s in [t.value for t in UserType]:
-            raise ValueError("Wrong type")
+    def validate_role(cls, s):
+        if not s in [t.value for t in UserRole]:
+            raise ValueError("Wrong role")
         return s
     
     @field_validator("status")
