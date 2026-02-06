@@ -9,6 +9,7 @@ from fastapi import (FastAPI, Depends,
     Request, Response, 
     HTTPException, status, BackgroundTasks, 
     File, UploadFile, Form)
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
@@ -96,7 +97,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 api_dirpath = os.path.dirname(__file__)
 templates = Jinja2Templates(directory=os.path.join(api_dirpath, "templates"))
 
-async def get_current_user(access_token: str = Depends(oauth2_scheme),
+def get_current_user(access_token: str = Depends(oauth2_scheme),
                     db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(access_token)
@@ -171,7 +172,7 @@ def check_login_token(token_data: dict | None, user: User):
     return True
 
 @app.post("/api/auth/refresh")
-async def refresh_auth_tokens(
+def refresh_auth_tokens(
             wrapper: RefreshTokenWrapper, 
             db_session: Session = Depends(get_db_session)):
     try:
@@ -209,7 +210,7 @@ async def refresh_auth_tokens(
     }
 
 @app.post("/api/auth/revoke")
-async def revoke_token(
+def revoke_token(
             wrapper: RefreshTokenWrapper,
             db_session: Session = Depends(get_db_session)):
     try:
@@ -232,7 +233,7 @@ async def revoke_token(
     return {"detail": "Logout successful"}
 
 @app.post("/api/auth/login")
-async def login(data: LoginSchema,
+def login(data: LoginSchema,
             background_tasks: BackgroundTasks,
             db_session: Session = Depends(get_db_session)):
     now = now_tz_naive()
@@ -541,7 +542,7 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
     return {"message": "Password reset successful"}
 
 @app.get("/api/terms")
-async def get_terms(request: Request, response: Response):
+def get_terms(request: Request, response: Response):
     lang = request.headers.get('Accept-Language')
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
@@ -550,6 +551,10 @@ async def get_terms(request: Request, response: Response):
     if not os.path.exists(fpath):
         fpath += ".example"
     return FileResponse(fpath)
+
+def save_terms(fpath: str, text_content: str):
+    with open(fpath, "wb") as f:
+        f.write(text_content.encode("utf-8"))
 
 @app.post("/api/terms") # upload legal terms file (multipart/form-data)
 async def upload_terms(file: UploadFile = File(...), language: str = Form(...), current_user: User = Depends(get_current_user)):
@@ -574,12 +579,13 @@ async def upload_terms(file: UploadFile = File(...), language: str = Form(...), 
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
     fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
-    with open(fpath, "wb") as f:
-        f.write(safe_text.encode("utf-8"))
+    await run_in_threadpool(
+        lambda: save_terms(fpath, safe_text)
+    )
     return {"message": "Terms uploaded successfully"}
 
 @app.get("/api/whitelist-entries")
-async def get_whitelist_entries(
+def get_whitelist_entries(
                 email: str | None = None,
                 authorizer: str | None = None,
                 offset: int = 0,
@@ -619,7 +625,7 @@ async def get_whitelist_entries(
     return {"entries": entries, "offset": offset, "size": limit }
 
 @app.post("/api/whitelist-entries")
-async def add_whitelist_entries(
+def add_whitelist_entries(
                 dict: WhiteListEntriesDict,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
@@ -655,7 +661,7 @@ async def add_whitelist_entries(
     }
 
 @app.delete("/api/whitelist-entries")
-async def delete_whitelist_entries(
+def delete_whitelist_entries(
                 email: str | None = None,
                 my_entries: str | None = None,
                 all: str | None = None,
@@ -696,17 +702,17 @@ async def delete_whitelist_entries(
     }
 
 @app.get("/api/user/profile", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-async def get_profile(current_user: User = Depends(get_current_user)):
+def get_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
 @app.put("/api/user/profile", status_code=status.HTTP_200_OK)
-async def update_profile(current_user: User = Depends(get_current_user)):
+def update_profile(current_user: User = Depends(get_current_user)):
     current_user.firstname = "test"
     current_user.surname = "test"
     return { "message": "Profile updated" }
 
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
-async def get_user(user_id: str, 
+def get_user(user_id: str, 
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
