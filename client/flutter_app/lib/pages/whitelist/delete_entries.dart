@@ -36,6 +36,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
   final _formDelByEmailKey = GlobalKey<FormState>();
   final _formDelMyEntriesKey = GlobalKey<FormState>();
   final _formDelAllEntriesKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   final _emailController = TextEditingController();
   final _confirmation1Controller = TextEditingController();
   final _confirmation2Controller = TextEditingController();
@@ -45,6 +46,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     _emailController.dispose();
     _confirmation1Controller.dispose();
     _confirmation2Controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -111,6 +113,9 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -164,6 +169,9 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -200,101 +208,65 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     return Scrollbar(
+      thumbVisibility: true,
+      controller: _scrollController,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            buildSectionTitle(
-              '${loc.buttonDelete} ${loc.labelEntrySingle.toLowerCase()} (by email)',
-            ),
-            Form(
-              key: _formDelByEmailKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 128,
-                    validator: (value) {
-                      return validateEmail(context, value);
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submitDeleteSingleEntry();
-                        },
-                        child: Text(loc.buttonDelete),
-                      ),
-                      const SizedBox(width: 25),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.buttonBack),
-                      ),
-                    ],
-                  ),
-                ],
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16.0),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              buildSectionTitle(
+                '${loc.buttonDelete} ${loc.labelEntrySingle.toLowerCase()} (by email)',
               ),
-            ),
-            SizedBox(height: 15),
-            Divider(thickness: 0.25),
-            SizedBox(height: 15),
-            Form(
-              key: _formDelMyEntriesKey,
-              child: Column(
-                children: [
-                  buildSectionTitle(
-                    '${loc.buttonDelete} ${loc.labelEntriesAuthorizedByMe.toLowerCase()}',
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _confirmation1Controller,
-                    decoration: InputDecoration(
-                      labelText: loc.labelTypeDeleteToConfirm,
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      return validateDeleteConfirmation(context, value);
-                    },
-                  ),
-                  const SizedBox(height: 35),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submitDeleteMyEntries();
-                        },
-                        child: Text(loc.buttonDelete),
-                      ),
-                      const SizedBox(width: 25),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.buttonBack),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 15),
-            Divider(thickness: 0.25),
-            SizedBox(height: 15),
-            if (authClient.isAdmin()) ...[
               Form(
-                key: _formDelAllEntriesKey,
+                key: _formDelByEmailKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: "Email",
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLength: 128,
+                      validator: (value) {
+                        return validateEmail(context, value);
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            submitDeleteSingleEntry();
+                          },
+                          child: Text(loc.buttonDelete),
+                        ),
+                        const SizedBox(width: 25),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(loc.buttonBack),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 15),
+              Divider(thickness: 0.25),
+              SizedBox(height: 15),
+              Form(
+                key: _formDelMyEntriesKey,
                 child: Column(
                   children: [
                     buildSectionTitle(
-                      '${loc.buttonDelete} ${loc.labelEntriesAll.toLowerCase()}',
+                      '${loc.buttonDelete} ${loc.labelEntriesAuthorizedByMe.toLowerCase()}',
                     ),
+                    const SizedBox(height: 10),
                     TextFormField(
-                      controller: _confirmation2Controller,
+                      controller: _confirmation1Controller,
                       decoration: InputDecoration(
                         labelText: loc.labelTypeDeleteToConfirm,
                         border: OutlineInputBorder(),
@@ -309,7 +281,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            submitDeleteAllEntries();
+                            submitDeleteMyEntries();
                           },
                           child: Text(loc.buttonDelete),
                         ),
@@ -323,8 +295,50 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
                   ],
                 ),
               ),
+              SizedBox(height: 15),
+              Divider(thickness: 0.25),
+              SizedBox(height: 15),
+              if (authClient.isAdmin()) ...[
+                Form(
+                  key: _formDelAllEntriesKey,
+                  child: Column(
+                    children: [
+                      buildSectionTitle(
+                        '${loc.buttonDelete} ${loc.labelEntriesAll.toLowerCase()}',
+                      ),
+                      TextFormField(
+                        controller: _confirmation2Controller,
+                        decoration: InputDecoration(
+                          labelText: loc.labelTypeDeleteToConfirm,
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          return validateDeleteConfirmation(context, value);
+                        },
+                      ),
+                      const SizedBox(height: 35),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              submitDeleteAllEntries();
+                            },
+                            child: Text(loc.buttonDelete),
+                          ),
+                          const SizedBox(width: 25),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(loc.buttonBack),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

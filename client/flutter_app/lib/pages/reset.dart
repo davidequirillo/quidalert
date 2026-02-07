@@ -34,6 +34,7 @@ class ResetBody extends StatefulWidget {
 
 class _ResetBodyState extends State<ResetBody> {
   final _formKey = GlobalKey<FormState>();
+  final ScrollController _scrollController = ScrollController();
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -47,6 +48,7 @@ class _ResetBodyState extends State<ResetBody> {
     _codeController.dispose();
     _passwordController.dispose();
     _rePasswordController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -175,10 +177,14 @@ class _ResetBodyState extends State<ResetBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: EdgeInsets.all(16),
+        child: SafeArea(
+          top: false,
           child: Form(
             key: _formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,

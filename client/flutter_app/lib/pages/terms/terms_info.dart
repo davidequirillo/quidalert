@@ -139,42 +139,48 @@ class InfoBody extends StatelessWidget {
           debugPrint("Error: ${snapshot.error}");
           return Center(child: Text(loc.errorLoading));
         }
-        return Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text(
-                '${loc.labelCompetenceTerritory}: ${config.competenceTerritory}',
-              ),
-              Expanded(
-                child: Markdown(
-                  data: snapshot.data!,
-                  onTapLink: (text, href, title) {
-                    switch (href) {
-                      case '/terms':
-                        Navigator.pushReplacementNamed(context, '/terms');
-                        break;
-                      case '/register':
-                        if (termsAccepted) {
-                          Navigator.pushReplacementNamed(context, '/register');
-                        } else {
-                          Navigator.pushReplacementNamed(context, '/terms');
-                        }
-                        break;
-                      case '/login':
-                        if (termsAccepted) {
-                          Navigator.pushReplacementNamed(context, '/login');
-                        } else {
-                          Navigator.pushReplacementNamed(context, '/terms');
-                        }
-                        break;
-                      default:
-                        debugPrint('Unknown link: $href');
-                    }
-                  },
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Text(
+                  '${loc.labelCompetenceTerritory}: ${config.competenceTerritory}',
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Markdown(
+                    data: snapshot.data!,
+                    onTapLink: (text, href, title) {
+                      switch (href) {
+                        case '/terms':
+                          Navigator.pushReplacementNamed(context, '/terms');
+                          break;
+                        case '/register':
+                          if (termsAccepted) {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/register',
+                            );
+                          } else {
+                            Navigator.pushReplacementNamed(context, '/terms');
+                          }
+                          break;
+                        case '/login':
+                          if (termsAccepted) {
+                            Navigator.pushReplacementNamed(context, '/login');
+                          } else {
+                            Navigator.pushReplacementNamed(context, '/terms');
+                          }
+                          break;
+                        default:
+                          debugPrint('Unknown link: $href');
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

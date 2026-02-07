@@ -76,6 +76,9 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
       retColor = Colors.red;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
       retColor = Colors.red;
@@ -107,82 +110,85 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                value: "en",
-                label: Text('EN'),
-                icon: Icon(Icons.language),
-              ),
-              ButtonSegment(
-                value: "it",
-                label: Text('IT'),
-                icon: Icon(Icons.language),
-              ),
-            ],
-            selected: {_selectedLanguage},
-            onSelectionChanged: (Set<String> newSelection) {
-              setState(() {
-                _selectedLanguage = newSelection.first;
-              });
-            },
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${loc.labelSelect} file:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          // Area di Drag & Drop / Click to Select
-          InkWell(
-            onTap: _pickFile,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.blueAccent,
-                  style: BorderStyle.solid,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: "en",
+                  label: Text('EN'),
+                  icon: Icon(Icons.language),
                 ),
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.blueAccent.withValues(alpha: 0.05),
-              ),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.cloud_upload,
-                    size: 25,
+                ButtonSegment(
+                  value: "it",
+                  label: Text('IT'),
+                  icon: Icon(Icons.language),
+                ),
+              ],
+              selected: {_selectedLanguage},
+              onSelectionChanged: (Set<String> newSelection) {
+                setState(() {
+                  _selectedLanguage = newSelection.first;
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${loc.labelSelect} file:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            // Area di Drag & Drop / Click to Select
+            InkWell(
+              onTap: _pickFile,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(
                     color: Colors.blueAccent,
+                    style: BorderStyle.solid,
                   ),
-                  const SizedBox(height: 5),
-                  Text(_pickedFile?.name ?? loc.labelClickToSelectFile),
-                ],
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.blueAccent.withValues(alpha: 0.05),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.cloud_upload,
+                      size: 25,
+                      color: Colors.blueAccent,
+                    ),
+                    const SizedBox(height: 5),
+                    Text(_pickedFile?.name ?? loc.labelClickToSelectFile),
+                  ],
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 15),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: (_pickedFile != null)
-                  ? () {
-                      submit();
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text(
-                "Upload",
-                style: TextStyle(color: Colors.white),
+            SizedBox(height: 15),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: (_pickedFile != null)
+                    ? () {
+                        submit();
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                child: const Text(
+                  "Upload",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -27,41 +27,51 @@ class AccountsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryController = PrimaryScrollController.of(context);
     final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     return Scrollbar(
       thumbVisibility: true,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          buildSectionLink(
-            context,
-            '${loc.menuWhiteList} (${loc.buttonAdd.toLowerCase()})',
-            "/accounts/whitelist/add-entries",
+      controller: primaryController,
+      child: SingleChildScrollView(
+        controller: primaryController,
+        padding: const EdgeInsets.all(16),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              buildSectionLink(
+                context,
+                '${loc.menuWhiteList} (${loc.buttonAdd.toLowerCase()})',
+                "/accounts/whitelist/add-entries",
+              ),
+              buildSectionLink(
+                context,
+                '${loc.menuWhiteList} (${loc.buttonSearch.toLowerCase()})',
+                "/accounts/whitelist/search-entries",
+              ),
+              buildSectionLink(
+                context,
+                '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
+                "/accounts/whitelist/delete-entries",
+              ),
+              buildSectionLink(context, loc.menuUsers, "/accounts/users"),
+              buildSectionLink(
+                context,
+                '${loc.menuUsers} (${loc.menuResetPrivileges.toLowerCase()})',
+                "/accounts/reset-privileges",
+              ),
+              if (authClient.isAdmin())
+                buildSectionLink(
+                  context,
+                  loc.menuUploadTerms,
+                  "/accounts/upload-terms",
+                ),
+            ],
           ),
-          buildSectionLink(
-            context,
-            '${loc.menuWhiteList} (${loc.buttonSearch.toLowerCase()})',
-            "/accounts/whitelist/search-entries",
-          ),
-          buildSectionLink(
-            context,
-            '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
-            "/accounts/whitelist/delete-entries",
-          ),
-          buildSectionLink(context, loc.menuUsers, "/accounts/users"),
-          buildSectionLink(
-            context,
-            '${loc.menuUsers} (${loc.menuResetPrivileges.toLowerCase()})',
-            "/accounts/reset-privileges",
-          ),
-          if (authClient.isAdmin())
-            buildSectionLink(
-              context,
-              loc.menuUploadTerms,
-              "/accounts/upload-terms",
-            ),
-        ],
+        ),
       ),
     );
   }

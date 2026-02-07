@@ -17,12 +17,16 @@ class Settings(BaseSettings):
     server_port: int = config.SERVER_PORT
     app_log_level: str = config.APP_LOG_LEVEL
     db_url: str = config.DB_URL
+    pool_size: int = config.POOL_SIZE
+    max_overflow: int = config.MAX_OVERFLOW
+    pool_recycle: int = config.POOL_RECYCLE
     db_engine_log_enabled: str = config.DB_ENGINE_LOG_ENABLED
     db_engine_echo: bool = False
     cors_allow_origins: list = []
     smtp_host: str = config.SMTP_HOST
     smtp_port: int = config.SMTP_PORT
     smtp_from: str = config.SMTP_FROM
+    upload_dir: str = config.UPLOAD_DIR
 
     model_config = SettingsConfigDict(
         env_file=".env",

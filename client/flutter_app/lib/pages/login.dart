@@ -105,7 +105,7 @@ class _LoginBodyState extends State<LoginBody> {
       endTitle = loc.errorGeneric;
     } else {
       endTitle = loc.successLogin;
-      endMessage = '${loc.successLogin}. ${loc.successLogin}';
+      endMessage = loc.successLogin;
     }
     if (!mounted) return;
     await showDialog(
@@ -122,83 +122,82 @@ class _LoginBodyState extends State<LoginBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              TextField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 20),
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                ),
-                obscureText: !showPasswordFlag,
+            ),
+            SizedBox(height: 20),
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 5),
-              Row(
-                children: [
-                  Checkbox(
-                    tristate: false,
-                    value: showPasswordFlag,
-                    onChanged: (value) {
-                      setState(() {
-                        showPasswordFlag = value!;
-                      });
-                    },
-                  ),
-                  Text(loc.labelShowPassword),
-                ],
-              ),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    submit();
+              obscureText: !showPasswordFlag,
+            ),
+            SizedBox(height: 5),
+            Row(
+              children: [
+                Checkbox(
+                  tristate: false,
+                  value: showPasswordFlag,
+                  onChanged: (value) {
+                    setState(() {
+                      showPasswordFlag = value!;
+                    });
                   },
-                  child: Text('Login', style: TextStyle(fontSize: 16)),
                 ),
-              ),
-              SizedBox(height: 20),
-              InkWell(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/reset');
+                Text(loc.labelShowPassword),
+              ],
+            ),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  submit();
                 },
-                child: Text(
-                  loc.labelPasswordForgotten,
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                    color: Colors.blue,
-                  ),
+                child: Text('Login', style: TextStyle(fontSize: 16)),
+              ),
+            ),
+            SizedBox(height: 20),
+            InkWell(
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/reset');
+              },
+              child: Text(
+                loc.labelPasswordForgotten,
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  color: Colors.blue,
                 ),
               ),
-              SizedBox(height: 5),
-              InkWell(
-                onTap: () {
-                  Navigator.pushReplacementNamed(context, '/register');
-                },
-                child: Text(
-                  loc.labelDoNotHaveAccount,
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                    color: Colors.blue,
-                  ),
+            ),
+            SizedBox(height: 5),
+            InkWell(
+              onTap: () {
+                Navigator.pushReplacementNamed(context, '/register');
+              },
+              child: Text(
+                loc.labelDoNotHaveAccount,
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  color: Colors.blue,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -116,3 +116,99 @@ String? validateDigitCode(
   }
   return null;
 }
+
+String? validateAddress(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  if (value.trim().length < 5) {
+    return l10n.errorStringTooShort;
+  }
+  if (value.trim().length > 256) {
+    return l10n.errorStringTooLong;
+  }
+  return null;
+}
+
+String? validateStreetAndNumber(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  if (value.trim().length < 5) {
+    return l10n.errorStringTooShort;
+  }
+  if (value.trim().length > 256) {
+    return l10n.errorStringTooLong;
+  }
+  return null;
+}
+
+String? validateCity(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  if (value.trim().length < 2) {
+    return l10n.errorStringTooShort;
+  }
+  if (value.trim().length > 128) {
+    return l10n.errorStringTooLong;
+  }
+  return null;
+}
+
+String? validatePostalCode(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  if (value.trim().length < 2) {
+    return l10n.errorStringTooShort;
+  }
+  if (value.trim().length > 16) {
+    return l10n.errorStringTooLong;
+  }
+  return null;
+}
+
+String? validateProvince(BuildContext context, String? value) {
+  return validateCity(context, value);
+}
+
+String? validateCountry(BuildContext context, String? value) {
+  return validateCity(context, value);
+}
+
+String? validateBirthdate(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  try {
+    DateTime.parse(value.trim());
+  } catch (e) {
+    return l10n.errorStringNotValid;
+  }
+  return null;
+}
+
+String? validatePhoneNumber(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  final phone = value.trim();
+  final phoneRegex = RegExp(r'^\+?[0-9\s\-]+$');
+  if (!phoneRegex.hasMatch(phone)) {
+    return l10n.errorStringNotValid;
+  }
+  if (phone.length < 5) {
+    return l10n.errorStringTooShort;
+  }
+  if (phone.length > 32) {
+    return l10n.errorStringTooLong;
+  }
+  return null;
+}

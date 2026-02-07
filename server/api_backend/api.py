@@ -40,7 +40,9 @@ import services.localization as i18n
 from models.general import (UserBase, UserIn, User, UserOut, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper,
-    WhiteListEntry, WhiteListEntriesDict)
+    WhiteListEntry, WhiteListEntriesDict,
+    UserInCompleteProfile
+    )
 from services.security import (
     LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
     generate_activation_token, activation_expiry, 
@@ -547,9 +549,10 @@ def get_terms(request: Request, response: Response):
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
     response.headers["Content-Type"] = "text/markdown; charset=utf-8"
-    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
+    upload_dir = settings.upload_dir
+    fpath = os.path.join(upload_dir, f"terms_{lang}.md")
     if not os.path.exists(fpath):
-        fpath += ".example"
+        fpath = os.path.join(FILES_DIR, f"terms_{lang}.md.example")
     return FileResponse(fpath)
 
 def save_terms(fpath: str, text_content: str):
@@ -705,10 +708,21 @@ def delete_whitelist_entries(
 def get_profile(current_user: User = Depends(get_current_user)):
     return current_user
 
-@app.put("/api/user/profile", status_code=status.HTTP_200_OK)
-def update_profile(current_user: User = Depends(get_current_user)):
-    current_user.firstname = "test"
-    current_user.surname = "test"
+@app.put("/api/user/profile")
+def update_profile(user_data: UserInCompleteProfile, 
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    current_user.firstname = user_data.firstname
+    current_user.surname = user_data.surname
+    current_user.street = user_data.street
+    current_user.postal_code = user_data.postal_code
+    current_user.city = user_data.city
+    current_user.province = user_data.province
+    current_user.country = user_data.country
+    current_user.birthdate = user_data.birthdate
+    current_user.phone = user_data.phone
+    db_session.add(current_user)
+    db_session.commit()
     return { "message": "Profile updated" }
 
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)

@@ -71,7 +71,19 @@ class SimpleAlertDialog extends StatelessWidget {
 // USEFUL FUNCTIONS
 
 void goToLoginPage(BuildContext context) {
-  Navigator.of(context).pushReplacementNamed('/login');
+  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+}
+
+void goToLoginPagePostFrameCallback(BuildContext context) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  });
+}
+
+void goToHomePagePostFrameCallback(BuildContext context) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+  });
 }
 
 Widget buildSectionLink(BuildContext context, String text, String routeName) {

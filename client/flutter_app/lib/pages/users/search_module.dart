@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 
-class UsersPage extends StatelessWidget {
-  const UsersPage({super.key});
+class UsersSearchModulePage extends StatelessWidget {
+  const UsersSearchModulePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -15,21 +15,21 @@ class UsersPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: UsersBody(),
+      body: UsersSearchModuleBody(),
     );
   }
 }
 
-class UsersBody extends StatefulWidget {
-  const UsersBody({super.key});
+class UsersSearchModuleBody extends StatefulWidget {
+  const UsersSearchModuleBody({super.key});
 
   @override
-  State<UsersBody> createState() => _UsersBodyState();
+  State<UsersSearchModuleBody> createState() => _UsersSearchModuleBodyState();
 }
 
-class _UsersBodyState extends State<UsersBody> {
+class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
   @override
   Widget build(BuildContext context) {
-    return Text("Users page content");
+    return Text("Users search module page content - To be implemented");
   }
 }

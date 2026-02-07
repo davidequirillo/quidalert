@@ -3,13 +3,13 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/utils/validator.dart';
-import 'package:quidalert_flutter/config.dart' as config;
 
 class CompleteProfilePage extends StatelessWidget {
   const CompleteProfilePage({super.key});
@@ -34,126 +34,283 @@ class CompleteProfileBody extends StatefulWidget {
 
 class _CompleteProfileBodyState extends State<CompleteProfileBody> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   final _firstnameController = TextEditingController();
   final _surnameController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _streetController = TextEditingController();
+  final _postalCodeController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _provinceController = TextEditingController();
+  final _countryController = TextEditingController();
   final _birthdateController = TextEditingController();
-  final _phoneController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+  DateTime? _selectedDate;
   bool showPasswordFlag = false;
 
   @override
   void dispose() {
     _firstnameController.dispose();
     _surnameController.dispose();
-    _addressController.dispose();
+    _streetController.dispose();
+    _postalCodeController.dispose();
+    _cityController.dispose();
+    _provinceController.dispose();
+    _countryController.dispose();
     _birthdateController.dispose();
-    _phoneController.dispose();
+    _phoneNumberController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        // We format the date as DD-MM-YYYY for display purposes only
+        _birthdateController.text =
+            "${picked.day.toString().padLeft(2, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.year.toString().padLeft(4, '0')}";
+      });
+    }
   }
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedDate == null) return;
+    String dateToSend = _selectedDate!.toIso8601String();
+    dateToSend = dateToSend.substring(0, dateToSend.indexOf('T'));
     final fname = _firstnameController.text.trim();
     final sname = _surnameController.text.trim();
-    final address = _addressController.text.trim();
-    final birthdate = _birthdateController.text.trim();
-    final phone = _phoneController.text.trim();
+    final street = _streetController.text.trim();
+    final postalCode = _postalCodeController.text.trim();
+    final city = _cityController.text.trim();
+    final province = _provinceController.text.trim();
+    final country = _countryController.text.trim();
+    final phone = _phoneNumberController.text.trim();
     final fields = {
       "firstname": fname,
       "surname": sname,
-      "address": address,
-      "birthdate": birthdate,
+      "street": street,
+      "postal_code": postalCode,
+      "city": city,
+      "province": province,
+      "country": country,
+      "birthdate": dateToSend,
       "phone": phone,
     };
     await _completeProfile(fields);
   }
 
   Future<void> _completeProfile(Map<String, dynamic> data) async {
+    AuthClient authClient = context.read<AuthClient>();
+    final loc = AppLocalizations.of(context)!;
+    String retTitle = "";
+    String retMessage = "";
+    bool error = false;
     try {
-      // Here you would send the data to the server to complete the profile
+      final response = await authClient.doProtectedApiRequest(
+        'PUT',
+        '/user/profile',
+        body: data,
+      );
+      final respObj = json.decode(response.body);
+      retTitle = loc.successGeneric;
+      retMessage = respObj['message'] ?? "Profile completed successfully";
+    } on BadRequestException catch (_) {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorBadRequest;
+      error = true;
+    } on ForbiddenRequestException catch (_) {
+      retTitle = loc.errorPermissionsNotValid;
+      retMessage = loc.errorPermissionsNotValid;
+      error = true;
+    } on GenericNotAuthorizedException {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorNotAuthorizedDoLogin;
+      error = true;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
+    } on NetworkException {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorNetwork;
+      error = true;
     } catch (e) {
       debugPrint('Error: cannot receive or read response');
+      retTitle = loc.errorGeneric;
+      retMessage = e.toString();
+      error = true;
+    } finally {
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (_) =>
+              SimpleAlertDialog(title: retTitle, content: retMessage),
+        );
+        if (error == false) {
+          if (mounted) {
+            goToHomePagePostFrameCallback(context);
+          }
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return SafeArea(
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
       child: SingleChildScrollView(
+        controller: _scrollController,
         padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Form(
-              key: _formKey,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    TextFormField(
-                      controller: _firstnameController,
-                      decoration: InputDecoration(
-                        labelText: loc.labelFirstname,
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLength: 64,
-                      validator: (value) {
-                        return validateName(context, value);
-                      },
-                    ),
-                    SizedBox(height: 5),
-                    TextFormField(
-                      controller: _surnameController,
-                      decoration: InputDecoration(
-                        labelText: loc.labelSurname,
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLength: 64,
-                      validator: (value) {
-                        return validateName(context, value);
-                      },
-                    ),
-                    SizedBox(height: 5),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            submit();
-                          },
-                          child: Text("OK"),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(loc.buttonCancel),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 25.0,
-                horizontal: 25.0,
-              ),
+        child: SafeArea(
+          top: false,
+          child: Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  buildSectionTitle("Extra info"),
-                  Text("View profile extra information here"),
+                  TextFormField(
+                    controller: _firstnameController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelFirstname,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 64,
+                    validator: (value) {
+                      return validateName(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _surnameController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelSurname,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 64,
+                    validator: (value) {
+                      return validateName(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _streetController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelStreetAndNumber,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 256,
+                    validator: (value) {
+                      return validateStreetAndNumber(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _postalCodeController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelPostalCode,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 16,
+                    validator: (value) {
+                      return validatePostalCode(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _cityController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelCity,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 128,
+                    validator: (value) {
+                      return validateCity(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _provinceController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelProvince,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 128,
+                    validator: (value) {
+                      return validateProvince(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextFormField(
+                    controller: _countryController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelCountry,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 128,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return null; // Country is optional
+                      }
+                      return validateCountry(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  TextField(
+                    controller: _birthdateController,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: loc.labelBirthdate,
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    onTap: () => _selectDate(context),
+                  ),
+                  SizedBox(height: 25),
+                  TextFormField(
+                    controller: _phoneNumberController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelPhoneNumber,
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 16,
+                    validator: (value) {
+                      return validatePhoneNumber(context, value);
+                    },
+                  ),
+                  SizedBox(height: 5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submit();
+                        },
+                        child: Text("OK"),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonCancel),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
