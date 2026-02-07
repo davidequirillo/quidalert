@@ -25,7 +25,7 @@
   "errorNoEntryToAdd": "Nessuna voce da aggiungere",
   "errorNetwork": "Errore di rete",
   "errorNotAuthorized": "Non autorizzato",
-  "errorNotAuthorizedDoLogin": "Non autorizzato, fai il logout e riprova il login",
+  "errorNotAuthorizedDoLogin": "Non autorizzato, ritenta il login",
   "errorRegNotAuthorized": "Registrazione non autorizzata: chiedere all'autorità territoriale competente",
   "errorPasswordsDoNotMatch": "Le password non corrispondono",
   "errorPasswordMissingUppercase": "La password deve contenere almeno una lettera maiuscola",
