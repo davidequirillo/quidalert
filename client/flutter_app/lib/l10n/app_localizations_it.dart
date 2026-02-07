@@ -81,7 +81,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorNotAuthorized => 'Non autorizzato';
 
   @override
-  String get errorNotAuthorizedDoLogin => 'Non autorizzato, fai il logout e riprova il login';
+  String get errorNotAuthorizedDoLogin => 'Non autorizzato, ritenta il login';
 
   @override
   String get errorRegNotAuthorized => 'Registrazione non autorizzata: chiedere all\'autorità territoriale competente';

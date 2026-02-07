@@ -25,7 +25,7 @@
   "errorNetwork": "Network error",
   "errorNoEntryToAdd": "No entry to add",
   "errorNotAuthorized": "Not authorized",
-  "errorNotAuthorizedDoLogin": "Not authorized, do logout and retry login",
+  "errorNotAuthorizedDoLogin": "Not authorized, retry login",
   "errorRegNotAuthorized": "Registration not authorized: ask to competent territorial authority",
   "errorPasswordsDoNotMatch": "Passwords do not match",
   "errorPasswordMissingUppercase": "Password must contain at least an uppercase character",

@@ -81,7 +81,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotAuthorized => 'Not authorized';
 
   @override
-  String get errorNotAuthorizedDoLogin => 'Not authorized, do logout and retry login';
+  String get errorNotAuthorizedDoLogin => 'Not authorized, retry login';
 
   @override
   String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';

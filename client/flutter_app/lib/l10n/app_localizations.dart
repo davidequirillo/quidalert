@@ -242,7 +242,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorNotAuthorizedDoLogin.
   ///
   /// In en, this message translates to:
-  /// **'Not authorized, do logout and retry login'**
+  /// **'Not authorized, retry login'**
   String get errorNotAuthorizedDoLogin;
 
   /// No description provided for @errorRegNotAuthorized.
