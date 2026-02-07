@@ -27,7 +27,7 @@ Chief users will connect to the server using the desktop version of the client a
 
 Idea of a base server-side architecture: 1 server (reverse proxy, ex. "nginx") and 3 backends (api backend, website backend, streaming signaling server).  
 The reverse proxy will be seen by the client as the only server to connect to.
-This architecture obviously can be clustered: 1 reverse proxy (load balancer), 10 api backends, 3 dbms (postgres), 3 dbms (Redis), website and streaming server.
+This architecture obviously can be clustered: 1 reverse proxy (load balancer), 10 fastapi (backend), 3 dbms (postgres), 3 dbms (Redis), website and streaming server.
 
 ## 🔌 Installation
 
