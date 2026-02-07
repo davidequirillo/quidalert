@@ -60,6 +60,31 @@ class UserIn(UserBase, table=False):
             raise ValueError("Password must contain a special character")
         return s
 
+class UserInCompleteProfile(BaseModel):
+    firstname: str = Field(min_length=2, max_length=64)
+    surname: str = Field(min_length=2, max_length=64)
+    street: str = Field(min_length=2, max_length=256)
+    postal_code: str = Field(min_length=2, max_length=16)
+    city: str = Field(min_length=2, max_length=64)
+    province: str = Field(min_length=2, max_length=64)
+    country: Optional[str] = Field(default=None, min_length=0, max_length=64)
+    birthdate: str # YYYY-MM-DD
+    phone: str = Field(min_length=6, max_length=32)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, s):
+        if not re.match(r"^\+?[0-9\s\-]+$", s):
+            raise ValueError("Invalid phone number format")
+        return s
+    
+    @field_validator("birthdate")
+    @classmethod
+    def validate_birthdate(cls, s):
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", s):
+            raise ValueError("Invalid birthdate format, must be YYYY-MM-DD")
+        return s
+
 class UserOut(UserBase, table=False):
     id: uuid_pkg.UUID = Field(
         default_factory=uuid_pkg.uuid4,
@@ -96,6 +121,13 @@ class UserOut(UserBase, table=False):
     updated_at: Optional[datetime] = Field(default=None, nullable=True)
     authorized_by: Optional[EmailStr] = Field(default=None, nullable=True)
     authorized_at: Optional[datetime] = Field(default=None, nullable=True)
+    street: Optional[str] = Field(default=None, min_length=2, max_length=256)
+    postal_code: Optional[str] = Field(default=None, min_length=2, max_length=16)
+    city: Optional[str] = Field(default=None, min_length=2, max_length=64)
+    province: Optional[str] = Field(default=None, min_length=2, max_length=64)
+    country: Optional[str] = Field(default=None, min_length=2, max_length=64)
+    birthdate: Optional[str] = Field(default=None, min_length=10, max_length=10) # YYYY-MM-DD
+    phone: Optional[str] = Field(default=None, min_length=6, max_length=32)
 
     @field_validator("role")
     @classmethod

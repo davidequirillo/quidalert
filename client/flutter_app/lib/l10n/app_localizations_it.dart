@@ -21,7 +21,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonCancel => 'Annulla';
 
   @override
-  String get buttonDelete => 'Delete';
+  String get buttonDelete => 'Elimina';
 
   @override
   String get buttonReject => 'Rifiuta';
@@ -120,6 +120,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Sessione non valida o scaduta';
 
   @override
+  String get labelAddress => 'Indirizzo';
+
+  @override
   String get labelAddEmailsToWhiteList => 'Aggiungi indirizzi email alla white list';
 
   @override
@@ -132,10 +135,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelAuthorizedBy => 'Autorizzato da';
 
   @override
+  String get labelBirthdate => 'Data di nascita';
+
+  @override
+  String get labelCity => 'Città';
+
+  @override
   String get labelClickToSelectFile => 'Fare click per selezionare il file';
 
   @override
-  String get labelClickSearchToLoadEntries => 'Fare click su search per restituire le voci presenti';
+  String get labelClickSearchToLoadEntries => 'Fare click su uno dei pulsanti di ricerca';
 
   @override
   String get labelCompetenceTerritory => 'Territorio di competenza';
@@ -148,6 +157,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelConfirmNewPassword => 'Conferma nuova password';
+
+  @override
+  String get labelCountry => 'Nazione';
 
   @override
   String get labelCurrentWhiteListEntries => 'Voci presenti nella white list';
@@ -177,7 +189,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelEnterVerificationMailCode => 'Inserisci il codice di verifica che ti è stato appena inviato via email';
 
   @override
-  String get labelEntriesDeleted => 'Deleted entries';
+  String get labelEntriesDeleted => 'Voci cancellate';
 
   @override
   String get labelEntriesFailed => 'Voci fallite';
@@ -219,6 +231,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelPasswordForgotten => 'Password dimenticata?';
 
   @override
+  String get labelPersonalInfo => 'Informazioni personali';
+
+  @override
+  String get labelPhoneNumber => 'Telefono';
+
+  @override
+  String get labelPostalCode => 'CAP/ZIP';
+
+  @override
+  String get labelProvince => 'Provincia';
+
+  @override
   String get labelRecents => 'Recenti';
 
   @override
@@ -234,10 +258,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelShowPassword => 'Mostra password';
 
   @override
+  String get labelStreet => 'Via/piazza';
+
+  @override
+  String get labelStreetAndNumber => 'Via/piazza e numero civico';
+
+  @override
   String get labelSurname => 'Cognome';
 
   @override
   String get labelNoEntryFound => 'Nessuna voce trovata';
+
+  @override
+  String get labelTechnicalInfo => 'Informazioni tecniche';
 
   @override
   String get labelTypeDeleteToConfirm => 'Scrivi DELETE per confermare';

@@ -6,7 +6,13 @@ from sqlmodel import create_engine, Session
 from core.settings import settings
 
 def get_engine(db_url):
-    engine = create_engine(db_url, echo=settings.db_engine_echo)
+    engine = create_engine(db_url, 
+        pool_size=settings.pool_size,
+        max_overflow=settings.max_overflow,
+        pool_recycle=settings.pool_recycle,
+        # this is needed to avoid "psql connection has gone away" errors after some time of inactivity
+        pool_pre_ping=True,
+        echo=settings.db_engine_echo)
     return engine
 
 def get_session(engine):

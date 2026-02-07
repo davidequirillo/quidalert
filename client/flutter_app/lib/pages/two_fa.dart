@@ -104,56 +104,52 @@ class _TwoFABodyState extends State<TwoFABody> {
     final email = args['email']!;
     final password = args['password']!;
     final loc = AppLocalizations.of(context)!;
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Column(
+    return SafeArea(
+      top: false,
+      child: Form(
+        key: _formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                loc.labelEnterVerificationMailCode,
+                style: TextStyle(fontSize: 18),
+              ),
+              SizedBox(height: 15),
+              TextFormField(
+                controller: _codeController,
+                decoration: InputDecoration(
+                  labelText: loc.labelVerificationCode,
+                  border: OutlineInputBorder(),
+                ),
+                maxLength: 6,
+                validator: (value) {
+                  return validateDigitCode(context, value, min: 6);
+                },
+              ),
+              SizedBox(height: 5),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    loc.labelEnterVerificationMailCode,
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  SizedBox(height: 15),
-                  TextFormField(
-                    controller: _codeController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelVerificationCode,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 6,
-                    validator: (value) {
-                      return validateDigitCode(context, value, min: 6);
+                  ElevatedButton(
+                    onPressed: () {
+                      submit(email, password);
                     },
+                    child: Text("OK"),
                   ),
-                  SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submit(email, password);
-                        },
-                        child: Text("OK"),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () =>
-                            Navigator.pushReplacementNamed(context, '/login'),
-                        child: Text(loc.buttonCancel),
-                      ),
-                    ],
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () =>
+                        Navigator.pushReplacementNamed(context, '/login'),
+                    child: Text(loc.buttonCancel),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),

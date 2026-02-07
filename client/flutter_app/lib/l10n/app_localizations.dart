@@ -317,6 +317,12 @@ abstract class AppLocalizations {
   /// **'Session not valid or expired'**
   String get errorSessionNotValidOrExpired;
 
+  /// No description provided for @labelAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get labelAddress;
+
   /// No description provided for @labelAddEmailsToWhiteList.
   ///
   /// In en, this message translates to:
@@ -341,6 +347,18 @@ abstract class AppLocalizations {
   /// **'Authorized by'**
   String get labelAuthorizedBy;
 
+  /// No description provided for @labelBirthdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthdate'**
+  String get labelBirthdate;
+
+  /// No description provided for @labelCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get labelCity;
+
   /// No description provided for @labelClickToSelectFile.
   ///
   /// In en, this message translates to:
@@ -350,7 +368,7 @@ abstract class AppLocalizations {
   /// No description provided for @labelClickSearchToLoadEntries.
   ///
   /// In en, this message translates to:
-  /// **'Click search to get entries'**
+  /// **'Click a search button to get entries'**
   String get labelClickSearchToLoadEntries;
 
   /// No description provided for @labelCompetenceTerritory.
@@ -376,6 +394,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm new password'**
   String get labelConfirmNewPassword;
+
+  /// No description provided for @labelCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get labelCountry;
 
   /// No description provided for @labelCurrentWhiteListEntries.
   ///
@@ -515,6 +539,30 @@ abstract class AppLocalizations {
   /// **'Forgot password?'**
   String get labelPasswordForgotten;
 
+  /// No description provided for @labelPersonalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Info'**
+  String get labelPersonalInfo;
+
+  /// No description provided for @labelPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get labelPhoneNumber;
+
+  /// No description provided for @labelPostalCode.
+  ///
+  /// In en, this message translates to:
+  /// **'CAP/ZIP'**
+  String get labelPostalCode;
+
+  /// No description provided for @labelProvince.
+  ///
+  /// In en, this message translates to:
+  /// **'Province'**
+  String get labelProvince;
+
   /// No description provided for @labelRecents.
   ///
   /// In en, this message translates to:
@@ -545,6 +593,18 @@ abstract class AppLocalizations {
   /// **'Show password'**
   String get labelShowPassword;
 
+  /// No description provided for @labelStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'Street'**
+  String get labelStreet;
+
+  /// No description provided for @labelStreetAndNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Street and civic number'**
+  String get labelStreetAndNumber;
+
   /// No description provided for @labelSurname.
   ///
   /// In en, this message translates to:
@@ -556,6 +616,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No entry found'**
   String get labelNoEntryFound;
+
+  /// No description provided for @labelTechnicalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Info'**
+  String get labelTechnicalInfo;
 
   /// No description provided for @labelTypeDeleteToConfirm.
   ///

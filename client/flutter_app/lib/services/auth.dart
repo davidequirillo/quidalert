@@ -399,6 +399,9 @@ class AuthClient extends ChangeNotifier {
         resp = await http.post(uri, headers: headers, body: payload);
         break;
       case 'PUT':
+        if (kDebugMode) {
+          debugPrint('Sending PUT request to $url with body: $payload');
+        }
         resp = await http.put(uri, headers: headers, body: payload);
         break;
       case 'DELETE':

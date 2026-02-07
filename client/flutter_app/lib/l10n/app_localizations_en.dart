@@ -120,6 +120,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Session not valid or expired';
 
   @override
+  String get labelAddress => 'Address';
+
+  @override
   String get labelAddEmailsToWhiteList => 'Add email addressed to white list';
 
   @override
@@ -132,10 +135,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelAuthorizedBy => 'Authorized by';
 
   @override
+  String get labelBirthdate => 'Birthdate';
+
+  @override
+  String get labelCity => 'City';
+
+  @override
   String get labelClickToSelectFile => 'Click to select file';
 
   @override
-  String get labelClickSearchToLoadEntries => 'Click search to get entries';
+  String get labelClickSearchToLoadEntries => 'Click a search button to get entries';
 
   @override
   String get labelCompetenceTerritory => 'Competence territory';
@@ -148,6 +157,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelConfirmNewPassword => 'Confirm new password';
+
+  @override
+  String get labelCountry => 'Country';
 
   @override
   String get labelCurrentWhiteListEntries => 'Current white list entries';
@@ -219,6 +231,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelPasswordForgotten => 'Forgot password?';
 
   @override
+  String get labelPersonalInfo => 'Personal Info';
+
+  @override
+  String get labelPhoneNumber => 'Phone';
+
+  @override
+  String get labelPostalCode => 'CAP/ZIP';
+
+  @override
+  String get labelProvince => 'Province';
+
+  @override
   String get labelRecents => 'Recents';
 
   @override
@@ -234,10 +258,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelShowPassword => 'Show password';
 
   @override
+  String get labelStreet => 'Street';
+
+  @override
+  String get labelStreetAndNumber => 'Street and civic number';
+
+  @override
   String get labelSurname => 'Surname';
 
   @override
   String get labelNoEntryFound => 'No entry found';
+
+  @override
+  String get labelTechnicalInfo => 'Technical Info';
 
   @override
   String get labelTypeDeleteToConfirm => 'Type DELETE to confirm';

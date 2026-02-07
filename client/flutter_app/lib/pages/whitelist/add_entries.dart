@@ -50,7 +50,6 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
       type: FileType.custom,
       allowedExtensions: ["csv", "txt"],
     );
-
     if (result != null) {
       setState(() {
         _pickedFile = result.files.first;
@@ -108,6 +107,9 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -187,6 +189,9 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -217,78 +222,81 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          buildSectionTitle(
-            '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
-          ),
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: "Email",
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLength: 128,
-                  validator: (value) {
-                    return validateEmail(context, value);
-                  },
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        submitSingle();
-                      },
-                      child: Text(loc.buttonAdd),
-                    ),
-                    const SizedBox(width: 25),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(loc.buttonBack),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 25),
-                Divider(),
-                const SizedBox(height: 25),
-                buildSectionTitle(
-                  '${loc.buttonAdd} ${loc.labelEmailMany.toLowerCase()}',
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
-                if (_pickedFile != null) ...[
-                  const SizedBox(height: 10),
-                  Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
-                ],
-                const SizedBox(height: 35),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        submitMany();
-                      },
-                      child: Text(loc.buttonAdd),
-                    ),
-                    const SizedBox(width: 25),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(loc.buttonBack),
-                    ),
-                  ],
-                ),
-              ],
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            buildSectionTitle(
+              '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
             ),
-          ),
-        ],
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  const SizedBox(height: 5),
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 128,
+                    validator: (value) {
+                      return validateEmail(context, value);
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submitSingle();
+                        },
+                        child: Text(loc.buttonAdd),
+                      ),
+                      const SizedBox(width: 15),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonBack),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  Divider(),
+                  const SizedBox(height: 15),
+                  buildSectionTitle(
+                    '${loc.buttonAdd} ${loc.labelEmailMany.toLowerCase()}',
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
+                  if (_pickedFile != null) ...[
+                    const SizedBox(height: 10),
+                    Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
+                  ],
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submitMany();
+                        },
+                        child: Text(loc.buttonAdd),
+                      ),
+                      const SizedBox(width: 15),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonBack),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

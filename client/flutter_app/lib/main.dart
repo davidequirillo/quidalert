@@ -25,7 +25,7 @@ import 'pages/whitelist/search_entries.dart';
 import 'pages/whitelist/delete_entries.dart';
 import 'pages/terms/upload_terms.dart';
 import 'pages/users/reset_privileges.dart';
-import 'pages/users/search.dart';
+import 'pages/users/search_module.dart';
 import 'pages/users/view.dart';
 import 'pages/advice.dart';
 import 'pages/profile/complete.dart';
@@ -88,7 +88,7 @@ class QuidalertWidget extends StatelessWidget {
         '/accounts/whitelist/delete-entries': (_) =>
             const WhiteListDeletePage(),
         '/accounts/upload-terms': (_) => const UploadTermsPage(),
-        '/accounts/users/search': (_) => const UsersPage(),
+        '/accounts/users/search': (_) => const UsersSearchModulePage(),
         '/accounts/users/view-user': (_) => const UserPage(),
         '/accounts/users/reset-privileges': (_) => const ResetPrivilegesPage(),
         '/settings': (_) => const SettingsPage(),
