@@ -25,9 +25,9 @@ A note about officers: unlike admins, who can edit everyone, officers can only m
 
 Chief users will connect to the server using the desktop version of the client app, to do additional real-time operations (such as sending a message to specific units, sending an alert to all users inside a location radius, viewing streaming video coming from a user device or from a drone flying over the event location, etc.).
 
-Idea of a base server-side architecture: 1 server (reverse proxy, ex. "nginx") and 3 backends (api backend, website backend, streaming signaling server).  
+Idea of a server-side architecture: 1 server (reverse proxy, ex. "nginx") and 3 backends (api backend, website backend, streaming signaling server).  
 The reverse proxy will be seen by the client as the only server to connect to.
-This architecture obviously can be clustered: 1 reverse proxy (load balancer), 10 fastapi (backend), 3 dbms (postgres), 3 dbms (Redis), website and streaming server.
+This architecture obviously can be clustered: for example, 1 reverse proxy (load balancer), 10 FastApi, 3 dbms (Postgres), 3 dbms (Redis), 1 website and 1 streaming server.
 
 ## 🔌 Installation
 
