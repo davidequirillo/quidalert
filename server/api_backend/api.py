@@ -10,7 +10,7 @@ from fastapi import (FastAPI, Depends,
     HTTPException, status, BackgroundTasks, 
     File, UploadFile, Form)
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
@@ -52,7 +52,7 @@ from services.security import (
     create_access_token, create_refresh_token, decode_token, MAX_ACTIVE_REFRESH_TOKENS,
     check_token_against_hash, create_login_token
     )
-from core.dbmgr import get_session, get_engine
+from core import dbmgr, bucketmgr
 from services.network import (
     send_activation_mail, send_reset_code_mail, send_reset_successful_mail,
     send_login_successful_mail, send_login_code_mail
@@ -67,7 +67,7 @@ from core.exceptions import (
     )
 from services.fileutils import (
     MAX_FILE_SIZE, MAX_SMALL_FILE_SIZE, 
-    FILES_DIR)
+    )
 
 def init_settings():
     setup_logging()
@@ -76,11 +76,13 @@ def init_settings():
 async def lifespan(app: FastAPI):
     print("Starting up api framework...")
     init_settings()
-    app.state.db_engine = get_engine(settings.db_url)
+    app.state.db_engine = dbmgr.get_engine()
+    app.state.s3_client = bucketmgr.get_s3_client()
     yield
     print("Shutting down api framework...")
     app.state.db_engine.dispose()
     app.state.db_engine = None
+    app.state.s3_client = None
 
 app = FastAPI(lifespan=lifespan)
 
@@ -93,11 +95,15 @@ app.add_middleware(CORSMiddleware,
 
 def get_db_session():
     engine = app.state.db_engine
-    yield from get_session(engine)
+    yield from dbmgr.get_session(engine)
+
+def get_s3_client():
+    return app.state.s3_client
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
-api_dirpath = os.path.dirname(__file__)
+api_dirpath = "."
 templates = Jinja2Templates(directory=os.path.join(api_dirpath, "templates"))
+FILES_DIR = "./files"
 
 def get_current_user(access_token: str = Depends(oauth2_scheme),
                     db_session: Session = Depends(get_db_session)):
@@ -544,23 +550,33 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
     return {"message": "Password reset successful"}
 
 @app.get("/api/terms")
-def get_terms(request: Request, response: Response):
+def get_terms(request: Request,
+            response: Response,
+            s3_client = Depends(get_s3_client),
+            ):
     lang = request.headers.get('Accept-Language')
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
     response.headers["Content-Type"] = "text/markdown; charset=utf-8"
-    upload_dir = settings.upload_dir
-    fpath = os.path.join(upload_dir, f"terms_{lang}.md")
-    if not os.path.exists(fpath):
+    try:
+        obj = s3_client.get_object(
+            Bucket=settings.minio_bucket_name, 
+            Key=f"terms_{lang}.md")
+    except Exception:
+        obj = None
+    if not obj:
         fpath = os.path.join(FILES_DIR, f"terms_{lang}.md.example")
-    return FileResponse(fpath)
-
-def save_terms(fpath: str, text_content: str):
-    with open(fpath, "wb") as f:
-        f.write(text_content.encode("utf-8"))
+        return FileResponse(fpath)
+    else:
+        content = obj["Body"]
+        return StreamingResponse(content=content, media_type="text/markdown; charset=utf-8")
 
 @app.post("/api/terms") # upload legal terms file (multipart/form-data)
-async def upload_terms(file: UploadFile = File(...), language: str = Form(...), current_user: User = Depends(get_current_user)):
+async def upload_terms(file: UploadFile = File(...), 
+        language: str = Form(...), 
+        current_user: User = Depends(get_current_user),
+        s3_client=Depends(get_s3_client)
+    ):
     if not current_user.is_admin:
         raise forbidden_exception()
     if (file is None) or (file.filename is None) or (file.filename == ""):
@@ -581,10 +597,19 @@ async def upload_terms(file: UploadFile = File(...), language: str = Form(...), 
     lang = language
     if (lang != UserLanguage.en) and (lang != UserLanguage.it):
         lang = UserLanguage.en
-    fpath = os.path.join(FILES_DIR, f"terms_{lang}.md")
-    await run_in_threadpool(
-        lambda: save_terms(fpath, safe_text)
-    )
+    fname = f"terms_{lang}.md"
+    try:
+        s3_client.put_object(
+            Body=safe_text.encode("utf-8"), 
+            Bucket=settings.minio_bucket_name, 
+            Key=fname,
+            ContentType=file.content_type
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error uploading file to S3"
+        )
     return {"message": "Terms uploaded successfully"}
 
 @app.get("/api/whitelist-entries")

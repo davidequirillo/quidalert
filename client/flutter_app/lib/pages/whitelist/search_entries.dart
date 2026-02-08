@@ -44,7 +44,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
   int _currentPage = 0;
   bool _isLoadingPage = false;
   bool _hasMore = true;
-  final int _limit = 10;
+  final int _limit = 100;
   bool _hasSearched = false;
 
   @override
