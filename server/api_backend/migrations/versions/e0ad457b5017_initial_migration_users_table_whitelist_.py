@@ -1,8 +1,8 @@
-"""init tables
+"""initial migration: users table, whitelist table, etc.
 
-Revision ID: 1e4c1a3c3678
+Revision ID: e0ad457b5017
 Revises: 
-Create Date: 2026-01-26 21:18:23.136718
+Create Date: 2026-02-08 16:58:49.841033
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1e4c1a3c3678'
+revision: str = 'e0ad457b5017'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,10 +28,11 @@ def upgrade() -> None:
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('language', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('is_superuser', sa.Boolean(), nullable=False),
     sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('is_officer', sa.Boolean(), nullable=False),
     sa.Column('is_chief', sa.Boolean(), nullable=False),
-    sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('activation_expires_at', sa.DateTime(), nullable=True),
@@ -51,6 +52,15 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('updated_by', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('authorized_by', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('authorized_at', sa.DateTime(), nullable=True),
+    sa.Column('street', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=True),
+    sa.Column('postal_code', sqlmodel.sql.sqltypes.AutoString(length=16), nullable=True),
+    sa.Column('city', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
+    sa.Column('province', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
+    sa.Column('country', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
+    sa.Column('birthdate', sqlmodel.sql.sqltypes.AutoString(length=10), nullable=True),
+    sa.Column('phone', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=True),
     sa.Column('email_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('gps_lat', sa.Float(), nullable=True),
@@ -62,7 +72,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_email_hash'), 'users', ['email_hash'], unique=True)
-    op.create_table('white_records',
+    op.create_table('whitelist_entries',
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_by', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -101,7 +111,7 @@ def downgrade() -> None:
     op.drop_table('refresh_tokens')
     op.drop_index(op.f('ix_alerts_user_id'), table_name='alerts')
     op.drop_table('alerts')
-    op.drop_table('white_records')
+    op.drop_table('whitelist_entries')
     op.drop_index(op.f('ix_users_email_hash'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

@@ -10,6 +10,10 @@ Install VSCode IDE
 
 [https://code.visualstudio.com/](https://code.visualstudio.com/)
 
+Install Docker Desktop for Windows
+
+[https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+
 ### Client
 
 Install Flutter SDK
@@ -50,40 +54,32 @@ conda env create -f environment.yml
 conda activate quidalert_env
 ```
 
-Install Postgres DBMS and create database "quidalert_db".
-
-Change default settings in config.py file.
+Change default settings in config.py file, and read the comments contained in the file, to know how to proceed with the env variables.
 
 Copy ".env.example" to ".env" file and change the desired environment variables (useful for development).
 
-For security reasons, the following variables are omitted in config.py. Instead, They must be set as system/service environment variables (in production) or in .env file (in development):
-
-APP_MODE ("development" or "production")  
-ADMIN_PASS  
-OTP_PEPPER, EMAIL_PEPPER, GLOBAL_PEPPER
-JWT_SECRET_KEY
-
 See ".env.example" for additional info about those variables.
 
-Initialize alembic
+Postgres DBMS, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file, so read this file for more info about them.
+To download them automatically, and start them, you only need to write this single command:
 ```
-alembic init migrations
+docker-compose up -d
 ```
 
-Do all migrations (to build the entire database) from existent migration sources using the following command:
+Now you will have all the required servers ready to receive requests.
+
+Do all migrations to postgres database (to build the entire database tables) from existent migration sources using the following command:
 ```
 alembic upgrade head
 ```
 
+Now you can start the backend and the client via VSCode launcher (see debugging/run section).
+
 IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using your custom password you have placed in ADMIN_PASS environment variable.  
 After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
 
-NOTE: User registration requires a smtp server to send activation code to user email address. So, in a real production system, set correct SMTP_HOST and SMTP_PORT in "config.py" file or as environment variables.  
-For local testing/development purposes, we can set a fake local smtp server (see .env file) which prints the mail on the screen, as the following:
-
-```
-python -m aiosmtpd -n -l localhost:1025
-```
+NOTE: user registration, login, reset, require a smtp server to send some mail notifications to user email address. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in "config.py" file, or as environment variables.  
+For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the user using its web interface available at the following url: "http://localhost:8025".
 
 ### Debugging (run)
 
