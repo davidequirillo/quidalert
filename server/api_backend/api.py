@@ -599,12 +599,14 @@ async def upload_terms(file: UploadFile = File(...),
         lang = UserLanguage.en
     fname = f"terms_{lang}.md"
     try:
-        s3_client.put_object(
-            Body=safe_text.encode("utf-8"), 
-            Bucket=settings.minio_bucket_name, 
-            Key=fname,
-            ContentType=file.content_type
-        )
+        await run_in_threadpool(
+            lambda: s3_client.put_object(
+                Body=safe_text.encode("utf-8"), 
+                Bucket=settings.minio_bucket_name, 
+                Key=fname,
+                ContentType=file.content_type
+            )
+        )   
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
