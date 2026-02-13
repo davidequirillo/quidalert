@@ -24,8 +24,10 @@ import 'pages/whitelist/add_entries.dart';
 import 'pages/whitelist/search_entries.dart';
 import 'pages/whitelist/delete_entries.dart';
 import 'pages/terms/upload_terms.dart';
-import 'pages/users/reset_privileges.dart';
 import 'pages/users/search_module.dart';
+import 'pages/users/search_by_csv.dart';
+import 'pages/users/search_results.dart';
+import 'pages/users/promote_results.dart';
 import 'pages/users/view.dart';
 import 'pages/advice.dart';
 import 'pages/profile/complete.dart';
@@ -88,9 +90,12 @@ class QuidalertWidget extends StatelessWidget {
         '/accounts/whitelist/delete-entries': (_) =>
             const WhiteListDeletePage(),
         '/accounts/upload-terms': (_) => const UploadTermsPage(),
-        '/accounts/users/search': (_) => const UsersSearchModulePage(),
+        '/accounts/users/search-module': (_) => const UsersSearchModulePage(),
+        '/accounts/users/search-by-csv': (_) => const UsersSearchByCSVPage(),
+        '/accounts/users/search-results': (_) => const UsersSearchResultsPage(),
         '/accounts/users/view-user': (_) => const UserPage(),
-        '/accounts/users/reset-privileges': (_) => const ResetPrivilegesPage(),
+        '/accounts/users/promote-results': (_) =>
+            const UsersPromoteResultsPage(),
         '/settings': (_) => const SettingsPage(),
       },
     );

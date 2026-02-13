@@ -97,6 +97,7 @@ class UserOut(UserBase, table=False):
     is_chief: bool = Field(default=False, nullable=False)
     role: str = Field(default=UserRole.citizen, nullable=False)
     status: str = Field(default=UserStatus.ok, nullable=False)
+    reliability_score: int = Field(default=5, ge=0, le=5, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
     reset_expires_at: Optional[datetime] = Field(default=None)
@@ -142,7 +143,20 @@ class UserOut(UserBase, table=False):
         if not s in [UserStatus.ok, UserStatus.unreliable, UserStatus.blocked]:
             raise ValueError("Wrong status")
         return s
-        
+
+class UserOutSmall(BaseModel):
+    id: uuid_pkg.UUID
+    firstname: str
+    surname: str
+    email: EmailStr
+    authorized_by: Optional[EmailStr] = None
+    authorized_at: Optional[datetime] = None
+    is_admin: bool
+    is_officer: bool
+    is_chief: bool
+    role: str
+    status: str
+
 class User(UserOut, table=True):
     __tablename__: str = 'users'
     # todo: insert foreign key to whitelist table
@@ -247,7 +261,7 @@ class Alert(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
     user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
     description: str = Field(default="", nullable=False, min_length=0, max_length=256)
-    severity: Optional[int] = Field(default=0, nullable=False)
+    severity: Optional[int] = Field(default=0, ge=1, le=5, nullable=False)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
@@ -266,5 +280,5 @@ class WhiteListEntry(SQLModel, table=True):
     created_by: EmailStr = Field(nullable=False, min_length=3, max_length=128)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
 
-class WhiteListEntriesDict(BaseModel):
+class EmailListDict(BaseModel):
     emails: List[str]

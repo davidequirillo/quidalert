@@ -119,11 +119,35 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get buttonCancel;
 
+  /// No description provided for @buttonClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get buttonClear;
+
   /// No description provided for @buttonDelete.
   ///
   /// In en, this message translates to:
   /// **'Delete'**
   String get buttonDelete;
+
+  /// No description provided for @buttonPromote.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote'**
+  String get buttonPromote;
+
+  /// No description provided for @buttonPromoteQueryResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Promote query users'**
+  String get buttonPromoteQueryResults;
+
+  /// No description provided for @buttonResetPrivilegesQueryResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset privileges of query users'**
+  String get buttonResetPrivilegesQueryResults;
 
   /// No description provided for @buttonReject.
   ///
@@ -232,6 +256,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No entry to add'**
   String get errorNoEntryToAdd;
+
+  /// No description provided for @errorNoEntryFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No entry found'**
+  String get errorNoEntryFound;
+
+  /// No description provided for @errorNoFileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No file selected'**
+  String get errorNoFileSelected;
 
   /// No description provided for @errorNotAuthorized.
   ///
@@ -575,11 +611,23 @@ abstract class AppLocalizations {
   /// **'Registration'**
   String get labelRegistration;
 
+  /// No description provided for @labelRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get labelRole;
+
   /// No description provided for @labelRowsTotal.
   ///
   /// In en, this message translates to:
   /// **'Total rows'**
   String get labelRowsTotal;
+
+  /// No description provided for @labelSearchByCSV.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by CSV'**
+  String get labelSearchByCSV;
 
   /// No description provided for @labelSelect.
   ///
@@ -622,6 +670,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Technical Info'**
   String get labelTechnicalInfo;
+
+  /// No description provided for @labelType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get labelType;
 
   /// No description provided for @labelTypeDeleteToConfirm.
   ///

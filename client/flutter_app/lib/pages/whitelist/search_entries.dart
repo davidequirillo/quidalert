@@ -104,7 +104,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest("get", requestStr);
     final respObj = json.decode(response.body);
-    List<dynamic> data = respObj['entries'];
+    List<dynamic> data = respObj;
     return data.map((item) => WhiteListEntry.fromJson(item)).toList();
   }
 
@@ -197,10 +197,10 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                       onPressed: _isLoadingPage
                           ? null
                           : () {
-                              searchCriteria = "me";
+                              searchCriteria = "";
                               _startNewSearch();
                             },
-                      label: Text("by Me"),
+                      label: Text(loc.labelAllMasculinePlural),
                     ),
                   ],
                 ),
@@ -218,17 +218,6 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                               },
                         label: Text("by Authorizer"),
                       ),
-                    if (authClient.isAdmin()) const SizedBox(width: 25),
-                    if (authClient.isAdmin())
-                      ElevatedButton.icon(
-                        onPressed: _isLoadingPage
-                            ? null
-                            : () {
-                                searchCriteria = "";
-                                _startNewSearch();
-                              },
-                        label: Text(loc.labelAllMasculinePlural),
-                      ),
                   ],
                 ),
               ],
@@ -240,6 +229,8 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                 ? Center(child: Text(loc.labelClickSearchToLoadEntries))
                 : _entries.isEmpty && _isLoadingPage
                 ? Center(child: CircularProgressIndicator())
+                : _entries.isEmpty
+                ? Center(child: Text(loc.errorNoEntryFound))
                 : ListView.separated(
                     controller: _scrollController,
                     itemCount: _entriesCount + (_hasMore ? 1 : 0),

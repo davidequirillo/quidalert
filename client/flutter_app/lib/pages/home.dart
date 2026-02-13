@@ -195,8 +195,9 @@ class _HomeBodyState extends State<HomeBody> {
               Text(
                 "${user['email']}\n${loc.labelLastRefreshAt}: $lastRefreshAt",
               ),
-              Text("Type: $type"),
-              Text("Role: ${user['role']}"),
+              Text("${loc.labelAuthorizedBy}: ${user['authorizer'] ?? "N/A"}"),
+              Text("${loc.labelType}: $type"),
+              Text("${loc.labelRole}: ${user['role']}"),
               Text("Status: ${user['status']}"),
             ],
           ),

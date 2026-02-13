@@ -445,7 +445,12 @@ class AuthClient extends ChangeNotifier {
         resp = await sendJsonRequest(method, url, headers: merged, body: b);
       }
       final jsonResp = jsonDecode(resp.body);
-      final String respMessage = jsonResp['detail'] ?? '';
+      final String respMessage;
+      if (jsonResp is Map<String, dynamic> && jsonResp.containsKey('detail')) {
+        respMessage = jsonResp['detail'];
+      } else {
+        respMessage = '';
+      }
       bool isNotAuthorized = (resp.statusCode == 401);
       final bool isExpired =
           (resp.statusCode == 401) && (respMessage == msgTokenExpired);

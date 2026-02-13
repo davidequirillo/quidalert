@@ -21,7 +21,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonCancel => 'Annulla';
 
   @override
+  String get buttonClear => 'Pulisci';
+
+  @override
   String get buttonDelete => 'Elimina';
+
+  @override
+  String get buttonPromote => 'Promuovi';
+
+  @override
+  String get buttonPromoteQueryResults => 'Promuovi gli utenti della query';
+
+  @override
+  String get buttonResetPrivilegesQueryResults => 'Resetta i privilegi degli utenti della query';
 
   @override
   String get buttonReject => 'Rifiuta';
@@ -76,6 +88,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorNoEntryToAdd => 'Nessuna voce da aggiungere';
+
+  @override
+  String get errorNoEntryFound => 'Nessuna voce trovata';
+
+  @override
+  String get errorNoFileSelected => 'Nessun file selezionato';
 
   @override
   String get errorNotAuthorized => 'Non autorizzato';
@@ -249,7 +267,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelRegistration => 'Registrazione';
 
   @override
+  String get labelRole => 'Ruolo';
+
+  @override
   String get labelRowsTotal => 'Righe totali';
+
+  @override
+  String get labelSearchByCSV => 'Cerca con CSV';
 
   @override
   String get labelSelect => 'Seleziona';
@@ -271,6 +295,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelTechnicalInfo => 'Informazioni tecniche';
+
+  @override
+  String get labelType => 'Tipo';
 
   @override
   String get labelTypeDeleteToConfirm => 'Scrivi DELETE per confermare';

@@ -57,11 +57,15 @@ class AccountsBody extends StatelessWidget {
                 '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
                 "/accounts/whitelist/delete-entries",
               ),
-              buildSectionLink(context, loc.menuUsers, "/accounts/users"),
               buildSectionLink(
                 context,
-                '${loc.menuUsers} (${loc.menuResetPrivileges.toLowerCase()})',
-                "/accounts/reset-privileges",
+                '${loc.menuUsers} (${loc.buttonSearch.toLowerCase()})',
+                "/accounts/users/search-module",
+              ),
+              buildSectionLink(
+                context,
+                '${loc.menuUsers} (${loc.labelSearchByCSV.toLowerCase()})',
+                "/accounts/users/search-by-csv",
               ),
               if (authClient.isAdmin())
                 buildSectionLink(
