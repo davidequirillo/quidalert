@@ -37,10 +37,10 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (UserBase, UserIn, User, UserOut, UserLanguage,
+from models.general import (UserBase, UserIn, User, UserOut, UserOutSmall, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper,
-    WhiteListEntry, WhiteListEntriesDict,
+    WhiteListEntry, EmailListDict,
     UserInCompleteProfile
     )
 from services.security import (
@@ -614,7 +614,7 @@ async def upload_terms(file: UploadFile = File(...),
         )
     return {"message": "Terms uploaded successfully"}
 
-@app.get("/api/whitelist-entries")
+@app.get("/api/whitelist-entries", response_model=list[WhiteListEntry])
 def get_whitelist_entries(
                 email: str | None = None,
                 authorizer: str | None = None,
@@ -652,11 +652,11 @@ def get_whitelist_entries(
             entries = db_session.exec(
                 select(WhiteListEntry).offset(offset).limit(limit)
                     ).all()
-    return {"entries": entries, "offset": offset, "size": limit }
+    return entries
 
 @app.post("/api/whitelist-entries")
 def add_whitelist_entries(
-                dict: WhiteListEntriesDict,
+                dict: EmailListDict,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
@@ -752,6 +752,70 @@ def update_profile(user_data: UserInCompleteProfile,
     db_session.commit()
     return { "message": "Profile updated" }
 
+@app.get("/api/users", response_model=list[UserOutSmall], status_code=status.HTTP_200_OK)
+def get_users(
+            email: str | None = None,
+            firstname: str | None = None,
+            surname: str | None = None,
+            authorizer: str | None = None,
+            type: str | None = None,
+            role: str | None = None,
+            status: str | None = None,
+            offset: int = 0,
+            limit: int = 100,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_officer):
+        raise forbidden_exception()
+    if offset < 0:
+        offset = 0
+    if limit not in [10, 100, 1000]:
+        limit = 100
+    if email and (email != ""):
+        users = db_session.exec(
+            select(User).where(User.email == email.lower())).all()
+        return users
+    if (current_user.is_admin):
+        statement = select(User)
+    else: # officers can see (in bulk) only users they authorized
+        statement = select(User).where(User.authorized_by == current_user.email)
+    if firstname and (firstname != ""):
+        statement = statement.where(User.firstname == firstname) 
+    if surname and (surname != ""):
+        statement = statement.where(User.surname == surname) 
+    if authorizer and (authorizer != ""):
+        statement = statement.where(User.authorized_by == authorizer.lower()) 
+    if type and (type != ""):
+        if type == "admin":
+            statement = statement.where(User.is_admin == True) 
+        elif type == "officer":
+            statement = statement.where(User.is_officer == True) 
+        elif type == "chief":
+            statement = statement.where(User.is_chief == True)
+    if role and (role != ""):
+        statement = statement.where(User.role == role)
+    if status and (status != ""):
+        statement = statement.where(User.status == status)
+    users = db_session.exec(statement.offset(offset).limit(limit)).all()
+    return users
+
+@app.post("/api/get-users-by-emails", response_model=list[UserOutSmall], status_code=status.HTTP_200_OK)
+def get_users_by_emails(
+            dict: EmailListDict,
+            offset: int = 0,
+            limit: int = 100,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_officer):
+        raise forbidden_exception()
+    if offset < 0:
+        offset = 0
+    if limit not in [10, 100, 1000]:
+        limit = 100
+    statement = select(User).where(User.email.in_(dict.emails)).offset(offset).limit(limit) # type: ignore
+    users = db_session.exec(statement).all()
+    return users
+    
 @app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
 def get_user(user_id: str, 
                 current_user: User = Depends(get_current_user),
