@@ -138,6 +138,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Sessione non valida o scaduta';
 
   @override
+  String get labelActive => 'Attivo';
+
+  @override
   String get labelAddress => 'Indirizzo';
 
   @override
@@ -181,6 +184,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelCurrentWhiteListEntries => 'Voci presenti nella white list';
+
+  @override
+  String get labelDatetimesAreInUTC => 'Date/ore sono espresse in UTC';
 
   @override
   String get labelDetails => 'Dettagli';
@@ -246,6 +252,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelNewPassword => 'Nuova password';
 
   @override
+  String get labelNo => 'No';
+
+  @override
+  String get labelNote => 'Note';
+
+  @override
   String get labelPasswordForgotten => 'Password dimenticata?';
 
   @override
@@ -264,7 +276,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelRecents => 'Recenti';
 
   @override
+  String get labelRecentAlerts => 'Allerte recenti';
+
+  @override
   String get labelRegistration => 'Registrazione';
+
+  @override
+  String get labelReliability => 'Affidabilità';
 
   @override
   String get labelRole => 'Ruolo';
@@ -307,6 +325,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelWaitPlease => 'Attendere, prego';
+
+  @override
+  String get labelYes => 'Sì';
 
   @override
   String get menuSettings => 'Impostazioni';

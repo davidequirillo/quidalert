@@ -28,7 +28,7 @@ import 'pages/users/search_module.dart';
 import 'pages/users/search_by_csv.dart';
 import 'pages/users/search_results.dart';
 import 'pages/users/promote_results.dart';
-import 'pages/users/view.dart';
+import 'pages/users/view_details.dart';
 import 'pages/advice.dart';
 import 'pages/profile/complete.dart';
 
@@ -93,7 +93,7 @@ class QuidalertWidget extends StatelessWidget {
         '/accounts/users/search-module': (_) => const UsersSearchModulePage(),
         '/accounts/users/search-by-csv': (_) => const UsersSearchByCSVPage(),
         '/accounts/users/search-results': (_) => const UsersSearchResultsPage(),
-        '/accounts/users/view-user': (_) => const UserPage(),
+        '/accounts/users/view-user-details': (_) => const UserDetailsPage(),
         '/accounts/users/promote-results': (_) =>
             const UsersPromoteResultsPage(),
         '/settings': (_) => const SettingsPage(),

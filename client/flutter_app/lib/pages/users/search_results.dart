@@ -39,7 +39,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
   int _currentPage = 0;
   bool _isLoadingPage = false;
   bool _hasMore = true;
-  final int _limit = 10;
+  final int _limit = 100;
   bool _hasSearched = false;
   final ScrollController _scrollController = ScrollController();
 
@@ -245,6 +245,8 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                                   )
                                 : "N/A",
                           ),
+                          onTap: () =>
+                              goToUserDetailsPage(context, _users[index].id),
                         );
                       } else {
                         // Loading spinner at the bottom of the list

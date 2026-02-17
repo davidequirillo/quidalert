@@ -9,6 +9,7 @@ import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -168,6 +169,11 @@ class _HomeBodyState extends State<HomeBody> {
     final lastRefreshAt = user['last_refresh_at']
         .replaceAll("T", " ")
         .replaceAll("Z", " UTC");
+    final lastRefreshAtStr = user['last_refresh_at'] != null
+        ? datetimeAsStringWithoutMicroseconds(
+            DateTime.parse(user['last_refresh_at']),
+          )
+        : "N/A";
     if (user['is_superuser'] == true) {
       type = "superuser";
     } else if (user['is_admin'] == true) {
@@ -193,7 +199,7 @@ class _HomeBodyState extends State<HomeBody> {
           subtitle: ListBody(
             children: [
               Text(
-                "${user['email']}\n${loc.labelLastRefreshAt}: $lastRefreshAt",
+                "${user['email']}\n${loc.labelLastRefreshAt}: $lastRefreshAtStr",
               ),
               Text("${loc.labelAuthorizedBy}: ${user['authorizer'] ?? "N/A"}"),
               Text("${loc.labelType}: $type"),
@@ -216,7 +222,7 @@ class _HomeBodyState extends State<HomeBody> {
               Text(
                 "${loc.labelCountry}: ${user['country'] ?? "N/A"}",
               ), // example: "Italy", "United States", "Germany"
-              Text("${loc.labelBirthdate}: ${user['birthday'] ?? "N/A"}"),
+              Text("${loc.labelBirthdate}: ${user['birthdate'] ?? "N/A"}"),
               Text("${loc.labelPhoneNumber}: ${user['phone'] ?? "N/A"}"),
             ],
           ),

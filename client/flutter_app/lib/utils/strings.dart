@@ -2,6 +2,9 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-String datetimeAsStringWithoutMicroseconds(DateTime datetime) {
-  return datetime.toIso8601String().replaceFirst('T', ' ').split('.').first;
+String datetimeAsStringWithoutMicroseconds(
+  DateTime datetime, {
+  bool includeTimezone = true,
+}) {
+  return "${datetime.toIso8601String().replaceFirst('T', ' ').split('.').first}${includeTimezone ? ' UTC' : ''}";
 }

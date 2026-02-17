@@ -21,7 +21,7 @@ User account registration will be admitted using a white list prepared by admins
 The whitelist, in addition to preventing spam or other similar abuses, is useful for preventing users outside the system territorial jurisdiction from registering and sending alerts, or more generally, it prevents fake alerts.
 
 Admin and officers can modify (promote) other users, for example they can change their role (promoting them from "citizen" to "firefighter").  
-A note about officers: unlike admins, who can edit everyone, officers can only modify their users, that is, the users they have whitelisted.
+A note about officers: unlike admins, who can edit everyone, officers can only modify their users, that is, the users they have whitelisted. Furthermore, officers can't promote other users (not even those authorized by them) to "admin", to "officer", or to "chief".
 
 Chief users will connect to the server using the desktop version of the client app, to do additional real-time operations (such as sending a message to specific units, sending an alert to all users inside a location radius, viewing streaming video coming from a user device or from a drone flying over the event location, etc.).
 

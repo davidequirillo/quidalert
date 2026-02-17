@@ -37,11 +37,11 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (UserBase, UserIn, User, UserOut, UserOutSmall, UserLanguage,
+from models.general import (Alert, UserBase, UserIn, User, UserOut, UserOutSmall, UserLanguage,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper,
     WhiteListEntry, EmailListDict,
-    UserInCompleteProfile
+    UserInCompleteProfile, PromotionSchema
     )
 from services.security import (
     LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
@@ -715,15 +715,15 @@ def delete_whitelist_entries(
         statement = delete(WhiteListEntry).where(WhiteListEntry.created_by == current_user.email) # type: ignore
         result = db_session.exec(statement)
         deleted_count = result.rowcount
-        total_count = deleted_count # for simplicity
+        total_count = deleted_count
         db_session.commit()
     elif all and (all.lower() == "yes"):
-        if not current_user.is_admin:
+        if not current_user.is_admin: # officers cannot delete all entries
             raise forbidden_exception()
         statement = delete(WhiteListEntry).where(True) # type: ignore
         result = db_session.exec(statement)
         deleted_count = result.rowcount
-        total_count = deleted_count # for simplicity
+        total_count = deleted_count
         db_session.commit()
     return {
         "message": "Entries deleted",
@@ -816,27 +816,121 @@ def get_users_by_emails(
     users = db_session.exec(statement).all()
     return users
     
-@app.get("/api/user/{user_id}", response_model=UserOut | None, status_code=status.HTTP_200_OK)
+@app.get("/api/user/{user_id}")
 def get_user(user_id: str, 
-                current_user: User = Depends(get_current_user),
-                db_session: Session = Depends(get_db_session)):
+            current_user: User = Depends(get_current_user),
+            db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
     user = db_session.exec(select(User).where(User.id == user_id)).first()
-    return user
+    recent_alerts = db_session.exec(
+        select(Alert).where(Alert.user_id == user_id).order_by(desc(Alert.created_at)).limit(5)
+    ).all()
+    return {"user": user, "alerts": recent_alerts}
 
-@app.put("/api/user/{user_id}")
-def update_user(user_id: str, user_new: UserBase, 
-                current_user: User = Depends(get_current_user), 
-                db_session: Session = Depends(get_db_session)):
+@app.post("/api/promote-users")
+def promote_users(
+            promotion_schema: PromotionSchema,
+            email: str | None = None,
+            firstname: str | None = None,
+            surname: str | None = None,
+            authorizer: str | None = None,
+            type: str | None = None,
+            role: str | None = None,
+            status: str | None = None,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    user = db_session.exec(select(User).where(User.id == user_id)).first()
-    if user:
-        user.firstname = user_new.firstname
-        user.surname = user_new.surname
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
-        return {"message": "User updated successfully"}
-    return {"message": "User not found"}
+    if (promotion_schema.type):
+        if not current_user.is_admin: # officers cannot change users type
+            raise forbidden_exception()
+    if (current_user.is_admin):
+        statement = update(User)
+    else: # officers can update only users authorized by them
+        statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
+    if email and (email != ""):
+        statement = statement.where(
+                User.email == email.lower()) # type: ignore
+    if firstname and (firstname != ""):
+        statement = statement.where(User.firstname == firstname) # type: ignore 
+    if surname and (surname != ""):
+        statement = statement.where(User.surname == surname) # type: ignore
+    if authorizer and (authorizer != ""):
+        statement = statement.where(User.authorized_by == authorizer.lower()) # type: ignore 
+    if type and (type != ""):
+        if type == "admin":
+            statement = statement.where(User.is_admin == True) # type: ignore 
+        elif type == "officer":
+            statement = statement.where(User.is_officer == True) # type: ignore
+        elif type == "chief":
+            statement = statement.where(User.is_chief == True) # type: ignore
+    if role and (role != ""):
+        statement = statement.where(User.role == role) # type: ignore
+    if status and (status != ""):
+        statement = statement.where(User.status == status) # type: ignore
+    # update fields according to promotion schema
+    if (promotion_schema.type == "admin"):
+        statement = statement.values(is_admin=True)
+    elif (promotion_schema.type == "officer"):
+        statement = statement.values(is_officer=True)
+    elif (promotion_schema.type == "chief"):
+        statement = statement.values(is_chief=True)
+    if promotion_schema.role:
+        statement = statement.values(role = promotion_schema.role)
+    if promotion_schema.status:
+        statement = statement.values(status = promotion_schema.status)
+    if promotion_schema.authorizer:
+        authorizer_user = db_session.exec(
+            select(User).where(
+                User.email == promotion_schema.authorizer.lower()
+            )).first() # check if authorizer exists
+        if authorizer_user:
+            statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
+        else:
+            return {"message": "Authorizer email not valid", "updated_count": 0}
+    statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
+    result = db_session.exec(statement)
+    updated_count = result.rowcount
+    return {"message": "Operation completed", "updated_count": updated_count}
+
+@app.post("/api/promote-users-by-emails")
+def promote_users_by_emails(
+            dict: EmailListDict,
+            promotion_schema: PromotionSchema,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_officer):
+        raise forbidden_exception()
+    if (promotion_schema.type):
+        if not current_user.is_admin: # officers cannot change users type
+            raise forbidden_exception()
+    if (current_user.is_admin):
+        statement = update(User)
+    else: # officers can update only users authorized by them
+        statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
+    statement = statement.where(User.email.in_(dict.emails)) # type: ignore
+    # update fields according to promotion schema
+    if (promotion_schema.type == "admin"):
+        statement = statement.values(is_admin=True)
+    elif (promotion_schema.type == "officer"):
+        statement = statement.values(is_officer=True)
+    elif (promotion_schema.type == "chief"):
+        statement = statement.values(is_chief=True)
+    if promotion_schema.role:
+        statement = statement.values(role = promotion_schema.role)
+    if promotion_schema.status:
+        statement = statement.values(status = promotion_schema.status)
+    if promotion_schema.authorizer:
+        authorizer_user = db_session.exec(
+            select(User).where(
+                User.email == promotion_schema.authorizer.lower()
+            )).first() # check if authorizer exists
+        if authorizer_user:
+            statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
+        else:
+            return {"message": "Authorizer email not valid", "updated_count": 0}
+    statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
+    result = db_session.exec(statement)
+    updated_count = result.rowcount
+    return {"message": "Operation completed", "updated_count": updated_count}
