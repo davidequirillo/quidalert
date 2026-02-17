@@ -353,6 +353,12 @@ abstract class AppLocalizations {
   /// **'Session not valid or expired'**
   String get errorSessionNotValidOrExpired;
 
+  /// No description provided for @labelActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get labelActive;
+
   /// No description provided for @labelAddress.
   ///
   /// In en, this message translates to:
@@ -442,6 +448,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current white list entries'**
   String get labelCurrentWhiteListEntries;
+
+  /// No description provided for @labelDatetimesAreInUTC.
+  ///
+  /// In en, this message translates to:
+  /// **'Datetimes are in UTC format'**
+  String get labelDatetimesAreInUTC;
 
   /// No description provided for @labelDetails.
   ///
@@ -569,6 +581,18 @@ abstract class AppLocalizations {
   /// **'New password'**
   String get labelNewPassword;
 
+  /// No description provided for @labelNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get labelNo;
+
+  /// No description provided for @labelNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get labelNote;
+
   /// No description provided for @labelPasswordForgotten.
   ///
   /// In en, this message translates to:
@@ -605,11 +629,23 @@ abstract class AppLocalizations {
   /// **'Recents'**
   String get labelRecents;
 
+  /// No description provided for @labelRecentAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent alerts'**
+  String get labelRecentAlerts;
+
   /// No description provided for @labelRegistration.
   ///
   /// In en, this message translates to:
   /// **'Registration'**
   String get labelRegistration;
+
+  /// No description provided for @labelReliability.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability'**
+  String get labelReliability;
 
   /// No description provided for @labelRole.
   ///
@@ -694,6 +730,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please, wait'**
   String get labelWaitPlease;
+
+  /// No description provided for @labelYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get labelYes;
 
   /// No description provided for @menuSettings.
   ///

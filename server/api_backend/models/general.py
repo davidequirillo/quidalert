@@ -255,24 +255,6 @@ class LoginSchema(BaseModel):
 
 class RefreshTokenWrapper(BaseModel):
     refresh_token: str
-
-class Alert(SQLModel, table=True):
-    __tablename__: str = "alerts"
-    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
-    description: str = Field(default="", nullable=False, min_length=0, max_length=256)
-    severity: Optional[int] = Field(default=0, ge=1, le=5, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
-    is_closed: bool = Field(default=False, nullable=False)
-
-    @field_validator("severity")
-    @classmethod
-    def validate_severity(cls, v):
-        if v is None:
-            return v
-        if not (0 <= v <= 5):
-            raise ValueError("Severity must be between 0 and 5")
-        return v
     
 class WhiteListEntry(SQLModel, table=True):
     __tablename__: str = 'whitelist_entries'
@@ -282,3 +264,40 @@ class WhiteListEntry(SQLModel, table=True):
 
 class EmailListDict(BaseModel):
     emails: List[str]
+
+class PromotionSchema(BaseModel):
+    type: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+    authorizer: Optional[EmailStr] = None
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, s):
+        if not s in ["admin", "officer", "chief"]:
+            raise ValueError("Wrong type")
+        return s
+    
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, s):
+        if not s in [t.value for t in UserRole]:
+            raise ValueError("Wrong role")
+        return s
+    
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, s):
+        if not s in [UserStatus.ok, UserStatus.unreliable, UserStatus.blocked]:
+            raise ValueError("Wrong status")
+        return s
+
+class Alert(SQLModel, table=True):
+    __tablename__: str = "alerts"
+    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
+    user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+    description: str = Field(default="", nullable=False, min_length=0, max_length=256)
+    severity: Optional[int] = Field(default=1, ge=1, le=5, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+    is_closed: bool = Field(default=False, nullable=False)
+
