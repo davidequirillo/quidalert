@@ -131,23 +131,17 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get buttonDelete;
 
+  /// No description provided for @buttonModify.
+  ///
+  /// In en, this message translates to:
+  /// **'Modify'**
+  String get buttonModify;
+
   /// No description provided for @buttonPromote.
   ///
   /// In en, this message translates to:
   /// **'Promote'**
   String get buttonPromote;
-
-  /// No description provided for @buttonPromoteQueryResults.
-  ///
-  /// In en, this message translates to:
-  /// **'Promote query users'**
-  String get buttonPromoteQueryResults;
-
-  /// No description provided for @buttonResetPrivilegesQueryResults.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset privileges of query users'**
-  String get buttonResetPrivilegesQueryResults;
 
   /// No description provided for @buttonReject.
   ///
@@ -161,11 +155,11 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get buttonSearch;
 
-  /// No description provided for @errorGeneric.
+  /// No description provided for @errorAccountBlocked.
   ///
   /// In en, this message translates to:
-  /// **'Generic error'**
-  String get errorGeneric;
+  /// **'Account blocked'**
+  String get errorAccountBlocked;
 
   /// No description provided for @errorBadRequest.
   ///
@@ -215,17 +209,17 @@ abstract class AppLocalizations {
   /// **'Email already registered'**
   String get errorEmailAlreadyRegistered;
 
-  /// No description provided for @errorEntriesNotAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Some entries have not been added'**
-  String get errorEntriesNotAdded;
-
   /// No description provided for @errorError.
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get errorError;
+
+  /// No description provided for @errorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Generic error'**
+  String get errorGeneric;
 
   /// No description provided for @errorInvalidCredentials.
   ///
@@ -323,6 +317,12 @@ abstract class AppLocalizations {
   /// **'Permissions not valid'**
   String get errorPermissionsNotValid;
 
+  /// No description provided for @errorSomeEntriesNotAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Some entries have not been added'**
+  String get errorSomeEntriesNotAdded;
+
   /// No description provided for @errorStringNotValid.
   ///
   /// In en, this message translates to:
@@ -359,6 +359,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get labelActive;
 
+  /// No description provided for @labelAddNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Add notes'**
+  String get labelAddNotes;
+
   /// No description provided for @labelAddress.
   ///
   /// In en, this message translates to:
@@ -389,6 +395,12 @@ abstract class AppLocalizations {
   /// **'Authorized by'**
   String get labelAuthorizedBy;
 
+  /// No description provided for @labelAuthorizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorizer'**
+  String get labelAuthorizer;
+
   /// No description provided for @labelBirthdate.
   ///
   /// In en, this message translates to:
@@ -418,6 +430,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Competence territory'**
   String get labelCompetenceTerritory;
+
+  /// No description provided for @labelCompileToChangeAuthorizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Compile only if you need to change the authorizer'**
+  String get labelCompileToChangeAuthorizer;
 
   /// No description provided for @labelCompleteProfile.
   ///
@@ -466,6 +484,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Don\'t have an account? Sign Up'**
   String get labelDoNotHaveAccount;
+
+  /// No description provided for @labelEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get labelEmail;
 
   /// No description provided for @labelEmailSingle.
   ///
@@ -587,11 +611,17 @@ abstract class AppLocalizations {
   /// **'No'**
   String get labelNo;
 
-  /// No description provided for @labelNote.
+  /// No description provided for @labelNotes.
   ///
   /// In en, this message translates to:
-  /// **'Note'**
-  String get labelNote;
+  /// **'Notes'**
+  String get labelNotes;
+
+  /// No description provided for @labelOK.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get labelOK;
 
   /// No description provided for @labelPasswordForgotten.
   ///
@@ -622,6 +652,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Province'**
   String get labelProvince;
+
+  /// No description provided for @labelQueryUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Query users'**
+  String get labelQueryUsers;
 
   /// No description provided for @labelRecents.
   ///
@@ -677,6 +713,12 @@ abstract class AppLocalizations {
   /// **'Show password'**
   String get labelShowPassword;
 
+  /// No description provided for @labelStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get labelStatus;
+
   /// No description provided for @labelStreet.
   ///
   /// In en, this message translates to:
@@ -730,6 +772,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please, wait'**
   String get labelWaitPlease;
+
+  /// No description provided for @labelWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get labelWarning;
 
   /// No description provided for @labelYes.
   ///
@@ -820,6 +868,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload done successfully'**
   String get successUpload;
+
+  /// No description provided for @successUsersModified.
+  ///
+  /// In en, this message translates to:
+  /// **'<count> users modified'**
+  String get successUsersModified;
 
   /// No description provided for @successGeneric.
   ///

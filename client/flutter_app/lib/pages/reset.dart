@@ -9,7 +9,7 @@ import 'dart:convert';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
-import 'package:quidalert_flutter/utils/validator.dart';
+import 'package:quidalert_flutter/utils/validators.dart';
 import 'package:quidalert_flutter/config.dart' as config;
 
 class ResetPage extends StatelessWidget {
@@ -72,7 +72,7 @@ class _ResetBodyState extends State<ResetBody> {
     }
   }
 
-  Future<void> _doPasswordResetRequest(Map<String, dynamic> data) async {
+  Future<void> _doPasswordResetRequest(Map<String, String> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
     String? requestError;
@@ -123,7 +123,7 @@ class _ResetBodyState extends State<ResetBody> {
     });
   }
 
-  Future<void> _doPasswordResetConfirmation(Map<String, dynamic> data) async {
+  Future<void> _doPasswordResetConfirmation(Map<String, String> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
     String? resetError;

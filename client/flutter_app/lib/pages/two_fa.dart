@@ -10,7 +10,7 @@ import 'dart:convert';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
-import 'package:quidalert_flutter/utils/validator.dart';
+import 'package:quidalert_flutter/utils/validators.dart';
 
 class TwoFAPage extends StatelessWidget {
   const TwoFAPage({super.key});
@@ -76,6 +76,9 @@ class _TwoFABodyState extends State<TwoFABody> {
           break;
         case '2FA locked':
           endMessage = loc.errorLoginLocked;
+          break;
+        case 'Forbidden request':
+          endMessage = loc.errorAccountBlocked;
           break;
         default:
           endMessage = loc.errorBadRequest;

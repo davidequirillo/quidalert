@@ -22,11 +22,6 @@ class UserRole(str, Enum):
     volunteer = "volunteer"
     citizen = "citizen"
 
-class UserStatus(str, Enum):
-    ok = "ok"
-    unreliable = "unreliable"
-    blocked = "blocked"
-
 class UserLanguage(str, Enum):
     en = "en"
     it = "it"
@@ -96,8 +91,9 @@ class UserOut(UserBase, table=False):
     is_officer: bool = Field(default=False, nullable=False)
     is_chief: bool = Field(default=False, nullable=False)
     role: str = Field(default=UserRole.citizen, nullable=False)
-    status: str = Field(default=UserStatus.ok, nullable=False)
+    is_reliable: bool = Field(default=True, nullable=False)
     reliability_score: int = Field(default=5, ge=0, le=5, nullable=False)
+    is_blocked: bool = Field(default=False, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
     reset_expires_at: Optional[datetime] = Field(default=None)
@@ -129,19 +125,13 @@ class UserOut(UserBase, table=False):
     country: Optional[str] = Field(default=None, min_length=2, max_length=64)
     birthdate: Optional[str] = Field(default=None, min_length=10, max_length=10) # YYYY-MM-DD
     phone: Optional[str] = Field(default=None, min_length=6, max_length=32)
+    notes: Optional[str] = Field(default=None, min_length=0, max_length=256, nullable=True)
 
     @field_validator("role")
     @classmethod
     def validate_role(cls, s):
         if not s in [t.value for t in UserRole]:
             raise ValueError("Wrong role")
-        return s
-    
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, s):
-        if not s in [UserStatus.ok, UserStatus.unreliable, UserStatus.blocked]:
-            raise ValueError("Wrong status")
         return s
 
 class UserOutSmall(BaseModel):
@@ -155,7 +145,8 @@ class UserOutSmall(BaseModel):
     is_officer: bool
     is_chief: bool
     role: str
-    status: str
+    is_reliable: bool
+    is_blocked: bool
 
 class User(UserOut, table=True):
     __tablename__: str = 'users'
@@ -269,12 +260,13 @@ class PromotionSchema(BaseModel):
     type: Optional[str] = None
     role: Optional[str] = None
     status: Optional[str] = None
+    notes: Optional[str] = None
     authorizer: Optional[EmailStr] = None
 
     @field_validator("type")
     @classmethod
     def validate_type(cls, s):
-        if not s in ["admin", "officer", "chief"]:
+        if not s in ["admin", "officer", "chief", "base"]:
             raise ValueError("Wrong type")
         return s
     
@@ -288,10 +280,35 @@ class PromotionSchema(BaseModel):
     @field_validator("status")
     @classmethod
     def validate_status(cls, s):
-        if not s in [UserStatus.ok, UserStatus.unreliable, UserStatus.blocked]:
+        if not s in ["ok", "unreliable", "blocked"]:
             raise ValueError("Wrong status")
         return s
+    
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, s):
+        if (s is not None) and (len(s) > 256):
+            raise ValueError("Notes must be at most 256 characters")
+        return s
+    
+    @model_validator(mode="after")
+    def check_not_empty(self):
+        if ((self.type is None) and (self.role is None) and
+            (self.status is None) and (self.notes is None) and
+            (self.authorizer is None)):
+                raise ValueError("Promotion schema is empty")
+        return self
 
+class ChangeStatusSchema(BaseModel):
+    status: str
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, s):
+        if not s in ["ok", "unreliable", "blocked"]:
+            raise ValueError("Wrong status")
+        return s
+    
 class Alert(SQLModel, table=True):
     __tablename__: str = "alerts"
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)

@@ -49,7 +49,7 @@ class QuidalertWidget extends StatelessWidget {
   const QuidalertWidget({super.key});
 
   Locale? _resolveLocale(Locale? locale, Iterable<Locale> supportedLocales) {
-    final lang = locale?.languageCode.toLowerCase();
+    final String? lang = locale?.languageCode.toLowerCase();
     if (lang == 'it') {
       return const Locale('it');
     }

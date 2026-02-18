@@ -27,13 +27,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonDelete => 'Elimina';
 
   @override
+  String get buttonModify => 'Modifica';
+
+  @override
   String get buttonPromote => 'Promuovi';
-
-  @override
-  String get buttonPromoteQueryResults => 'Promuovi gli utenti della query';
-
-  @override
-  String get buttonResetPrivilegesQueryResults => 'Resetta i privilegi degli utenti della query';
 
   @override
   String get buttonReject => 'Rifiuta';
@@ -42,7 +39,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonSearch => 'Cerca';
 
   @override
-  String get errorGeneric => 'Errore generico';
+  String get errorAccountBlocked => 'Account bloccato';
 
   @override
   String get errorBadRequest => 'Richiesta non accettata';
@@ -69,10 +66,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorEmailAlreadyRegistered => 'Email già registrata';
 
   @override
-  String get errorEntriesNotAdded => 'Alcune voci non sono state aggiunte';
+  String get errorError => 'Errore';
 
   @override
-  String get errorError => 'Errore';
+  String get errorGeneric => 'Errore generico';
 
   @override
   String get errorInvalidCredentials => 'Email o password non valide';
@@ -123,6 +120,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorPermissionsNotValid => 'Permessi non validi';
 
   @override
+  String get errorSomeEntriesNotAdded => 'Alcune voci non sono state aggiunte';
+
+  @override
   String get errorStringNotValid => 'Stringa non valida';
 
   @override
@@ -141,6 +141,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelActive => 'Attivo';
 
   @override
+  String get labelAddNotes => 'Aggiungi delle note';
+
+  @override
   String get labelAddress => 'Indirizzo';
 
   @override
@@ -156,6 +159,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelAuthorizedBy => 'Autorizzato da';
 
   @override
+  String get labelAuthorizer => 'Autorizzatore';
+
+  @override
   String get labelBirthdate => 'Data di nascita';
 
   @override
@@ -169,6 +175,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelCompetenceTerritory => 'Territorio di competenza';
+
+  @override
+  String get labelCompileToChangeAuthorizer => 'Compila solo se devi cambiare l\'autorizzatore';
 
   @override
   String get labelCompleteProfile => 'Completa profilo';
@@ -193,6 +202,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
+
+  @override
+  String get labelEmail => 'Email';
 
   @override
   String get labelEmailSingle => 'Indirizzo email singolo';
@@ -255,7 +267,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelNo => 'No';
 
   @override
-  String get labelNote => 'Note';
+  String get labelNotes => 'Note';
+
+  @override
+  String get labelOK => 'OK';
 
   @override
   String get labelPasswordForgotten => 'Password dimenticata?';
@@ -271,6 +286,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelProvince => 'Provincia';
+
+  @override
+  String get labelQueryUsers => 'Utenti della query';
 
   @override
   String get labelRecents => 'Recenti';
@@ -300,6 +318,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelShowPassword => 'Mostra password';
 
   @override
+  String get labelStatus => 'Status';
+
+  @override
   String get labelStreet => 'Via/piazza';
 
   @override
@@ -325,6 +346,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelWaitPlease => 'Attendere, prego';
+
+  @override
+  String get labelWarning => 'Attenzione';
 
   @override
   String get labelYes => 'Sì';
@@ -370,6 +394,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get successUpload => 'Upload effettuato con successo';
+
+  @override
+  String get successUsersModified => '<count> utenti modificati';
 
   @override
   String get successGeneric => 'Operazione effettuata';

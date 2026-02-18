@@ -27,13 +27,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonDelete => 'Delete';
 
   @override
+  String get buttonModify => 'Modify';
+
+  @override
   String get buttonPromote => 'Promote';
-
-  @override
-  String get buttonPromoteQueryResults => 'Promote query users';
-
-  @override
-  String get buttonResetPrivilegesQueryResults => 'Reset privileges of query users';
 
   @override
   String get buttonReject => 'Reject';
@@ -42,7 +39,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonSearch => 'Search';
 
   @override
-  String get errorGeneric => 'Generic error';
+  String get errorAccountBlocked => 'Account blocked';
 
   @override
   String get errorBadRequest => 'Bad request';
@@ -69,10 +66,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorEmailAlreadyRegistered => 'Email already registered';
 
   @override
-  String get errorEntriesNotAdded => 'Some entries have not been added';
+  String get errorError => 'Error';
 
   @override
-  String get errorError => 'Error';
+  String get errorGeneric => 'Generic error';
 
   @override
   String get errorInvalidCredentials => 'Email or password not valid';
@@ -123,6 +120,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorPermissionsNotValid => 'Permissions not valid';
 
   @override
+  String get errorSomeEntriesNotAdded => 'Some entries have not been added';
+
+  @override
   String get errorStringNotValid => 'String not valid';
 
   @override
@@ -141,6 +141,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelActive => 'Active';
 
   @override
+  String get labelAddNotes => 'Add notes';
+
+  @override
   String get labelAddress => 'Address';
 
   @override
@@ -156,6 +159,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelAuthorizedBy => 'Authorized by';
 
   @override
+  String get labelAuthorizer => 'Authorizer';
+
+  @override
   String get labelBirthdate => 'Birthdate';
 
   @override
@@ -169,6 +175,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelCompetenceTerritory => 'Competence territory';
+
+  @override
+  String get labelCompileToChangeAuthorizer => 'Compile only if you need to change the authorizer';
 
   @override
   String get labelCompleteProfile => 'Complete profile';
@@ -193,6 +202,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
+
+  @override
+  String get labelEmail => 'Email';
 
   @override
   String get labelEmailSingle => 'Single email address';
@@ -255,7 +267,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelNo => 'No';
 
   @override
-  String get labelNote => 'Note';
+  String get labelNotes => 'Notes';
+
+  @override
+  String get labelOK => 'OK';
 
   @override
   String get labelPasswordForgotten => 'Forgot password?';
@@ -271,6 +286,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelProvince => 'Province';
+
+  @override
+  String get labelQueryUsers => 'Query users';
 
   @override
   String get labelRecents => 'Recents';
@@ -300,6 +318,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelShowPassword => 'Show password';
 
   @override
+  String get labelStatus => 'Status';
+
+  @override
   String get labelStreet => 'Street';
 
   @override
@@ -325,6 +346,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelWaitPlease => 'Please, wait';
+
+  @override
+  String get labelWarning => 'Warning';
 
   @override
   String get labelYes => 'Yes';
@@ -370,6 +394,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successUpload => 'Upload done successfully';
+
+  @override
+  String get successUsersModified => '<count> users modified';
 
   @override
   String get successGeneric => 'Operation done';

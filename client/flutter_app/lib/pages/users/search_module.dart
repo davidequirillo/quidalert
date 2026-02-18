@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/models/general.dart';
-import 'package:quidalert_flutter/utils/validator.dart';
+import 'package:quidalert_flutter/utils/validators.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 
 class UsersSearchModulePage extends StatelessWidget {
@@ -72,7 +72,7 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
     await _prepareSearchFields(fields);
   }
 
-  Future<void> _prepareSearchFields(Map<String, dynamic> data) async {
+  Future<void> _prepareSearchFields(Map<String, String?> data) async {
     Navigator.pushNamed(
       context,
       '/accounts/users/search-results',

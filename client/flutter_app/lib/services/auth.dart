@@ -342,7 +342,7 @@ class AuthClient extends ChangeNotifier {
   Future<http.Response> sendMultipartFileUploadRequest(
     String url, {
     Map<String, String> headers = const {},
-    Map<String, dynamic> fields = const {},
+    Map<String, String> fields = const {},
     required String file,
   }) async {
     final String fileContentType =
@@ -382,7 +382,7 @@ class AuthClient extends ChangeNotifier {
     String method,
     String url, {
     Map<String, String> headers = const {},
-    Map<String, dynamic> body = const {},
+    dynamic body = const {},
   }) async {
     final payload = jsonEncode(body);
     headers.putIfAbsent(
@@ -399,9 +399,6 @@ class AuthClient extends ChangeNotifier {
         resp = await http.post(uri, headers: headers, body: payload);
         break;
       case 'PUT':
-        if (kDebugMode) {
-          debugPrint('Sending PUT request to $url with body: $payload');
-        }
         resp = await http.put(uri, headers: headers, body: payload);
         break;
       case 'DELETE':
@@ -417,21 +414,23 @@ class AuthClient extends ChangeNotifier {
     String method,
     String relPath, {
     Map<String, String>? headers,
-    Map<String, dynamic>? body,
+    dynamic body = const {},
     String? file,
   }) async {
     final m = method.toUpperCase();
     late http.Response resp;
     final merged = {..._authHeaders(), if (headers != null) ...headers};
-    final b = body ?? {};
+    if (kDebugMode) {
+      debugPrint('$m (auth), url: $baseUrl$relPath, headers: $merged');
+    }
     final url = '$baseUrl$relPath';
     try {
       if (file != null) {
-        if ((body != null) && body.isNotEmpty) {
+        if (body is Map<String, String>) {
           resp = await sendMultipartFileUploadRequest(
             url,
             headers: merged,
-            fields: b,
+            fields: body,
             file: file,
           );
         } else {
@@ -442,14 +441,24 @@ class AuthClient extends ChangeNotifier {
           );
         }
       } else {
-        resp = await sendJsonRequest(method, url, headers: merged, body: b);
+        resp = await sendJsonRequest(method, url, headers: merged, body: body);
       }
-      final jsonResp = jsonDecode(resp.body);
-      final String respMessage;
-      if (jsonResp is Map<String, dynamic> && jsonResp.containsKey('detail')) {
-        respMessage = jsonResp['detail'];
-      } else {
-        respMessage = '';
+      String respMessage = '';
+      String respMessageKey = '';
+      if (kDebugMode) {
+        debugPrint('$m (auth), response headers: ${resp.headers}');
+      }
+      if (resp.headers.containsKey('Content-Type')) {
+        respMessageKey = 'Content-Type';
+      } else if (resp.headers.containsKey('content-type')) {
+        respMessageKey = 'content-type';
+      }
+      if (respMessageKey.isNotEmpty &&
+          resp.headers[respMessageKey]?.contains('application/json') == true) {
+        final jsonResp = jsonDecode(resp.body);
+        if (jsonResp is Map<String, dynamic>) {
+          respMessage = jsonResp['detail'] ?? '';
+        }
       }
       bool isNotAuthorized = (resp.statusCode == 401);
       final bool isExpired =
@@ -473,11 +482,11 @@ class AuthClient extends ChangeNotifier {
           debugPrint('$m (retry auth), access token: $accessToken');
         }
         if (file != null) {
-          if ((body != null) && body.isNotEmpty) {
+          if ((body is Map<String, String>)) {
             await sendMultipartFileUploadRequest(
               url,
               headers: newMerged,
-              fields: b,
+              fields: body,
               file: file,
             );
           } else {
@@ -492,7 +501,7 @@ class AuthClient extends ChangeNotifier {
             method,
             url,
             headers: newMerged,
-            body: b,
+            body: body,
           );
         }
         bool isNotAuthorized = (resp.statusCode == 401);
@@ -508,7 +517,7 @@ class AuthClient extends ChangeNotifier {
         }
       }
       if (kDebugMode) {
-        debugPrint("$m (response), ${jsonDecode(resp.body)}");
+        debugPrint("$m (response), HTTP ${resp.statusCode}");
       }
       return resp;
     } on ExpiredTokenException catch (_) {

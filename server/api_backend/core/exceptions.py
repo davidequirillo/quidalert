@@ -34,7 +34,7 @@ def two_factor_not_valid_exception():
 def forbidden_exception():
     return HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Permission denied")
+        detail="Forbidden request")
 
 def two_factor_required_response(): # Note: this is not an exception, but a response
     return Response(
