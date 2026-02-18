@@ -142,6 +142,7 @@ class UserDetailsBody extends StatelessWidget {
         Text(
           'Authorized at : ${user.authorizedAt != null ? datetimeAsStringWithoutMicroseconds(user.authorizedAt!) : "N/A"}',
         ),
+        Text('${loc.labelNotes}: ${user.notes}'),
         SizedBox(height: 20),
         const Divider(height: 40, thickness: 2),
         buildSectionTitle(loc.labelRecents),
@@ -161,7 +162,6 @@ class UserDetailsBody extends StatelessWidget {
               final description =
                   '${alerts[index].description.substring(0, alerts[index].description.length > 50 ? 50 : alerts[index].description.length)}...';
               return ListTile(
-                leading: const Icon(Icons.article),
                 title: Text('$createdAt - ${alerts[index].status}'),
                 subtitle: Text('${alerts[index].id} - $description'),
               );

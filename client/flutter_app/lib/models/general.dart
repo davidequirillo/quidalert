@@ -24,7 +24,7 @@ class WhiteListEntry {
 
 enum UserStatus { ok, unreliable, blocked }
 
-enum UserType { admin, officer, chief }
+enum UserType { admin, officer, chief, base }
 
 enum UserRole {
   firefighter,
@@ -63,19 +63,21 @@ class UserSmall {
 
   factory UserSmall.fromJson(Map<String, dynamic> json) {
     String t;
-    final id = json['id'] ?? '';
-    final email = json['email'] ?? '';
-    final fname = json['firstname'] ?? '';
-    final sname = json['surname'] ?? '';
-    final authBy = json['authorized_by'];
-    final authAt = json['authorized_at'] != null
+    String st;
+    final String id = json['id'] ?? '';
+    final String email = json['email'] ?? '';
+    final String fname = json['firstname'] ?? '';
+    final String sname = json['surname'] ?? '';
+    final String? authBy = json['authorized_by'];
+    final DateTime? authAt = json['authorized_at'] != null
         ? DateTime.parse(json['authorized_at'])
         : null;
-    final isAdmin = json['is_admin'] ?? false;
-    final isOfficer = json['is_officer'] ?? false;
-    final isChief = json['is_chief'] ?? false;
-    final role = json['role'] ?? '';
-    final status = json['status'] ?? '';
+    final bool isAdmin = json['is_admin'] ?? false;
+    final bool isOfficer = json['is_officer'] ?? false;
+    final bool isChief = json['is_chief'] ?? false;
+    final String role = json['role'] ?? '';
+    final bool isReliable = json['is_reliable'] ?? true;
+    final bool isBlocked = json['is_blocked'] ?? false;
     if (isAdmin == true) {
       t = "admin";
     } else if (isOfficer == true) {
@@ -84,6 +86,13 @@ class UserSmall {
       t = "chief";
     } else {
       t = "base";
+    }
+    if (isReliable == false) {
+      st = "unreliable";
+    } else if (isBlocked == true) {
+      st = "blocked";
+    } else {
+      st = "ok";
     }
     return UserSmall(
       id: id,
@@ -94,7 +103,7 @@ class UserSmall {
       authorizedAt: authAt,
       type: t,
       role: role,
-      status: status,
+      status: st,
     );
   }
 }
@@ -127,6 +136,7 @@ class User {
   final String country;
   final String birthDate;
   final String phone;
+  final String notes;
 
   User({
     required this.id,
@@ -156,18 +166,20 @@ class User {
     required this.country,
     required this.birthDate,
     required this.phone,
+    required this.notes,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     String t;
-    final id = json['id'] ?? '';
-    final email = json['email'] ?? '';
-    final fname = json['firstname'] ?? '';
-    final sname = json['surname'] ?? '';
-    final lang = json['language'] ?? '';
-    final isAdmin = json['is_admin'] ?? false;
-    final isOfficer = json['is_officer'] ?? false;
-    final isChief = json['is_chief'] ?? false;
+    String st;
+    final String id = json['id'] ?? '';
+    final String email = json['email'] ?? '';
+    final String fname = json['firstname'] ?? '';
+    final String sname = json['surname'] ?? '';
+    final String lang = json['language'] ?? '';
+    final bool isAdmin = json['is_admin'] ?? false;
+    final bool isOfficer = json['is_officer'] ?? false;
+    final bool isChief = json['is_chief'] ?? false;
     if (isAdmin == true) {
       t = "admin";
     } else if (isOfficer == true) {
@@ -177,43 +189,52 @@ class User {
     } else {
       t = "base";
     }
-    final role = json['role'] ?? '';
-    final status = json['status'] ?? '';
-    final reliabilityScore = json['reliability_score'] ?? 0;
-    final isActive = json['is_active'] ?? false;
-    final resetLockedUntil = json['reset_locked_until'] != null
+    final String role = json['role'] ?? '';
+    final bool isReliable = json['is_reliable'] ?? true;
+    final bool isBlocked = json['is_blocked'] ?? false;
+    if (isReliable == false) {
+      st = "unreliable";
+    } else if (isBlocked == true) {
+      st = "blocked";
+    } else {
+      st = "ok";
+    }
+    final int reliabilityScore = json['reliability_score'] ?? 0;
+    final bool isActive = json['is_active'] ?? false;
+    final DateTime? resetLockedUntil = json['reset_locked_until'] != null
         ? DateTime.parse(json['reset_locked_until'])
         : null;
-    final lastResetDoneAt = json['last_reset_done_at'] != null
+    final DateTime? lastResetDoneAt = json['last_reset_done_at'] != null
         ? DateTime.parse(json['last_reset_done_at'])
         : null;
-    final loginLockedUntil = json['login_locked_until'] != null
+    final DateTime? loginLockedUntil = json['login_locked_until'] != null
         ? DateTime.parse(json['login_locked_until'])
         : null;
-    final lastLoginDoneAt = json['last_login_done_at'] != null
+    final DateTime? lastLoginDoneAt = json['last_login_done_at'] != null
         ? DateTime.parse(json['last_login_done_at'])
         : null;
-    final lastRefreshAt = json['last_refresh_at'] != null
+    final DateTime? lastRefreshAt = json['last_refresh_at'] != null
         ? DateTime.parse(json['last_refresh_at'])
         : null;
-    final creatAt = json['created_at'] != null
+    final DateTime? creatAt = json['created_at'] != null
         ? DateTime.parse(json['created_at'])
         : null;
-    final authBy = json['authorized_by'];
-    final authAt = json['authorized_at'] != null
+    final String? authBy = json['authorized_by'];
+    final DateTime? authAt = json['authorized_at'] != null
         ? DateTime.parse(json['authorized_at'])
         : null;
-    final updAt = json['updated_at'] != null
+    final DateTime? updAt = json['updated_at'] != null
         ? DateTime.parse(json['updated_at'])
         : null;
-    final updBy = json['updated_by'];
-    final street = json['street'] ?? '';
-    final postalCode = json['postal_code'] ?? '';
-    final city = json['city'] ?? '';
-    final province = json['province'] ?? '';
-    final country = json['country'] ?? '';
-    final birthDate = json['birthdate'] ?? '';
-    final phone = json['phone'] ?? '';
+    final String? updBy = json['updated_by'];
+    final String street = json['street'] ?? '';
+    final String postalCode = json['postal_code'] ?? '';
+    final String city = json['city'] ?? '';
+    final String province = json['province'] ?? '';
+    final String country = json['country'] ?? '';
+    final String birthDate = json['birthdate'] ?? '';
+    final String phone = json['phone'] ?? '';
+    final String notes = json['notes'] ?? '';
     return User(
       id: id,
       email: email,
@@ -222,7 +243,7 @@ class User {
       language: lang,
       type: t,
       role: role,
-      status: status,
+      status: st,
       reliabilityScore: reliabilityScore,
       isActive: isActive,
       resetLockedUntil: resetLockedUntil,
@@ -242,6 +263,7 @@ class User {
       country: country,
       birthDate: birthDate,
       phone: phone,
+      notes: notes,
     );
   }
 }
@@ -264,20 +286,20 @@ class Alert {
   });
 
   factory Alert.fromJson(Map<String, dynamic> json) {
-    final id = json['id'] ?? '';
-    final userId = json['user_id'] ?? '';
-    final isClosed = json['is_closed'] ?? false;
+    final String id = json['id'] ?? '';
+    final String userId = json['user_id'] ?? '';
+    final bool isClosed = json['is_closed'] ?? false;
     String status;
     if (isClosed) {
       status = "closed";
     } else {
       status = "open";
     }
-    final createdAt = json['created_at'] != null
+    final DateTime? createdAt = json['created_at'] != null
         ? DateTime.parse(json['created_at'])
         : null;
-    final severity = json['severity'] ?? 0;
-    final description = json['description'] ?? '';
+    final int severity = json['severity'] ?? 0;
+    final String description = json['description'] ?? '';
     return Alert(
       id: id,
       userId: userId,

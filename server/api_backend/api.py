@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
 import uuid as uuid_pkg
-from sqlmodel import Session, select, update, delete, desc, col
+from sqlmodel import Session, select, update, delete, desc
 from fastapi.templating import Jinja2Templates
 from jwt.exceptions import (
     InvalidTokenError, ExpiredSignatureError,
@@ -37,7 +37,7 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (Alert, UserBase, UserIn, User, UserOut, UserOutSmall, UserLanguage,
+from models.general import (Alert, UserIn, User, UserOut, UserOutSmall, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper,
     WhiteListEntry, EmailListDict,
@@ -130,7 +130,17 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
         raise token_not_valid_exception()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)   
     if token_iat_dt < user.last_reset_done_at:
-        raise token_expired_exception()    
+        raise token_expired_exception()
+    if user.is_superuser: # the superuser cannot be downgraded
+        if ((user.is_admin == False) or 
+                (user.is_reliable == False) or 
+                    (user.is_blocked == True)):
+            user.is_admin = True 
+            user.is_reliable = True    
+            user.is_blocked = False
+            db_session.add(user)
+            db_session.commit()
+            db_session.refresh(user)
     return user
 
 def check_refresh_token(token_data: dict | None, db_session: Session):
@@ -238,7 +248,7 @@ def revoke_token(
     rtoken.is_revoked = True
     db_session.add(rtoken)
     db_session.commit()    
-    return {"detail": "Logout successful"}
+    return {"message": "Logout successful"}
 
 @app.post("/api/auth/login")
 def login(data: LoginSchema,
@@ -314,6 +324,8 @@ def login(data: LoginSchema,
             db_session.commit()
             background_tasks.add_task(send_login_code_mail, user.email, code, user.language)
         return two_factor_required_response()
+    if (user.is_blocked) and (not user.is_superuser):
+        raise forbidden_exception()
     q = select(RefreshToken).where(RefreshToken.user_id == user.id).order_by(desc(RefreshToken.updated_at))
     active_tokens = db_session.exec(q).all()
     if len(active_tokens) >= MAX_ACTIVE_REFRESH_TOKENS:
@@ -451,7 +463,6 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
         user.is_active = True
         db_session.add(user)
         db_session.commit()
-
     return templates.TemplateResponse(
         "activation_result.html",
         {
@@ -795,11 +806,16 @@ def get_users(
     if role and (role != ""):
         statement = statement.where(User.role == role)
     if status and (status != ""):
-        statement = statement.where(User.status == status)
+        if status == "ok":
+            statement = statement.where(User.is_reliable == True) 
+        elif status == "unreliable":
+            statement = statement.where(User.is_reliable == False) 
+        elif status == "blocked":
+            statement = statement.where(User.is_blocked == True)
     users = db_session.exec(statement.offset(offset).limit(limit)).all()
     return users
 
-@app.post("/api/get-users-by-emails", response_model=list[UserOutSmall], status_code=status.HTTP_200_OK)
+@app.post("/api/users/get-by-emails", response_model=list[UserOutSmall], status_code=status.HTTP_200_OK)
 def get_users_by_emails(
             dict: EmailListDict,
             offset: int = 0,
@@ -828,7 +844,7 @@ def get_user(user_id: str,
     ).all()
     return {"user": user, "alerts": recent_alerts}
 
-@app.post("/api/promote-users")
+@app.post("/api/users/promote") # promote/demote users in bulk according to filters and promotion schema
 def promote_users(
             promotion_schema: PromotionSchema,
             email: str | None = None,
@@ -842,7 +858,7 @@ def promote_users(
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if (promotion_schema.type):
+    if (promotion_schema.type) and (promotion_schema.type != ""):
         if not current_user.is_admin: # officers cannot change users type
             raise forbidden_exception()
     if (current_user.is_admin):
@@ -868,69 +884,98 @@ def promote_users(
     if role and (role != ""):
         statement = statement.where(User.role == role) # type: ignore
     if status and (status != ""):
-        statement = statement.where(User.status == status) # type: ignore
+        if status == "ok":
+            statement = statement.where(User.is_reliable == True) # type: ignore 
+        elif status == "unreliable":
+            statement = statement.where(User.is_reliable == False) # type: ignore
+        elif status == "blocked":
+            statement = statement.where(User.is_blocked == True) # type: ignore
     # update fields according to promotion schema
     if (promotion_schema.type == "admin"):
-        statement = statement.values(is_admin=True)
+        statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
     elif (promotion_schema.type == "officer"):
-        statement = statement.values(is_officer=True)
+        statement = statement.values(is_officer=True, is_admin=False, is_chief=False)
     elif (promotion_schema.type == "chief"):
-        statement = statement.values(is_chief=True)
+        statement = statement.values(is_chief=True, is_admin=False, is_officer=False)
+    elif (promotion_schema.type == "base"):
+        statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
     if promotion_schema.role:
         statement = statement.values(role = promotion_schema.role)
     if promotion_schema.status:
-        statement = statement.values(status = promotion_schema.status)
+        if promotion_schema.status == "ok":
+            statement = statement.values(is_reliable=True, is_blocked=False)
+        elif promotion_schema.status == "unreliable":
+            statement = statement.values(is_reliable=False, is_blocked=False)
+        elif promotion_schema.status == "blocked":
+            statement = statement.values(is_blocked=True, is_reliable=False)
+    if promotion_schema.notes is not None:
+        statement = statement.values(notes = promotion_schema.notes)
     if promotion_schema.authorizer:
-        authorizer_user = db_session.exec(
-            select(User).where(
+        auth_user = db_session.exec(
+            select(User).where( # check if authorizer (an admin, or an officer) exists
                 User.email == promotion_schema.authorizer.lower()
-            )).first() # check if authorizer exists
-        if authorizer_user:
-            statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
+            )).first()
+        if auth_user:
+            if ((auth_user.is_admin) or (auth_user.is_officer)):
+                statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
         else:
             return {"message": "Authorizer email not valid", "updated_count": 0}
     statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
     result = db_session.exec(statement)
     updated_count = result.rowcount
+    db_session.commit()
     return {"message": "Operation completed", "updated_count": updated_count}
 
-@app.post("/api/promote-users-by-emails")
+@app.post("/api/users/promote-by-emails") # promote/demote users in bulk (by a list of emails)
 def promote_users_by_emails(
-            dict: EmailListDict,
-            promotion_schema: PromotionSchema,
+            emails: list[str],
+            update_fields: PromotionSchema,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if (promotion_schema.type):
+    if (update_fields.type):
         if not current_user.is_admin: # officers cannot change users type
             raise forbidden_exception()
+    if len(emails) == 0:
+        return {"message": "No emails provided", "updated_count": 0}
     if (current_user.is_admin):
         statement = update(User)
     else: # officers can update only users authorized by them
         statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
-    statement = statement.where(User.email.in_(dict.emails)) # type: ignore
+    statement = statement.where(User.email.in_(emails)) # type: ignore
     # update fields according to promotion schema
-    if (promotion_schema.type == "admin"):
-        statement = statement.values(is_admin=True)
-    elif (promotion_schema.type == "officer"):
-        statement = statement.values(is_officer=True)
-    elif (promotion_schema.type == "chief"):
-        statement = statement.values(is_chief=True)
-    if promotion_schema.role:
-        statement = statement.values(role = promotion_schema.role)
-    if promotion_schema.status:
-        statement = statement.values(status = promotion_schema.status)
-    if promotion_schema.authorizer:
-        authorizer_user = db_session.exec(
-            select(User).where(
-                User.email == promotion_schema.authorizer.lower()
-            )).first() # check if authorizer exists
-        if authorizer_user:
-            statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
+    if (update_fields.type == "admin"):
+        statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
+    elif (update_fields.type == "officer"):
+        statement = statement.values(is_officer=True, is_admin=False, is_chief=False)
+    elif (update_fields.type == "chief"):
+        statement = statement.values(is_chief=True, is_admin=False, is_officer=False)
+    elif (update_fields.type == "base"):
+        statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
+    if update_fields.role:
+        statement = statement.values(role = update_fields.role)
+    if update_fields.status:
+        if update_fields.status == "ok":
+            statement = statement.values(is_reliable=True, is_blocked=False)
+        elif update_fields.status == "unreliable":
+            statement = statement.values(is_reliable=False, is_blocked=False)
+        elif update_fields.status == "blocked":
+            statement = statement.values(is_blocked=True, is_reliable=False)
+    if update_fields.notes is not None:
+        statement = statement.values(notes = update_fields.notes)
+    if update_fields.authorizer:
+        auth_user = db_session.exec(
+            select(User).where( # check if authorizer (an admin, or an officer) exists
+                User.email == update_fields.authorizer.lower()
+            )).first()
+        if auth_user:
+            if ((auth_user.is_admin) or (auth_user.is_officer)):
+                statement = statement.values(authorized_by = update_fields.authorizer.lower(), authorized_at = now_tz_naive())
         else:
             return {"message": "Authorizer email not valid", "updated_count": 0}
     statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
     result = db_session.exec(statement)
     updated_count = result.rowcount
+    db_session.commit()
     return {"message": "Operation completed", "updated_count": updated_count}

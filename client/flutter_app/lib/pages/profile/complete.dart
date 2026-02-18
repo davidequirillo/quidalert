@@ -9,7 +9,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
-import 'package:quidalert_flutter/utils/validator.dart';
+import 'package:quidalert_flutter/utils/validators.dart';
 
 class CompleteProfilePage extends StatelessWidget {
   const CompleteProfilePage({super.key});
@@ -81,7 +81,10 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedDate == null) return;
+    if (_selectedDate == null) {
+      _selectDate(context);
+      return;
+    }
     String dateToSend = _selectedDate!.toIso8601String();
     dateToSend = dateToSend.substring(0, dateToSend.indexOf('T'));
     final fname = _firstnameController.text.trim();
@@ -106,7 +109,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
     await _completeProfile(fields);
   }
 
-  Future<void> _completeProfile(Map<String, dynamic> data) async {
+  Future<void> _completeProfile(Map<String, String> data) async {
     AuthClient authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     String retTitle = "";
@@ -129,14 +132,14 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       retTitle = loc.errorPermissionsNotValid;
       retMessage = loc.errorPermissionsNotValid;
       error = true;
-    } on GenericNotAuthorizedException {
+    } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
       if (mounted) {
         goToLoginPagePostFrameCallback(context);
       }
-    } on NetworkException {
+    } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
       error = true;

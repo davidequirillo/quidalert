@@ -166,9 +166,7 @@ class _HomeBodyState extends State<HomeBody> {
 
   Widget _buildProfileCard(Map<String, dynamic> user) {
     String type;
-    final lastRefreshAt = user['last_refresh_at']
-        .replaceAll("T", " ")
-        .replaceAll("Z", " UTC");
+    String status;
     final lastRefreshAtStr = user['last_refresh_at'] != null
         ? datetimeAsStringWithoutMicroseconds(
             DateTime.parse(user['last_refresh_at']),
@@ -183,7 +181,14 @@ class _HomeBodyState extends State<HomeBody> {
     } else if (user['is_chief'] == true) {
       type = "chief";
     } else {
-      type = "normal";
+      type = "base";
+    }
+    if (user['is_reliable'] == false) {
+      status = "unreliable";
+    } else if (user['is_blocked'] == true) {
+      status = "blocked";
+    } else {
+      status = "ok";
     }
     final loc = AppLocalizations.of(context)!;
     return Column(
@@ -201,10 +206,12 @@ class _HomeBodyState extends State<HomeBody> {
               Text(
                 "${user['email']}\n${loc.labelLastRefreshAt}: $lastRefreshAtStr",
               ),
-              Text("${loc.labelAuthorizedBy}: ${user['authorizer'] ?? "N/A"}"),
+              Text(
+                "${loc.labelAuthorizedBy}: ${user['authorized_by'] ?? "N/A"}",
+              ),
               Text("${loc.labelType}: $type"),
               Text("${loc.labelRole}: ${user['role']}"),
-              Text("Status: ${user['status']}"),
+              Text("Status: $status"),
             ],
           ),
           isThreeLine: false,

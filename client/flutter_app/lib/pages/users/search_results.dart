@@ -103,7 +103,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
 
   Future<List<UserSmall>> getUsersByEmails(List<String> emails) async {
     final String offsetStr = 'offset=${_currentPage * _limit}&limit=$_limit';
-    final requestStr = '/get-users-by-emails?$offsetStr';
+    final requestStr = '/users/get-by-emails?$offsetStr';
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "post",
@@ -199,15 +199,17 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                 ),
                 SizedBox(height: 10),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/accounts/users/promote-results',
+                      arguments: args,
+                    );
+                  },
                   icon: Icon(Icons.edit),
-                  label: Text(loc.buttonPromoteQueryResults),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: Icon(Icons.edit),
-                  label: Text(loc.buttonResetPrivilegesQueryResults),
+                  label: Text(
+                    '${loc.buttonPromote}/${loc.buttonModify.toLowerCase()} ${loc.labelQueryUsers.toLowerCase()}',
+                  ),
                 ),
               ],
             ),
@@ -245,8 +247,13 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                                   )
                                 : "N/A",
                           ),
-                          onTap: () =>
-                              goToUserDetailsPage(context, _users[index].id),
+                          onTap: () => {
+                            Navigator.pushNamed(
+                              context,
+                              '/accounts/users/view-user-details',
+                              arguments: _users[index].id,
+                            ),
+                          },
                         );
                       } else {
                         // Loading spinner at the bottom of the list

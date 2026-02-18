@@ -82,16 +82,8 @@ void goToLoginPagePostFrameCallback(BuildContext context) {
 
 void goToHomePagePostFrameCallback(BuildContext context) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    Navigator.pushNamed(context, '/home');
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   });
-}
-
-void goToUserDetailsPage(BuildContext context, String userId) {
-  Navigator.pushNamed(
-    context,
-    '/accounts/users/view-user-details',
-    arguments: userId,
-  );
 }
 
 Widget buildSectionLink(BuildContext context, String text, String routeName) {
