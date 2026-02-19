@@ -36,7 +36,7 @@ class UsersSearchResultsBody extends StatefulWidget {
 class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
   List<UserSmall> _users = [];
   int _usersCount = 0;
-  int _currentPage = 0;
+  String? _currentCursor;
   bool _isLoadingPage = false;
   bool _hasMore = true;
   final int _limit = 100;
@@ -64,7 +64,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
     setState(() {
       _users = [];
       _usersCount = 0;
-      _currentPage = 0;
+      _currentCursor = null;
       _hasMore = true;
       _hasSearched = true;
     });
@@ -87,7 +87,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
         .where((entry) => entry.value != null && entry.value!.isNotEmpty)
         .map((entry) => "${entry.key}=${Uri.encodeComponent(entry.value!)}")
         .join("&");
-    final String offsetStr = 'offset=${_currentPage * _limit}&limit=$_limit';
+    final String offsetStr = 'last_seen_id=$_currentCursor&limit=$_limit';
     if (queryStr.isEmpty) {
       queryStr = offsetStr;
     } else {
@@ -97,12 +97,13 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest("get", requestStr);
     final respObj = json.decode(response.body);
-    List<dynamic> data = respObj;
+    List<dynamic> data = respObj['users'];
+    _currentCursor = respObj['next_cursor'];
     return data.map((item) => UserSmall.fromJson(item)).toList();
   }
 
   Future<List<UserSmall>> getUsersByEmails(List<String> emails) async {
-    final String offsetStr = 'offset=${_currentPage * _limit}&limit=$_limit';
+    final String offsetStr = 'last_seen_id=$_currentCursor&limit=$_limit';
     final requestStr = '/users/get-by-emails?$offsetStr';
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
@@ -111,7 +112,8 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
       body: {"emails": emails},
     );
     final respObj = json.decode(response.body);
-    List<dynamic> data = respObj;
+    List<dynamic> data = respObj['users'];
+    _currentCursor = respObj['next_cursor'];
     return data.map((item) => UserSmall.fromJson(item)).toList();
   }
 
@@ -126,8 +128,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
       List<UserSmall> pageUsers = await getUsers();
       setState(() {
         _users.addAll(pageUsers);
-        _currentPage++;
-        if (pageUsers.length < _limit) {
+        if ((pageUsers.length < _limit) || (_currentCursor == null)) {
           _hasMore = false;
         }
         _usersCount = _usersCount + pageUsers.length;

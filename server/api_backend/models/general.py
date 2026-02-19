@@ -6,9 +6,10 @@ import re
 from datetime import datetime, timezone
 from typing import List, Optional
 from enum import Enum
-import uuid as uuid_pkg
+import uuid_utils as uuid_pkg
+import uuid
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Index
 from services.security import now_tz_naive
 
 class UserRole(str, Enum):
@@ -81,8 +82,8 @@ class UserInCompleteProfile(BaseModel):
         return s
 
 class UserOut(UserBase, table=False):
-    id: uuid_pkg.UUID = Field(
-        default_factory=uuid_pkg.uuid4,
+    id: uuid.UUID = Field(
+        default_factory=lambda: uuid.UUID(bytes=uuid_pkg.uuid7().bytes),
         primary_key=True,
         nullable=False
     )
@@ -126,7 +127,11 @@ class UserOut(UserBase, table=False):
     birthdate: Optional[str] = Field(default=None, min_length=10, max_length=10) # YYYY-MM-DD
     phone: Optional[str] = Field(default=None, min_length=6, max_length=32)
     notes: Optional[str] = Field(default=None, min_length=0, max_length=256, nullable=True)
-
+    
+    __table_args__ = (
+        Index("ix_users_authorized_by_id", "authorized_by", "id"),
+    )
+    
     @field_validator("role")
     @classmethod
     def validate_role(cls, s):
@@ -135,7 +140,7 @@ class UserOut(UserBase, table=False):
         return s
 
 class UserOutSmall(BaseModel):
-    id: uuid_pkg.UUID
+    id: uuid.UUID
     firstname: str
     surname: str
     email: EmailStr
@@ -148,10 +153,14 @@ class UserOutSmall(BaseModel):
     is_reliable: bool
     is_blocked: bool
 
+class UserOutPaginated(BaseModel):
+    users: List[UserOutSmall]
+    next_cursor: Optional[uuid.UUID] = None
+
 class User(UserOut, table=True):
     __tablename__: str = 'users'
     # todo: insert foreign key to whitelist table
-    email_hash: str = Field(index=True, unique=True, nullable=False)
+    email_hash: str = Field(unique=True, nullable=False)
     password_hash: str = Field(nullable=False)
     gps_lat: float | None = Field(default=None, nullable=True)
     gps_lon: float | None = Field(default=None, nullable=True)
@@ -214,12 +223,12 @@ class PasswordResetConfirm(BaseModel):
 class RefreshToken(SQLModel, table=True):
     __tablename__: str = 'refresh_tokens'
     
-    id: uuid_pkg.UUID = Field(
-        default_factory=uuid_pkg.uuid4,
+    id: uuid.UUID = Field(
+        default_factory=lambda: uuid.UUID(bytes=uuid_pkg.uuid7().bytes),
         primary_key=True,
         nullable=False
     )
-    user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+    user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False, index=True)
     raw_hash: str = Field(nullable=False) # a random token hash    
     ip_address: Optional[str] = Field(default=None)
     device_info: Optional[str] = Field(default=None)
@@ -249,9 +258,14 @@ class RefreshTokenWrapper(BaseModel):
     
 class WhiteListEntry(SQLModel, table=True):
     __tablename__: str = 'whitelist_entries'
-    email: EmailStr = Field(primary_key=True, nullable=False, min_length=3, max_length=128)
+    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
+    email: EmailStr = Field(min_length=3, max_length=128, nullable=False, index=True)
     created_by: EmailStr = Field(nullable=False, min_length=3, max_length=128)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_whitelist_entries_created_by_id", "created_by", "id"),
+    )
 
 class EmailListDict(BaseModel):
     emails: List[str]
@@ -312,9 +326,12 @@ class ChangeStatusSchema(BaseModel):
 class Alert(SQLModel, table=True):
     __tablename__: str = "alerts"
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    user_id: uuid_pkg.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+    user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False, index=True)
     description: str = Field(default="", nullable=False, min_length=0, max_length=256)
     severity: Optional[int] = Field(default=1, ge=1, le=5, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False, index=True)
     is_closed: bool = Field(default=False, nullable=False)
 
+class UserOutWithAlerts(BaseModel):
+    user: UserOut
+    alerts: List[Alert]

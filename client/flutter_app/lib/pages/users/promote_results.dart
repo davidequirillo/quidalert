@@ -329,6 +329,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
                       selectedStatus = null;
                       _authorizerController.clear();
                       _notesController.clear();
+                      _activateNotes = false;
                       _formKey.currentState?.reset();
                     });
                   },

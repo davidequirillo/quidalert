@@ -21,7 +21,8 @@ services:
     restart: always
     ports:
       - "6379:6379"
-    # at the moment we don't use persistence in Redis
+    volumes:
+      - redis_data:/data
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
@@ -46,8 +47,12 @@ services:
     ports:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web console port
+    volumes:
+      - mailpit_data:/data
 
 # Volumes definition
 volumes:
   postgres_data:
+  redis_data:
   minio_data:
+  mailpit_data:

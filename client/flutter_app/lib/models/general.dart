@@ -3,11 +3,13 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 class WhiteListEntry {
+  final int id;
   final String email;
   final String createdBy;
   final DateTime createdAt;
 
   WhiteListEntry({
+    required this.id,
     required this.email,
     required this.createdBy,
     required this.createdAt,
@@ -15,6 +17,7 @@ class WhiteListEntry {
 
   factory WhiteListEntry.fromJson(Map<String, dynamic> json) {
     return WhiteListEntry(
+      id: json['id'],
       email: json['email'],
       createdBy: json['created_by'],
       createdAt: DateTime.parse(json['created_at']),

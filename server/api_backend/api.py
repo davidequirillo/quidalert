@@ -15,7 +15,8 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
-import uuid as uuid_pkg
+import uuid_utils as uuid_pkg
+import uuid
 from sqlmodel import Session, select, update, delete, desc
 from fastapi.templating import Jinja2Templates
 from jwt.exceptions import (
@@ -37,7 +38,7 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (Alert, UserIn, User, UserOut, UserOutSmall, UserLanguage, 
+from models.general import (Alert, UserIn, User, UserOut, UserOutWithAlerts, UserOutPaginated, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper,
     WhiteListEntry, EmailListDict,
@@ -332,7 +333,7 @@ def login(data: LoginSchema,
         oldest_token = active_tokens[-1]
         db_session.delete(oldest_token)
         db_session.flush()
-    refresh_token_id = uuid_pkg.uuid4()
+    refresh_token_id = uuid.UUID(bytes=uuid_pkg.uuid7().bytes)
     raw_random_str = generate_random_token()
     raw_str_hash = get_token_hash(raw_random_str)
     refresh_token = RefreshToken(
@@ -625,45 +626,40 @@ async def upload_terms(file: UploadFile = File(...),
         )
     return {"message": "Terms uploaded successfully"}
 
-@app.get("/api/whitelist-entries", response_model=list[WhiteListEntry])
+@app.get("/api/whitelist-entries")
 def get_whitelist_entries(
                 email: str | None = None,
                 authorizer: str | None = None,
-                offset: int = 0,
+                last_seen_id: int = 0,
                 limit: int = 100,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if offset < 0:
-        offset = 0
+    if last_seen_id < 0:
+        last_seen_id = 0
     if limit not in [10, 100, 1000]:
         limit = 100
-    if email and (email != ""):
+    entries = []
+    next_cursor = 0
+    if email:
         entries = db_session.exec(
             select(WhiteListEntry).where(
                 WhiteListEntry.email == email.lower())).all()    
-    elif (authorizer and (authorizer != "")):
-        if current_user.is_admin:
-            authorizer_email = authorizer.lower()
-        else: # officers can see (in bulk) only their created entries
-            authorizer_email = current_user.email
-        entries = db_session.exec(
-            select(WhiteListEntry).where(
-                WhiteListEntry.created_by == authorizer_email
-                    ).offset(offset).limit(limit)).all()
     else:
-        if (not current_user.is_admin):
-            # officers can see (in bulk) only their created entries
-            entries = db_session.exec(
-                select(WhiteListEntry).where(
-                    WhiteListEntry.created_by == current_user.email
-                        ).offset(offset).limit(limit)).all()
-        else:
-            entries = db_session.exec(
-                select(WhiteListEntry).offset(offset).limit(limit)
-                    ).all()
-    return entries
+        statement = select(WhiteListEntry)
+        if (not current_user.is_admin): # officers can see (in bulk) only their own entries
+            statement = statement.where(WhiteListEntry.created_by == current_user.email)
+        if authorizer:
+            authorizer_email = authorizer.lower()
+            statement = statement.where(WhiteListEntry.created_by == authorizer_email)
+        if last_seen_id > 0:
+            statement = statement.where(WhiteListEntry.id < last_seen_id) # type: ignore
+        statement = statement.order_by(desc(WhiteListEntry.id)).limit(limit)
+        entries = db_session.exec(statement).all()
+        if entries:
+            next_cursor = entries[-1].id
+    return { "entries": entries, "next_cursor": next_cursor }
 
 @app.post("/api/whitelist-entries")
 def add_whitelist_entries(
@@ -763,7 +759,7 @@ def update_profile(user_data: UserInCompleteProfile,
     db_session.commit()
     return { "message": "Profile updated" }
 
-@app.get("/api/users", response_model=list[UserOutSmall], status_code=status.HTTP_200_OK)
+@app.get("/api/users", response_model=UserOutPaginated, status_code=status.HTTP_200_OK)
 def get_users(
             email: str | None = None,
             firstname: str | None = None,
@@ -772,30 +768,30 @@ def get_users(
             type: str | None = None,
             role: str | None = None,
             status: str | None = None,
-            offset: int = 0,
+            last_seen_id: str | None = None,
             limit: int = 100,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if offset < 0:
-        offset = 0
     if limit not in [10, 100, 1000]:
         limit = 100
+    next_cursor = None
     if email and (email != ""):
         users = db_session.exec(
             select(User).where(User.email == email.lower())).all()
-        return users
-    if (current_user.is_admin):
-        statement = select(User)
-    else: # officers can see (in bulk) only users they authorized
-        statement = select(User).where(User.authorized_by == current_user.email)
+        return { 'users': users, 'next_cursor': next_cursor }
+    statement = select(User)
+    if not current_user.is_admin: # officers can see (in bulk) only users they authorized
+        statement = statement.where(User.authorized_by == current_user.email)
+    if authorizer:
+        statement = statement.where(User.authorized_by == authorizer.lower()) 
+    if last_seen_id:
+        statement = statement.where(User.id < last_seen_id) # type: ignore
     if firstname and (firstname != ""):
         statement = statement.where(User.firstname == firstname) 
     if surname and (surname != ""):
         statement = statement.where(User.surname == surname) 
-    if authorizer and (authorizer != ""):
-        statement = statement.where(User.authorized_by == authorizer.lower()) 
     if type and (type != ""):
         if type == "admin":
             statement = statement.where(User.is_admin == True) 
@@ -812,27 +808,35 @@ def get_users(
             statement = statement.where(User.is_reliable == False) 
         elif status == "blocked":
             statement = statement.where(User.is_blocked == True)
-    users = db_session.exec(statement.offset(offset).limit(limit)).all()
-    return users
+    statement = statement.order_by(desc(User.id)).limit(limit)
+    users = db_session.exec(statement).all()
+    if users:
+        next_cursor = users[-1].id
+    return { 'users': users, 'next_cursor': next_cursor}
 
-@app.post("/api/users/get-by-emails", response_model=list[UserOutSmall], status_code=status.HTTP_200_OK)
+@app.post("/api/users/get-by-emails", response_model=UserOutPaginated, status_code=status.HTTP_200_OK)
 def get_users_by_emails(
             dict: EmailListDict,
-            offset: int = 0,
+            last_seen_id: str | None = None,
             limit: int = 100,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if offset < 0:
-        offset = 0
     if limit not in [10, 100, 1000]:
         limit = 100
-    statement = select(User).where(User.email.in_(dict.emails)).offset(offset).limit(limit) # type: ignore
+    next_cursor = None
+    statement = select(User)
+    if (last_seen_id):
+        statement = statement.where(User.id < last_seen_id) # type: ignore
+    statement = statement.where(User.email.in_(dict.emails)) # type: ignore
+    statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
-    return users
+    if users:
+        next_cursor = users[-1].id
+    return { 'users': users, 'next_cursor': next_cursor }
     
-@app.get("/api/user/{user_id}")
+@app.get("/api/user/{user_id}", response_model=UserOutWithAlerts, status_code=status.HTTP_200_OK)
 def get_user(user_id: str, 
             current_user: User = Depends(get_current_user),
             db_session: Session = Depends(get_db_session)):
@@ -867,13 +871,13 @@ def promote_users(
         statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
     if email and (email != ""):
         statement = statement.where(
-                User.email == email.lower()) # type: ignore
+            User.email == email.lower()) # type: ignore
+    if authorizer and (authorizer != ""):
+        statement = statement.where(User.authorized_by == authorizer.lower()) # type: ignore
     if firstname and (firstname != ""):
         statement = statement.where(User.firstname == firstname) # type: ignore 
     if surname and (surname != ""):
-        statement = statement.where(User.surname == surname) # type: ignore
-    if authorizer and (authorizer != ""):
-        statement = statement.where(User.authorized_by == authorizer.lower()) # type: ignore 
+        statement = statement.where(User.surname == surname) # type: ignore 
     if type and (type != ""):
         if type == "admin":
             statement = statement.where(User.is_admin == True) # type: ignore 

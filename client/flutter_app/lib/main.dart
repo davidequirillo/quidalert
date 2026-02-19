@@ -16,8 +16,8 @@ import 'pages/reset.dart';
 import 'pages/login.dart';
 import 'pages/two_fa.dart';
 import 'pages/home.dart';
-import 'pages/new_alert.dart';
-import 'pages/recents.dart';
+import 'pages/alerts/new.dart';
+import 'pages/alerts/recents.dart';
 import 'pages/settings.dart';
 import 'pages/accounts.dart';
 import 'pages/whitelist/add_entries.dart';
@@ -80,7 +80,7 @@ class QuidalertWidget extends StatelessWidget {
         '/2fa': (_) => const TwoFAPage(),
         '/home': (_) => const HomePage(),
         '/alerts/new': (_) => const NewAlertPage(),
-        '/alerts/recents': (_) => const RecentsPage(),
+        '/alerts/recents': (_) => const RecentAlertsPage(),
         '/advice': (_) => const AdvicePage(),
         '/profile/complete': (_) => const CompleteProfilePage(),
         '/accounts': (_) => const AccountsPage(),

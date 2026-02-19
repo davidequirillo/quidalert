@@ -40,8 +40,8 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
   final ScrollController _scrollController = ScrollController();
   List<WhiteListEntry> _entries = [];
   String searchCriteria = "";
+  int _currentCursor = 0;
   int _entriesCount = 0;
-  int _currentPage = 0;
   bool _isLoadingPage = false;
   bool _hasMore = true;
   final int _limit = 100;
@@ -69,7 +69,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
     setState(() {
       _entries = [];
       _entriesCount = 0;
-      _currentPage = 0;
+      _currentCursor = 0;
       _hasMore = true;
       _hasSearched = true;
     });
@@ -85,26 +85,20 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
     String requestStr;
     if (searchCriteria == "email") {
       final email = Uri.encodeComponent(_emailController.text.trim());
-      requestStr =
-          '/whitelist-entries?email=$email&offset=${_currentPage * _limit}&limit=$_limit';
+      requestStr = '/whitelist-entries?email=$email';
     } else if (searchCriteria == "authorizer") {
       final auth = Uri.encodeComponent(_emailController.text.trim());
       requestStr =
-          '/whitelist-entries?authorizer=$auth&offset=${_currentPage * _limit}&limit=$_limit';
-    } else if (searchCriteria == "me") {
-      final auth = Uri.encodeComponent(
-        context.read<AuthClient>().userInfo['email'],
-      );
-      requestStr =
-          '/whitelist-entries?authorizer=$auth&offset=${_currentPage * _limit}&limit=$_limit';
+          '/whitelist-entries?authorizer=$auth&last_seen_id=$_currentCursor&limit=$_limit';
     } else {
       requestStr =
-          '/whitelist-entries?offset=${_currentPage * _limit}&limit=$_limit';
+          '/whitelist-entries?last_seen_id=$_currentCursor&limit=$_limit';
     }
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest("get", requestStr);
     final respObj = json.decode(response.body);
-    List<dynamic> data = respObj;
+    List<dynamic> data = respObj['entries'];
+    _currentCursor = respObj['next_cursor'];
     return data.map((item) => WhiteListEntry.fromJson(item)).toList();
   }
 
@@ -119,8 +113,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
       List<WhiteListEntry> pageEntries = await getEntries();
       setState(() {
         _entries.addAll(pageEntries);
-        _currentPage++;
-        if (pageEntries.length < _limit) {
+        if ((pageEntries.length < _limit) || (_currentCursor == 0)) {
           _hasMore = false;
         }
         _entriesCount = _entriesCount + pageEntries.length;
