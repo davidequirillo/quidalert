@@ -1,8 +1,8 @@
-"""initial migration: users table, whitelist table, etc.
+"""initial migration
 
-Revision ID: e0ad457b5017
+Revision ID: 6b7556cd0807
 Revises: 
-Create Date: 2026-02-08 16:58:49.841033
+Create Date: 2026-02-19 18:39:13.820496
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e0ad457b5017'
+revision: str = '6b7556cd0807'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,7 +33,9 @@ def upgrade() -> None:
     sa.Column('is_officer', sa.Boolean(), nullable=False),
     sa.Column('is_chief', sa.Boolean(), nullable=False),
     sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('status', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('is_reliable', sa.Boolean(), nullable=False),
+    sa.Column('reliability_score', sa.Integer(), nullable=False),
+    sa.Column('is_blocked', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('activation_expires_at', sa.DateTime(), nullable=True),
     sa.Column('reset_expires_at', sa.DateTime(), nullable=True),
@@ -61,6 +63,7 @@ def upgrade() -> None:
     sa.Column('country', sqlmodel.sql.sqltypes.AutoString(length=64), nullable=True),
     sa.Column('birthdate', sqlmodel.sql.sqltypes.AutoString(length=10), nullable=True),
     sa.Column('phone', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=True),
+    sa.Column('notes', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=True),
     sa.Column('email_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('password_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('gps_lat', sa.Float(), nullable=True),
@@ -68,16 +71,20 @@ def upgrade() -> None:
     sa.Column('activation_code', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('reset_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('login_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email_hash')
     )
+    op.create_index('ix_users_authorized_by_id', 'users', ['authorized_by', 'id'], unique=False)
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_email_hash'), 'users', ['email_hash'], unique=True)
     op.create_table('whitelist_entries',
+    sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_by', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.PrimaryKeyConstraint('email')
+    sa.PrimaryKeyConstraint('id')
     )
+    op.create_index('ix_whitelist_entries_created_by_id', 'whitelist_entries', ['created_by', 'id'], unique=False)
+    op.create_index(op.f('ix_whitelist_entries_email'), 'whitelist_entries', ['email'], unique=False)
     op.create_table('alerts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
@@ -88,6 +95,7 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_alerts_created_at'), 'alerts', ['created_at'], unique=False)
     op.create_index(op.f('ix_alerts_user_id'), 'alerts', ['user_id'], unique=False)
     op.create_table('refresh_tokens',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -110,9 +118,12 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_refresh_tokens_user_id'), table_name='refresh_tokens')
     op.drop_table('refresh_tokens')
     op.drop_index(op.f('ix_alerts_user_id'), table_name='alerts')
+    op.drop_index(op.f('ix_alerts_created_at'), table_name='alerts')
     op.drop_table('alerts')
+    op.drop_index(op.f('ix_whitelist_entries_email'), table_name='whitelist_entries')
+    op.drop_index('ix_whitelist_entries_created_by_id', table_name='whitelist_entries')
     op.drop_table('whitelist_entries')
-    op.drop_index(op.f('ix_users_email_hash'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_index('ix_users_authorized_by_id', table_name='users')
     op.drop_table('users')
     # ### end Alembic commands ###
