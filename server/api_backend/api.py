@@ -413,7 +413,6 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         firstname=user_in.firstname,
         surname=user_in.surname,
         email=email_lowercase,
-        email_hash=get_email_hash(email_lowercase),
         language=user_in.language,
         password_hash=password_hashed,
         is_superuser=is_the_superuser,
@@ -426,8 +425,9 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     )
     db_session.add(user)
     db_session.commit()
+    db_session.refresh(user)
     if log_deleted_user:
-        log_deleted_user_to_renew_registration(user.email)
+        log_deleted_user_to_renew_registration(str(user.id))
     background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
     return { "message": reg_message }
 
@@ -675,7 +675,10 @@ def add_whitelist_entries(
         try:
             if (e is None) or (e.strip() == ""):
                 continue
-            entry = WhiteListEntry(email=e.lower(), created_by=current_user.email)
+            entry = WhiteListEntry.model_validate({
+                "email": e.lower(), 
+                "created_by": current_user.email
+            })
             if db_session.exec(
                 select(WhiteListEntry).where(WhiteListEntry.email == entry.email)
             ).first():
@@ -811,8 +814,8 @@ def get_users(
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
-        next_cursor = users[-1].id
-    return { 'users': users, 'next_cursor': next_cursor}
+        next_cursor = str(users[-1].id)
+    return { 'users': users, 'next_cursor': next_cursor }
 
 @app.post("/api/users/get-by-emails", response_model=UserOutPaginated, status_code=status.HTTP_200_OK)
 def get_users_by_emails(
@@ -833,7 +836,7 @@ def get_users_by_emails(
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
-        next_cursor = users[-1].id
+        next_cursor = str(users[-1].id)
     return { 'users': users, 'next_cursor': next_cursor }
     
 @app.get("/api/user/{user_id}", response_model=UserOutWithAlerts, status_code=status.HTTP_200_OK)

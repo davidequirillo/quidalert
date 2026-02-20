@@ -159,8 +159,6 @@ class UserOutPaginated(BaseModel):
 
 class User(UserOut, table=True):
     __tablename__: str = 'users'
-    # todo: insert foreign key to whitelist table
-    email_hash: str = Field(unique=True, nullable=False)
     password_hash: str = Field(nullable=False)
     gps_lat: float | None = Field(default=None, nullable=True)
     gps_lon: float | None = Field(default=None, nullable=True)
@@ -259,7 +257,7 @@ class RefreshTokenWrapper(BaseModel):
 class WhiteListEntry(SQLModel, table=True):
     __tablename__: str = 'whitelist_entries'
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    email: EmailStr = Field(min_length=3, max_length=128, nullable=False, index=True)
+    email: EmailStr = Field(nullable=False, index=True, unique=True, min_length=3, max_length=128)
     created_by: EmailStr = Field(nullable=False, min_length=3, max_length=128)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
 

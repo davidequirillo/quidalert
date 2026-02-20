@@ -197,6 +197,12 @@ abstract class AppLocalizations {
   /// **'Email not found'**
   String get errorEmailNotFound;
 
+  /// No description provided for @errorEmailNotValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Email not valid'**
+  String get errorEmailNotValid;
+
   /// No description provided for @errorEmailAlreadyExist.
   ///
   /// In en, this message translates to:
@@ -316,6 +322,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permissions not valid'**
   String get errorPermissionsNotValid;
+
+  /// No description provided for @errorServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error'**
+  String get errorServer;
 
   /// No description provided for @errorSomeEntriesNotAdded.
   ///

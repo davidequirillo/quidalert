@@ -38,6 +38,7 @@ class UserDetailsBody extends StatelessWidget {
     }
     final user = User.fromJson(respobj['user']);
     List<dynamic> alertsObj = respobj['alerts'];
+    debugPrint(response.body);
     final alerts = alertsObj.map((item) => Alert.fromJson(item)).toList();
     return [user, alerts];
   }

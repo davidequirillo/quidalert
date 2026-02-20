@@ -62,5 +62,6 @@ dependencies:
       - typing-extensions==4.15.0
       - typing-inspection==0.4.2
       - urllib3==2.6.3
+      - uuid-utils==0.14.0
       - uvicorn==0.38.0
 prefix: C:\Users\saulz\miniconda3\envs\quidalert_env

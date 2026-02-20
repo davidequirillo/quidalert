@@ -96,7 +96,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
       final int existingCount = respObj['existing_count'];
       if (emailsNotAdded.contains(email)) {
         retTitle = loc.errorError;
-        retMessage = loc.errorError;
+        retMessage = loc.errorEmailNotValid;
       } else if (existingCount > 0) {
         retTitle = loc.errorError;
         retMessage = loc.errorEmailAlreadyExist;

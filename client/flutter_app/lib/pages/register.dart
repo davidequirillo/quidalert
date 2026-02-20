@@ -86,7 +86,11 @@ class _RegisterBodyState extends State<RegisterBody> {
         body: jsonBody,
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        registerError = jsonDecode(response.body)['detail'];
+        if (response.statusCode == 422) {
+          registerError = "Bad request error";
+        } else {
+          registerError = "Server error";
+        }
       } else {
         registerError = null;
       }
@@ -96,11 +100,14 @@ class _RegisterBodyState extends State<RegisterBody> {
     }
     if (registerError != null) {
       switch (registerError) {
-        case 'Network error':
-          endMessage = loc.errorNetwork;
+        case 'Bad request error':
+          endMessage = loc.errorBadRequest;
+          break;
+        case 'Server error':
+          endMessage = loc.errorServer;
           break;
         default:
-          endMessage = loc.errorBadRequest;
+          endMessage = loc.errorNetwork;
       }
       endTitle = loc.errorGeneric;
     } else {

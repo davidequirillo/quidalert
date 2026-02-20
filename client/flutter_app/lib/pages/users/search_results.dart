@@ -87,7 +87,8 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
         .where((entry) => entry.value != null && entry.value!.isNotEmpty)
         .map((entry) => "${entry.key}=${Uri.encodeComponent(entry.value!)}")
         .join("&");
-    final String offsetStr = 'last_seen_id=$_currentCursor&limit=$_limit';
+    final String currCurs = (_currentCursor != null) ? _currentCursor! : '';
+    final String offsetStr = 'last_seen_id=$currCurs&limit=$_limit';
     if (queryStr.isEmpty) {
       queryStr = offsetStr;
     } else {
@@ -103,7 +104,8 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
   }
 
   Future<List<UserSmall>> getUsersByEmails(List<String> emails) async {
-    final String offsetStr = 'last_seen_id=$_currentCursor&limit=$_limit';
+    final String currCurs = (_currentCursor != null) ? _currentCursor! : '';
+    final String offsetStr = 'last_seen_id=$currCurs&limit=$_limit';
     final requestStr = '/users/get-by-emails?$offsetStr';
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
