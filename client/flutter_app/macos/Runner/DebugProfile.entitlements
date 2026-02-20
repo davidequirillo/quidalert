@@ -11,5 +11,11 @@
 	<!-- Quidalert: required to fetch data from the internet. -->
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Quidalert: required to access the location of the user. -->
+	<key>com.apple.security.personal-information.location</key>
+	<true/>
+	<!-- Quidalert: required to access files on the system. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
 </dict>
 </plist>
