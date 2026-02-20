@@ -4,7 +4,6 @@
 
 from middleware.request_ctx import request_id_ctx, client_ip_ctx, client_ua_ctx
 from core.logging import get_security_logger
-from services.security import get_email_hash
 
 logger = get_security_logger()
 
@@ -34,15 +33,10 @@ def get_base_extra(user_id: str) -> dict:
         "user_id": user_id
     }
 
-def log_deleted_user_to_renew_registration(email: str):
+def log_deleted_user_to_renew_registration(user_id: str):
     logger.info(
         "deleted_user_to_renew_registration",
-        extra={
-            "client_ip": get_client_ip(),
-            "request_id": get_request_id(),
-            "user_agent": get_client_ua(),
-            "email_hash": get_email_hash(email)
-        }
+        extra=get_base_extra(user_id)
     )
 
 def log_password_reset_code_generation(user_id: str):
@@ -63,7 +57,7 @@ def log_password_reset_failed(user_id: str, reason: str, attempts: int | None = 
         extra={
             "client_ip": get_client_ip(),
             "request_id": get_request_id(),
-            "user_agent": get_client_ua,
+            "user_agent": get_client_ua(),
             "user_id": user_id,
             "reason": reason,
             "attempts": attempts

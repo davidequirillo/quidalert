@@ -60,6 +60,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorEmailNotFound => 'Indirizzo email non trovato';
 
   @override
+  String get errorEmailNotValid => 'Indirizzo email non valido';
+
+  @override
   String get errorEmailAlreadyExist => 'Email già presente';
 
   @override
@@ -118,6 +121,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorPermissionsNotValid => 'Permessi non validi';
+
+  @override
+  String get errorServer => 'Errore nel server';
 
   @override
   String get errorSomeEntriesNotAdded => 'Alcune voci non sono state aggiunte';
