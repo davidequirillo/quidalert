@@ -52,5 +52,17 @@
     <true/>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>This app requires access to library to allow the opening of multimedia files</string>
+	<!-- Quidalert: the following lines are for gps location access -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app requires access to your location to display the current address, useful to send an alert/help request to other users nearby</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>This app monitors your location every 30 minutes to update the location and send it to the server, even in the background, so the user can receive eventual nearby alerts (coming from other users)</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>This app requires background location access (every 30 minutes) to function properly , so the user can receive eventual nearby alerts (coming from other users), even when the app is not in the foreground</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>fetch</string>
+    </array>
 </dict>
 </plist>

@@ -12,6 +12,14 @@ Per poter usare questa applicazione, devi fare le seguenti cose:
 
 - Infine, effettuare il Login.
 
+## Accesso alla posizione
+
+Per inviare una richiesta di aiuto (un'allerta), l'app accederà alla tua posizione GPS istantaneamente. 
+
+Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle vicinanze, l'app ha bisogno di aggiornare la tua posizione approssimativamente ogni 30 minuti, anche quando l'applicazione è chiusa. Questo processo in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout). 
+
+Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento, garantendo così il massimo risparmio della batteria e del traffico dati.
+
 [Termini legali](/terms)
 
 [Registrazione account](/register)
