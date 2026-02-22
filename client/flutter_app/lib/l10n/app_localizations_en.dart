@@ -24,10 +24,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonClear => 'Clear';
 
   @override
+  String get buttonCopy => 'Copy';
+
+  @override
   String get buttonDelete => 'Delete';
 
   @override
   String get buttonModify => 'Modify';
+
+  @override
+  String get buttonObtain => 'Obtain';
 
   @override
   String get buttonPromote => 'Promote';
@@ -40,6 +46,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorAccountBlocked => 'Account blocked';
+
+  @override
+  String get errorAddressNotFound => 'Address not found';
 
   @override
   String get errorBadRequest => 'Bad request';
@@ -79,6 +88,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorLoading => 'Loading error';
+
+  @override
+  String get errorLocationServicesDisabled => 'Location services are disabled, go to settings and enable gps and location services';
+
+  @override
+  String get errorLocationPermissionDenied => 'Location permissions are denied, go to settings to enable them';
+
+  @override
+  String get errorLocationPermissionDeniedForever => 'You have permanently denied location permissions, go to settings and enable them';
+
+  @override
+  String get errorLocationFetchTimeout => 'Timeout error, I fetched the last know position';
 
   @override
   String get errorLoginLocked => 'Too many attempts, login is locked for 24 hours';
@@ -121,6 +142,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorPermissionsNotValid => 'Permissions not valid';
+
+  @override
+  String get errorPositionNotAvailable => 'Position not available';
 
   @override
   String get errorServer => 'Server error';
@@ -252,6 +276,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelFirstname => 'Firstname';
 
   @override
+  String get labelGpsLocation => 'GPS location';
+
+  @override
+  String get labelGpsLocationTest => 'GPS location test';
+
+  @override
   String get labelGpsPosition => 'GPS position';
 
   @override
@@ -262,6 +292,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelLanguage => 'Language';
+
+  @override
+  String get labelLatitude => 'Latitude';
+
+  @override
+  String get labelLongitude => 'Longitude';
 
   @override
   String get labelNewAlert => 'New alert';
@@ -289,6 +325,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelPostalCode => 'CAP/ZIP';
+
+  @override
+  String get labelPressButtonToObtainPosition => 'Press button to obtain the position';
 
   @override
   String get labelProvince => 'Province';
