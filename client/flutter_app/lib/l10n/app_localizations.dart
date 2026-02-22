@@ -125,6 +125,12 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get buttonClear;
 
+  /// No description provided for @buttonCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get buttonCopy;
+
   /// No description provided for @buttonDelete.
   ///
   /// In en, this message translates to:
@@ -136,6 +142,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Modify'**
   String get buttonModify;
+
+  /// No description provided for @buttonObtain.
+  ///
+  /// In en, this message translates to:
+  /// **'Obtain'**
+  String get buttonObtain;
 
   /// No description provided for @buttonPromote.
   ///
@@ -160,6 +172,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account blocked'**
   String get errorAccountBlocked;
+
+  /// No description provided for @errorAddressNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Address not found'**
+  String get errorAddressNotFound;
 
   /// No description provided for @errorBadRequest.
   ///
@@ -238,6 +256,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading error'**
   String get errorLoading;
+
+  /// No description provided for @errorLocationServicesDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are disabled, go to settings and enable gps and location services'**
+  String get errorLocationServicesDisabled;
+
+  /// No description provided for @errorLocationPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permissions are denied, go to settings to enable them'**
+  String get errorLocationPermissionDenied;
+
+  /// No description provided for @errorLocationPermissionDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'You have permanently denied location permissions, go to settings and enable them'**
+  String get errorLocationPermissionDeniedForever;
+
+  /// No description provided for @errorLocationFetchTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeout error, I fetched the last know position'**
+  String get errorLocationFetchTimeout;
 
   /// No description provided for @errorLoginLocked.
   ///
@@ -322,6 +364,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permissions not valid'**
   String get errorPermissionsNotValid;
+
+  /// No description provided for @errorPositionNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Position not available'**
+  String get errorPositionNotAvailable;
 
   /// No description provided for @errorServer.
   ///
@@ -581,6 +629,18 @@ abstract class AppLocalizations {
   /// **'Firstname'**
   String get labelFirstname;
 
+  /// No description provided for @labelGpsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS location'**
+  String get labelGpsLocation;
+
+  /// No description provided for @labelGpsLocationTest.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS location test'**
+  String get labelGpsLocationTest;
+
   /// No description provided for @labelGpsPosition.
   ///
   /// In en, this message translates to:
@@ -604,6 +664,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Language'**
   String get labelLanguage;
+
+  /// No description provided for @labelLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get labelLatitude;
+
+  /// No description provided for @labelLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get labelLongitude;
 
   /// No description provided for @labelNewAlert.
   ///
@@ -658,6 +730,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'CAP/ZIP'**
   String get labelPostalCode;
+
+  /// No description provided for @labelPressButtonToObtainPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Press button to obtain the position'**
+  String get labelPressButtonToObtainPosition;
 
   /// No description provided for @labelProvince.
   ///

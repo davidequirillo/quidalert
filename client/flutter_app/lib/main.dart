@@ -9,6 +9,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'config.dart' as config;
 import 'services/shared.dart';
 import 'services/auth.dart';
+import 'services/location.dart';
 import 'pages/startup.dart';
 import 'pages/terms/terms_info.dart';
 import 'pages/register.dart';
@@ -16,6 +17,7 @@ import 'pages/reset.dart';
 import 'pages/login.dart';
 import 'pages/two_fa.dart';
 import 'pages/home.dart';
+import 'pages/alerts/location_test.dart';
 import 'pages/alerts/new.dart';
 import 'pages/alerts/recents.dart';
 import 'pages/settings.dart';
@@ -39,6 +41,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<SharedVars>(create: (_) => SharedVars()),
         ChangeNotifierProvider<AuthClient>(create: (_) => AuthClient()),
+        ChangeNotifierProvider<LocationClient>(create: (_) => LocationClient()),
       ],
       child: const QuidalertWidget(),
     ),
@@ -81,6 +84,7 @@ class QuidalertWidget extends StatelessWidget {
         '/home': (_) => const HomePage(),
         '/alerts/new': (_) => const NewAlertPage(),
         '/alerts/recents': (_) => const RecentAlertsPage(),
+        '/alerts/location-test': (_) => const LocationTestPage(),
         '/advice': (_) => const AdvicePage(),
         '/profile/complete': (_) => const CompleteProfilePage(),
         '/accounts': (_) => const AccountsPage(),

@@ -61,17 +61,6 @@ class _HomeBodyState extends State<HomeBody> {
     return json.decode(response.body);
   }
 
-  Future<void> _testGpsPosition() async {
-    final loc = AppLocalizations.of(context)!;
-    await showDialog(
-      context: context,
-      builder: (context) => SimpleAlertDialog(
-        title: loc.labelGpsPositionTest,
-        content: "GPS test is not implemented yet.",
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final authClient = context.read<AuthClient>();
@@ -133,9 +122,13 @@ class _HomeBodyState extends State<HomeBody> {
                     ),
                     SizedBox(height: 15),
                     ElevatedButton.icon(
-                      onPressed: _testGpsPosition,
+                      onPressed: () {
+                        Navigator.of(
+                          context,
+                        ).pushNamed('/alerts/location-test');
+                      },
                       icon: Icon(Icons.gps_fixed),
-                      label: Text(loc.labelGpsPositionTest),
+                      label: Text(loc.labelGpsLocationTest),
                     ),
                     SizedBox(height: 15),
                     ElevatedButton.icon(
