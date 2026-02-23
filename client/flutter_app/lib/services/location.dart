@@ -64,9 +64,15 @@ class LocationClient extends ChangeNotifier {
   Position? _currentPosition;
   String? _currentAddress;
   bool _isFetching = false;
-  static const int distanceBoundary = 30;
-  // distanceBoundary in meters, used to optimize battery
+  DateTime? _lastGeocodingTime;
+
+  static const int distanceBoundary = 30; // meters
+  static const int timeBoundary = 60; // seconds
+  // distanceBoundary and timeBoundary, used to optimize battery
   // consumption by not updating address if user hasn't moved significantly
+  // or if enough time hasn't passed
+
+  static const int maxTimeout = 15; // seconds
 
   String? get currentAddress => _currentAddress;
 
@@ -109,22 +115,31 @@ class LocationClient extends ChangeNotifier {
           accuracy: LocationAccuracy.high,
           distanceFilter:
               distanceFilterValue, // we update gps position only if moved significantly (to save battery)
-          timeLimit: const Duration(seconds: 15), // timeout after 15 seconds
+          timeLimit: const Duration(
+            seconds: LocationClient.maxTimeout,
+          ), // timeout after x seconds
         ),
       );
       // We optimize battery consumption
       // by not updating the relative address if the user
-      // hasn't moved significantly
+      // hasn't moved significantly or enough time hasn't passed since the last geocoding
       if (_currentPosition != null) {
+        bool isTimePassed =
+            (_lastGeocodingTime == null) ||
+            (DateTime.now().difference(_lastGeocodingTime!).inSeconds >
+                LocationClient.timeBoundary);
         double gap = Geolocator.distanceBetween(
           _currentPosition!.latitude,
           _currentPosition!.longitude,
           returnedPosition.latitude,
           returnedPosition.longitude,
         );
-        if (gap < LocationClient.distanceBoundary && !forceUpdate) {
+        if (((gap < LocationClient.distanceBoundary) || (!isTimePassed)) &&
+            (!forceUpdate)) {
           if (kDebugMode) {
-            debugPrint("Minimum movement ($gap m): not updating address");
+            debugPrint(
+              "Minimum movement ($gap m) or time not passed: not updating address",
+            );
           }
           _isFetching = false;
           notifyListeners();
@@ -132,10 +147,12 @@ class LocationClient extends ChangeNotifier {
         }
       }
       _currentPosition = returnedPosition;
+      _lastGeocodingTime = DateTime.now();
       _currentAddress = await _translateToAddress(_currentPosition!);
       if (_currentAddress == null || _currentAddress!.isEmpty) {
         throw LocationClientAddressNotFoundException();
       }
+      return;
     } on LocationClientServiceDisabledException catch (_) {
       _currentPosition = null;
       _currentAddress = null;
