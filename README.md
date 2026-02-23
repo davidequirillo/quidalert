@@ -27,7 +27,17 @@ Chief users will connect to the server using the desktop version of the client a
 
 Idea of a server-side architecture: 1 server (reverse proxy, ex. "nginx") and 3 backends (api backend, website backend, streaming signaling server).  
 The reverse proxy will be seen by the client as the only server to connect to.
-This architecture can obviously be composed of many docker (or similar) containers working in clusters: for example, 1 reverse proxy (load balancer), 10 FastApi, 3 dbms (Postgres), 3 dbms (Redis), 1 website and 1 streaming server. 
+This architecture can obviously be composed of many docker (or similar) containers working in clusters: for example, 1 reverse proxy (load balancer), 10 FastApi, 3 dbms (Postgres), 3 dbms (Redis), 1 website and 1 streaming server.
+
+## 🌍 Notes about GPS location
+
+When the user does a "gps location test" (pressing the relative button), or when he sends a help (alert) request, the client app will access the device GPS coordinates, instantly, using the relative platform calls, and after that it will translate the coordinates to an address, using default platform free services. In case of alerts, the position will be sent to the server.
+
+To receive alerts from others nearby, the app needs to update the user position locally (only gps coordinates in this case, without address translation) and send it to the server, approximately every 30 minutes, even when the app is closed. This background process will start automatically once the user does a successful login, and will be immediately stopped if he decides to logout from the server.
+
+Note: to maximize the device battery efficiency and to avoid server overloading, the app only requests a position update when a significant change in location is detected and enough time is passed.
+
+Note: the server will store, for each user, only the last received gps position, not the complete history.
 
 ## 🔌 Installation
 
