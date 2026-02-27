@@ -120,6 +120,11 @@ class LocationClient extends ChangeNotifier {
           ), // timeout after x seconds
         ),
       );
+      if (kDebugMode) {
+        debugPrint(
+          "Fetched position: ${returnedPosition.latitude}, ${returnedPosition.longitude}",
+        );
+      }
       // We optimize battery consumption
       // by not updating the relative address if the user
       // hasn't moved significantly or enough time hasn't passed since the last geocoding
@@ -128,17 +133,27 @@ class LocationClient extends ChangeNotifier {
             (_lastGeocodingTime == null) ||
             (DateTime.now().difference(_lastGeocodingTime!).inSeconds >
                 LocationClient.timeBoundary);
+        if (kDebugMode) {
+          debugPrint(
+            "Time has passed? $isTimePassed (last geocoding: $_lastGeocodingTime)",
+          );
+        }
         double gap = Geolocator.distanceBetween(
           _currentPosition!.latitude,
           _currentPosition!.longitude,
           returnedPosition.latitude,
           returnedPosition.longitude,
         );
+        if (kDebugMode) {
+          debugPrint(
+            "Distance from last position: $gap m (threshold: ${LocationClient.distanceBoundary} m)",
+          );
+        }
         if (((gap < LocationClient.distanceBoundary) || (!isTimePassed)) &&
             (!forceUpdate)) {
           if (kDebugMode) {
             debugPrint(
-              "Minimum movement ($gap m) or time not passed: not updating address",
+              "Minimum movement or time not passed: not updating address",
             );
           }
           _isFetching = false;
@@ -150,6 +165,9 @@ class LocationClient extends ChangeNotifier {
       _lastGeocodingTime = DateTime.now();
       _currentAddress = await _translateToAddress(_currentPosition!);
       if (_currentAddress == null || _currentAddress!.isEmpty) {
+        if (kDebugMode) {
+          debugPrint("Address is <empty> for the current position");
+        }
         throw LocationClientAddressNotFoundException();
       }
       return;
@@ -196,8 +214,17 @@ class LocationClient extends ChangeNotifier {
       }
       throw LocationClientTimeoutException();
     } on NoResultFoundException catch (_) {
+      if (kDebugMode) {
+        debugPrint("No address found for the current position");
+      }
+      _currentAddress = null;
       throw LocationClientAddressNotFoundException();
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error fetching location: $e");
+      }
+      _currentPosition = null;
+      _currentAddress = null;
       throw LocationClientFetchPositionException(e.toString());
     } finally {
       _isFetching = false;
@@ -206,13 +233,28 @@ class LocationClient extends ChangeNotifier {
   }
 
   Future<String?> _translateToAddress(Position pos) async {
-    List<Placemark> p = await placemarkFromCoordinates(
-      pos.latitude,
-      pos.longitude,
-    );
-    if (p.isNotEmpty) {
-      return "${p[0].street}, ${p[0].locality}, ${p[0].administrativeArea}, ${p[0].country}";
-    } else {
+    if (kDebugMode) {
+      debugPrint(
+        "Translating position to address: ${pos.latitude}, ${pos.longitude}",
+      );
+    }
+    try {
+      List<Placemark> p = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+      if (p.isNotEmpty) {
+        final addr = p.first;
+        return "${addr.street}, ${addr.locality}, ${addr.administrativeArea}, ${addr.country}";
+      } else {
+        return null;
+      }
+    } on NoResultFoundException catch (_) {
+      rethrow;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Unknown error translating position to address: $e");
+      }
       return null;
     }
   }

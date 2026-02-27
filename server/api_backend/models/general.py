@@ -320,16 +320,61 @@ class ChangeStatusSchema(BaseModel):
         if not s in ["ok", "unreliable", "blocked"]:
             raise ValueError("Wrong status")
         return s
-    
-class Alert(SQLModel, table=True):
-    __tablename__: str = "alerts"
-    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+
+class AlertIn(SQLModel, table=False):
     description: str = Field(default="", nullable=False, min_length=0, max_length=256)
-    severity: Optional[int] = Field(default=1, ge=1, le=5, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False, index=True)
+    latitude: float = Field(nullable=False)
+    longitude: float = Field(nullable=False)
+    address: Optional[str] = Field(default=None, nullable=True, min_length=0, max_length=256)
+
+    @field_validator("latitude")
+    @classmethod
+    def validate_latitude(cls, v):
+        if v is None:
+            return v
+        if not (-90 <= v <= 90):
+            raise ValueError("Latitude must be between -90 and 90")
+        return v
+
+    @field_validator("longitude")
+    @classmethod
+    def validate_longitude(cls, v):
+        if v is None:
+            return v
+        if not (-180 <= v <= 180):
+            raise ValueError("Longitude must be between -180 and 180")
+        return v
+    
+    @model_validator(mode="after")
+    def check_both_or_none(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Latitude and Longitude must have either a value or be None")
+        return self
+    
+class AlertOut(AlertIn, table=False):
+    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
+    severity: Optional[int] = Field(default=3, ge=1, le=5, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
+
+class Alert(AlertOut, table=True):
+    __tablename__: str = "alerts"
+    user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+
+    __table_args__ = (Index("idx_alerts_created_at_lat_long", "created_at", "latitude", "longitude"),)
 
 class UserOutWithAlerts(BaseModel):
     user: UserOut
     alerts: List[Alert]
+
+class AlertedUser(SQLModel, table=True):
+    __tablename__: str = "alerted_users"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    alert_id: int = Field(
+        foreign_key="alerts.id", 
+        ondelete="CASCADE"
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id", 
+        ondelete="CASCADE"
+    )

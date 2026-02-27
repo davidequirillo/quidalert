@@ -24,6 +24,8 @@ from jwt.exceptions import (
     InvalidSubjectError, InvalidIssuedAtError,
     InvalidJTIError
 )
+from haversine import haversine, Unit
+from rapidfuzz import fuzz
 from core.settings import settings
 from core.logging import setup_logging
 from core.security_events import (
@@ -38,11 +40,12 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (Alert, UserIn, User, UserOut, UserOutWithAlerts, UserOutPaginated, UserLanguage, 
+from models.general import (UserIn, User, UserOut, UserOutWithAlerts, UserOutPaginated, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper,
     WhiteListEntry, EmailListDict,
-    UserInCompleteProfile, PromotionSchema
+    UserInCompleteProfile, PromotionSchema,
+    AlertIn, AlertOut, Alert
     )
 from services.security import (
     LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
@@ -69,6 +72,7 @@ from core.exceptions import (
 from services.fileutils import (
     MAX_FILE_SIZE, MAX_SMALL_FILE_SIZE, 
     )
+from services.tasks import notify_nearby_users
 
 def init_settings():
     setup_logging()
@@ -986,3 +990,44 @@ def promote_users_by_emails(
     updated_count = result.rowcount
     db_session.commit()
     return {"message": "Operation completed", "updated_count": updated_count}
+
+@app.post("/api/alert")
+def create_alert(alert_in: AlertIn,
+            background_tasks: BackgroundTasks,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_reliable):
+        raise forbidden_exception()
+    now = now_tz_naive()
+    lat_range = 0.1 # 11 km
+    long_range = 0.1 # 11 km (approx, at the equator), less at higher latitudes    
+    lat_min, lat_max = alert_in.latitude - lat_range, alert_in.latitude + lat_range
+    long_min, long_max = alert_in.longitude - long_range, alert_in.longitude + long_range
+    recent_alerts = db_session.exec(
+        select(Alert).where(
+            Alert.created_at > (now - timedelta(hours=1)),
+            Alert.latitude > lat_min,
+            Alert.latitude < lat_max,
+            Alert.longitude > long_min,
+            Alert.longitude < long_max
+        )
+    ).all()
+    for rec_alert in recent_alerts:
+        dist = haversine((alert_in.latitude, alert_in.longitude), (rec_alert.latitude, rec_alert.longitude), unit=Unit.KILOMETERS)
+        d1 = alert_in.description.lower().strip()
+        d2 = rec_alert.description.lower().strip()
+        if dist < 1.0: # 1 km
+            similarity = fuzz.token_set_ratio(d1, d2)
+            if similarity >= 70: # similarity threshold (70 means 70%)
+                return {"message": "Similar alert already exists in the area", "similarity": similarity}
+    alert = Alert(
+        latitude=alert_in.latitude,
+        longitude=alert_in.longitude,
+        user_id = current_user.id,
+        description = alert_in.description,
+    )
+    db_session.add(alert)
+    db_session.commit()
+    db_session.refresh(alert)
+    background_tasks.add_task(notify_nearby_users, alert.id, alert.latitude, alert.longitude)
+    return {"message": "Alert created"}

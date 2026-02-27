@@ -186,6 +186,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelAllMasculinePlural => 'All';
 
   @override
+  String get labelAreYouSure => 'Are you sure?';
+
+  @override
   String get labelAuthorizedBy => 'Authorized by';
 
   @override
@@ -226,6 +229,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelDatetimesAreInUTC => 'Datetimes are in UTC format';
+
+  @override
+  String get labelDescription => 'Description';
 
   @override
   String get labelDetails => 'Details';
@@ -370,6 +376,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelStreetAndNumber => 'Street and civic number';
+
+  @override
+  String get labelSubmittingAlert => 'Submitting alert';
 
   @override
   String get labelSurname => 'Surname';

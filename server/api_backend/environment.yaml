@@ -40,6 +40,7 @@ dependencies:
       - fastapi==0.124.4
       - greenlet==3.3.0
       - h11==0.16.0
+      - haversine==2.9.0
       - idna==3.11
       - jinja2==3.1.6
       - jmespath==1.1.0
@@ -54,6 +55,7 @@ dependencies:
       - python-dateutil==2.9.0.post0
       - python-dotenv==1.2.1
       - python-multipart==0.0.21
+      - rapidfuzz==3.14.3
       - s3transfer==0.16.0
       - six==1.17.0
       - sqlalchemy==2.0.45

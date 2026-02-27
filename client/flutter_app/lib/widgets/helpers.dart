@@ -3,6 +3,7 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'package:flutter/material.dart';
+import 'package:quidalert_flutter/l10n/app_localizations.dart';
 
 // USEFUL WIDGETS
 
@@ -68,6 +69,39 @@ class SimpleAlertDialog extends StatelessWidget {
   }
 }
 
+class TwoWayAlertDialog extends StatelessWidget {
+  final String title;
+  final String content;
+
+  const TwoWayAlertDialog({
+    super.key,
+    required this.title,
+    required this.content,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      content: SingleChildScrollView(child: Text(content)),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(true);
+          },
+          child: const Text("OK"),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(false);
+          },
+          child: Text(AppLocalizations.of(context)!.buttonCancel),
+        ),
+      ],
+    );
+  }
+}
+
 // USEFUL FUNCTIONS
 
 void goToLoginPage(BuildContext context) {
@@ -78,6 +112,10 @@ void goToLoginPagePostFrameCallback(BuildContext context) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   });
+}
+
+void goToHomePage(BuildContext context) {
+  Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
 }
 
 void goToHomePagePostFrameCallback(BuildContext context) {

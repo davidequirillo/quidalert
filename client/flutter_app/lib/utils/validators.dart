@@ -25,7 +25,7 @@ String? validateDescription(
   BuildContext context,
   String? value, {
   int min = 0,
-  int max = 256,
+  int max = 512,
 }) {
   final l10n = AppLocalizations.of(context)!;
   if (value == null || value.trim().isEmpty) {

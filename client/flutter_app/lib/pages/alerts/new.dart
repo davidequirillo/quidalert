@@ -2,8 +2,14 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/services/location.dart';
+import 'package:quidalert_flutter/utils/validators.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 
 class NewAlertPage extends StatelessWidget {
@@ -15,7 +21,250 @@ class NewAlertPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelNewAlert, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: const Center(child: Text('new alert blah blah blah')),
+      body: const NewAlertBody(),
+    );
+  }
+}
+
+class NewAlertBody extends StatefulWidget {
+  const NewAlertBody({super.key});
+
+  @override
+  State<NewAlertBody> createState() => _NewAlertBodyState();
+}
+
+class _NewAlertBodyState extends State<NewAlertBody> {
+  final _formKey = GlobalKey<FormState>();
+  final _description = TextEditingController();
+  bool alertRequestConfirmed = false;
+  bool fetchLocationError = false;
+
+  @override
+  void dispose() {
+    _description.dispose();
+    super.dispose();
+  }
+
+  Future<void> submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    fetchLocationError = false;
+    final loc = AppLocalizations.of(context)!;
+    final locationClient = context.read<LocationClient>();
+    final description = _description.text.trim();
+    final bool result =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) => TwoWayAlertDialog(
+            title: loc.labelSubmittingAlert,
+            content: loc.labelAreYouSure,
+          ),
+        ) ??
+        false;
+    setState(() => alertRequestConfirmed = result);
+    if (result == false) {
+      return;
+    }
+    await _fetchLocation();
+    if (fetchLocationError == true) {
+      setState(() => alertRequestConfirmed = false);
+      return;
+    }
+    final Map<String, double>? pos = locationClient.currentPosition;
+    if (pos == null) {
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (context) => SimpleAlertDialog(
+            title: loc.errorError,
+            content: loc.errorPositionNotAvailable,
+          ),
+        );
+      }
+      setState(() => alertRequestConfirmed = false);
+      return;
+    }
+    final double lat = pos['lat']!;
+    final double long = pos['long']!;
+    final Map<String, dynamic> fields = {
+      "description": description,
+      "latitude": lat,
+      "longitude": long,
+      "address": locationClient.currentAddress ?? "",
+    };
+    if (mounted) {
+      showLoadingDialog(context, loc.labelWaitPlease);
+      _sendAlert(fields).whenComplete(() {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
+    }
+  }
+
+  Future<void> _fetchLocation() async {
+    String retMessage = "";
+    String retTitle = "";
+    bool gotoSettings = false;
+    final loc = AppLocalizations.of(context)!;
+    final locationClient = context.read<LocationClient>();
+    try {
+      await locationClient.fetchLocation();
+    } on LocationClientServiceDisabledException {
+      retMessage = loc.errorLocationServicesDisabled;
+      retTitle = loc.errorError;
+      gotoSettings = true;
+    } on LocationClientPermissionDeniedException {
+      retMessage = loc.errorLocationPermissionDenied;
+      retTitle = loc.errorError;
+      gotoSettings = true;
+    } on LocationClientPermissionsForeverException {
+      retMessage = loc.errorLocationPermissionDeniedForever;
+      retTitle = loc.errorError;
+      gotoSettings = true;
+    } on LocationClientTimeoutException {
+      retMessage = loc.errorLocationFetchTimeout;
+      retTitle = loc.errorError;
+    } on LocationClientAddressNotFoundException {
+      // This error is not critical, we can proceed with alert creation without address
+      retMessage = "";
+      retTitle = "";
+    } on LocationClientFetchPositionException {
+      retMessage = loc.errorPositionNotAvailable;
+      retTitle = loc.errorError;
+    } catch (e) {
+      retMessage = loc.errorError;
+      retTitle = loc.errorError;
+    } finally {
+      if ((retMessage.isNotEmpty) && (mounted)) {
+        fetchLocationError = true;
+        await showDialog(
+          context: context,
+          builder: (context) =>
+              SimpleAlertDialog(title: retTitle, content: retMessage),
+        );
+        if (gotoSettings) {
+          await locationClient.openAppSettings();
+        }
+      }
+    }
+  }
+
+  Future<void> _sendAlert(Map<String, dynamic> data) async {
+    AuthClient authClient = context.read<AuthClient>();
+    final loc = AppLocalizations.of(context)!;
+    String retTitle = "";
+    String retMessage = "";
+    bool error = false;
+    try {
+      final response = await authClient.doProtectedApiRequest(
+        'POST',
+        '/alert',
+        body: data,
+      );
+      final respObj = json.decode(response.body);
+      retTitle = loc.successGeneric;
+      retMessage = respObj['message'] ?? "Alert created successfully";
+    } on ForbiddenRequestException catch (_) {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorPermissionsNotValid;
+      error = true;
+    } on BadRequestException catch (_) {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorBadRequest;
+      error = true;
+    } on GenericNotAuthorizedException catch (_) {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorNotAuthorizedDoLogin;
+      error = true;
+      if (mounted) {
+        goToLoginPagePostFrameCallback(context);
+      }
+    } on NetworkException catch (_) {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorNetwork;
+      error = true;
+    } catch (e) {
+      debugPrint('Error: cannot receive or read response');
+      retTitle = loc.errorGeneric;
+      retMessage = e.toString();
+      error = true;
+    } finally {
+      if (mounted) {
+        await showDialog(
+          context: context,
+          builder: (_) =>
+              SimpleAlertDialog(title: retTitle, content: retMessage),
+        );
+        if (error == false) {
+          if (mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              goToHomePage(context);
+              Navigator.pushNamed(context, "/alerts/recents");
+            });
+          }
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final locationClient = context.watch<LocationClient>();
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.disabled,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TextFormField(
+                  controller: _description,
+                  decoration: InputDecoration(
+                    labelText: loc.labelDescription,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLength: 256,
+                  minLines: 4,
+                  maxLines: 4,
+                  validator: (value) {
+                    return validateDescription(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submit();
+                      },
+                      child: Text("OK"),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonBack),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (alertRequestConfirmed && locationClient.isFetching) ...[
+                  Text(loc.labelWaitPlease),
+                  const SizedBox(height: 5),
+                  const CircularProgressIndicator(),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
