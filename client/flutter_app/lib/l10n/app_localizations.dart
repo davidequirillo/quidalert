@@ -449,6 +449,12 @@ abstract class AppLocalizations {
   /// **'All'**
   String get labelAllMasculinePlural;
 
+  /// No description provided for @labelAreYouSure.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure?'**
+  String get labelAreYouSure;
+
   /// No description provided for @labelAuthorizedBy.
   ///
   /// In en, this message translates to:
@@ -532,6 +538,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Datetimes are in UTC format'**
   String get labelDatetimesAreInUTC;
+
+  /// No description provided for @labelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get labelDescription;
 
   /// No description provided for @labelDetails.
   ///
@@ -820,6 +832,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Street and civic number'**
   String get labelStreetAndNumber;
+
+  /// No description provided for @labelSubmittingAlert.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting alert'**
+  String get labelSubmittingAlert;
 
   /// No description provided for @labelSurname.
   ///
