@@ -33,7 +33,7 @@ enum UserRole {
   firefighter,
   wateroperator,
   usar,
-  alpinrescuer,
+  alpinerescuer,
   medic,
   military,
   policeman,

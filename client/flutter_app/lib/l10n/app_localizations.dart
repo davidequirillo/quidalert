@@ -179,6 +179,12 @@ abstract class AppLocalizations {
   /// **'Address not found'**
   String get errorAddressNotFound;
 
+  /// No description provided for @errorAlertSimilarInZone.
+  ///
+  /// In en, this message translates to:
+  /// **'A similar alert already exists in this zone'**
+  String get errorAlertSimilarInZone;
+
   /// No description provided for @errorBadRequest.
   ///
   /// In en, this message translates to:
@@ -322,6 +328,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not authorized, retry login'**
   String get errorNotAuthorizedDoLogin;
+
+  /// No description provided for @errorOpDeniedYouAreNotReliable.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation denied: you have been judged as not realiable'**
+  String get errorOpDeniedYouAreNotReliable;
 
   /// No description provided for @errorRegNotAuthorized.
   ///
@@ -785,6 +797,12 @@ abstract class AppLocalizations {
   /// **'Reliability'**
   String get labelReliability;
 
+  /// No description provided for @labelReliabilityScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability score'**
+  String get labelReliabilityScore;
+
   /// No description provided for @labelRole.
   ///
   /// In en, this message translates to:
@@ -940,6 +958,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration white list'**
   String get menuWhiteList;
+
+  /// No description provided for @successEntryAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry added'**
+  String get successEntryAdded;
 
   /// No description provided for @successLogin.
   ///

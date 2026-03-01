@@ -51,6 +51,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorAddressNotFound => 'Indirizzo non trovato';
 
   @override
+  String get errorAlertSimilarInZone => 'Un\'allerta simile esiste già in questa zona';
+
+  @override
   String get errorBadRequest => 'Richiesta non accettata';
 
   @override
@@ -121,6 +124,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorNotAuthorizedDoLogin => 'Non autorizzato, ritenta il login';
+
+  @override
+  String get errorOpDeniedYouAreNotReliable => 'Operazione negata: sei stato giudicato non affidabile';
 
   @override
   String get errorRegNotAuthorized => 'Registrazione non autorizzata: chiedere all\'autorità territoriale competente';
@@ -354,6 +360,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelReliability => 'Affidabilità';
 
   @override
+  String get labelReliabilityScore => 'Punteggio di affidabilità';
+
+  @override
   String get labelRole => 'Ruolo';
 
   @override
@@ -430,6 +439,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'White list per registrazione';
+
+  @override
+  String get successEntryAdded => 'Voce aggiunta';
 
   @override
   String get successLogin => 'Login effettuato con successo';

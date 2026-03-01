@@ -164,9 +164,12 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       final respObj = json.decode(response.body);
       retTitle = loc.successGeneric;
       retMessage = respObj['message'] ?? "Alert created successfully";
+      if (retMessage.contains("Similar alert already exists")) {
+        retMessage = loc.errorAlertSimilarInZone;
+      }
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorGeneric;
-      retMessage = loc.errorPermissionsNotValid;
+      retMessage = loc.errorOpDeniedYouAreNotReliable;
       error = true;
     } on BadRequestException catch (_) {
       retTitle = loc.errorGeneric;

@@ -21,6 +21,7 @@ DB_POOL_RECYCLE = 1800
 
 # Redis DBMS
 REDIS_URL="redis://localhost:6379/0"
+REDIS_MAX_CONNECTIONS = 200
 
 # Mail sender configuration
 SMTP_HOST = "mailserver" # to send activation mail messages to clients

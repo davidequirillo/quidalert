@@ -51,6 +51,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorAddressNotFound => 'Address not found';
 
   @override
+  String get errorAlertSimilarInZone => 'A similar alert already exists in this zone';
+
+  @override
   String get errorBadRequest => 'Bad request';
 
   @override
@@ -121,6 +124,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorNotAuthorizedDoLogin => 'Not authorized, retry login';
+
+  @override
+  String get errorOpDeniedYouAreNotReliable => 'Operation denied: you have been judged as not realiable';
 
   @override
   String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
@@ -354,6 +360,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelReliability => 'Reliability';
 
   @override
+  String get labelReliabilityScore => 'Reliability score';
+
+  @override
   String get labelRole => 'Role';
 
   @override
@@ -430,6 +439,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'Registration white list';
+
+  @override
+  String get successEntryAdded => 'Entry added';
 
   @override
   String get successLogin => 'Login successful';
