@@ -7,18 +7,18 @@ from core.settings import settings
 
 class DefaultExtrasFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
-        for k in ("client_ip", "request_id", "user_agent", "email_hash", "user_id"):
+        for k in ("client_ip", "request_id", "user_agent", "user_id"):
             if not hasattr(record, k):
                 setattr(record, k, "-")
         return True
-
+    
 def setup_logging():
     handler = logging.StreamHandler()
     handler.addFilter(DefaultExtrasFilter())
 
     formatter = logging.Formatter(
         fmt="%(asctime)s %(levelname)s %(name)s "
-            "ip=%(client_ip)s req_id=%(request_id)s ua=%(user_agent)s email_hash=%(email_hash)s user_id=%(user_id)s %(message)s"
+            "ip=%(client_ip)s req_id=%(request_id)s ua=%(user_agent)s user_id=%(user_id)s %(message)s"
     )
     handler.setFormatter(formatter)
 
@@ -38,6 +38,9 @@ def setup_logging():
 
 def get_security_logger():
     return logging.getLogger("security")
+
+def get_tasks_logger():
+    return logging.getLogger("tasks")
 
 sql_logger = logging.getLogger('sqlalchemy.engine')
 sql_logger.propagate = False # to avoid duplicates log records

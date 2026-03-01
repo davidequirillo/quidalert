@@ -205,6 +205,9 @@ class _HomeBodyState extends State<HomeBody> {
               Text("${loc.labelType}: $type"),
               Text("${loc.labelRole}: ${user['role']}"),
               Text("Status: $status"),
+              Text(
+                "${loc.labelReliabilityScore}: ${user['reliability_score']}",
+              ),
             ],
           ),
           isThreeLine: false,

@@ -102,7 +102,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         retMessage = loc.errorEmailAlreadyExist;
       } else {
         retTitle = loc.successGeneric;
-        retMessage = loc.successGeneric;
+        retMessage = loc.successEntryAdded;
       }
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;

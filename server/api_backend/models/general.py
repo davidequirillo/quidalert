@@ -93,7 +93,7 @@ class UserOut(UserBase, table=False):
     is_chief: bool = Field(default=False, nullable=False)
     role: str = Field(default=UserRole.citizen, nullable=False)
     is_reliable: bool = Field(default=True, nullable=False)
-    reliability_score: int = Field(default=5, ge=0, le=5, nullable=False)
+    reliability_score: int = Field(default=100, ge=0, le=100, nullable=False)
     is_blocked: bool = Field(default=False, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
@@ -152,6 +152,7 @@ class UserOutSmall(BaseModel):
     role: str
     is_reliable: bool
     is_blocked: bool
+    reliability_score: int
 
 class UserOutPaginated(BaseModel):
     users: List[UserOutSmall]
@@ -160,35 +161,9 @@ class UserOutPaginated(BaseModel):
 class User(UserOut, table=True):
     __tablename__: str = 'users'
     password_hash: str = Field(nullable=False)
-    gps_lat: float | None = Field(default=None, nullable=True)
-    gps_lon: float | None = Field(default=None, nullable=True)
     activation_code: Optional[str] = Field(default=None)    
     reset_code_hash: Optional[str] = Field(default=None)
     login_code_hash: Optional[str] = Field(default=None)
-    
-    @field_validator("gps_lat")
-    @classmethod
-    def validate_gps_lat(cls, v):
-        if v is None:
-            return v
-        if not (-90 <= v <= 90):
-            raise ValueError("Latitude must be between -90 and 90")
-        return v
-
-    @field_validator("gps_lon")
-    @classmethod
-    def validate_gps_lon(cls, v):
-        if v is None:
-            return v
-        if not (-180 <= v <= 180):
-            raise ValueError("Longitude must be between -180 and 180")
-        return v
-    
-    @model_validator(mode="after")
-    def check_both_or_none(self):
-        if (self.gps_lat is None) != (self.gps_lon is None):
-            raise ValueError("Latitude and Longitude must have either a value or be None")
-        return self
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -353,13 +328,18 @@ class AlertIn(SQLModel, table=False):
     
 class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    severity: Optional[int] = Field(default=3, ge=1, le=5, nullable=False)
+    radius: float = Field(default=1.0, nullable=False, ge=0, le=10) # in kilometers
+    severity: int = Field(default=100, ge=0, le=100, nullable=False)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
 class Alert(AlertOut, table=True):
     __tablename__: str = "alerts"
-    user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id",
+        ondelete="CASCADE", 
+        nullable=False, 
+        index=True)
 
     __table_args__ = (Index("idx_alerts_created_at_lat_long", "created_at", "latitude", "longitude"),)
 
@@ -372,9 +352,17 @@ class AlertedUser(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     alert_id: int = Field(
         foreign_key="alerts.id", 
-        ondelete="CASCADE"
+        ondelete="CASCADE",
+        nullable=False,
+        index=True
     )
     user_id: uuid.UUID = Field(
         foreign_key="users.id", 
-        ondelete="CASCADE"
+        ondelete="CASCADE",
+        nullable=False, 
+        index=True
     )
+    # For all users: -1 = downvote, 0 = no vote, +1 = upvote
+    # Chief can do a closing vote: his final vote can be -15, 0, +15;
+    vote: int = Field(default=0, ge=-1, le=+1, nullable=False)
+    closing_vote: int = Field(default=0, ge=-15, le=+15, nullable=False)

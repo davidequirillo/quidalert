@@ -25,7 +25,7 @@ def get_client_ua() -> str | None:
     except LookupError:
         return None
     
-def get_base_extra(user_id: str) -> dict:
+def get_request_info(user_id: str) -> dict:
     return {
         "client_ip": get_client_ip(),
         "request_id": get_request_id(),
@@ -36,19 +36,19 @@ def get_base_extra(user_id: str) -> dict:
 def log_deleted_user_to_renew_registration(user_id: str):
     logger.info(
         "deleted_user_to_renew_registration",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_password_reset_code_generation(user_id: str):
     logger.warning(
         "password_reset_code_generation",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_password_reset_successful(user_id: str):
     logger.info(
         "password_reset_confirm_successful",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_password_reset_failed(user_id: str, reason: str, attempts: int | None = None):
@@ -67,29 +67,29 @@ def log_password_reset_failed(user_id: str, reason: str, attempts: int | None = 
 def log_password_reset_locked(user_id: str):
     logger.warning(
         "password_reset_locked",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_login_successful(user_id: str):
     logger.info(
         "login_successful",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_login_code_generation(user_id: str):
     logger.info(
         "login_code_generation",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_login_locked(user_id: str):
     logger.warning(
         "login_locked",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )
 
 def log_login_token_generation(user_id: str):
     logger.info(
         "login_token_generation",
-        extra=get_base_extra(user_id)
+        extra=get_request_info(user_id)
     )

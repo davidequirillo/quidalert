@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     redis_url: str = config.REDIS_URL
     redis_user: str = "" # from environment, critical for security
     redis_pass: str = "" # same as above
+    redis_max_connections: int = config.REDIS_MAX_CONNECTIONS
     # Mail sender conf
     smtp_user: str = "" # from environment, critical for security
     smtp_pass: str = "" # same as above
