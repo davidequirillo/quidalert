@@ -44,7 +44,7 @@ from core.security_events import (
 import services.localization as i18n
 from models.general import (UserIn, User, UserOut, UserOutSmall, UserOutWithAlerts, UserOutPaginated, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
-    RefreshToken, LoginSchema, RefreshTokenWrapper,
+    RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
     WhiteListEntry, EmailListDict,
     UserInCompleteProfile, PromotionSchema,
     AlertIn, AlertOut, Alert
@@ -69,7 +69,8 @@ from core.exceptions import (
     two_factor_not_valid_exception, two_factor_required_response,
     forbidden_exception,
     invalid_file_type_exception, bad_file_upload_exception,
-    unsafe_file_exception, file_too_large_exception
+    unsafe_file_exception, file_too_large_exception,
+    invalid_request_exception,
     )
 from services.fileutils import (
     MAX_FILE_SIZE, MAX_SMALL_FILE_SIZE, 
@@ -345,6 +346,8 @@ def login(data: LoginSchema,
         raise forbidden_exception()
     q = select(RefreshToken).where(RefreshToken.user_id == user.id).order_by(desc(RefreshToken.updated_at))
     active_tokens = db_session.exec(q).all()
+    # IMPORTANT: at the moment MAX_ACTIVE_REFRESH_TOKENS is 1 
+    # (we allow only 1 device, for simplicity)
     if len(active_tokens) >= MAX_ACTIVE_REFRESH_TOKENS:
         oldest_token = active_tokens[-1]
         db_session.delete(oldest_token)
@@ -379,6 +382,26 @@ def login(data: LoginSchema,
     if can_send:
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
     return {"access_token": atoken, "refresh_token": rtoken, "gps_token": gps_token, "login_token": new_login_token, "token_type": "bearer"}
+
+@app.post("/api/auth/register-device")
+def register_device_for_push_notifications(
+    data: FcmTokenWrapper,
+    current_user: User = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session)
+):
+    fcm_token = data.fcm_token
+    if not fcm_token:
+        raise invalid_request_exception("FCM token is required")
+    q = select(RefreshToken).where(RefreshToken.user_id == current_user.id)
+    results = db_session.exec(q).all()
+    if not results:
+        raise token_not_valid_exception()
+    rtoken = results[0] # at the moment we keep only one active refresh token per user (one device)
+    rtoken.fcm_token = fcm_token
+    rtoken.fcm_token_updated_at = now_tz_naive()
+    db_session.add(rtoken)
+    db_session.commit()
+    return {"message": "Device registered for push notifications"}
 
 @app.post("/api/register")
 def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
@@ -950,13 +973,13 @@ async def promote_users(
         if promotion_schema.type:
             statement = statement.returning(User.id, User.is_chief) # type: ignore
             result = db_session.exec(statement)
-            updated_rows = result.all() 
-            updated_count = len(updated_rows)       
+            critical_updated_rows = result.all() 
+            updated_count = len(critical_updated_rows)       
         else:
             result = db_session.exec(statement)
-            updated_rows = None # we don't need updated rows if type is not changed
+            critical_updated_rows = None # we don't need them if type is not changed
             updated_count = result.rowcount
-        return updated_rows, {"message": "Operation completed", "updated_count": updated_count}
+        return critical_updated_rows, {"message": "Operation completed", "updated_count": updated_count}
     if current_user.is_admin and promotion_schema.type:
         # we use a redis lock to avoid concurrent updates 
         # to user roles, that could cause inconsistencies 
@@ -968,10 +991,10 @@ async def promote_users(
             blocking_timeout=60 # max time to wait for the lock
             ):
             try: 
-                upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
-                if upd_rows:
+                crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
+                if crit_upd_rows:
                     async with redis_client.pipeline(transaction=True) as pipe:
-                        for user_id, chief_value in upd_rows:
+                        for user_id, chief_value in crit_upd_rows:
                             if chief_value == True: # we add the user to the chiefs set in redis, to have a fast access to active chiefs list, for geoposition updates and alerts
                                 pipe.sadd("active_chiefs", str(user_id))
                             else:
@@ -989,7 +1012,7 @@ async def promote_users(
         return msg_obj
     else:
         try:
-            upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
+            crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
             await run_in_threadpool(db_session.commit)
         except Exception as e:
             print(f"Error: {e}") # todo: proper logging
@@ -1054,13 +1077,13 @@ async def promote_users_by_emails(
         if update_fields.type:
             statement = statement.returning(User.id, User.is_chief) # type: ignore
             result = db_session.exec(statement)
-            updated_rows = result.all() 
-            updated_count = len(updated_rows)       
+            critical_updated_rows = result.all() 
+            updated_count = len(critical_updated_rows)       
         else:
             result = db_session.exec(statement)
-            updated_rows = None # we don't need updated rows if type is not changed
+            critical_updated_rows = None # we don't need them if type is not changed
             updated_count = result.rowcount
-        return updated_rows, {"message": "Operation completed", "updated_count": updated_count}
+        return critical_updated_rows, {"message": "Operation completed", "updated_count": updated_count}
     if current_user.is_admin and update_fields.type:
         # we use a redis lock to avoid concurrent updates 
         # to user roles, that could cause inconsistencies 
@@ -1072,10 +1095,10 @@ async def promote_users_by_emails(
             blocking_timeout=60 # max time to wait for the lock
             ):
             try: 
-                upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
-                if upd_rows:
+                crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
+                if crit_upd_rows:
                     async with redis_client.pipeline(transaction=True) as pipe:
-                        for user_id, chief_value in upd_rows:
+                        for user_id, chief_value in crit_upd_rows:
                             if chief_value == True: # we add the user to the chiefs set in redis, to have a fast access to active chiefs list, for geoposition updates and alerts
                                 pipe.sadd("active_chiefs", str(user_id))
                             else:
@@ -1093,7 +1116,7 @@ async def promote_users_by_emails(
         return msg_obj
     else:
         try:
-            upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
+            crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
             await run_in_threadpool(db_session.commit)
         except Exception as e:
             print(f"Error: {e}") # todo: proper logging

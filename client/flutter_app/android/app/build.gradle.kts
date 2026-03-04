@@ -3,6 +3,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Quidalert: useful for Firebase Cloud Messaging configuration
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -11,12 +13,14 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        // Quidalert: enable core desugaring and Java version
+        isCoreLibraryDesugaringEnabled = true 
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 
     defaultConfig {
@@ -37,6 +41,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+// Quidalert: dependencies, desugaring
+dependencies {
+    coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.1.5")
+    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
 }
 
 flutter {

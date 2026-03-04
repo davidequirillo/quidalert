@@ -60,3 +60,8 @@ def invalid_file_type_exception():
     return HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid file type")
+
+def invalid_request_exception(detail: str):
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=detail)

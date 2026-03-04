@@ -4,11 +4,13 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/l10n/app_localizations.dart';
 
 class ExpiredTokenException implements Exception {
   final String message;
@@ -73,6 +75,9 @@ class AuthClient extends ChangeNotifier {
   }
 
   Future<void> _init() async {
+    if (kDebugMode) {
+      debugPrint('AuthClient initialization started');
+    }
     await loadRefreshToken(); // load local refresh token
     try {
       await refreshTokens(); // get new auth tokens if needed
@@ -96,6 +101,9 @@ class AuthClient extends ChangeNotifier {
     await loadLoginToken();
     await checkLoginTokenValidity();
     initDone = true;
+    if (kDebugMode) {
+      debugPrint('AuthClient initialization completed');
+    }
     notifyListeners();
   }
 
@@ -555,5 +563,64 @@ class AuthClient extends ChangeNotifier {
 
   bool isChief() {
     return userInfo['is_chief'] == true;
+  }
+
+  Future<void> registerDeviceForPushNotifications(
+    String? fcmToken, {
+    required BuildContext context,
+    required AppLocalizations localizations,
+  }) async {
+    if (kDebugMode) {
+      debugPrint(
+        'Registering device for push notifications with token: $fcmToken',
+      );
+    }
+    try {
+      if (fcmToken == null) {
+        if (kDebugMode) {
+          debugPrint(
+            'FCM token is null, cannot register for push notifications',
+          );
+        }
+        throw BadRequestException('FCM token is null');
+      }
+      await doProtectedApiRequest(
+        "post",
+        '/auth/register_device',
+        body: {'fcm_token': fcmToken},
+      );
+    } on GenericNotAuthorizedException catch (_) {
+      if (kDebugMode) {
+        debugPrint('Not authorized');
+      }
+    } on ForbiddenRequestException catch (_) {
+      if (kDebugMode) {
+        debugPrint('Forbidden request');
+      }
+    } on BadRequestException catch (_) {
+      if (kDebugMode) {
+        debugPrint('Bad request');
+      }
+    } on NetworkException catch (_) {
+      if (kDebugMode) {
+        debugPrint('Network error');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Unexpected error: $e');
+      }
+    } finally {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localizations.errorRegisteringDeviceForPushNotifications,
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 }

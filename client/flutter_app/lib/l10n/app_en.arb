@@ -48,6 +48,7 @@
   "errorPasswordMissingSpecial": "Password must contain at least a special character", 
   "errorPermissionsNotValid": "Permissions not valid",
   "errorPositionNotAvailable": "Position not available",
+  "errorRegisteringDeviceForPushNotifications": "Failed to register device for push notification",
   "errorServer": "Server error",
   "errorSomeEntriesNotAdded": "Some entries have not been added",
   "errorStringNotValid": "String not valid",

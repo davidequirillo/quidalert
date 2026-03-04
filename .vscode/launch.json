@@ -23,5 +23,12 @@
     "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "emulator-5554"
   }
+  {
+    "name": "Debug Client (Flutter - Web)",
+    "type": "dart",
+    "request": "launch",
+    "cwd": "${workspaceFolder}/client/flutter_app",
+    "deviceId": "chrome"
+  }
 ]
 }

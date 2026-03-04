@@ -4,9 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 class AdvicePage extends StatelessWidget {
   const AdvicePage({super.key});

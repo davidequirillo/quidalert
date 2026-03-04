@@ -1,6 +1,4 @@
-# Installation
-
-## Technical users and developers
+# Instructions for developers and distributors
 
 Install Git for Windows
 
@@ -14,31 +12,88 @@ Install Docker Desktop for Windows
 
 [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
 
-### Client
+## Client
 
 Install Flutter SDK
 
 [https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
 
 On terminal, go to "quidalert/client/flutter_app" folder and call these commands:
-
 ```
 flutter clean
 
 flutter pub get
-
-dart run rename_app:main all="My App Name"
 ```
-Note: the last renaming instruction, is useful to change the "distribution app name" with a new custom desired name ("My App Name" for example), and it's necessary only if you want to distribute the app to the public (for android store, ios store, etc.). Otherwise, for testing purposes, this specific renaming is optional.
+
+### Change the app name
+
+Change the app name and the distribution name.
+
+```
+dart run rename_app:main all="My App Name"
+
+dart run change_app_package_name:main com.new.package.name
+```
+
+Note: the last renaming instruction, is useful to change the name and the "distribution name" with a new custom desired name, and it's necessary only if you want to distribute the app to the public (for android store, ios store, etc.). Otherwise, for testing purposes, this specific renaming is optional.
 
 Note: in some cases, in windows operative system, you must enable "developer mode" (in windows settings), otherwise the command "flutter pub get" could return an error.
 
 In "lib/config.dart", change appName (facultative), and change apiBaseUrl, to connect to the correct relative server.  
 Change "competenceTerritory" too, to inform the public about the zone where your app can operate. 
 
-Compile the app, distribute it (or install it in the mobile/client device manually).
+### Push notifications setup
 
-### Backend
+To receive push notifications, the app requires registration to **Firebase Cloud Messaging (FCM)**.
+
+Push notifications are not enabled by default in this repository because each distributor must use their own Firebase project.
+
+You must:
+
+- Create a Firebase project at [https://console.firebase.google.com](https://console.firebase.google.com)
+
+- In your developer machine, install Node.js latest LTS version, from [https://nodejs.org/en/download](https://nodejs.org/en/download)
+
+- Install Firebase CLI using npm
+    ```bash
+   npm install -g firebase-tools
+   ```
+
+- In your terminal, do firebase login:
+    ```bash
+    firebase login
+    ```
+    This command will associate your firebase CLI to your Google account
+
+- In the Google Firebase Web Console, Add an Android and an iOS app to your Firebase project and follow instructions provided by Google 
+
+- In your terminal, install the FlutterFire CLI:
+   ```bash
+   dart pub global activate flutterfire_cli 
+   ```
+
+- Run:
+    ```bash
+   flutterfire configure
+   ```
+   Follow the instructions: this will generate lib/firebase_options.dart for your environment.
+
+- Download and place the required platform files, if they have not been download automatically by "flutterfire configure":
+    - android/app/google-services.json
+    - ios/Runner/GoogleService-Info.plist
+
+- In your backend
+    - Create a Service Account in Firebase
+    - Download the serviceAccountKey.json
+    - Configure it in your Python backend (used to send notifications via FCM)
+
+Without these steps, the application will not compile and will not run.
+
+### Distribution
+
+Compile the app, distribute it (or install it in the mobile/client device manually for testing purposes).
+
+## Backend
 
 Install miniconda:
 
@@ -101,7 +156,7 @@ Obviously they can be executed together (client and server), in parallel, to tes
 
 NOTES
 - "Debug - Client (Flutter) Windows" requires Microsoft Visual Studio (C++ desktop development package).   
-- "Debug - Client (Flutter) Android" requires Android SDK
+- "Debug - Client (Flutter) Android" requires Android SDK (Android Studio)
 
 Flutter Web device (Chrome) is not completely supported at the moment.
 

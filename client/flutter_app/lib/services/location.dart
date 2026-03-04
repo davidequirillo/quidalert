@@ -3,7 +3,6 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
