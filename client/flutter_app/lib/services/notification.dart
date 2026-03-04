@@ -23,12 +23,7 @@ class NotificationProvider extends ChangeNotifier {
       debugPrint(
         'Push notifications are supported on this platform. Initializing...',
       );
-      // _init();
-      if (kDebugMode) {
-        debugPrint('NotificationProvider initialization completed');
-      }
-      initDone = true;
-      notifyListeners();
+      _init();
     } else {
       if (kDebugMode) {
         debugPrint(
