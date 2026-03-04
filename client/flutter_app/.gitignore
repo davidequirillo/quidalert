@@ -49,3 +49,4 @@ android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 # Quidalert: ignore generated Firebase options file, each backend will have its own version of this file
 lib/firebase_options.dart
+firebase.json
