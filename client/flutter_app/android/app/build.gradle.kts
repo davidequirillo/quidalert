@@ -13,6 +13,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Quidalert: default version was VERSION_17
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
         // Quidalert: enable core desugaring and Java version
@@ -20,6 +21,7 @@ android {
     }
 
     kotlinOptions {
+        // Quidalert: default version was VERSION_17
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
 

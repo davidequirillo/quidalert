@@ -3,7 +3,7 @@
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 const appName = 'Quidalert';
-const apiBaseUrl = 'http://localhost:8080/api';
+const apiBaseUrl = 'http://10.0.2.2:8080/api';
 
 // The competence territory, examples:
 // "Rome", "Milan", "Milan City and near", "California", "New York", etc. etc.

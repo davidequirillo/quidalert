@@ -50,3 +50,9 @@ ios/Runner/GoogleService-Info.plist
 # Quidalert: ignore generated Firebase options file, each backend will have its own version of this file
 lib/firebase_options.dart
 firebase.json
+.firebaserc
+com.google.firebase.crashlytics/
+# Quidalert: ignore other local conf files
+*.local.json
+native-debug-symbols/
+# Quidalert end

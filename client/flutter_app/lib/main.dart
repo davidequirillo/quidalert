@@ -93,78 +93,133 @@ class QuidalertWidget extends StatelessWidget {
           debugPrint("Navigating to: ${settings.name}");
           switch (settings.name) {
             case '/':
-              return MaterialPageRoute(builder: (_) => const StartupPage());
+              return MaterialPageRoute(
+                builder: (_) => const StartupPage(),
+                settings: settings,
+              );
             case '/info':
-              return MaterialPageRoute(builder: (_) => const InfoPage());
+              return MaterialPageRoute(
+                builder: (_) => const InfoPage(),
+                settings: settings,
+              );
             case '/login':
-              return MaterialPageRoute(builder: (_) => const LoginPage());
+              return MaterialPageRoute(
+                builder: (_) => const LoginPage(),
+                settings: settings,
+              );
             case '/home':
-              return MaterialPageRoute(builder: (_) => const HomePage());
+              return MaterialPageRoute(
+                builder: (_) => const HomePage(),
+                settings: settings,
+              );
             case '/terms':
-              return MaterialPageRoute(builder: (_) => const TermsPage());
+              return MaterialPageRoute(
+                builder: (_) => const TermsPage(),
+                settings: settings,
+              );
             case '/register':
-              return MaterialPageRoute(builder: (_) => const RegisterPage());
+              return MaterialPageRoute(
+                builder: (_) => const RegisterPage(),
+                settings: settings,
+              );
             case '/reset':
-              return MaterialPageRoute(builder: (_) => const ResetPage());
+              return MaterialPageRoute(
+                builder: (_) => const ResetPage(),
+                settings: settings,
+              );
             case '/2fa':
-              return MaterialPageRoute(builder: (_) => const TwoFAPage());
+              return MaterialPageRoute(
+                builder: (_) => const TwoFAPage(),
+                settings: settings,
+              );
             case '/alerts/new':
-              return MaterialPageRoute(builder: (_) => const NewAlertPage());
+              return MaterialPageRoute(
+                builder: (_) => const NewAlertPage(),
+                settings: settings,
+              );
             case '/alerts/recents':
               return MaterialPageRoute(
                 builder: (_) => const RecentAlertsPage(),
+                settings: settings,
               );
             case '/alerts/location-test':
               return MaterialPageRoute(
                 builder: (_) => const LocationTestPage(),
+                settings: settings,
               );
             case '/advice':
-              return MaterialPageRoute(builder: (_) => const AdvicePage());
+              return MaterialPageRoute(
+                builder: (_) => const AdvicePage(),
+                settings: settings,
+              );
             case '/profile/complete':
               return MaterialPageRoute(
                 builder: (_) => const CompleteProfilePage(),
+                settings: settings,
               );
             case '/accounts':
-              return MaterialPageRoute(builder: (_) => const AccountsPage());
+              return MaterialPageRoute(
+                builder: (_) => const AccountsPage(),
+                settings: settings,
+              );
             case '/accounts/whitelist/add-entries':
               return MaterialPageRoute(
                 builder: (_) => const WhiteListAddPage(),
+                settings: settings,
               );
             case '/accounts/whitelist/search-entries':
               return MaterialPageRoute(
                 builder: (_) => const WhiteListSearchPage(),
+                settings: settings,
               );
             case '/accounts/whitelist/delete-entries':
               return MaterialPageRoute(
                 builder: (_) => const WhiteListDeletePage(),
+                settings: settings,
               );
             case '/accounts/upload-terms':
-              return MaterialPageRoute(builder: (_) => const UploadTermsPage());
+              return MaterialPageRoute(
+                builder: (_) => const UploadTermsPage(),
+                settings: settings,
+              );
             case '/accounts/users/search-module':
               return MaterialPageRoute(
                 builder: (_) => const UsersSearchModulePage(),
+                settings: settings,
               );
             case '/accounts/users/search-by-csv':
               return MaterialPageRoute(
                 builder: (_) => const UsersSearchByCSVPage(),
+                settings: settings,
               );
             case '/accounts/users/search-results':
               return MaterialPageRoute(
                 builder: (_) => const UsersSearchResultsPage(),
+                settings: settings,
               );
             case '/accounts/users/view-user-details':
-              return MaterialPageRoute(builder: (_) => const UserDetailsPage());
+              return MaterialPageRoute(
+                builder: (_) => const UserDetailsPage(),
+                settings: settings,
+              );
             case '/accounts/users/promote-results':
               return MaterialPageRoute(
                 builder: (_) => const UsersPromoteResultsPage(),
+                settings: settings,
               );
             case '/settings':
-              return MaterialPageRoute(builder: (_) => const SettingsPage());
+              return MaterialPageRoute(
+                builder: (_) => const SettingsPage(),
+                settings: settings,
+              );
             default:
               debugPrint(
                 "Unknown route: ${settings.name}, redirecting to startup page",
               );
-              return MaterialPageRoute(builder: (_) => const StartupPage());
+              return MaterialPageRoute(
+                builder: (_) => const StartupPage(),
+                settings: settings,
+              );
           }
         },
       ),

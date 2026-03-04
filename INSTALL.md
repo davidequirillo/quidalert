@@ -65,8 +65,6 @@ You must:
     ```
     This command will associate your firebase CLI to your Google account
 
-- In the Google Firebase Web Console, Add an Android and an iOS app to your Firebase project and follow instructions provided by Google 
-
 - In your terminal, install the FlutterFire CLI:
    ```bash
    dart pub global activate flutterfire_cli 
@@ -76,9 +74,9 @@ You must:
     ```bash
    flutterfire configure
    ```
-   Follow the instructions: this will generate lib/firebase_options.dart for your environment.
+   Follow the instructions: this will generate lib/firebase_options.dart and fetches other files from Google, for your environment.
 
-- Download and place the required platform files, if they have not been download automatically by "flutterfire configure":
+- Download and place the required platform files, only if they have not been downloaded automatically by "flutterfire configure":
     - android/app/google-services.json
     - ios/Runner/GoogleService-Info.plist
 
@@ -156,9 +154,11 @@ Obviously they can be executed together (client and server), in parallel, to tes
 
 NOTES
 - "Debug - Client (Flutter) Windows" requires Microsoft Visual Studio (C++ desktop development package).   
-- "Debug - Client (Flutter) Android" requires Android SDK (Android Studio)
+- "Debug - Client (Flutter) Android" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE)
 
 Flutter Web device (Chrome) is not completely supported at the moment.
+
+The Windows version currently has a problem with Firebase package (so probably we will create a specific version for desktop)
 
 ### Notes about production (run)
 
