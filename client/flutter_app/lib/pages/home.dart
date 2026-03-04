@@ -4,11 +4,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
+// import 'package:quidalert_flutter/services/notification.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 
 class HomePage extends StatelessWidget {
@@ -35,6 +36,14 @@ class _HomeBodyState extends State<HomeBody> {
   final ScrollController _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // _syncFcmToken();
+    });
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
@@ -59,6 +68,16 @@ class _HomeBodyState extends State<HomeBody> {
       '/user/profile',
     );
     return json.decode(response.body);
+  }
+
+  Future<void> _syncFcmToken() async {
+    // final notifProvider = context.read<NotificationProvider>();
+    final authClient = context.read<AuthClient>();
+    // await authClient.registerDeviceForPushNotifications(
+    // notifProvider.fcmToken,
+    //  context: context,
+    //  localizations: AppLocalizations.of(context)!,
+    // );
   }
 
   @override

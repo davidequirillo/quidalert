@@ -10,12 +10,19 @@ class SharedVars extends ChangeNotifier {
   bool initDone = false;
 
   SharedVars() : super() {
+    debugPrint("Inside SharedVars constructor");
     _init();
   }
 
   Future<void> _init() async {
+    if (kDebugMode) {
+      debugPrint('SharedVars initialization started');
+    }
     await loadPrefs();
     initDone = true;
+    if (kDebugMode) {
+      debugPrint('SharedVars initialization completed');
+    }
     notifyListeners();
   }
 

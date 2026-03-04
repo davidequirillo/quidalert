@@ -383,6 +383,12 @@ abstract class AppLocalizations {
   /// **'Position not available'**
   String get errorPositionNotAvailable;
 
+  /// No description provided for @errorRegisteringDeviceForPushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to register device for push notification'**
+  String get errorRegisteringDeviceForPushNotifications;
+
   /// No description provided for @errorServer.
   ///
   /// In en, this message translates to:

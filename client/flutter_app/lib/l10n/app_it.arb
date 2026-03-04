@@ -48,6 +48,7 @@
   "errorPasswordMissingSpecial": "La password deve contenere almeno un carattere speciale",
   "errorPermissionsNotValid": "Permessi non validi",
   "errorPositionNotAvailable": "Posizione non disponibile",
+  "errorRegisteringDeviceForPushNotifications": "Errore di registrazione del dispositivo per le notifiche push",
   "errorServer": "Errore nel server",
   "errorSomeEntriesNotAdded": "Alcune voci non sono state aggiunte",
   "errorStringNotValid": "Stringa non valida",

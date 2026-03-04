@@ -205,6 +205,8 @@ class RefreshToken(SQLModel, table=True):
     raw_hash: str = Field(nullable=False) # a random token hash    
     ip_address: Optional[str] = Field(default=None)
     device_info: Optional[str] = Field(default=None)
+    fcm_token: Optional[str] = Field(default=None)
+    fcm_token_updated_at: Optional[datetime] = Field(default=None)
     updated_at: datetime = Field(
         default_factory=lambda: now_tz_naive()
     )
@@ -228,6 +230,9 @@ class LoginSchema(BaseModel):
 
 class RefreshTokenWrapper(BaseModel):
     refresh_token: str
+
+class FcmTokenWrapper(BaseModel):
+    fcm_token: str
     
 class WhiteListEntry(SQLModel, table=True):
     __tablename__: str = 'whitelist_entries'

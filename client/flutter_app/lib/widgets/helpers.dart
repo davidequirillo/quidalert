@@ -168,3 +168,10 @@ void showLoadingDialog(BuildContext context, String message) {
     ),
   );
 }
+
+void debugPrintAncestors(BuildContext context) {
+  context.visitAncestorElements((element) {
+    debugPrint(element.widget.runtimeType.toString());
+    return true;
+  });
+}

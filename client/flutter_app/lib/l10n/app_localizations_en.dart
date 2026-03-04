@@ -153,6 +153,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorPositionNotAvailable => 'Position not available';
 
   @override
+  String get errorRegisteringDeviceForPushNotifications => 'Failed to register device for push notification';
+
+  @override
   String get errorServer => 'Server error';
 
   @override
