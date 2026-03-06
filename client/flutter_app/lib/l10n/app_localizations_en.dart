@@ -444,6 +444,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuWhiteList => 'Registration white list';
 
   @override
+  String get successDeviceRegisteredForPushNotifications => 'Device registered for push notification';
+
+  @override
   String get successEntryAdded => 'Entry added';
 
   @override

@@ -62,8 +62,10 @@ class AuthClient extends ChangeNotifier {
   String? refreshToken;
   String? accessToken;
   String? loginToken;
+  String? gpsToken;
   bool initDone = false;
   Map<String, dynamic> userInfo = {};
+  DateTime? lastFcmTokenRegistrationAt;
 
   AuthClient({FlutterSecureStorage? storage})
     : _secureStorage = storage ?? FlutterSecureStorage(),
@@ -71,6 +73,8 @@ class AuthClient extends ChangeNotifier {
     refreshToken = null;
     accessToken = null;
     loginToken = null;
+    gpsToken = null;
+    lastFcmTokenRegistrationAt = null;
     _init();
   }
 
@@ -100,6 +104,7 @@ class AuthClient extends ChangeNotifier {
     }
     await loadLoginToken();
     await checkLoginTokenValidity();
+    lastFcmTokenRegistrationAt = null;
     initDone = true;
     if (kDebugMode) {
       debugPrint('AuthClient initialization completed');
@@ -189,7 +194,7 @@ class AuthClient extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('Try refresh tokens, local check, refresh_token expired)');
       }
-      await setAuthTokens(null, null);
+      await setAuthTokens(null, null, null);
       throw ExpiredTokenException();
     }
     final uri = Uri.parse('$baseUrl/auth/refresh');
@@ -203,19 +208,19 @@ class AuthClient extends ChangeNotifier {
       final String respMessage = jsonResp['detail'] ?? '';
       if (resp.statusCode < 200 || resp.statusCode >= 300) {
         if (resp.statusCode == 401 && respMessage == msgTokenExpired) {
-          await setAuthTokens(null, null);
+          await setAuthTokens(null, null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token expired');
           }
           throw ExpiredTokenException();
         } else if (resp.statusCode == 401 && respMessage == msgTokenNotValid) {
-          await setAuthTokens(null, null);
+          await setAuthTokens(null, null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token not valid');
           }
           throw InvalidTokenException();
         } else if (resp.statusCode == 401) {
-          await setAuthTokens(null, null);
+          await setAuthTokens(null, null, null);
           if (kDebugMode) {
             debugPrint('Try refresh tokens, refresh_token wrong or null');
           }
@@ -234,7 +239,8 @@ class AuthClient extends ChangeNotifier {
       }
       String? rToken = jsonResp['refresh_token'];
       String? aToken = jsonResp['access_token'];
-      await setAuthTokens(rToken, aToken);
+      String? gToken = jsonResp['gps_token'];
+      await setAuthTokens(rToken, aToken, gToken);
       if (kDebugMode) {
         debugPrint('The refresh token is: $refreshToken');
       }
@@ -246,17 +252,20 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
-  Future<void> setAuthTokens(String? rtok, String? atok) async {
+  Future<void> setAuthTokens(String? rtok, String? atok, String? gtok) async {
     // Set refresh token and access token (from login, or refresh api)
+    // Set gps token too, useful for background periodic position update
     if (rtok != null) {
       refreshToken = rtok;
       accessToken = atok;
+      gpsToken = gtok;
       await saveRefreshToken();
     } else {
       if (refreshToken != null) {
         await deleteRefreshToken();
       }
       accessToken = refreshToken = null;
+      gpsToken = null;
     }
   }
 
@@ -288,12 +297,13 @@ class AuthClient extends ChangeNotifier {
   }) async {
     const relPath = "/auth/login";
     final uri = Uri.parse('$baseUrl$relPath');
-    final fields = {
-      "email": email,
-      "password": password,
-      if (code != null) "login_code": code,
-      if (loginToken != null) "login_token": loginToken,
-    };
+    final fields = {"email": email, "password": password};
+    if (code != null) {
+      fields['2fa_code'] = code;
+    }
+    if (loginToken != null) {
+      fields['login_token'] = loginToken!;
+    }
     final resp = await http.post(
       uri,
       body: json.encode(fields),
@@ -313,11 +323,13 @@ class AuthClient extends ChangeNotifier {
     final data = jsonDecode(resp.body);
     String? rtoken = data['refresh_token'];
     String? atoken = data['access_token'];
+    String? gtoken = data['gps_token'];
     String? ltoken = data['login_token'];
+    lastFcmTokenRegistrationAt = null;
     if (kDebugMode) {
       debugPrint('Login successful');
     }
-    await setAuthTokens(rtoken, atoken);
+    await setAuthTokens(rtoken, atoken, gtoken);
     if ((ltoken != null) && (ltoken != "")) {
       await setLoginToken(ltoken);
     } else {
@@ -342,7 +354,8 @@ class AuthClient extends ChangeNotifier {
       }
       return resp;
     }
-    await setAuthTokens(null, null);
+    await setAuthTokens(null, null, null);
+    lastFcmTokenRegistrationAt = null;
     setUserInfo({});
     return resp;
   }
@@ -565,61 +578,109 @@ class AuthClient extends ChangeNotifier {
     return userInfo['is_chief'] == true;
   }
 
-  Future<void> registerDeviceForPushNotifications(
+  // This method is called by the home page (profile page),
+  // to send fcm token to backend when user logs in successfully,
+  // to register the device for push notifications.
+  Future<void> registerFcmTokenForPushNotifications(
     String? fcmToken, {
     required BuildContext context,
     required AppLocalizations localizations,
   }) async {
+    bool isError = false;
+    bool alreadyRegistered = false;
     if (kDebugMode) {
       debugPrint(
         'Registering device for push notifications with token: $fcmToken',
       );
     }
     try {
-      if (fcmToken == null) {
+      if ((fcmToken == null) || (fcmToken.isEmpty)) {
         if (kDebugMode) {
           debugPrint(
-            'FCM token is null, cannot register for push notifications',
+            'FCM token is null or empty, cannot register for push notifications',
           );
         }
-        throw BadRequestException('FCM token is null');
+        throw BadRequestException('FCM token is empty');
+      }
+      if (lastFcmTokenRegistrationAt != null &&
+          DateTime.now().difference(lastFcmTokenRegistrationAt!) <
+              const Duration(hours: 24)) {
+        if (kDebugMode) {
+          debugPrint(
+            'FCM token was registered recently, skipping registration',
+          );
+        }
+        alreadyRegistered = true;
+        return;
       }
       await doProtectedApiRequest(
         "post",
-        '/auth/register_device',
+        '/auth/register-device',
         body: {'fcm_token': fcmToken},
       );
+      lastFcmTokenRegistrationAt = DateTime.now();
+      if (kDebugMode) {
+        debugPrint('Ok, device registered for push notifications');
+      }
     } on GenericNotAuthorizedException catch (_) {
       if (kDebugMode) {
         debugPrint('Not authorized');
       }
+      isError = true;
     } on ForbiddenRequestException catch (_) {
       if (kDebugMode) {
         debugPrint('Forbidden request');
       }
+      isError = true;
     } on BadRequestException catch (_) {
       if (kDebugMode) {
         debugPrint('Bad request');
       }
+      isError = true;
     } on NetworkException catch (_) {
       if (kDebugMode) {
         debugPrint('Network error');
       }
+      isError = true;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Unexpected error: $e');
       }
+      isError = true;
     } finally {
-      if (context.mounted) {
+      final successColor = Colors.green;
+      final errorColor = Colors.red;
+      final successMessage =
+          localizations.successDeviceRegisteredForPushNotifications;
+      final errorMessage =
+          localizations.errorRegisteringDeviceForPushNotifications;
+      if (!alreadyRegistered && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              localizations.errorRegisteringDeviceForPushNotifications,
-            ),
-            backgroundColor: Colors.red,
+            content: Text(isError ? errorMessage : successMessage),
+            backgroundColor: isError ? errorColor : successColor,
             duration: const Duration(seconds: 4),
           ),
         );
+      }
+    }
+  }
+
+  // This method is automatically called by NotificationProvider listener, when FCM token is refreshed, to keep our backend updated with the latest token.
+  Future<void> syncFcmTokenWithBackend(String? fcmToken) async {
+    try {
+      await doProtectedApiRequest(
+        "post",
+        '/auth/register-device',
+        body: {'fcm_token': fcmToken},
+      );
+      lastFcmTokenRegistrationAt = DateTime.now();
+      if (kDebugMode) {
+        debugPrint('FCM token synced with backend successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error syncing FCM token with backend: $e');
       }
     }
   }

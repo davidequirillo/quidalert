@@ -145,6 +145,7 @@
   "menuUploadTerms": "Upload dei termini legali",
   "menuUsers": "Utenti",
   "menuWhiteList": "White list per registrazione",
+  "successDeviceRegisteredForPushNotifications": "Dispositivo registrato per le notifiche push",
   "successEntryAdded": "Voce aggiunta",
   "successLogin": "Login effettuato con successo",
   "successLoginAdvice": "Si consiglia di fare un refresh almeno una volta ogni 6 mesi per mantenere la sessione (evitando così la necessità di effettuare il login)",

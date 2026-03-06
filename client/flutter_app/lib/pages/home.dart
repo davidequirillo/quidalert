@@ -9,7 +9,7 @@ import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
-// import 'package:quidalert_flutter/services/notification.dart';
+import 'package:quidalert_flutter/services/notification.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 
 class HomePage extends StatelessWidget {
@@ -39,7 +39,7 @@ class _HomeBodyState extends State<HomeBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // _syncFcmToken();
+      _syncFcmToken();
     });
   }
 
@@ -71,13 +71,20 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   Future<void> _syncFcmToken() async {
-    // final notifProvider = context.read<NotificationProvider>();
+    final notifProvider = context.read<NotificationProvider>();
     final authClient = context.read<AuthClient>();
-    // await authClient.registerDeviceForPushNotifications(
-    // notifProvider.fcmToken,
-    //  context: context,
-    //  localizations: AppLocalizations.of(context)!,
-    // );
+    notifProvider.setAuthClient(authClient);
+    if (notifProvider.fcmToken == null || notifProvider.fcmToken!.isEmpty) {
+      debugPrint(
+        "FCM token is null or empty, skipping registration for push notifications.",
+      );
+      return;
+    }
+    await authClient.registerFcmTokenForPushNotifications(
+      notifProvider.fcmToken,
+      context: context,
+      localizations: AppLocalizations.of(context)!,
+    );
   }
 
   @override

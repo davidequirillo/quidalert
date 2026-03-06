@@ -145,6 +145,7 @@
   "menuUploadTerms": "Upload legal terms",
   "menuUsers": "Users",
   "menuWhiteList": "Registration white list",
+  "successDeviceRegisteredForPushNotifications": "Device registered for push notification",
   "successEntryAdded": "Entry added",
   "successLogin": "Login successful",
   "successLoginAdvice": "It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of login)",

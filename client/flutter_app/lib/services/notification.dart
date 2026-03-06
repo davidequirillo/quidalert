@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:quidalert_flutter/services/auth.dart';
 
 class NotificationProvider extends ChangeNotifier {
   FirebaseMessaging? _messaging = FirebaseMessaging.instance;
@@ -16,6 +17,7 @@ class NotificationProvider extends ChangeNotifier {
   StreamSubscription<RemoteMessage>? _messageStream;
   String? fcmToken;
   bool initDone = false;
+  AuthClient? _authClient;
 
   NotificationProvider() : super() {
     fcmToken = null;
@@ -41,7 +43,12 @@ class NotificationProvider extends ChangeNotifier {
     _messageStream?.cancel();
     _tokenStream = null;
     _messageStream = null;
+    _authClient = null;
     super.dispose();
+  }
+
+  void setAuthClient(AuthClient? client) {
+    _authClient = client;
   }
 
   Future<void> _init() async {
@@ -155,9 +162,12 @@ class NotificationProvider extends ChangeNotifier {
   void _setupFirebaseTokenListener() {
     _tokenStream = _messaging!.onTokenRefresh.listen((newToken) async {
       if (kDebugMode) {
-        debugPrint('FCM token refreshed: $newToken');
+        debugPrint('FCM token refreshed locally: $newToken');
       }
       fcmToken = newToken;
+      if (_authClient != null) {
+        await _authClient!.syncFcmTokenWithBackend(newToken);
+      }
     });
   }
 
