@@ -965,6 +965,12 @@ abstract class AppLocalizations {
   /// **'Registration white list'**
   String get menuWhiteList;
 
+  /// No description provided for @successDeviceRegisteredForPushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Device registered for push notification'**
+  String get successDeviceRegisteredForPushNotifications;
+
   /// No description provided for @successEntryAdded.
   ///
   /// In en, this message translates to:
