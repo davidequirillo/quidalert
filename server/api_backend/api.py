@@ -4,15 +4,12 @@
 
 import os
 from datetime import timedelta
-import html
 from fastapi import (FastAPI, Depends,
     Request, Response, 
     HTTPException, BackgroundTasks, 
     File, UploadFile, Form)
 from fastapi import status as http_status
-from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
@@ -25,8 +22,6 @@ from jwt.exceptions import (
     InvalidSubjectError, InvalidIssuedAtError,
     InvalidJTIError
 )
-from haversine import haversine, Unit
-from rapidfuzz import fuzz
 from core.settings import settings
 from core.logging import setup_logging
 from core.security_events import (
@@ -42,18 +37,16 @@ from core.security_events import (
     log_login_token_generation
 )
 import services.localization as i18n
-from models.general import (UserIn, User, UserOut, UserOutSmall, UserOutWithAlerts, UserOutPaginated, UserLanguage, 
+from models.general import (UserIn, User, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
-    WhiteListEntry, EmailListDict,
-    UserInCompleteProfile, PromotionSchema,
-    AlertIn, AlertOut, Alert
+    WhiteListEntry
     )
 from services.security import (
     LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
     generate_activation_token, activation_expiry, 
     now_tz_naive, from_timestamp_to_datetime_tz_naive, 
-    generate_otp_code, otp_expiry, otp_hmac, otp_verify, get_email_hash, check_email_against_hash,
+    generate_otp_code, otp_expiry, otp_hmac, otp_verify,
     RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS,
     create_access_token, create_geoposition_token, create_refresh_token, decode_token, MAX_ACTIVE_REFRESH_TOKENS,
     check_token_against_hash, create_login_token
@@ -67,15 +60,10 @@ from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
     two_factor_not_valid_exception, two_factor_required_response,
-    forbidden_exception,
-    invalid_file_type_exception, bad_file_upload_exception,
-    unsafe_file_exception, file_too_large_exception,
-    invalid_request_exception,
+    forbidden_exception, invalid_request_exception,
     )
-from services.fileutils import (
-    MAX_FILE_SIZE, MAX_SMALL_FILE_SIZE, 
-    )
-from services.tasks import notify_nearby_users
+from dependencies import get_db_session, get_current_user, get_redis_session, get_s3_client
+from routers import users, alerts, terms, whitelist_entries
 
 def init_settings():
     setup_logging()
@@ -89,8 +77,14 @@ async def lifespan(app: FastAPI):
     app.state.s3_client = bucketmgr.get_s3_client()
     yield
     print("Shutting down api framework...")
-    app.state.db_engine.dispose()
+    if app.state.db_engine:
+        app.state.db_engine.dispose()
+    if app.state.redis_pool:
+        await app.state.redis_pool.disconnect()
+    if app.state.s3_client:
+        app.state.s3_client.close()
     app.state.db_engine = None
+    app.state.redis_pool = None
     app.state.s3_client = None
 
 app = FastAPI(lifespan=lifespan)
@@ -102,62 +96,8 @@ app.add_middleware(CORSMiddleware,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"])
 
-def get_db_session():
-    engine = app.state.db_engine
-    yield from dbmgr.get_session(engine)
-
-async def get_redis_session():
-    pool = app.state.redis_pool
-    async with dbmgr.get_redis_conn(pool) as client:
-        yield client
-
-def get_s3_client():
-    return app.state.s3_client
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 api_dirpath = "."
 templates = Jinja2Templates(directory=os.path.join(api_dirpath, "templates"))
-FILES_DIR = "./files"
-
-def get_current_user(access_token: str = Depends(oauth2_scheme),
-                    db_session: Session = Depends(get_db_session)):
-    try:
-        token_data = decode_token(access_token)
-    except ExpiredSignatureError:
-        raise token_expired_exception() # we raise a specific error
-    except InvalidTokenError:
-        raise token_not_valid_exception()
-    except:
-        token_data = None
-    if token_data is None:
-        raise token_not_valid_exception() 
-    user_id = token_data.get("sub")
-    token_iat = token_data.get("iat")
-    token_exp = token_data.get("exp")
-    token_type = token_data.get("type")
-    if (not user_id) or (not token_iat) or (not token_exp) or \
-        (not token_type) or (token_type != "access"): 
-            raise token_not_valid_exception() 
-    statement = select(User).where(User.id == user_id)
-    user = db_session.exec(statement).first()
-    if user is None:
-        raise token_not_valid_exception()
-    token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)   
-    if token_iat_dt < user.last_reset_done_at:
-        raise token_expired_exception()
-    if user.is_superuser: # the superuser cannot be downgraded
-        if ((user.is_admin == False) or 
-                (user.is_reliable == False) or
-                    (user.reliability_score < 100) or 
-                        (user.is_blocked == True)):
-            user.is_admin = True 
-            user.is_reliable = True
-            user.reliability_score = 100    
-            user.is_blocked = False
-            db_session.add(user)
-            db_session.commit()
-            db_session.refresh(user)
-    return user
 
 def check_refresh_token(token_data: dict | None, db_session: Session):
     if token_data is None:
@@ -205,6 +145,13 @@ def check_login_token(token_data: dict | None, user: User):
         return False
     return True
 
+# ENDPOINTS FROM DIFFERENT MODULES (users, alerts, etc.)
+app.include_router(users.router)
+app.include_router(alerts.router)
+app.include_router(terms.router)
+app.include_router(whitelist_entries.router)
+
+# AUTHENTICATION ENDPOINTS (login, tokens, device)
 @app.post("/api/auth/refresh")
 def refresh_auth_tokens(
             wrapper: RefreshTokenWrapper, 
@@ -403,6 +350,7 @@ def register_device_for_push_notifications(
     db_session.commit()
     return {"message": "Device registered for push notifications"}
 
+# USER REGISTRATION ENDPOINTS (registration, activation, password change)
 @app.post("/api/register")
 def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
     # We will return a unique registration message for almost all cases, for security
@@ -600,579 +548,3 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
         background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
 
     return {"message": "Password reset successful"}
-
-@app.get("/api/terms")
-def get_terms(request: Request,
-            response: Response,
-            s3_client = Depends(get_s3_client),
-            ):
-    lang = request.headers.get('Accept-Language')
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
-    response.headers["Content-Type"] = "text/markdown; charset=utf-8"
-    try:
-        obj = s3_client.get_object(
-            Bucket=settings.minio_bucket_name, 
-            Key=f"terms_{lang}.md")
-    except Exception:
-        obj = None
-    if not obj:
-        fpath = os.path.join(FILES_DIR, f"terms_{lang}.md.example")
-        return FileResponse(fpath)
-    else:
-        content = obj["Body"]
-        return StreamingResponse(content=content, media_type="text/markdown; charset=utf-8")
-
-@app.post("/api/terms") # upload legal terms file (multipart/form-data)
-async def upload_terms(file: UploadFile = File(...), 
-        language: str = Form(...), 
-        current_user: User = Depends(get_current_user),
-        s3_client=Depends(get_s3_client)
-    ):
-    if not current_user.is_admin:
-        raise forbidden_exception()
-    if (file is None) or (file.filename is None) or (file.filename == ""):
-        raise bad_file_upload_exception()
-    if not file.filename.endswith(('.md', '.markdown')):
-        raise invalid_file_type_exception()
-    if file.content_type not in ["text/markdown", "text/plain"]:
-        raise invalid_file_type_exception()
-    content = await file.read()
-    file_size = len(content)
-    if file_size > MAX_SMALL_FILE_SIZE:
-        raise file_too_large_exception(MAX_SMALL_FILE_SIZE)
-    try:
-        text_content = content.decode("utf-8")
-    except UnicodeDecodeError:
-        raise bad_file_upload_exception()
-    safe_text = html.escape(text_content)
-    lang = language
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
-    fname = f"terms_{lang}.md"
-    try:
-        await run_in_threadpool(
-            lambda: s3_client.put_object(
-                Body=safe_text.encode("utf-8"), 
-                Bucket=settings.minio_bucket_name, 
-                Key=fname,
-                ContentType=file.content_type
-            )
-        )   
-    except Exception as e:
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error uploading file to S3"
-        )
-    return {"message": "Terms uploaded successfully"}
-
-@app.get("/api/whitelist-entries")
-def get_whitelist_entries(
-                email: str | None = None,
-                authorizer: str | None = None,
-                last_seen_id: int = 0,
-                limit: int = 100,
-                current_user: User = Depends(get_current_user),
-                db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    if last_seen_id < 0:
-        last_seen_id = 0
-    if limit not in [10, 100, 1000]:
-        limit = 100
-    entries = []
-    next_cursor = 0
-    if email:
-        entries = db_session.exec(
-            select(WhiteListEntry).where(
-                WhiteListEntry.email == email.lower())).all()    
-    else:
-        statement = select(WhiteListEntry)
-        if (not current_user.is_admin): # officers can see (in bulk) only their own entries
-            statement = statement.where(WhiteListEntry.created_by == current_user.email)
-        if authorizer:
-            authorizer_email = authorizer.lower()
-            statement = statement.where(WhiteListEntry.created_by == authorizer_email)
-        if last_seen_id > 0:
-            statement = statement.where(WhiteListEntry.id < last_seen_id) # type: ignore
-        statement = statement.order_by(desc(WhiteListEntry.id)).limit(limit)
-        entries = db_session.exec(statement).all()
-        if entries:
-            next_cursor = entries[-1].id
-    return { "entries": entries, "next_cursor": next_cursor }
-
-@app.post("/api/whitelist-entries")
-def add_whitelist_entries(
-                dict: EmailListDict,
-                current_user: User = Depends(get_current_user),
-                db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    failed_emails = []
-    added_count = 0
-    existing_count = 0
-    for e in dict.emails:
-        try:
-            if (e is None) or (e.strip() == ""):
-                continue
-            entry = WhiteListEntry.model_validate({
-                "email": e.lower(), 
-                "created_by": current_user.email
-            })
-            if db_session.exec(
-                select(WhiteListEntry).where(WhiteListEntry.email == entry.email)
-            ).first():
-                existing_count += 1
-                continue # skip entry if already exists
-            db_session.add(entry)
-            added_count += 1
-        except Exception:
-            failed_emails.append(e)
-            continue
-    if added_count > 0:
-        db_session.commit()
-    return {
-        "message": "Entries processed",
-        "total_count": len(dict.emails),
-        "added_count": added_count,
-        "existing_count": existing_count,
-        "failed_count": len(failed_emails), 
-        "failed_emails": failed_emails
-    }
-
-@app.delete("/api/whitelist-entries")
-def delete_whitelist_entries(
-                email: str | None = None,
-                my_entries: str | None = None,
-                all: str | None = None,
-                current_user: User = Depends(get_current_user),
-                db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    deleted_count = 0
-    total_count = 0
-    if email and (email != ""):
-        q = select(WhiteListEntry).where(WhiteListEntry.email == email.lower())
-        entry = db_session.exec(q).first()
-        if entry: # officers can delete only their own entries
-            total_count = 1
-            if (not current_user.is_admin) and (entry.created_by != current_user.email):
-                raise forbidden_exception()
-            db_session.delete(entry)
-            db_session.commit()
-            deleted_count = 1
-    elif my_entries and (my_entries.lower() == "yes"):
-        statement = delete(WhiteListEntry).where(WhiteListEntry.created_by == current_user.email) # type: ignore
-        result = db_session.exec(statement)
-        deleted_count = result.rowcount
-        total_count = deleted_count
-        db_session.commit()
-    elif all and (all.lower() == "yes"):
-        if not current_user.is_admin: # officers cannot delete all entries
-            raise forbidden_exception()
-        statement = delete(WhiteListEntry).where(True) # type: ignore
-        result = db_session.exec(statement)
-        deleted_count = result.rowcount
-        total_count = deleted_count
-        db_session.commit()
-    return {
-        "message": "Entries deleted",
-        "total_count": total_count,
-        "deleted_count": deleted_count
-    }
-
-@app.get("/api/user/profile", response_model=UserOut | None, status_code=http_status.HTTP_200_OK)
-def get_profile(current_user: User = Depends(get_current_user)):
-    return current_user
-
-@app.put("/api/user/profile")
-def update_profile(user_data: UserInCompleteProfile, 
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session)):
-    current_user.firstname = user_data.firstname
-    current_user.surname = user_data.surname
-    current_user.street = user_data.street
-    current_user.postal_code = user_data.postal_code
-    current_user.city = user_data.city
-    current_user.province = user_data.province
-    current_user.country = user_data.country
-    current_user.birthdate = user_data.birthdate
-    current_user.phone = user_data.phone
-    db_session.add(current_user)
-    db_session.commit()
-    return { "message": "Profile updated" }
-
-@app.get("/api/users", response_model=UserOutPaginated, status_code=http_status.HTTP_200_OK)
-def get_users(
-            email: str | None = None,
-            firstname: str | None = None,
-            surname: str | None = None,
-            authorizer: str | None = None,
-            type: str | None = None,
-            role: str | None = None,
-            status: str | None = None,
-            last_seen_id: str | None = None,
-            limit: int = 100,
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    if limit not in [10, 100, 1000]:
-        limit = 100
-    next_cursor = None
-    if email and (email != ""):
-        users = db_session.exec(
-            select(User).where(User.email == email.lower())).all()
-        return { 'users': users, 'next_cursor': next_cursor }
-    statement = select(User)
-    if not current_user.is_admin: # officers can see (in bulk) only users they authorized
-        statement = statement.where(User.authorized_by == current_user.email)
-    if authorizer:
-        statement = statement.where(User.authorized_by == authorizer.lower()) 
-    if last_seen_id:
-        statement = statement.where(User.id < last_seen_id) # type: ignore
-    if firstname and (firstname != ""):
-        statement = statement.where(User.firstname == firstname) 
-    if surname and (surname != ""):
-        statement = statement.where(User.surname == surname) 
-    if type and (type != ""):
-        if type == "admin":
-            statement = statement.where(User.is_admin == True) 
-        elif type == "officer":
-            statement = statement.where(User.is_officer == True) 
-        elif type == "chief":
-            statement = statement.where(User.is_chief == True)
-    if role and (role != ""):
-        statement = statement.where(User.role == role)
-    if status and (status != ""):
-        if status == "ok":
-            statement = statement.where(User.is_reliable == True) 
-        elif status == "unreliable":
-            statement = statement.where(User.is_reliable == False) 
-        elif status == "blocked":
-            statement = statement.where(User.is_blocked == True)
-    statement = statement.order_by(desc(User.id)).limit(limit)
-    users = db_session.exec(statement).all()
-    if users:
-        next_cursor = str(users[-1].id)
-    return { 'users': users, 'next_cursor': next_cursor }
-
-@app.post("/api/users/get-by-emails", response_model=UserOutPaginated, status_code=http_status.HTTP_200_OK)
-def get_users_by_emails(
-            dict: EmailListDict,
-            last_seen_id: str | None = None,
-            limit: int = 100,
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    if limit not in [10, 100, 1000]:
-        limit = 100
-    next_cursor = None
-    statement = select(User)
-    if (last_seen_id):
-        statement = statement.where(User.id < last_seen_id) # type: ignore
-    statement = statement.where(User.email.in_(dict.emails)) # type: ignore
-    statement = statement.order_by(desc(User.id)).limit(limit)
-    users = db_session.exec(statement).all()
-    if users:
-        next_cursor = str(users[-1].id)
-    return { 'users': users, 'next_cursor': next_cursor }
-    
-@app.get("/api/user/{user_id}", response_model=UserOutWithAlerts, status_code=http_status.HTTP_200_OK)
-def get_user(user_id: str, 
-            current_user: User = Depends(get_current_user),
-            db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    user = db_session.exec(select(User).where(User.id == user_id)).first()
-    recent_alerts = db_session.exec(
-        select(Alert).where(Alert.user_id == user_id).order_by(desc(Alert.created_at)).limit(5)
-    ).all()
-    return {"user": user, "alerts": recent_alerts}
-
-@app.post("/api/users/promote") # promote/demote users in bulk according to filters and promotion schema
-async def promote_users(
-            promotion_schema: PromotionSchema,
-            email: str | None = None,
-            firstname: str | None = None,
-            surname: str | None = None,
-            authorizer: str | None = None,
-            type: str | None = None,
-            role: str | None = None,
-            status: str | None = None,
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session),
-            redis_client = Depends(get_redis_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    if (promotion_schema.type) and (promotion_schema.type != ""):
-        if not current_user.is_admin: # officers cannot change users type
-            raise forbidden_exception()
-    def db_update_logic(): 
-        if (current_user.is_admin):
-            statement = update(User)
-        else: # officers can update only users authorized by them
-            statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
-        if email and (email != ""):
-            statement = statement.where(
-                User.email == email.lower()) # type: ignore
-        if authorizer and (authorizer != ""):
-            statement = statement.where(User.authorized_by == authorizer.lower()) # type: ignore
-        if firstname and (firstname != ""):
-            statement = statement.where(User.firstname == firstname) # type: ignore 
-        if surname and (surname != ""):
-            statement = statement.where(User.surname == surname) # type: ignore 
-        if type and (type != ""):
-            if type == "admin":
-                statement = statement.where(User.is_admin == True) # type: ignore 
-            elif type == "officer":
-                statement = statement.where(User.is_officer == True) # type: ignore
-            elif type == "chief":
-                statement = statement.where(User.is_chief == True) # type: ignore
-        if role and (role != ""):
-            statement = statement.where(User.role == role) # type: ignore
-        if status and (status != ""):
-            if status == "ok":
-                statement = statement.where(User.is_reliable == True) # type: ignore 
-            elif status == "unreliable":
-                statement = statement.where(User.is_reliable == False) # type: ignore
-            elif status == "blocked":
-                statement = statement.where(User.is_blocked == True) # type: ignore
-        # update fields according to promotion schema
-        if (promotion_schema.type == "admin"):
-            statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
-        elif (promotion_schema.type == "officer"):
-            statement = statement.values(is_officer=True, is_admin=False, is_chief=False)
-        elif (promotion_schema.type == "chief"):
-            statement = statement.values(is_chief=True, is_admin=False, is_officer=False)
-        elif (promotion_schema.type == "base"):
-            statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
-        if promotion_schema.role:
-            statement = statement.values(role = promotion_schema.role)
-        if promotion_schema.status:
-            if promotion_schema.status == "ok":
-                statement = statement.values(is_reliable=True, is_blocked=False)
-            elif promotion_schema.status == "unreliable":
-                statement = statement.values(is_reliable=False, is_blocked=False)
-            elif promotion_schema.status == "blocked":
-                statement = statement.values(is_blocked=True, is_reliable=False)
-        if promotion_schema.notes is not None:
-            statement = statement.values(notes = promotion_schema.notes)
-        if promotion_schema.authorizer:
-            auth_user = db_session.exec(
-                select(User).where( # check if authorizer (an admin, or an officer) exists
-                    User.email == promotion_schema.authorizer.lower()
-                )).first()
-            if auth_user:
-                if ((auth_user.is_admin) or (auth_user.is_officer)):
-                    statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
-            else:
-                return None, {"message": "Authorizer email not valid", "updated_count": 0}
-        statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
-        if promotion_schema.type:
-            statement = statement.returning(User.id, User.is_chief) # type: ignore
-            result = db_session.exec(statement)
-            critical_updated_rows = result.all() 
-            updated_count = len(critical_updated_rows)       
-        else:
-            result = db_session.exec(statement)
-            critical_updated_rows = None # we don't need them if type is not changed
-            updated_count = result.rowcount
-        return critical_updated_rows, {"message": "Operation completed", "updated_count": updated_count}
-    if current_user.is_admin and promotion_schema.type:
-        # we use a redis lock to avoid concurrent updates 
-        # to user roles, that could cause inconsistencies 
-        # in the active chiefs list in redis
-        async with redis_client.lock( 
-            "lock:user_roles_update",
-            timeout=60, # lock timeout (max time to hold the lock)
-            sleep=5, # sleep time between lock acquisition attempts
-            blocking_timeout=60 # max time to wait for the lock
-            ):
-            try: 
-                crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
-                if crit_upd_rows:
-                    async with redis_client.pipeline(transaction=True) as pipe:
-                        for user_id, chief_value in crit_upd_rows:
-                            if chief_value == True: # we add the user to the chiefs set in redis, to have a fast access to active chiefs list, for geoposition updates and alerts
-                                pipe.sadd("active_chiefs", str(user_id))
-                            else:
-                                pipe.srem("active_chiefs", str(user_id))
-                                pipe.zrem("chief_locations", str(user_id))
-                        await pipe.execute()
-                await run_in_threadpool(db_session.commit)
-            except Exception as e:
-                print(f"Error: {e}") # todo: proper logging
-                await run_in_threadpool(db_session.rollback)
-                raise HTTPException(
-                    status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error updating user roles"
-                )
-        return msg_obj
-    else:
-        try:
-            crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
-            await run_in_threadpool(db_session.commit)
-        except Exception as e:
-            print(f"Error: {e}") # todo: proper logging
-            await run_in_threadpool(db_session.rollback)
-            raise HTTPException(
-                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error updating user roles"
-            )
-        return msg_obj
-
-@app.post("/api/users/promote-by-emails") # promote/demote users in bulk (by a list of emails)
-async def promote_users_by_emails(
-            emails: list[str],
-            update_fields: PromotionSchema,
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session),
-            redis_client = Depends(get_redis_session)):
-    if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
-    if (update_fields.type):
-        if not current_user.is_admin: # officers cannot change users type
-            raise forbidden_exception()
-    def db_update_logic(): 
-        if len(emails) == 0:
-            return None, {"message": "No emails provided", "updated_count": 0}
-        if (current_user.is_admin):
-            statement = update(User)
-        else: # officers can update only users authorized by them
-            statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
-        statement = statement.where(User.email.in_(emails)) # type: ignore
-        # update fields according to promotion schema
-        if (update_fields.type == "admin"):
-            statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
-        elif (update_fields.type == "officer"):
-            statement = statement.values(is_officer=True, is_admin=False, is_chief=False)
-        elif (update_fields.type == "chief"):
-            statement = statement.values(is_chief=True, is_admin=False, is_officer=False)
-        elif (update_fields.type == "base"):
-            statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
-        if update_fields.role:
-            statement = statement.values(role = update_fields.role)
-        if update_fields.status:
-            if update_fields.status == "ok":
-                statement = statement.values(is_reliable=True, is_blocked=False)
-            elif update_fields.status == "unreliable":
-                statement = statement.values(is_reliable=False, is_blocked=False)
-            elif update_fields.status == "blocked":
-                statement = statement.values(is_blocked=True, is_reliable=False)
-        if update_fields.notes is not None:
-            statement = statement.values(notes = update_fields.notes)
-        if update_fields.authorizer:
-            auth_user = db_session.exec(
-                select(User).where( # check if authorizer (an admin, or an officer) exists
-                    User.email == update_fields.authorizer.lower()
-                )).first()
-            if auth_user:
-                if ((auth_user.is_admin) or (auth_user.is_officer)):
-                    statement = statement.values(authorized_by = update_fields.authorizer.lower(), authorized_at = now_tz_naive())
-            else:
-                return None, {"message": "Authorizer email not valid", "updated_count": 0}
-        statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
-        if update_fields.type:
-            statement = statement.returning(User.id, User.is_chief) # type: ignore
-            result = db_session.exec(statement)
-            critical_updated_rows = result.all() 
-            updated_count = len(critical_updated_rows)       
-        else:
-            result = db_session.exec(statement)
-            critical_updated_rows = None # we don't need them if type is not changed
-            updated_count = result.rowcount
-        return critical_updated_rows, {"message": "Operation completed", "updated_count": updated_count}
-    if current_user.is_admin and update_fields.type:
-        # we use a redis lock to avoid concurrent updates 
-        # to user roles, that could cause inconsistencies 
-        # in the active chiefs list in redis
-        async with redis_client.lock( 
-            "lock:user_roles_update",
-            timeout=60, # lock timeout (max time to hold the lock)
-            sleep=5, # sleep time between lock acquisition attempts
-            blocking_timeout=60 # max time to wait for the lock
-            ):
-            try: 
-                crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
-                if crit_upd_rows:
-                    async with redis_client.pipeline(transaction=True) as pipe:
-                        for user_id, chief_value in crit_upd_rows:
-                            if chief_value == True: # we add the user to the chiefs set in redis, to have a fast access to active chiefs list, for geoposition updates and alerts
-                                pipe.sadd("active_chiefs", str(user_id))
-                            else:
-                                pipe.srem("active_chiefs", str(user_id))
-                                pipe.zrem("chief_locations", str(user_id))
-                        await pipe.execute()
-                await run_in_threadpool(db_session.commit)
-            except Exception as e:
-                print(f"Error: {e}") # todo: proper logging
-                await run_in_threadpool(db_session.rollback)
-                raise HTTPException(
-                    status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error updating user roles"
-                )
-        return msg_obj
-    else:
-        try:
-            crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
-            await run_in_threadpool(db_session.commit)
-        except Exception as e:
-            print(f"Error: {e}") # todo: proper logging
-            await run_in_threadpool(db_session.rollback)
-            raise HTTPException(
-                status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error updating user roles"
-            )
-        return msg_obj
-    
-@app.post("/api/alert")
-def create_alert(alert_in: AlertIn,
-            background_tasks: BackgroundTasks,
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_reliable) or \
-        (current_user.reliability_score <= 0) or \
-            (current_user.is_blocked):
-        raise forbidden_exception()
-    now = now_tz_naive()
-    lat_range = 0.2 # 22 km
-    long_range = 0.2 # 22 km (approx, at the equator), less at higher latitudes    
-    lat_min, lat_max = alert_in.latitude - lat_range, alert_in.latitude + lat_range
-    long_min, long_max = alert_in.longitude - long_range, alert_in.longitude + long_range
-    recent_alerts = db_session.exec(
-        select(Alert).where(
-            Alert.created_at > (now - timedelta(hours=1)),
-            Alert.latitude > lat_min,
-            Alert.latitude < lat_max,
-            Alert.longitude > long_min,
-            Alert.longitude < long_max
-        )
-    ).all()
-    for rec_alert in recent_alerts:
-        dist = haversine((alert_in.latitude, alert_in.longitude), (rec_alert.latitude, rec_alert.longitude), unit=Unit.KILOMETERS)
-        if dist < rec_alert.radius:
-            d1 = alert_in.description.lower().strip()
-            d2 = rec_alert.description.lower().strip()
-            similarity = fuzz.token_set_ratio(d1, d2)
-            if similarity >= 50: # similarity threshold (50 means 50%)
-                return {"message": "Similar alert already exists in the area", "similarity": similarity}
-    alert = Alert(
-        latitude=alert_in.latitude,
-        longitude=alert_in.longitude,
-        user_id = current_user.id,
-        description = alert_in.description,
-        address = alert_in.address
-    )
-    rel_score = current_user.reliability_score 
-    alert.radius = rel_score / 100 * alert.radius
-    alert.severity = int(rel_score / 100 * alert.severity)
-    db_session.add(alert)
-    db_session.commit()
-    db_session.refresh(alert)
-    alert_copy = alert.model_copy()
-    curr_user = current_user.model_copy()
-    req_info = get_request_info(str(current_user.id))
-    background_tasks.add_task(notify_nearby_users, alert_copy, curr_user, request_info=req_info)
-    return {"message": "Alert created"}

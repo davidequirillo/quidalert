@@ -94,20 +94,42 @@ class LocationClient extends ChangeNotifier {
     _isFetching = true;
     notifyListeners();
     int distanceFilterValue = forceUpdate ? 0 : LocationClient.distanceBoundary;
+    if (kDebugMode) {
+      debugPrint(
+        "Fetching location with distance filter: $distanceFilterValue m, force update: $forceUpdate",
+      );
+    }
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        if (kDebugMode) {
+          debugPrint("Location services are disabled");
+        }
         throw LocationClientServiceDisabledException();
       }
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
+        if (kDebugMode) {
+          debugPrint("Location permissions are denied, requesting permissions");
+        }
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
+          if (kDebugMode) {
+            debugPrint(
+              "Location permissions are still denied after requesting",
+            );
+          }
           throw LocationClientPermissionDeniedException();
         }
       }
       if (permission == LocationPermission.deniedForever) {
+        if (kDebugMode) {
+          debugPrint("Location permissions are permanently denied");
+        }
         throw LocationClientPermissionsForeverException();
+      }
+      if (kDebugMode) {
+        debugPrint("Location permissions granted, fetching position");
       }
       Position returnedPosition = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
