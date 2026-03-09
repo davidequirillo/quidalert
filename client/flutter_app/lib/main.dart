@@ -14,7 +14,7 @@ import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/services/notification.dart';
 import 'package:quidalert_flutter/pages/startup.dart';
-import 'package:quidalert_flutter/pages/terms/terms_info.dart';
+import 'package:quidalert_flutter/pages/terms/terms_and_info.dart';
 import 'package:quidalert_flutter/pages/register.dart';
 import 'package:quidalert_flutter/pages/reset.dart';
 import 'package:quidalert_flutter/pages/login.dart';

@@ -211,6 +211,9 @@ def revoke_token(
     except:
         raise token_not_valid_exception()
     rtoken.is_revoked = True
+    rtoken.fcm_token = None
+    rtoken.fcm_token_updated_at = None
+    rtoken.updated_at = now_tz_naive()
     db_session.add(rtoken)
     db_session.commit()    
     return {"message": "Logout successful"}
