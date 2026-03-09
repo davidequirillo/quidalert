@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/config.dart' as config;
@@ -125,6 +126,7 @@ class InfoBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shared = context.read<SharedVars>();
+    final authClient = context.read<AuthClient>();
     bool termsAccepted = shared.termsAccepted;
     final loc = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
@@ -157,18 +159,23 @@ class InfoBody extends StatelessWidget {
                           Navigator.pushReplacementNamed(context, '/terms');
                           break;
                         case '/register':
-                          if (termsAccepted) {
+                          if (termsAccepted && !authClient.isLoggedIn()) {
                             Navigator.pushReplacementNamed(
                               context,
                               '/register',
                             );
+                          } else if (authClient.isLoggedIn() &&
+                              !authClient.isAdmin()) {
+                            Navigator.pushReplacementNamed(context, '/home');
                           } else {
                             Navigator.pushReplacementNamed(context, '/terms');
                           }
                           break;
                         case '/login':
-                          if (termsAccepted) {
+                          if (termsAccepted && !authClient.isLoggedIn()) {
                             Navigator.pushReplacementNamed(context, '/login');
+                          } else if (authClient.isLoggedIn()) {
+                            Navigator.pushReplacementNamed(context, '/home');
                           } else {
                             Navigator.pushReplacementNamed(context, '/terms');
                           }

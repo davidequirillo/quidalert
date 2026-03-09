@@ -13,7 +13,7 @@ from core.security_events import get_request_info
 from models.general import Alert, AlertIn, User
 from dependencies import get_current_user
 from services.security import now_tz_naive
-from services.tasks import notify_nearby_users
+from services.tasks import task_alert_search_and_notify
 
 router = APIRouter(
     tags=["Alerts"]
@@ -68,7 +68,7 @@ def create_alert(alert_in: AlertIn,
     curr_user = current_user.model_copy()
     req_info = get_request_info(str(current_user.id))
     background_tasks.add_task(
-        notify_nearby_users, 
+        task_alert_search_and_notify, 
         alert_copy, 
         curr_user, 
         request_info=req_info,

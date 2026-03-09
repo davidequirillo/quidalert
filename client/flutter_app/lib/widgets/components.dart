@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/services/notification.dart';
 
 class CAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -47,8 +48,9 @@ class CAppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authClient = context.read<AuthClient>();
     final shared = context.read<SharedVars>();
+    final authClient = context.read<AuthClient>();
+    final notifProvider = context.read<NotificationProvider>();
     final loc = AppLocalizations.of(context)!;
     bool termsAccepted = shared.termsAccepted;
     bool isLoggedIn = authClient.isLoggedIn();
@@ -79,6 +81,9 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.logout),
               title: Text('Logout'),
               onTap: () {
+                notifProvider.setAuthClient(
+                  null,
+                ); // we don't register anymore to the backend for notifications
                 authClient.logout();
                 Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/login');
