@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     minio_bucket_name: str = config.MINIO_BUCKET_NAME
     minio_access_key: str = "" # from environment, critical for security
     minio_secret_key: str = "" # same as above
+    firebase_keys_path: str = "" # from environment, critical for security
 
     # Initialized after loading the settings, not from environment 
     db_engine_echo: bool = False

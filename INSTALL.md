@@ -160,6 +160,14 @@ Flutter Web device (Chrome) is not completely supported at the moment.
 
 The Windows version currently has a problem with Firebase package (so probably we will create a specific version for desktop)
 
+### Send push notification to client
+
+To receive push notifications, the app requires registration to **Firebase Cloud Messaging (FCM)**.
+
+Push notifications are not enabled by default in this repository because each distributor must use their own Firebase project.
+
+In your Firebase Project, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
+
 ### Notes about production (run)
 
 In the backend machine (behind nginx reverse proxy):

@@ -13,6 +13,7 @@ import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/services/notification.dart';
+import 'package:quidalert_flutter/widgets/app_keys.dart';
 import 'package:quidalert_flutter/pages/startup.dart';
 import 'package:quidalert_flutter/pages/terms/terms_and_info.dart';
 import 'package:quidalert_flutter/pages/register.dart';
@@ -78,6 +79,8 @@ class QuidalertWidget extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: AppKeys.navigatorKey,
+        scaffoldMessengerKey: AppKeys.snackbarKey,
         title: config.appName,
         debugShowCheckedModeBanner: false,
         localizationsDelegates: [

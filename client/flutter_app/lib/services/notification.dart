@@ -4,15 +4,14 @@
 
 import 'dart:io';
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/widgets/app_keys.dart';
 
 class NotificationProvider extends ChangeNotifier {
   FirebaseMessaging? _messaging = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
   StreamSubscription<String>? _tokenStream;
   StreamSubscription<RemoteMessage>? _messageStream;
   String? fcmToken;
@@ -79,7 +78,6 @@ class NotificationProvider extends ChangeNotifier {
         settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional;
     if (isAllowed) {
-      await _initLocalNotifications();
       late final String? token;
       try {
         token = await _messaging!.getToken();
@@ -98,8 +96,10 @@ class NotificationProvider extends ChangeNotifier {
         }
       }
       try {
-        _setupFirebaseTokenListener(); // Listen for token refresh events
-        _setupFirebaseMessageListener(); // Listen for incoming messages while the app is in the foreground
+        _setupFirebaseTokenListener(); // Listen for fcm token refresh events
+        _setupFirebaseMessageForegroundListener(); // Listend for messages when the app is in foreground
+        await _setupFirebaseMessageBackgroundListener(); // Listend for essages when the app is in background, but not closed
+        await _setupFirebaseMessageTerminatedListener(); // Listen for messages when the app is terminated
       } catch (e) {
         debugPrint('Error setting up Firebase listeners: $e');
         _tokenStream?.cancel();
@@ -115,50 +115,6 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _initLocalNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings(
-          '@mipmap/ic_launcher',
-        ); // Use the app icon as the notification icon
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: DarwinInitializationSettings(),
-        );
-    await _localNotifications.initialize(settings: initializationSettings);
-  }
-
-  void _showLocalNotification(RemoteMessage message) {
-    RemoteNotification? notification = message.notification;
-    if (notification != null) {
-      _localNotifications
-          .show(
-            id: notification.hashCode, // Unique ID for the notification
-            title: notification.title,
-            body: notification.body,
-            notificationDetails: NotificationDetails(
-              android: AndroidNotificationDetails(
-                'alert_notifications_channel',
-                'Alert Notifications',
-                channelDescription:
-                    'This channel is used for alert notifications.',
-                importance: Importance.high,
-                priority: Priority.high,
-                icon: '@mipmap/ic_launcher',
-              ),
-              iOS: DarwinNotificationDetails(
-                presentAlert: true,
-                presentBadge: true,
-                presentSound: true,
-              ),
-            ),
-          )
-          .catchError(
-            (e) => debugPrint('Error showing local notification: $e'),
-          );
-    }
-  }
-
   void _setupFirebaseTokenListener() {
     _tokenStream = _messaging!.onTokenRefresh.listen((newToken) async {
       if (kDebugMode) {
@@ -171,7 +127,7 @@ class NotificationProvider extends ChangeNotifier {
     });
   }
 
-  void _setupFirebaseMessageListener() {
+  void _setupFirebaseMessageForegroundListener() {
     _messageStream = FirebaseMessaging.onMessage.listen((
       RemoteMessage message,
     ) {
@@ -180,7 +136,57 @@ class NotificationProvider extends ChangeNotifier {
           'Notification: received a message while in the foreground: ${message.messageId}',
         );
       }
-      _showLocalNotification(message);
+      AppKeys.snackbarKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(message.data['type']),
+          action: SnackBarAction(
+            label: "View",
+            onPressed: () {
+              _handleNavigation(message.data['route']);
+            },
+          ),
+        ),
+      );
     });
+  }
+
+  Future<void> _setupFirebaseMessageBackgroundListener() async {
+    // It will trigger if the app is in background, but not terminated
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
+      await Future.delayed(Duration(milliseconds: 1000));
+      if (kDebugMode) {
+        debugPrint(
+          'Notification: app opened from background by tapping on a notification: ${message.messageId}',
+        );
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleNavigation(message.data['route']);
+      });
+    });
+  }
+
+  Future<void> _setupFirebaseMessageTerminatedListener() async {
+    // It will only trigger if the app is completely terminated and opened by tapping on a notification
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
+    if (initialMessage != null) {
+      await Future.delayed(Duration(milliseconds: 1000));
+      if (kDebugMode) {
+        debugPrint(
+          'Notification: app opened from terminated state by tapping on a notification: ${initialMessage.messageId}',
+        );
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _handleNavigation(initialMessage.data['route']);
+      });
+    }
+  }
+
+  void _handleNavigation(String route) {
+    AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+    );
+    AppKeys.navigatorKey.currentState?.pushNamed(route);
   }
 }

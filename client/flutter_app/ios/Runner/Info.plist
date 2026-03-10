@@ -58,11 +58,11 @@
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>This app monitors your location every 30 minutes to update the location and send it to the server, even in the background, so the user can receive eventual nearby alerts (coming from other users)</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>This app requires background location access (every 30 minutes) to function properly , so the user can receive eventual nearby alerts (coming from other users), even when the app is not in the foreground</string>
+    <string>This app requires background location access (every 30 minutes) to function properly, so the user can receive eventual nearby alerts (coming from other users), even when the app is in the background</string>
     <key>UIBackgroundModes</key>
     <array>
+		<string>fetch</string>
         <string>location</string>
-        <string>fetch</string>
     </array>
 </dict>
 </plist>
