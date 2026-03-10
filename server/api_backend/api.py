@@ -22,6 +22,7 @@ from jwt.exceptions import (
     InvalidSubjectError, InvalidIssuedAtError,
     InvalidJTIError
 )
+import firebase_admin
 from core.settings import settings
 from core.logging import setup_logging
 from core.security_events import (
@@ -75,6 +76,11 @@ async def lifespan(app: FastAPI):
     app.state.db_engine = dbmgr.get_engine()
     app.state.redis_pool = dbmgr.get_redis_pool()
     app.state.s3_client = bucketmgr.get_s3_client()
+    fbase_path = settings.firebase_keys_path
+    firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(firebase_cred)
+        print("Firebase Admin SDK initialized")
     yield
     print("Shutting down api framework...")
     if app.state.db_engine:
