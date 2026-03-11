@@ -299,8 +299,10 @@ def notify_single_user(alert, user_id, fcm_token, message: str, request_info, lo
         return True
     except messaging.UnregisteredError as e:
         with Session(db_engine) as db_session: # needed to do some cleaning (if there are invalid fcm tokens)
-            # We clean unregistered FCM tokens (by ids in...) from database
-            statement = select(RefreshToken).where(RefreshToken.user_id == user_id)
+            # We clean unregistered FCM token from database
+            statement = select(RefreshToken).where(
+                RefreshToken.user_id == user_id).where(
+                    RefreshToken.fcm_token == fcm_token)
             rtoken = db_session.exec(statement).first()
             if rtoken:
                 rtoken.fcm_token = None
