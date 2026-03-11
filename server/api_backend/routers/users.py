@@ -4,7 +4,7 @@
 
 from fastapi import APIRouter, Depends
 from fastapi.concurrency import run_in_threadpool
-from sqlmodel import Session, desc, select, update
+from sqlmodel import Session, any_, desc, select, update
 from starlette import status as http_status
 from starlette.exceptions import HTTPException
 from models.general import Alert, EmailListDict, PromotionSchema, User, UserInCompleteProfile, UserOut, UserOutPaginated, UserOutWithAlerts
@@ -107,7 +107,7 @@ def get_users_by_emails(
     statement = select(User)
     if (last_seen_id):
         statement = statement.where(User.id < last_seen_id) # type: ignore
-    statement = statement.where(User.email.in_(dict.emails)) # type: ignore
+    statement = statement.where(User.email == any_(dict.emails))
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
@@ -277,7 +277,7 @@ async def promote_users_by_emails(
             statement = update(User)
         else: # officers can update only users authorized by them
             statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
-        statement = statement.where(User.email.in_(emails)) # type: ignore
+        statement = statement.where(User.email == any_(emails)) # type:ignore
         # update fields according to promotion schema
         if (update_fields.type == "admin"):
             statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
