@@ -10,6 +10,7 @@ import secrets
 import hashlib
 import hmac
 from core.settings import settings
+from models.general import User
 
 def now_tz_naive():
     return datetime.now(timezone.utc).replace(tzinfo=None, microsecond=0)
@@ -109,14 +110,16 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
 
-def create_geoposition_token(subject: str, expires_delta: Optional[timedelta] = None):
+def create_geoposition_token(user: User, expires_delta: Optional[timedelta] = None):
     now = now_tz_naive()
     expire = now + (expires_delta or timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
     data = {
-        "sub": subject,
+        "sub": str(user.id),
         "type": "gps",
         "iat": now,
-        "exp": expire
+        "exp": expire,
+        "user_role": user.role,
+        "user_is_chief": 1 if user.is_chief else 0
     }
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
