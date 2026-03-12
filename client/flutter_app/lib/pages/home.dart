@@ -11,6 +11,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/notification.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -40,6 +41,7 @@ class _HomeBodyState extends State<HomeBody> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncFcmToken();
+      _startBackgroundLocationTracking();
     });
   }
 
@@ -85,6 +87,14 @@ class _HomeBodyState extends State<HomeBody> {
       context: context,
       localizations: AppLocalizations.of(context)!,
     );
+  }
+
+  Future<void> _startBackgroundLocationTracking() async {
+    try {
+      await BackgroundLocationService.startTracking();
+    } catch (e) {
+      debugPrint("Error initializing background location tracking: $e");
+    }
   }
 
   @override

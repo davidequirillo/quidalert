@@ -8,6 +8,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/notification.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 
 class CAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -81,9 +82,9 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.logout),
               title: Text('Logout'),
               onTap: () {
-                notifProvider.setAuthClient(
-                  null,
-                ); // we don't register anymore to the backend for notifications
+                BackgroundLocationService.stopTracking();
+                // we don't register anymore to the backend for notifications
+                notifProvider.setAuthClient(null);
                 authClient.logout();
                 Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/login');

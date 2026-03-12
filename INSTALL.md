@@ -87,13 +87,15 @@ You must:
 
 Without these steps, the application will not compile and will not run.
 
-### About background location update
+### About background location updates
 
-This project uses the Flutter Background Geolocation plugin.
+This project uses the flutter_background_geolocation plugin.
 
-The plugin works without a license in DEBUG builds, but a commercial license is required for RELEASE builds.
+The plugin works without a license in DEBUG builds.
 
-If you intend to distribute this app, you must purchase a license from Transistorsoft.
+However, a commercial license is required for RELEASE builds.
+
+If you plan to distribute this app, you must purchase a license from Transistorsoft and add it to the AndroidManifest.xml file (see AndroidManifest.xml, license meta 
 
 ### Distribution
 
