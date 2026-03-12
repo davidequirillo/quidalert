@@ -10,7 +10,7 @@ import 'package:flutter_background_geolocation/flutter_background_geolocation.da
 class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;
-  static double distanceFilterInMeters = 60; // 60 meters
+  static double distanceFilterInMeters = 500; // 500 meters
   static int timeFilterInSeconds = 1800; // 30 minutes
   static int dailyLimitInSeconds = 86400; // 24 hours
 
