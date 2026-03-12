@@ -43,7 +43,7 @@ dependencies:
   file_picker: ^10.3.9
   geolocator: ^14.0.2
   geocoding: ^4.0.0
-  background_location_2: ^0.16.3
+  flutter_background_geolocation: ^5.0.5
   firebase_core: ^4.5.0
   firebase_messaging: ^16.1.2
 

@@ -52,16 +52,18 @@
     <true/>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>This app requires access to library to allow the opening of multimedia files</string>
+	<!-- Quidalert: Background location plugin license -->
+	<key>LICENSE_KEY</key>
+	<string>INSERT-YOUR-LICENSE-HERE</string>
 	<!-- Quidalert: the following lines are for gps location access -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-    <string>Access to your location is required to detect nearby alerts and allow you to send emergency requests to users in your immediate vicinity.</string>
+    <string>Access to your location is required to send alerts to nearby users (the alert is sent to the server), in other words, to send emergency requests to the server in order to notify users in your immediate vicinity.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Your location is used to send you real-time proximity alerts for nearby emergencies or critical events, ensuring your safety even when the app is closed or not in use.</string>
+    <string>To provide continuous protection, this app monitors your location in the background, sending the updates to the server, even when the app is closed, to ensure you can receive eventual alerts created by other users nearby.</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>To provide continuous protection, this app monitors your location in the background to notify you of nearby hazards or help requests from other users, even if the app is not actively running.</string>
+    <string>To provide continuous protection, this app monitors your location in the background, sending the updates to the server, even when the app is closed, to ensure you can receive eventual alerts created by other users nearby.</string>
     <key>UIBackgroundModes</key>
     <array>
-		<string>fetch</string>
         <string>location</string>
     </array>
 </dict>

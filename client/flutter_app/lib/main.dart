@@ -13,6 +13,7 @@ import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/services/notification.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 import 'package:quidalert_flutter/widgets/app_keys.dart';
 import 'package:quidalert_flutter/pages/startup.dart';
 import 'package:quidalert_flutter/pages/terms/terms_and_info.dart';
@@ -40,6 +41,7 @@ import 'package:quidalert_flutter/pages/profile/complete.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await BackgroundLocationService.init();
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
