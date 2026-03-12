@@ -59,6 +59,8 @@ class LocationClientTimeoutException implements Exception {
   String toString() => 'LocationClientTimeoutException: $message';
 }
 
+// Main class for fetching location and translating it to an address
+// Used for foreground location tracking (e.g., when user is filling an alert form)
 class LocationClient extends ChangeNotifier {
   Position? _currentPosition;
   String? _currentAddress;
@@ -177,8 +179,6 @@ class LocationClient extends ChangeNotifier {
               "Minimum movement or time not passed: not updating address",
             );
           }
-          _isFetching = false;
-          notifyListeners();
           return;
         }
       }
@@ -248,6 +248,9 @@ class LocationClient extends ChangeNotifier {
       _currentAddress = null;
       throw LocationClientFetchPositionException(e.toString());
     } finally {
+      if (kDebugMode) {
+        debugPrint("Finished fetching location");
+      }
       _isFetching = false;
       notifyListeners();
     }

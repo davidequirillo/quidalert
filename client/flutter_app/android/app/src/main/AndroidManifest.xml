@@ -51,7 +51,8 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="alert_notifications_channel" />
-        <!-- Quidalert: Background location plugin license -->
+        <!-- Quidalert: Background location plugin license, 
+        insert your app distribution name and license key -->
         <meta-data
             android:name="com.example.app.LICENSE_KEY"
             android:value="INSERT-YOUR-LICENSE-HERE" />
