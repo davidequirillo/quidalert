@@ -25,12 +25,12 @@ class BackgroundLocationService {
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         desiredAccuracy: bg.Config.DESIRED_ACCURACY_HIGH,
-        distanceFilter: distanceFilterInMeters,
+        distanceFilter: distanceFilterInMeters, // get location if there is a significant movement
         stopOnTerminate: false,
         startOnBoot: true,
         foregroundService: true,
         heartbeatInterval:
-            timeFilterInSeconds, // send location at least every 30 minutes even if not moving
+            timeFilterInSeconds, // get location every 30 minutes
       ),
     );
   }
@@ -59,6 +59,8 @@ class BackgroundLocationService {
         location.coords.longitude,
       );
       final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
+        // don't send the update to the server if not enough time is passed
+        // or there hasn't been a significant movement, but force the update after a daily limit
       if ((distance < distanceFilterInMeters ||
               secondsSinceLast < timeFilterInSeconds) &&
           secondsSinceLast < dailyLimitInSeconds) {
