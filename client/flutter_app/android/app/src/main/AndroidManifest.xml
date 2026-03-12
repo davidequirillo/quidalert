@@ -37,11 +37,10 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Quidalert: background service for location updates -->
+        <!-- Quidalert: background service for gps location updates -->
         <service
-        android:name="id.flutter.flutter_background_service.BackgroundService"
-        android:foregroundServiceType="location"
-        android:exported="false" />
+            android:name="com.transistorsoft.locationmanager.service.TrackingService"
+            android:foregroundServiceType="location" />
         <!-- Quidalert: background service tag end -->
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -52,6 +51,10 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="alert_notifications_channel" />
+        <!-- Quidalert: Background location plugin license -->
+        <meta-data
+            android:name="com.example.app.LICENSE_KEY"
+            android:value="INSERT-YOUR-LICENSE-HERE" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
