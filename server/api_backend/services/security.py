@@ -115,7 +115,7 @@ def create_geoposition_token(user: User, expires_delta: Optional[timedelta] = No
     expire = now + (expires_delta or timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
     data = {
         "sub": str(user.id),
-        "type": "gps",
+        "type": "gps-update",
         "iat": now,
         "exp": expire,
         "user_role": user.role,

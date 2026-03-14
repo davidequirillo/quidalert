@@ -6,6 +6,11 @@ import 'package:flutter/foundation.dart';
 import 'dart:math';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:jose/jose.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:quidalert_flutter/config.dart' as config;
 
 class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
@@ -13,6 +18,7 @@ class BackgroundLocationService {
   static double distanceFilterInMeters = 500; // 500 meters
   static int timeFilterInSeconds = 1800; // 30 minutes
   static int dailyLimitInSeconds = 86400; // 24 hours
+  static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static Future<void> init() async {
     bg.BackgroundGeolocation.onLocation((bg.Location location) {
@@ -25,12 +31,12 @@ class BackgroundLocationService {
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         desiredAccuracy: bg.Config.DESIRED_ACCURACY_HIGH,
-        distanceFilter: distanceFilterInMeters, // get location if there is a significant movement
+        distanceFilter:
+            distanceFilterInMeters, // get location if there is a significant movement
         stopOnTerminate: false,
         startOnBoot: true,
         foregroundService: true,
-        heartbeatInterval:
-            timeFilterInSeconds, // get location every 30 minutes
+        heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
       ),
     );
   }
@@ -59,8 +65,8 @@ class BackgroundLocationService {
         location.coords.longitude,
       );
       final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
-        // don't send the update to the server if not enough time is passed
-        // or there hasn't been a significant movement, but force the update after a daily limit
+      // don't send the update to the backend if not enough time is passed
+      // or there hasn't been a significant movement, but force the update after a daily limit
       if ((distance < distanceFilterInMeters ||
               secondsSinceLast < timeFilterInSeconds) &&
           secondsSinceLast < dailyLimitInSeconds) {
@@ -96,8 +102,55 @@ class BackgroundLocationService {
 
   static double _degreesToRadians(double degrees) => degrees * pi / 180;
 
-  static void sendToBackend(double lat, double lng) {
+  static Future<void> sendToBackend(double lat, double lng) async {
+    final token = await getGpsToken();
+    if (token == null) return;
     debugPrint("Sending to backend: Lat=$lat, Lng=$lng");
-    // implement your HTTP API call to the server
+    final String url = "${config.apiBaseUrl}/update-gps-position";
+    try {
+      final uri = Uri.parse(url);
+      final response = await http.post(
+        uri,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"latitude": lat, "longitude": lng}),
+      );
+      if (response.statusCode == 200) {
+        debugPrint('Gps location update successful');
+      } else {
+        if (kDebugMode) {
+          debugPrint('Server error: ${response.statusCode} - ${response.body}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error sending location to backend: $e");
+      }
+    }
+  }
+
+  static Future<String?> getGpsToken() async {
+    final gpsToken = await _storage.read(key: "gpsToken");
+    if (gpsToken != null) {
+      debugPrint("GPS token loaded from storage");
+      if (_isTokenExpired(gpsToken)) {
+        debugPrint("GPS token is expired, returning null");
+        return null;
+      }
+    } else {
+      debugPrint("No GPS token found in storage");
+      return null;
+    }
+    return gpsToken;
+  }
+
+  static bool _isTokenExpired(String token) {
+    final jwt = JsonWebToken.unverified(token);
+    final exp = jwt.claims.getTyped('exp');
+    if (exp == null) return true;
+    final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+    return DateTime.now().toUtc().isAfter(expiry);
   }
 }

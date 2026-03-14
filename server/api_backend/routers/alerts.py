@@ -4,14 +4,16 @@
 
 from datetime import timedelta
 from fastapi import APIRouter, Depends, Request, BackgroundTasks
-from dependencies import get_db_session
+from dependencies import (get_current_user, 
+            get_db_session, get_redis_session, 
+            get_geoposition_token_data,
+        )
 from sqlmodel import Session, select
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from core.exceptions import forbidden_exception
 from core.security_events import get_request_info
-from models.general import Alert, AlertIn, User
-from dependencies import get_current_user
+from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
 from services.security import now_tz_naive
 from services.tasks import task_alert_search_and_notify
 
@@ -76,3 +78,25 @@ def create_alert(alert_in: AlertIn,
         redis_pool=request.app.state.redis_pool
         )
     return {"message": "Alert created"}
+
+@router.post("/update-gps-position")
+async def update_gps_position(
+    gps_data: GpsCoordinatesSchema,
+    user_data: GpsTokenData = Depends(get_geoposition_token_data),
+    redis_client = Depends(get_redis_session)
+):
+    user_id = user_data.user_id
+    is_chief = user_data.user_is_chief
+    now = now_tz_naive()
+    now_int_ts = int(now.timestamp())
+    lat, lon = gps_data.latitude, gps_data.longitude
+    async with redis_client.pipeline(transaction=True) as pipe:
+        if is_chief:
+            pipe.zrem("user_locations", user_id)
+            pipe.geoadd("chief_locations", (lon, lat, user_id))
+        else:
+            pipe.zrem("chief_locations", user_id)
+            pipe.geoadd("user_locations", (lon, lat, user_id))
+        pipe.zadd("location_last_updates", {str(user_id): now_int_ts})      
+        await pipe.execute()
+    return {"status": "success", "message": "GPS position updated"}
