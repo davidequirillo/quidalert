@@ -83,6 +83,7 @@ class AuthClient extends ChangeNotifier {
       debugPrint('AuthClient initialization started');
     }
     await loadRefreshToken(); // load local refresh token
+    await loadGpsToken(); // load local GPS token
     try {
       await refreshTokens(); // get new auth tokens if needed
     } on InvalidTokenException catch (_) {
@@ -156,6 +157,28 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
+  Future<void> saveGpsToken() async {
+    await _secureStorage.write(key: 'gpsToken', value: gpsToken);
+    if (kDebugMode) {
+      debugPrint('GPS token saved');
+    }
+  }
+
+  Future<void> loadGpsToken() async {
+    final token = await _secureStorage.read(key: 'gpsToken');
+    if (kDebugMode) {
+      debugPrint('GPS token loaded: $token');
+    }
+    gpsToken = token;
+  }
+
+  Future<void> deleteGpsToken() async {
+    await _secureStorage.delete(key: 'gpsToken');
+    if (kDebugMode) {
+      debugPrint('GPS token deleted');
+    }
+  }
+
   Future<void> checkLoginTokenValidity() async {
     if (loginToken == null) {
       if (kDebugMode) {
@@ -181,18 +204,19 @@ class AuthClient extends ChangeNotifier {
   }
 
   Future<void> refreshTokens() async {
-    // Get new refresh and access tokens (api/auth/refresh),
+    // Get new refresh, access, and GPS tokens (api/auth/refresh),
     // using current refresh token as api input
     if (refreshToken == null) {
       if (kDebugMode) {
-        debugPrint('Try refresh tokens, refresh_token is null');
+        debugPrint('Try refresh tokens: refresh_token is null');
       }
       accessToken = null;
+      gpsToken = null;
       return;
     }
     if (_isTokenExpired(refreshToken!)) {
       if (kDebugMode) {
-        debugPrint('Try refresh tokens, local check, refresh_token expired)');
+        debugPrint('Try refresh tokens: local check, refresh_token expired)');
       }
       await setAuthTokens(null, null, null);
       throw ExpiredTokenException();
@@ -255,14 +279,18 @@ class AuthClient extends ChangeNotifier {
   Future<void> setAuthTokens(String? rtok, String? atok, String? gtok) async {
     // Set refresh token and access token (from login, or refresh api)
     // Set gps token too, useful for background periodic position update
-    if (rtok != null) {
+    if ((rtok != null) && (atok != null) && (gtok != null)) {
       refreshToken = rtok;
       accessToken = atok;
       gpsToken = gtok;
       await saveRefreshToken();
+      await saveGpsToken();
     } else {
       if (refreshToken != null) {
         await deleteRefreshToken();
+      }
+      if (gpsToken != null) {
+        await deleteGpsToken();
       }
       accessToken = refreshToken = null;
       gpsToken = null;

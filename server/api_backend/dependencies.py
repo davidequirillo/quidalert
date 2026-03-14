@@ -8,7 +8,7 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 from sqlmodel import Session, select
 from core import dbmgr
 from core.exceptions import token_expired_exception
-from models.general import User
+from models.general import User, GpsTokenData
 from core.exceptions import token_not_valid_exception
 from services.security import decode_token, from_timestamp_to_datetime_tz_naive
 
@@ -65,3 +65,24 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
             db_session.commit()
             db_session.refresh(user)
     return user
+
+def get_geoposition_token_data(gps_token: str = Depends(oauth2_scheme)):
+    try:
+        token_data = decode_token(gps_token)
+    except ExpiredSignatureError:
+        raise token_expired_exception()
+    except InvalidTokenError:
+        raise token_not_valid_exception()
+    except:
+        raise token_not_valid_exception() 
+    token_type = token_data.get("type")
+    if (not token_type) or (token_type != "gps-update"): 
+        raise token_not_valid_exception()
+    user_id = token_data.get("sub")
+    is_chief = token_data.get("user_is_chief") == 1
+    user_role = token_data.get("user_role")
+    if (not user_id) or (not user_role):
+        raise token_not_valid_exception()
+    return GpsTokenData(user_id=user_id, 
+                    user_is_chief=is_chief, 
+                    user_role=user_role)

@@ -371,3 +371,12 @@ class AlertedUser(SQLModel, table=True):
     # Chief can do a closing vote: his final vote can be -15, 0, +15;
     vote: int = Field(default=0, ge=-1, le=+1, nullable=False)
     closing_vote: int = Field(default=0, ge=-15, le=+15, nullable=False)
+
+class GpsTokenData(BaseModel):
+    user_id: uuid.UUID
+    user_is_chief: bool
+    user_role: str
+
+class GpsCoordinatesSchema(BaseModel):
+    latitude: float
+    longitude: float
