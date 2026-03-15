@@ -13,9 +13,14 @@ from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from core.exceptions import forbidden_exception
 from core.security_events import get_request_info
+from core.dbmgr import (
+    get_redis_chief_locations_key, 
+    get_redis_user_locations_key, 
+    get_redis_location_last_updates_key)
 from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
 from services.security import now_tz_naive
-from services.tasks import task_alert_search_and_notify
+from services.tasks import (
+    task_alert_search_and_notify, task_general_cleanup)
 
 router = APIRouter(
     tags=["Alerts"]
@@ -86,17 +91,49 @@ async def update_gps_position(
     redis_client = Depends(get_redis_session)
 ):
     user_id = user_data.user_id
+    user_id_str = str(user_id)
     is_chief = user_data.user_is_chief
     now = now_tz_naive()
     now_int_ts = int(now.timestamp())
     lat, lon = gps_data.latitude, gps_data.longitude
+    userloc_key = get_redis_user_locations_key(user_id_str)
+    chiefloc_key = get_redis_chief_locations_key(user_id_str)
+    last_upd_key = get_redis_location_last_updates_key(user_id_str)
     async with redis_client.pipeline(transaction=True) as pipe:
         if is_chief:
-            pipe.zrem("user_locations", user_id)
-            pipe.geoadd("chief_locations", (lon, lat, user_id))
+            pipe.zrem(userloc_key, user_id_str)
+            pipe.geoadd(chiefloc_key, (lon, lat, user_id_str))
         else:
-            pipe.zrem("chief_locations", user_id)
-            pipe.geoadd("user_locations", (lon, lat, user_id))
-        pipe.zadd("location_last_updates", {str(user_id): now_int_ts})      
+            pipe.zrem(chiefloc_key, user_id_str)
+            pipe.geoadd(userloc_key, (lon, lat, user_id_str))
+        pipe.zadd(last_upd_key, {user_id_str: now_int_ts})      
         await pipe.execute()
     return {"status": "success", "message": "GPS position updated"}
+
+@router.post("/api/alert-close")
+def close_alert(alert_id: int,
+            request: Request,
+            background_tasks: BackgroundTasks,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_chief):
+        raise forbidden_exception()
+    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+    if alert is None:
+        return {"message": "Alert not found"}
+    alert.is_closed = True
+    db_session.add(alert)
+    db_session.commit()
+    db_session.refresh(alert)
+    alert_copy = alert.model_copy()
+    curr_user = current_user.model_copy()
+    req_info = get_request_info(str(current_user.id))
+    background_tasks.add_task(
+        task_general_cleanup, 
+        alert_copy, 
+        curr_user, 
+        request_info=req_info,
+        db_engine=request.app.state.db_engine,
+        redis_pool=request.app.state.redis_pool
+        )
+    return {"message": "Alert created"}

@@ -86,7 +86,10 @@ async def lifespan(app: FastAPI):
     if app.state.db_engine:
         app.state.db_engine.dispose()
     if app.state.redis_pool:
-        await app.state.redis_pool.disconnect()
+        if settings.redis_mode == "cluster":
+            await app.state.redis_pool.disconnect() # for cluster, disconnect is async
+        else:
+            await app.state.redis_pool.disconnect()
     if app.state.s3_client:
         app.state.s3_client.close()
     app.state.db_engine = None

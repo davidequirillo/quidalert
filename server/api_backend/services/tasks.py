@@ -7,7 +7,12 @@ import uuid
 import redis.asyncio as redis
 from sqlmodel import Session, select, insert, update
 from firebase_admin import messaging
-from models.general import Alert, RefreshToken, User, UserLanguage, AlertedUser
+from datetime import timedelta
+from core.settings import settings
+from models.general import (
+    RefreshToken, User, UserLanguage, 
+    Alert, AlertedUser)
+from services.security import now_tz_naive
 from core.tasks_events import (
     log_alert_error_searching_closest_chief,
     log_alert_error_searching_nearby_users,
@@ -23,7 +28,18 @@ from core.tasks_events import (
     log_alert_error_notifying_sender,
     log_alert_notify_chief,
     log_alert_notify_nearby_users,
-    log_alert_notify_sender)
+    log_alert_notify_sender,
+    log_alert_cleanup_expired_locations_error,
+    log_alert_cleanup_expired_locations_completed,
+    log_alert_cleanup_expired_locations_started)
+from core.dbmgr import (
+    REDIS_TOTAL_SHARDS,
+    REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY,
+    get_redis_chief_locations_key,
+    get_redis_user_locations_key,
+    get_redis_location_last_updates_key,
+    get_all_redis_chief_locations_keys,
+    get_all_redis_user_locations_keys)
 
 alert_notification_templates = {
     "en": {
@@ -51,7 +67,9 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
     chief_can_be_notified = False
     sender_can_be_notified = False # sender: the user who created the alert
     chief, nearby_users = asyncio.run(
-        get_closest_chief_and_nearby_users(alert, request_info, redis_pool))
+        get_closest_chief_and_nearby_users(
+            alert, request_info, redis_pool)
+        )
     sender = { # info about the user who created the alert, to be used in logging and notifications
         "user_id": str(user.id),
         "distance_km": 0,
@@ -127,66 +145,121 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     
-async def get_closest_chief_and_nearby_users(alert, request_info, redis_pool):    
-    async with redis.Redis(connection_pool=redis_pool, decode_responses=True) as redis_client:
-        chief = await get_closest_chief(alert, request_info, redis_client)
-        users = await get_nearby_users(alert, request_info, redis_client)
-    return chief, users
+async def get_closest_chief_and_nearby_users(alert, request_info, redis_pool):
+    chief, users = None, []
+    if settings.redis_mode == "cluster":
+        chief = await get_closest_chief(alert, request_info, redis_pool)
+        users = await get_nearby_users(alert, request_info, redis_pool)
+        return chief, users
+    else:
+        async with redis.Redis(connection_pool=redis_pool, decode_responses=True) as redis_client:
+            chief = await get_closest_chief(alert, request_info, redis_client)
+            users = await get_nearby_users(alert, request_info, redis_client)
+        return chief, users
 
 async def get_closest_chief(alert, request_info, redis_client):
-    try:
-        results = await redis_client.geosearch(
-            name="chief_locations",
-            longitude=alert.longitude,
-            latitude=alert.latitude,
-            radius=10000, # Max radius in km to search for chiefs (10,000 km is basically the whole world)
-            unit="km",
-            sort="asc", # Sort by distance (closest first)    
-            count=1,
-            withdist=True,
-            withcoord=True)
-        if not results:
+    # We obtain all shards keys for chief locations
+    shard_keys = get_all_redis_chief_locations_keys()
+    try:    
+        # 1. Preparation: we create the tasks (one for each shard) to search for the closest chief in each shard in parallel 
+        tasks = [
+            redis_client.geosearch(
+                name=key,
+                longitude=alert.longitude,
+                latitude=alert.latitude,
+                radius=10000, 
+                unit="km",
+                sort="asc",
+                count=10, # we search for the closest 10 chiefs
+                withdist=True,
+                withcoord=True
+            ) for key in shard_keys
+        ]
+
+        # 2. Parallel execution
+        sharded_results = await asyncio.gather(*tasks)
+
+        # 3. Gather
+        all_candidates = []
+        for results in sharded_results:
+            if results:
+                all_candidates.extend(results)
+
+        if not all_candidates:
             raise Exception("No chiefs found within 10,000 km radius")
-        user_id, distance, coords = results[0]
-        closest_chief = {
+
+        # 4. Sorting
+        all_candidates.sort(key=lambda x: x[1]) # x[1] is the distance
+        
+        user_id, distance, coords = all_candidates[0]
+
+        return {
             "user_id": user_id,
             "distance_km": round(distance, 3),
             "location": {
-                "latitude": coords[1], # redis returns (longitude, latitude) format
+                "latitude": coords[1],
                 "longitude": coords[0]
             }
         }
-        return closest_chief
+    
     except Exception as e:
         log_alert_error_searching_closest_chief(str(alert.id), request_info, detail=str(e))
         return None
         
 async def get_nearby_users(alert, request_info, redis_client):
+    """
+    Searches for users near a specific alert across all 16 shards in parallel.
+    This is the core of the universal scaling architecture.
+    """
     nearby_users = []
+    
+    # We obtain all shards keys for user locations
+    shard_keys = get_all_redis_user_locations_keys()
+    
     try:
-        results = await redis_client.geosearch(
-            name="user_locations",
-            longitude=alert.longitude,
-            latitude=alert.latitude,
-            radius=alert.radius,
-            unit="km",
-            sort="asc", # Sort by distance (closest first)
-            count=1000, # Max number of nearby users to return
-            withdist=True,
-            withcoord=True)   
-        for user_id, distance, coords in results:
+        # 1. Preparation: we create the tasks (one for each shard)
+        tasks = [
+            redis_client.geosearch(
+                name=key,
+                longitude=alert.longitude,
+                latitude=alert.latitude,
+                radius=alert.radius,
+                unit="km",
+                sort="asc",
+                count=1000, 
+                withdist=True,
+                withcoord=True
+            ) for key in shard_keys
+        ]
+        
+        # 2. Parallel execution
+        sharded_results = await asyncio.gather(*tasks)
+
+        # 3. Unification of the results for each shard
+        all_matches = []
+        for results in sharded_results:
+            if results:
+                all_matches.extend(results)
+        
+        # 4. Sorting results, based on distance (x[1] contains the distance)
+        all_matches.sort(key=lambda x: x[1])
+
+        # 5. Filtering: we keep only the first 1000 entries
+        for user_id, distance, coords in all_matches[:1000]:
             nearby_users.append({
                 "user_id": user_id,
                 "distance_km": round(distance, 3),
                 "location": {
-                    "latitude": coords[1], # redis returns (longitude, latitude) format
+                    "latitude": coords[1],  # Redis returns (lon, lat)
                     "longitude": coords[0]
                 }
             })
+        
         return nearby_users
+
     except Exception as e:
         log_alert_error_searching_nearby_users(str(alert.id), request_info, detail=str(e))
-        return None
+        return []
 
 def check_users_against_db_and_save(alert, users, request_info, db_engine):
     ids = [u["user_id"] for u in users]
@@ -313,4 +386,80 @@ def notify_single_user(alert, user_id, fcm_token, message: str, request_info, lo
     except Exception as e:
         log_error(str(alert.id), request_info, detail=str(e))
         raise(e)
+
+def task_general_cleanup(
+            alert: Alert, user: User, request_info: dict,
+            db_engine, redis_pool):
+    asyncio.run(
+        cleanup_expired_locations(
+            alert, request_info, redis_pool)
+        )
+    # other cleanups
+    return
+
+async def cleanup_expired_locations_shard(shard_id_hex, exp_int_ts, redis_client):
+    deleted_in_shard = 0
+    last_upd_key = get_redis_location_last_updates_key(shard_id_hex)
+    uloc_key = get_redis_user_locations_key(shard_id_hex)
+    chiefloc_key = get_redis_chief_locations_key(shard_id_hex)
     
+    while True:
+        expired_user_ids = await redis_client.zrangebyscore(
+            last_upd_key, 
+            "-inf", 
+            exp_int_ts, 
+            offset=0, 
+            num=5000
+        )
+        if not expired_user_ids:
+            break   
+        async with redis_client.pipeline(transaction=True) as pipe:
+            pipe.zrem(uloc_key, *expired_user_ids)
+            pipe.zrem(chiefloc_key, *expired_user_ids)
+            pipe.zrem(last_upd_key, *expired_user_ids)
+            await pipe.execute()
+        deleted_in_shard += len(expired_user_ids)
+        await asyncio.sleep(0.05) 
+    return deleted_in_shard
+
+async def cleanup_expired_locations(alert, request_info, redis_client):
+    alert_id = str(alert.id)
+    now = now_tz_naive()
+    exp_dt = now - timedelta(hours=72)
+    exp_int_ts = int(exp_dt.timestamp())
+    total_deleted = 0
+
+    lock_key = REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY
+    
+    # nx=True (Set if Not Exists)
+    # ex=3600 (expiry 60 minutes - cooldown)
+    lock_acquired = await redis_client.set(lock_key, "active", ex=3600, nx=True)
+    if not lock_acquired:
+        # if we cannot acquire the lock, it means that another cleanup task is currently running 
+        # (or recently ran and is in cooldown)
+        return 0
+    
+    log_alert_cleanup_expired_locations_started(
+        alert_id, request_info, 
+        detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
+    )
+    try:
+        shard_ids = [f"{i:x}" for i in range(REDIS_TOTAL_SHARDS)] # shard ids in hexadecimal (0, 1, ..., 9, a, b, c, d, e, f)
+
+        tasks = [cleanup_expired_locations_shard(
+                sid, exp_int_ts, redis_client
+            ) for sid in shard_ids]
+
+        results = await asyncio.gather(*tasks)
+        
+        total_deleted = sum(results)
+        
+        log_alert_cleanup_expired_locations_completed(
+            alert_id, request_info, 
+            detail=f"Cleanup completed: {total_deleted} locations removed across {REDIS_TOTAL_SHARDS} shards"
+        )
+        return total_deleted
+
+    except Exception as e:
+        log_alert_cleanup_expired_locations_error(alert_id, request_info, detail=str(e))
+        return total_deleted

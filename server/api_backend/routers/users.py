@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException
 from models.general import Alert, EmailListDict, PromotionSchema, User, UserInCompleteProfile, UserOut, UserOutPaginated, UserOutWithAlerts
 from dependencies import get_db_session, get_current_user, get_redis_session
 from core.exceptions import forbidden_exception
+from core.dbmgr import get_redis_chief_locations_key, REDIS_MUTEX_CHIEF_UPDATE_KEY
 from services.security import now_tz_naive
 
 router = APIRouter(
@@ -218,9 +219,9 @@ async def promote_users(
     if current_user.is_admin and promotion_schema.type:
         # we use a redis lock to avoid concurrent updates 
         # to user roles, that could cause inconsistencies 
-        # in the active chiefs list in redis
+        # in the chief locations list in redis
         async with redis_client.lock( 
-            "lock:user_roles_update",
+            REDIS_MUTEX_CHIEF_UPDATE_KEY,
             timeout=60, # lock timeout (max time to hold the lock)
             sleep=5, # sleep time between lock acquisition attempts
             blocking_timeout=60 # max time to wait for the lock
@@ -228,13 +229,12 @@ async def promote_users(
             try: 
                 crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
                 if crit_upd_rows:
-                    async with redis_client.pipeline(transaction=True) as pipe:
+                    async with redis_client.pipeline(transaction=False) as pipe:
                         for user_id, chief_value in crit_upd_rows:
-                            if chief_value == True: # we add the user to the chiefs set in redis, to have a fast access to active chiefs list, for geoposition updates and alerts
-                                pipe.sadd("active_chiefs", str(user_id))
-                            else:
-                                pipe.srem("active_chiefs", str(user_id))
-                                pipe.zrem("chief_locations", str(user_id))
+                            if chief_value == False:
+                                user_id_str = str(user_id)
+                                chief_key = get_redis_chief_locations_key(user_id_str)
+                                pipe.zrem(chief_key, user_id_str)
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
@@ -322,9 +322,9 @@ async def promote_users_by_emails(
     if current_user.is_admin and update_fields.type:
         # we use a redis lock to avoid concurrent updates 
         # to user roles, that could cause inconsistencies 
-        # in the active chiefs list in redis
+        # in the chief locations list in redis
         async with redis_client.lock( 
-            "lock:user_roles_update",
+            REDIS_MUTEX_CHIEF_UPDATE_KEY,
             timeout=60, # lock timeout (max time to hold the lock)
             sleep=5, # sleep time between lock acquisition attempts
             blocking_timeout=60 # max time to wait for the lock
@@ -332,13 +332,12 @@ async def promote_users_by_emails(
             try: 
                 crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
                 if crit_upd_rows:
-                    async with redis_client.pipeline(transaction=True) as pipe:
+                    async with redis_client.pipeline(transaction=False) as pipe:
                         for user_id, chief_value in crit_upd_rows:
-                            if chief_value == True: # we add the user to the chiefs set in redis, to have a fast access to active chiefs list, for geoposition updates and alerts
-                                pipe.sadd("active_chiefs", str(user_id))
-                            else:
-                                pipe.srem("active_chiefs", str(user_id))
-                                pipe.zrem("chief_locations", str(user_id))
+                            if chief_value == False:
+                                user_id_str = str(user_id)
+                                chief_key = get_redis_chief_locations_key(user_id_str)
+                                pipe.zrem(chief_key, user_id_str)
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:

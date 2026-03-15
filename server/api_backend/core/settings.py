@@ -33,10 +33,14 @@ class Settings(BaseSettings):
     db_pool_recycle: int = config.DB_POOL_RECYCLE
     db_engine_log_enabled: str = config.DB_ENGINE_LOG_ENABLED
     # Redis conf
+    redis_mode: str = config.REDIS_MODE
     redis_url: str = config.REDIS_URL
+    redis_host: str = config.REDIS_HOST
+    redis_port: int = config.REDIS_PORT
     redis_user: str = "" # from environment, critical for security
     redis_pass: str = "" # same as above
     redis_max_connections: int = config.REDIS_MAX_CONNECTIONS
+    redis_max_connections_cluster: int = config.REDIS_MAX_CONNECTIONS_CLUSTER
     # Mail sender conf
     smtp_user: str = "" # from environment, critical for security
     smtp_pass: str = "" # same as above
