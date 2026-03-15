@@ -6,10 +6,10 @@ from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from jwt import ExpiredSignatureError, InvalidTokenError
 from sqlmodel import Session, select
+from core.settings import settings
 from core import dbmgr
-from core.exceptions import token_expired_exception
+from core.exceptions import token_expired_exception, token_not_valid_exception
 from models.general import User, GpsTokenData
-from core.exceptions import token_not_valid_exception
 from services.security import decode_token, from_timestamp_to_datetime_tz_naive
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -20,6 +20,8 @@ def get_db_session(request: Request):
 
 async def get_redis_session(request: Request):
     pool = request.app.state.redis_pool
+    if settings.redis_mode == "cluster":
+        yield pool
     async with dbmgr.get_redis_conn(pool) as client:
         yield client
 

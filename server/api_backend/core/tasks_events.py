@@ -96,3 +96,21 @@ def log_alert_notify_sender(alert_id: str, request_info: dict, detail: str = "")
         f"alert_notify_sender, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
+
+def log_alert_cleanup_expired_locations_error(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_cleanup_expired_locations_error, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_cleanup_expired_locations_started(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_cleanup_expired_locations_started, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_cleanup_expired_locations_completed(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_cleanup_expired_locations_completed, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
