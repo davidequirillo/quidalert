@@ -190,7 +190,8 @@ def refresh_auth_tokens(
     db_session.add(rtoken)
     db_session.commit()
     new_access_token = create_access_token(str(user.id))
-    new_gps_token = create_geoposition_token(user)
+    new_gps_token = create_geoposition_token(
+        str(user.id), user.is_chief, user.role)
     new_refresh_token = create_refresh_token(
         str(user.id), str(rtoken.id), 
         new_raw_secret, created_at=now)
@@ -333,7 +334,8 @@ def login(data: LoginSchema,
     db_session.add(user)
     db_session.commit()
     atoken = create_access_token(str(user.id))
-    gps_token = create_geoposition_token(user)
+    gps_token = create_geoposition_token(
+        str(user.id), user.is_chief, user.role)
     rtoken = create_refresh_token(
         str(user.id), str(refresh_token_id), 
         raw_random_str, created_at=now)

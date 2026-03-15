@@ -22,8 +22,6 @@ DB_POOL_RECYCLE = 1800
 # Redis DBMS
 REDIS_MODE = "single" # "single" or "cluster"
 REDIS_URL="redis://localhost:6379/0"
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
 REDIS_MAX_CONNECTIONS = 200
 REDIS_MAX_CONNECTIONS_CLUSTER = 1000
 

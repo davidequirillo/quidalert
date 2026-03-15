@@ -27,7 +27,11 @@ class BackgroundLocationService {
       );
       _handleLocation(location);
     });
-
+    bg.BackgroundGeolocation.onHeartbeat((bg.HeartbeatEvent event) async {
+      debugPrint("Background heartbeat received, fetching current location...");
+      var location = await bg.BackgroundGeolocation.getCurrentPosition();
+      _handleLocation(location);
+    });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         desiredAccuracy: bg.Config.DESIRED_ACCURACY_HIGH,
@@ -36,6 +40,8 @@ class BackgroundLocationService {
         stopOnTerminate: false,
         startOnBoot: true,
         foregroundService: true,
+        stopTimeout: 5,
+        stopOnStationary: true,
         heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
       ),
     );

@@ -23,11 +23,12 @@ The whitelist, in addition to preventing spam or other similar abuses, is useful
 Admin and officers can modify (promote) other users, for example they can change their role (promoting them from "citizen" to "firefighter").  
 A note about officers: unlike admins, who can edit everyone, officers can only modify their users, that is, the users they have whitelisted. Furthermore, officers can't promote other users (not even those authorized by them) to "admin", to "officer", or to "chief".
 
-Chief users will connect to the server using the desktop version of the client app, to do additional real-time operations (such as sending a message to specific units, sending an alert to all users inside a location radius, viewing streaming video coming from a user device or from a drone flying over the event location, etc.).
+Chief users will do operations (such as sending messages to users or specific units residing within an alert radius, sending a custom alert in a specific location, expand the radius of an existing alert, etc).
 
 Idea of a server-side architecture: 1 server (reverse proxy, ex. "nginx") and 3 backends (api backend, website backend, streaming signaling server).  
 The reverse proxy will be seen by the client as the only server to connect to.
-This architecture can obviously be composed of many docker (or similar) containers working in clusters: for example, 1 reverse proxy (load balancer), 10 FastApi, 3 dbms (Postgres), 3 dbms (Redis), 1 website and 1 streaming server.
+
+This architecture can obviously be composed of many docker (or similar) containers working in clusters: for example, 1 reverse proxy (load balancer), 10 FastApi, 3 dbms (Postgres), 2 Redis (or RedisCluster), 1 website and 1 streaming server.
 
 ## 🌍 Notes about GPS location
 
