@@ -45,7 +45,6 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     final locationClient = context.read<LocationClient>();
     try {
       await locationClient.fetchLocation();
-      return;
     } on LocationClientServiceDisabledException {
       retMessage = loc.errorLocationServicesDisabled;
       retTitle = loc.errorError;

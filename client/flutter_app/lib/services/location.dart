@@ -89,7 +89,9 @@ class LocationClient extends ChangeNotifier {
     }
   }
 
-  bool get isFetching => _isFetching;
+  bool get isFetching {
+    return _isFetching;
+  }
 
   // Used for foreground location tracking (e.g., when user is filling an alert form)
   Future<void> fetchLocation({bool forceUpdate = false}) async {
@@ -253,6 +255,9 @@ class LocationClient extends ChangeNotifier {
       }
       _isFetching = false;
       notifyListeners();
+      if (kDebugMode) {
+        debugPrint("Notified listeners about fetching state change");
+      }
     }
   }
 

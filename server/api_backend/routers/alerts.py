@@ -84,7 +84,7 @@ def create_alert(alert_in: AlertIn,
         )
     return {"message": "Alert created"}
 
-@router.post("/update-gps-position")
+@router.post("/api/update-gps-position")
 async def update_gps_position(
     gps_data: GpsCoordinatesSchema,
     user_data: GpsTokenData = Depends(get_geoposition_token_data),

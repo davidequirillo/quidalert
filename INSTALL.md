@@ -81,9 +81,9 @@ You must:
     - ios/Runner/GoogleService-Info.plist
 
 - In your backend
-    - Create a Service Account in Firebase
+    - Create a Service Account in Firebase Console (Google)
     - Download the serviceAccountKey.json
-    - Configure it in your Python backend (used to send notifications via FCM)
+    - Configure it in your Python backend (see backend section, "sending push notification" subsection)
 
 Without these steps, the application will not compile and will not run.
 
@@ -95,7 +95,7 @@ The plugin works without a license in DEBUG builds.
 
 However, a commercial license is required for RELEASE builds.
 
-If you plan to distribute this app, you must purchase a license from Transistorsoft and add it to the AndroidManifest.xml file (see AndroidManifest.xml, license meta 
+If you plan to distribute this app, you must purchase a single application license from Transistorsoft and add it to the AndroidManifest.xml file (see AndroidManifest.xml, license meta)
 
 ### Distribution
 
@@ -177,6 +177,10 @@ To receive push notifications, the app requires registration to **Firebase Cloud
 Push notifications are not enabled by default in this repository because each distributor must use their own Firebase project.
 
 In your Firebase Project, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
+
+### Redis ram database integration
+
+The application employs a dual-database strategy to optimize performance and scalability. While PostgreSQL serves as the primary relational database for standard queries and persistent data storage, Redis is utilized as a high-performance sidecar to handle intensive, high-frequency workloads. This is particularly critical for tasks such as the periodic ingestion of GPS coordinates from clients, where low-latency throughput is essential. To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes.
 
 ### Notes about production (run)
 

@@ -21,10 +21,12 @@ def get_session(engine):
         yield session
 
 def get_redis_pool():
-    if settings.redis_mode == "cluster": 
+    if settings.redis_mode == "cluster":
+        redis_host = settings.redis_url.split("://")[1].split(":")[0]
+        redis_port = settings.redis_url.split("://")[1].split(":")[1].split("/")[0]
         options = {
-            "host": settings.redis_host,
-            "port": settings.redis_port,
+            "host": redis_host,
+            "port": int(redis_port),
             "max_connections": settings.redis_max_connections_cluster,
             "decode_responses": True
         }
