@@ -2,6 +2,7 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import asyncio
 import os
 from datetime import timedelta
 from fastapi import (FastAPI, Depends,
@@ -23,6 +24,8 @@ from jwt.exceptions import (
     InvalidJTIError
 )
 import firebase_admin
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from core.settings import settings
 from core.logging import setup_logging
 from core.security_events import (
@@ -57,6 +60,7 @@ from services.network import (
     send_activation_mail, send_reset_code_mail, send_reset_successful_mail,
     send_login_successful_mail, send_login_code_mail
     )
+from services.periodics import do_locations_cleanup
 from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
@@ -65,6 +69,7 @@ from core.exceptions import (
     )
 from dependencies import get_db_session, get_current_user, get_redis_session, get_s3_client
 from routers import users, alerts, terms, whitelist_entries
+
 
 def init_settings():
     setup_logging()
@@ -81,7 +86,18 @@ async def lifespan(app: FastAPI):
     if not firebase_admin._apps:
         firebase_admin.initialize_app(firebase_cred)
         print("Firebase Admin SDK initialized")
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        do_locations_cleanup,
+        trigger=CronTrigger(hour=19, minute=35), 
+        args=[app.state.redis_pool],
+        id="cleanup_expired_locations_job_v1",
+    )
+    print("Starting periodic tasks scheduler...")
+    scheduler.start()
     yield
+    print("Shutting down periodic tasks scheduler...")
+    scheduler.shutdown()
     print("Shutting down api framework...")
     if app.state.db_engine:
         app.state.db_engine.dispose()

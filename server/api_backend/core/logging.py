@@ -40,7 +40,10 @@ def get_security_logger():
     return logging.getLogger("security")
 
 def get_tasks_logger():
-    return logging.getLogger("tasks")
+    return logging.getLogger("btasks")
+
+def get_periodics_logger():
+    return logging.getLogger("periodics")
 
 sql_logger = logging.getLogger('sqlalchemy.engine')
 sql_logger.propagate = False # to avoid duplicates log records
