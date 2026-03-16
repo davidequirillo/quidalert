@@ -19,8 +19,8 @@ from core.dbmgr import (
     get_redis_location_last_updates_key)
 from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
 from services.security import now_tz_naive
-from services.tasks import (
-    task_alert_search_and_notify, task_general_cleanup)
+from services.btasks import (
+    task_alert_search_and_notify, task_alert_cleanup)
 
 router = APIRouter(
     tags=["Alerts"]
@@ -129,7 +129,7 @@ def close_alert(alert_id: int,
     curr_user = current_user.model_copy()
     req_info = get_request_info(str(current_user.id))
     background_tasks.add_task(
-        task_general_cleanup, 
+        task_alert_cleanup, 
         alert_copy, 
         curr_user, 
         request_info=req_info,

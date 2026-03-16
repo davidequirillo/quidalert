@@ -13,7 +13,7 @@ from models.general import (
     RefreshToken, User, UserLanguage, 
     Alert, AlertedUser)
 from services.security import now_tz_naive
-from core.tasks_events import (
+from core.btask_events import (
     log_alert_error_searching_closest_chief,
     log_alert_error_searching_nearby_users,
     log_alert_error_saving_chief_and_users,
@@ -28,10 +28,8 @@ from core.tasks_events import (
     log_alert_error_notifying_sender,
     log_alert_notify_chief,
     log_alert_notify_nearby_users,
-    log_alert_notify_sender,
-    log_alert_cleanup_expired_locations_error,
-    log_alert_cleanup_expired_locations_completed,
-    log_alert_cleanup_expired_locations_started)
+    log_alert_notify_sender)
+
 from core.dbmgr import (
     REDIS_TOTAL_SHARDS,
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY,
@@ -386,80 +384,9 @@ def notify_single_user(alert, user_id, fcm_token, message: str, request_info, lo
     except Exception as e:
         log_error(str(alert.id), request_info, detail=str(e))
         raise(e)
-
-def task_general_cleanup(
+    
+def task_alert_cleanup(
             alert: Alert, user: User, request_info: dict,
             db_engine, redis_pool):
-    asyncio.run(
-        cleanup_expired_locations(
-            alert, request_info, redis_pool)
-        )
-    # other cleanups
+    # alert cleanups
     return
-
-async def cleanup_expired_locations_shard(shard_id_hex, exp_int_ts, redis_client):
-    deleted_in_shard = 0
-    last_upd_key = get_redis_location_last_updates_key(shard_id_hex)
-    uloc_key = get_redis_user_locations_key(shard_id_hex)
-    chiefloc_key = get_redis_chief_locations_key(shard_id_hex)
-    
-    while True:
-        expired_user_ids = await redis_client.zrangebyscore(
-            last_upd_key, 
-            "-inf", 
-            exp_int_ts, 
-            offset=0, 
-            num=5000
-        )
-        if not expired_user_ids:
-            break   
-        async with redis_client.pipeline(transaction=True) as pipe:
-            pipe.zrem(uloc_key, *expired_user_ids)
-            pipe.zrem(chiefloc_key, *expired_user_ids)
-            pipe.zrem(last_upd_key, *expired_user_ids)
-            await pipe.execute()
-        deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.05) 
-    return deleted_in_shard
-
-async def cleanup_expired_locations(alert, request_info, redis_client):
-    alert_id = str(alert.id)
-    now = now_tz_naive()
-    exp_dt = now - timedelta(hours=72)
-    exp_int_ts = int(exp_dt.timestamp())
-    total_deleted = 0
-
-    lock_key = REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY
-    
-    # nx=True (Set if Not Exists)
-    # ex=3600 (expiry 60 minutes - cooldown)
-    lock_acquired = await redis_client.set(lock_key, "active", ex=3600, nx=True)
-    if not lock_acquired:
-        # if we cannot acquire the lock, it means that another cleanup task is currently running 
-        # (or recently ran and is in cooldown)
-        return 0
-    
-    log_alert_cleanup_expired_locations_started(
-        alert_id, request_info, 
-        detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
-    )
-    try:
-        shard_ids = [f"{i:x}" for i in range(REDIS_TOTAL_SHARDS)] # shard ids in hexadecimal (0, 1, ..., 9, a, b, c, d, e, f)
-
-        tasks = [cleanup_expired_locations_shard(
-                sid, exp_int_ts, redis_client
-            ) for sid in shard_ids]
-
-        results = await asyncio.gather(*tasks)
-        
-        total_deleted = sum(results)
-        
-        log_alert_cleanup_expired_locations_completed(
-            alert_id, request_info, 
-            detail=f"Cleanup completed: {total_deleted} locations removed across {REDIS_TOTAL_SHARDS} shards"
-        )
-        return total_deleted
-
-    except Exception as e:
-        log_alert_cleanup_expired_locations_error(alert_id, request_info, detail=str(e))
-        return total_deleted
