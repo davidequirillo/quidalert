@@ -2,7 +2,6 @@
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import 'package:flutter/foundation.dart';
 import 'dart:math';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
@@ -11,6 +10,7 @@ import 'package:jose/jose.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
@@ -21,14 +21,17 @@ class BackgroundLocationService {
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static Future<void> init() async {
+    debugPrintC("Initializing background location service...");
     bg.BackgroundGeolocation.onLocation((bg.Location location) {
-      debugPrint(
+      debugPrintC(
         "Background location received: ${location.coords.latitude}, ${location.coords.longitude}",
       );
       _handleLocation(location);
     });
     bg.BackgroundGeolocation.onHeartbeat((bg.HeartbeatEvent event) async {
-      debugPrint("Background heartbeat received, fetching current location...");
+      debugPrintC(
+        "Background heartbeat received, fetching current location...",
+      );
       var location = await bg.BackgroundGeolocation.getCurrentPosition();
       _handleLocation(location);
     });
@@ -45,10 +48,16 @@ class BackgroundLocationService {
         heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
       ),
     );
+    debugPrintC("Background location service initialized.");
+  }
+
+  static Future<void> dispose() async {
+    await bg.BackgroundGeolocation.stop();
+    debugPrintC("Background location service disposed.");
   }
 
   static Future<void> startTracking() async {
-    debugPrint("Starting background location tracking...");
+    debugPrintC("Starting background location tracking...");
     final state = await bg.BackgroundGeolocation.state;
     if (!state.enabled) {
       await bg.BackgroundGeolocation.start();
@@ -57,7 +66,7 @@ class BackgroundLocationService {
 
   static Future<void> stopTracking() async {
     await bg.BackgroundGeolocation.stop();
-    debugPrint("Background location tracking stopped.");
+    debugPrintC("Background location tracking stopped.");
   }
 
   static void _handleLocation(bg.Location location) {
@@ -76,11 +85,14 @@ class BackgroundLocationService {
       if ((distance < distanceFilterInMeters ||
               secondsSinceLast < timeFilterInSeconds) &&
           secondsSinceLast < dailyLimitInSeconds) {
+        debugPrintC(
+          "Location update skipped: distance=${distance.toStringAsFixed(2)}m, secondsSinceLast=$secondsSinceLast",
+        );
         return;
       }
     }
     sendToBackend(location.coords.latitude, location.coords.longitude);
-    debugPrint(
+    debugPrintC(
       "Location sent to backend: Lat=${location.coords.latitude}, Lng=${location.coords.longitude}",
     );
     _lastSentLocation = location;
@@ -111,7 +123,7 @@ class BackgroundLocationService {
   static Future<void> sendToBackend(double lat, double lng) async {
     final token = await getGpsToken();
     if (token == null) return;
-    debugPrint("Sending to backend: Lat=$lat, Lng=$lng");
+    debugPrintC("Sending to backend: Lat=$lat, Lng=$lng");
     final String url = "${config.apiBaseUrl}/update-gps-position";
     try {
       final uri = Uri.parse(url);
@@ -124,29 +136,25 @@ class BackgroundLocationService {
         body: jsonEncode({"latitude": lat, "longitude": lng}),
       );
       if (response.statusCode == 200) {
-        debugPrint('Gps location update successful');
+        debugPrintC('Gps location update successful');
       } else {
-        if (kDebugMode) {
-          debugPrint('Server error: ${response.statusCode} - ${response.body}');
-        }
+        debugPrintC('Server error: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("Error sending location to backend: $e");
-      }
+      debugPrintC("Error sending location to backend: $e");
     }
   }
 
   static Future<String?> getGpsToken() async {
     final gpsToken = await _storage.read(key: "gpsToken");
     if (gpsToken != null) {
-      debugPrint("GPS token loaded from storage");
+      debugPrintC("GPS token loaded from storage");
       if (_isTokenExpired(gpsToken)) {
-        debugPrint("GPS token is expired, returning null");
+        debugPrintC("GPS token is expired, returning null");
         return null;
       }
     } else {
-      debugPrint("No GPS token found in storage");
+      debugPrintC("No GPS token found in storage");
       return null;
     }
     return gpsToken;

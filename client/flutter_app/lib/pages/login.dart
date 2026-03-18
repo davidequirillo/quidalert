@@ -45,8 +45,7 @@ class _LoginBodyState extends State<LoginBody> {
   Future<void> submit() async {
     final email = _usernameController.text.trim();
     final password = _passwordController.text;
-    final code = null;
-    await _doLogin(email, password, code: code);
+    await _doLogin(email, password, code: null);
   }
 
   Future<void> _doLogin(String email, String password, {String? code}) async {
@@ -57,7 +56,7 @@ class _LoginBodyState extends State<LoginBody> {
     String endTitle;
     final http.Response response;
     try {
-      response = await authClient.login(email, password, code: code);
+      response = await authClient.login(email, password, loginCode: code);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         if (response.statusCode == 422) {
           loginError = 'Invalid credentials';

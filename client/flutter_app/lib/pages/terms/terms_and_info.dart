@@ -167,6 +167,12 @@ class InfoBody extends StatelessWidget {
                           } else if (authClient.isLoggedIn() &&
                               !authClient.isAdmin()) {
                             Navigator.pushReplacementNamed(context, '/home');
+                          } else if (authClient.isLoggedIn() &&
+                              authClient.isAdmin()) {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/register',
+                            );
                           } else {
                             Navigator.pushReplacementNamed(context, '/terms');
                           }
