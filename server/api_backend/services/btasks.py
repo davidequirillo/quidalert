@@ -7,12 +7,10 @@ import uuid
 import redis.asyncio as redis
 from sqlmodel import Session, select, insert, update
 from firebase_admin import messaging
-from datetime import timedelta
 from core.settings import settings
 from models.general import (
     RefreshToken, User, UserLanguage, 
     Alert, AlertedUser)
-from services.security import now_tz_naive
 from core.btask_events import (
     log_alert_error_searching_closest_chief,
     log_alert_error_searching_nearby_users,
@@ -31,11 +29,6 @@ from core.btask_events import (
     log_alert_notify_sender)
 
 from core.dbmgr import (
-    REDIS_TOTAL_SHARDS,
-    REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY,
-    get_redis_chief_locations_key,
-    get_redis_user_locations_key,
-    get_redis_location_last_updates_key,
     get_all_redis_chief_locations_keys,
     get_all_redis_user_locations_keys)
 
@@ -173,24 +166,18 @@ async def get_closest_chief(alert, request_info, redis_client):
                 withcoord=True
             ) for key in shard_keys
         ]
-
         # 2. Parallel execution
         sharded_results = await asyncio.gather(*tasks)
-
         # 3. Gather
         all_candidates = []
         for results in sharded_results:
             if results:
                 all_candidates.extend(results)
-
         if not all_candidates:
             raise Exception("No chiefs found within 10,000 km radius")
-
         # 4. Sorting
         all_candidates.sort(key=lambda x: x[1]) # x[1] is the distance
-        
         user_id, distance, coords = all_candidates[0]
-
         return {
             "user_id": user_id,
             "distance_km": round(distance, 3),
@@ -199,21 +186,18 @@ async def get_closest_chief(alert, request_info, redis_client):
                 "longitude": coords[0]
             }
         }
-    
     except Exception as e:
         log_alert_error_searching_closest_chief(str(alert.id), request_info, detail=str(e))
         return None
         
 async def get_nearby_users(alert, request_info, redis_client):
     """
-    Searches for users near a specific alert across all 16 shards in parallel.
+    Searches for users near a specific alert across all shards in parallel.
     This is the core of the universal scaling architecture.
     """
     nearby_users = []
-    
     # We obtain all shards keys for user locations
     shard_keys = get_all_redis_user_locations_keys()
-    
     try:
         # 1. Preparation: we create the tasks (one for each shard)
         tasks = [
@@ -228,20 +212,16 @@ async def get_nearby_users(alert, request_info, redis_client):
                 withdist=True,
                 withcoord=True
             ) for key in shard_keys
-        ]
-        
+        ] 
         # 2. Parallel execution
         sharded_results = await asyncio.gather(*tasks)
-
         # 3. Unification of the results for each shard
         all_matches = []
         for results in sharded_results:
             if results:
                 all_matches.extend(results)
-        
         # 4. Sorting results, based on distance (x[1] contains the distance)
         all_matches.sort(key=lambda x: x[1])
-
         # 5. Filtering: we keep only the first 1000 entries
         for user_id, distance, coords in all_matches[:1000]:
             nearby_users.append({
@@ -252,9 +232,7 @@ async def get_nearby_users(alert, request_info, redis_client):
                     "longitude": coords[0]
                 }
             })
-        
         return nearby_users
-
     except Exception as e:
         log_alert_error_searching_nearby_users(str(alert.id), request_info, detail=str(e))
         return []

@@ -12,11 +12,11 @@ from core.periodic_events import (
     log_cleanup_expired_locations_completed,
     log_cleanup_expired_locations_started)
 from core.dbmgr import (
-    REDIS_TOTAL_SHARDS,
+    REDIS_USER_LOCATIONS_KEY,
+    REDIS_CHIEF_LOCATIONS_KEY,
+    REDIS_LOCATION_LAST_UPDATES_KEY,
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY,
-    get_redis_chief_locations_key,
-    get_redis_user_locations_key,
-    get_redis_location_last_updates_key)
+    REDIS_TOTAL_SHARDS)
 
 async def do_locations_cleanup(redis_pool):
     if settings.redis_mode == "cluster":
@@ -43,10 +43,9 @@ async def cleanup_expired_locations(redis_client):
         detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
     )
     try:
-        shard_ids = [f"{i:x}" for i in range(REDIS_TOTAL_SHARDS)] # shard ids in hexadecimal (0, 1, ..., 9, a, b, c, d, e, f)
         tasks = [cleanup_expired_locations_shard(
-                sid, exp_int_ts, redis_client
-            ) for sid in shard_ids]
+                i, exp_int_ts, redis_client
+            ) for i in range(REDIS_TOTAL_SHARDS)]
         results = await asyncio.gather(*tasks)
         total_deleted = sum(results)       
         log_cleanup_expired_locations_completed(
@@ -57,11 +56,11 @@ async def cleanup_expired_locations(redis_client):
         log_cleanup_expired_locations_error(detail=str(e))
         return total_deleted
 
-async def cleanup_expired_locations_shard(shard_id_hex, exp_int_ts, redis_client):
+async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client):
     deleted_in_shard = 0
-    last_upd_key = get_redis_location_last_updates_key(shard_id_hex)
-    uloc_key = get_redis_user_locations_key(shard_id_hex)
-    chiefloc_key = get_redis_chief_locations_key(shard_id_hex)    
+    last_upd_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
+    uloc_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
+    chiefloc_key = REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
     while True:
         expired_user_ids = await redis_client.zrangebyscore(
             last_upd_key, 
