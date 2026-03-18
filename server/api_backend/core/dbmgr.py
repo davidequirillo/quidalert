@@ -2,6 +2,7 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import zlib
 from sqlmodel import create_engine, Session
 import redis.asyncio as redis
 from core.settings import settings
@@ -47,51 +48,40 @@ def get_redis_conn(pool):
 REDIS_TOTAL_SHARDS = 16
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
+REDIS_USER_LOCATIONS_KEY = "{{shard:{i}}}:locations:users"
+REDIS_CHIEF_LOCATIONS_KEY = "{{shard:{i}}}:locations:chiefs"
+REDIS_LOCATION_LAST_UPDATES_KEY = "{{shard:{i}}}:locations:last_updates"
 
-# Simple sharding (for clustering) by first character of the uuid, to distribute the load of location updates and geospatial queries across multiple keys and avoid bottlenecks. 
+# Simple sharding (for clustering), to distribute the load of location updates and geospatial queries across multiple keys and avoid bottlenecks. 
 # With 16 shards, we can have 16 different keys for user locations, 
 # which can help with performance when there are many users updating their locations frequently.
+# - In CLUSTER mode: The {shard:i} hash tag ensures each shard is mapped to a 
+#   specific slot, allowing parallel distribution across multiple nodes.
+# - In SINGLE mode: All shards coexist in the same instance. The logic remains 
+#   identical, ensuring the code works without modifications regardless of scale.
 def get_redis_user_locations_key(uuid: str) -> str:
-    uuid_part = uuid.split("-")[1] # we keep the 2nd part of the uuid to determine the shard
-    shard_tag = f"{{shard:{uuid_part[0]}}}" # using the second part (10th character of the uuid) to determine the shard, since in UUIDv7 the first 9 characters are based on timestamp and are usually fixed for a given time period (e.g., "123e4567-e89b-12d3-a456-426614174000")
-    return f"{shard_tag}:locations:users"
+    data_bytes = uuid.encode('utf-8')
+    hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
+    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    return REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
 
 def get_redis_chief_locations_key(uuid: str) -> str:
-    uuid_part = uuid.split("-")[1] # we keep the 2nd part of the uuid to determine the shard
-    shard_tag = f"{{shard:{uuid_part[0]}}}" # using the second part (10th character of the uuid) to determine the shard, since in UUIDv7 the first 9 characters are based on timestamp and are usually fixed for a given time period (e.g., "123e4567-e89b-12d3-a456-426614174000")
-    return f"{shard_tag}:locations:chiefs"
+    data_bytes = uuid.encode('utf-8')
+    hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
+    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    return REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
 
 def get_redis_location_last_updates_key(uuid: str) -> str:
-    uuid_part = uuid.split("-")[1] # we keep the 2nd part of the uuid to determine the shard
-    shard_tag = f"{{shard:{uuid_part[0]}}}" # using the second part (10th character of the uuid) to determine the shard, since in UUIDv7 the first 9 characters are based on timestamp and are usually fixed for a given time period (e.g., "123e4567-e89b-12d3-a456-426614174000")
-    return f"{shard_tag}:locations:last_updates"
-
-def _get_all_shard_keys(suffix: str) -> list[str]:
-    """
-    Generates a list of keys for all 16 shards (0-f)
-    
-    This architecture uses logical sharding to ensure 100% compatibility between 
-    Single Redis and Redis Cluster modes.
-
-    This is useful for operations that need to access all user locations or all last update timestamps, such as cleanup tasks.
-    
-    - In CLUSTER mode: The {shard:x} hash tag ensures each shard is mapped to a 
-      specific slot, allowing parallel distribution across multiple nodes.
-    - In SINGLE mode: All shards coexist in the same instance. The logic remains 
-      identical, ensuring the code works without modifications regardless of scale.
-    """
-    keys = []
-    for i in range(16):
-        shard_id = f"{i:x}" # Python construct to convert integer to hexadecimal (10 -> 'a', 11 -> 'b', ..., 15 -> 'f')
-        # The {{shard:{shard_id}}} syntax creates the Redis Hash Tag
-        keys.append(f"{{shard:{shard_id}}}:{suffix}")
-    return keys
+    data_bytes = uuid.encode('utf-8')
+    hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
+    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    return REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
 
 def get_all_redis_user_locations_keys() -> list[str]:
-    return _get_all_shard_keys("locations:users")
+    return [REDIS_USER_LOCATIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
 
 def get_all_redis_chief_locations_keys() -> list[str]:
-    return _get_all_shard_keys("locations:chiefs")
+    return [REDIS_CHIEF_LOCATIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
 
 def get_all_redis_location_last_updates_keys() -> list[str]:
-    return _get_all_shard_keys("locations:last_updates")
+    return [REDIS_LOCATION_LAST_UPDATES_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
