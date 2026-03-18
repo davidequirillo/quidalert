@@ -15,37 +15,41 @@ import 'package:quidalert_flutter/utils/strings.dart';
 class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;
-  static double distanceFilterInMeters = 500; // 500 meters
+  static double distanceFilterInMeters = 250; // 250 meters
   static int timeFilterInSeconds = 1800; // 30 minutes
   static int dailyLimitInSeconds = 86400; // 24 hours
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static Future<void> init() async {
     debugPrintC("Initializing background location service...");
-    bg.BackgroundGeolocation.onLocation((bg.Location location) {
+    bg.BackgroundGeolocation.onLocation((bg.Location location) async {
       debugPrintC(
         "Background location received: ${location.coords.latitude}, ${location.coords.longitude}",
       );
-      _handleLocation(location);
+      await _handleLocation(location);
     });
     bg.BackgroundGeolocation.onHeartbeat((bg.HeartbeatEvent event) async {
       debugPrintC(
         "Background heartbeat received, fetching current location...",
       );
-      var location = await bg.BackgroundGeolocation.getCurrentPosition();
-      _handleLocation(location);
+      await bg.BackgroundGeolocation.getCurrentPosition();
+      // Note: it triggers the "onLocation" event too
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
-        desiredAccuracy: bg.Config.DESIRED_ACCURACY_HIGH,
+        desiredAccuracy: bg.Config.DESIRED_ACCURACY_MEDIUM,
         distanceFilter:
             distanceFilterInMeters, // get location if there is a significant movement
         stopOnTerminate: false,
         startOnBoot: true,
-        foregroundService: true,
-        stopTimeout: 5,
-        stopOnStationary: true,
+        foregroundService:
+            true, // keep the service running in the foreground to prevent it from being killed by the OS
+        stopTimeout:
+            5, // stop tracking if the device is stationary for 5 minutes
+        stopOnStationary: true, // stop tracking when the device is stationary
         heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
+        preventSuspend: true, // prevent the app from being suspended by the OS
+        debug: false,
       ),
     );
     debugPrintC("Background location service initialized.");
@@ -69,9 +73,8 @@ class BackgroundLocationService {
     debugPrintC("Background location tracking stopped.");
   }
 
-  static void _handleLocation(bg.Location location) {
+  static Future<void> _handleLocation(bg.Location location) async {
     final now = DateTime.now();
-
     if (_lastSentLocation != null && _lastSentTime != null) {
       final distance = _calculateDistance(
         _lastSentLocation!.coords.latitude,
@@ -91,10 +94,7 @@ class BackgroundLocationService {
         return;
       }
     }
-    sendToBackend(location.coords.latitude, location.coords.longitude);
-    debugPrintC(
-      "Location sent to backend: Lat=${location.coords.latitude}, Lng=${location.coords.longitude}",
-    );
+    await sendToBackend(location.coords.latitude, location.coords.longitude);
     _lastSentLocation = location;
     _lastSentTime = now;
   }

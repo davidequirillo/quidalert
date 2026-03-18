@@ -18,7 +18,7 @@ from core.dbmgr import (
     get_redis_user_locations_key, 
     get_redis_location_last_updates_key)
 from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
-from services.security import now_tz_naive
+from services.security import now_tz_naive, ensure_tz_aware
 from services.btasks import (
     task_alert_search_and_notify, task_alert_cleanup)
 
@@ -93,7 +93,7 @@ async def update_gps_position(
     user_id = user_data.user_id
     user_id_str = str(user_id)
     is_chief = user_data.user_is_chief
-    now = now_tz_naive()
+    now = ensure_tz_aware(now_tz_naive())
     now_int_ts = int(now.timestamp())
     lat, lon = gps_data.latitude, gps_data.longitude
     userloc_key = get_redis_user_locations_key(user_id_str)
