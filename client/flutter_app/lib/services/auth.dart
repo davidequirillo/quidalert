@@ -321,13 +321,13 @@ class AuthClient extends ChangeNotifier {
   Future<http.Response> login(
     String email,
     String password, {
-    String? code,
+    String? loginCode,
   }) async {
     const relPath = "/auth/login";
     final uri = Uri.parse('$baseUrl$relPath');
     final fields = {"email": email, "password": password};
-    if (code != null) {
-      fields['2fa_code'] = code;
+    if (loginCode != null) {
+      fields['login_code'] = loginCode;
     }
     if (loginToken != null) {
       fields['login_token'] = loginToken!;

@@ -11,6 +11,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class TwoFAPage extends StatelessWidget {
   const TwoFAPage({super.key});
@@ -56,14 +57,18 @@ class _TwoFABodyState extends State<TwoFABody> {
     String endTitle;
     final http.Response response;
     try {
-      response = await authClient.login(email, password, code: code);
+      debugPrintC(
+        "Submitting 2FA code... (email: $email, password: ${'*' * password.length}, login_code: $code)",
+      );
+      response = await authClient.login(email, password, loginCode: code);
       if (response.statusCode < 200 || response.statusCode >= 300) {
+        debugPrintC('2FA failed, response body: ${response.body}');
         error = jsonDecode(response.body)['detail'];
       } else {
         error = null;
       }
     } catch (e) {
-      debugPrint('Error: cannot receive or read response');
+      debugPrintC('2FA error: cannot receive or read response');
       error = "Network error";
     }
     if (error != null) {

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class LocationClientServiceDisabledException implements Exception {
   final String message;
@@ -65,7 +66,7 @@ class LocationClient extends ChangeNotifier {
   Position? _currentPosition;
   String? _currentAddress;
   bool _isFetching = false;
-  DateTime? _lastGeocodingTime;
+  DateTime? _lastFetchingTime;
 
   static const int distanceBoundary = 30; // meters
   static const int timeBoundary = 60; // seconds
@@ -98,43 +99,29 @@ class LocationClient extends ChangeNotifier {
     _isFetching = true;
     notifyListeners();
     int distanceFilterValue = forceUpdate ? 0 : LocationClient.distanceBoundary;
-    if (kDebugMode) {
-      debugPrint(
-        "Fetching location with distance filter: $distanceFilterValue m, force update: $forceUpdate",
-      );
-    }
+    debugPrintC(
+      "Fetching location with distance filter: $distanceFilterValue m, force update: $forceUpdate",
+    );
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        if (kDebugMode) {
-          debugPrint("Location services are disabled");
-        }
+        debugPrintC("Location services are disabled");
         throw LocationClientServiceDisabledException();
       }
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        if (kDebugMode) {
-          debugPrint("Location permissions are denied, requesting permissions");
-        }
+        debugPrintC("Location permissions are denied, requesting permissions");
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          if (kDebugMode) {
-            debugPrint(
-              "Location permissions are still denied after requesting",
-            );
-          }
+          debugPrintC("Location permissions are still denied after requesting");
           throw LocationClientPermissionDeniedException();
         }
       }
       if (permission == LocationPermission.deniedForever) {
-        if (kDebugMode) {
-          debugPrint("Location permissions are permanently denied");
-        }
+        debugPrintC("Location permissions are permanently denied");
         throw LocationClientPermissionsForeverException();
       }
-      if (kDebugMode) {
-        debugPrint("Location permissions granted, fetching position");
-      }
+      debugPrintC("Location permissions granted, fetching position");
       Position returnedPosition = await Geolocator.getCurrentPosition(
         locationSettings: LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -145,52 +132,42 @@ class LocationClient extends ChangeNotifier {
           ), // timeout after x seconds
         ),
       );
-      if (kDebugMode) {
-        debugPrint(
-          "Fetched position: ${returnedPosition.latitude}, ${returnedPosition.longitude}",
-        );
-      }
+      debugPrintC(
+        "Fetched position: ${returnedPosition.latitude}, ${returnedPosition.longitude}",
+      );
       // We optimize battery consumption
       // by not updating the relative address if the user
-      // hasn't moved significantly or enough time hasn't passed since the last geocoding
+      // hasn't moved significantly or enough time hasn't passed since the last fetching
       if (_currentPosition != null) {
         bool isTimePassed =
-            (_lastGeocodingTime == null) ||
-            (DateTime.now().difference(_lastGeocodingTime!).inSeconds >
+            (_lastFetchingTime == null) ||
+            (DateTime.now().difference(_lastFetchingTime!).inSeconds >
                 LocationClient.timeBoundary);
-        if (kDebugMode) {
-          debugPrint(
-            "Time has passed? $isTimePassed (last geocoding: $_lastGeocodingTime)",
-          );
-        }
+        debugPrintC(
+          "Time has passed? $isTimePassed (last fetching: $_lastFetchingTime)",
+        );
         double gap = Geolocator.distanceBetween(
           _currentPosition!.latitude,
           _currentPosition!.longitude,
           returnedPosition.latitude,
           returnedPosition.longitude,
         );
-        if (kDebugMode) {
-          debugPrint(
-            "Distance from last position: $gap m (threshold: ${LocationClient.distanceBoundary} m)",
-          );
-        }
+        debugPrintC(
+          "Distance from last position: $gap m (threshold: ${LocationClient.distanceBoundary} m)",
+        );
         if (((gap < LocationClient.distanceBoundary) || (!isTimePassed)) &&
             (!forceUpdate)) {
-          if (kDebugMode) {
-            debugPrint(
-              "Minimum movement or time not passed: not updating address",
-            );
-          }
+          debugPrintC(
+            "Minimum movement or time not passed: not updating position and address",
+          );
           return;
         }
       }
       _currentPosition = returnedPosition;
-      _lastGeocodingTime = DateTime.now();
+      _lastFetchingTime = DateTime.now();
       _currentAddress = await _translateToAddress(_currentPosition!);
       if (_currentAddress == null || _currentAddress!.isEmpty) {
-        if (kDebugMode) {
-          debugPrint("Address is <empty> for the current position");
-        }
+        debugPrintC("Address is <empty> for the current position");
         throw LocationClientAddressNotFoundException();
       }
       return;
@@ -223,8 +200,14 @@ class LocationClient extends ChangeNotifier {
       throw LocationClientServiceDisabledException();
     } on TimeoutException catch (_) {
       // Geolocator throws a TimeoutException if the position cannot be fetched within the specified time limit
+      debugPrintC(
+        "Location fetch timed out, trying to get last known position",
+      );
       Position? lastPos = await Geolocator.getLastKnownPosition();
       if (lastPos != null) {
+        debugPrintC(
+          "Last known position: ${lastPos.latitude}, ${lastPos.longitude}, using it as current position",
+        );
         _currentPosition = lastPos;
         try {
           _currentAddress = await _translateToAddress(_currentPosition!);
@@ -232,41 +215,32 @@ class LocationClient extends ChangeNotifier {
           _currentAddress = null;
         }
       } else {
+        debugPrintC("No last known position available");
         _currentPosition = null;
         _currentAddress = null;
       }
       throw LocationClientTimeoutException();
     } on NoResultFoundException catch (_) {
-      if (kDebugMode) {
-        debugPrint("No address found for the current position");
-      }
+      debugPrintC("No address found for the current position");
       _currentAddress = null;
       throw LocationClientAddressNotFoundException();
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("Error fetching location: $e");
-      }
+      debugPrintC("Error fetching location: $e");
       _currentPosition = null;
       _currentAddress = null;
       throw LocationClientFetchPositionException(e.toString());
     } finally {
-      if (kDebugMode) {
-        debugPrint("Finished fetching location");
-      }
+      debugPrintC("Finished fetching location");
       _isFetching = false;
       notifyListeners();
-      if (kDebugMode) {
-        debugPrint("Notified listeners about fetching state change");
-      }
+      debugPrintC("Notified listeners about fetching state change");
     }
   }
 
   Future<String?> _translateToAddress(Position pos) async {
-    if (kDebugMode) {
-      debugPrint(
-        "Translating position to address: ${pos.latitude}, ${pos.longitude}",
-      );
-    }
+    debugPrintC(
+      "Translating position to address: ${pos.latitude}, ${pos.longitude}",
+    );
     try {
       List<Placemark> p = await placemarkFromCoordinates(
         pos.latitude,
@@ -281,9 +255,7 @@ class LocationClient extends ChangeNotifier {
     } on NoResultFoundException catch (_) {
       rethrow;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint("Unknown error translating position to address: $e");
-      }
+      debugPrintC("Unknown error translating position to address: $e");
       return null;
     }
   }

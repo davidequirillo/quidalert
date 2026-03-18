@@ -52,15 +52,18 @@ REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
 # With 16 shards, we can have 16 different keys for user locations, 
 # which can help with performance when there are many users updating their locations frequently.
 def get_redis_user_locations_key(uuid: str) -> str:
-    shard_tag = f"{{shard:{uuid[0]}}}"
+    uuid_part = uuid.split("-")[1] # we keep the 2nd part of the uuid to determine the shard
+    shard_tag = f"{{shard:{uuid_part[0]}}}" # using the second part (10th character of the uuid) to determine the shard, since in UUIDv7 the first 9 characters are based on timestamp and are usually fixed for a given time period (e.g., "123e4567-e89b-12d3-a456-426614174000")
     return f"{shard_tag}:locations:users"
 
 def get_redis_chief_locations_key(uuid: str) -> str:
-    shard_tag = f"{{shard:{uuid[0]}}}"
+    uuid_part = uuid.split("-")[1] # we keep the 2nd part of the uuid to determine the shard
+    shard_tag = f"{{shard:{uuid_part[0]}}}" # using the second part (10th character of the uuid) to determine the shard, since in UUIDv7 the first 9 characters are based on timestamp and are usually fixed for a given time period (e.g., "123e4567-e89b-12d3-a456-426614174000")
     return f"{shard_tag}:locations:chiefs"
 
 def get_redis_location_last_updates_key(uuid: str) -> str:
-    shard_tag = f"{{shard:{uuid[0]}}}"
+    uuid_part = uuid.split("-")[1] # we keep the 2nd part of the uuid to determine the shard
+    shard_tag = f"{{shard:{uuid_part[0]}}}" # using the second part (10th character of the uuid) to determine the shard, since in UUIDv7 the first 9 characters are based on timestamp and are usually fixed for a given time period (e.g., "123e4567-e89b-12d3-a456-426614174000")
     return f"{shard_tag}:locations:last_updates"
 
 def _get_all_shard_keys(suffix: str) -> list[str]:

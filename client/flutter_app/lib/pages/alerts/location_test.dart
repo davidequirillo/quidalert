@@ -32,6 +32,8 @@ class LocationTestBody extends StatefulWidget {
 }
 
 class _LocationTestBodyState extends State<LocationTestBody> {
+  String coords = "";
+
   @override
   void dispose() {
     super.dispose();
@@ -45,6 +47,9 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     final locationClient = context.read<LocationClient>();
     try {
       await locationClient.fetchLocation();
+      setState(() {
+        coords = getCoords(locationClient.currentPosition);
+      });
     } on LocationClientServiceDisabledException {
       retMessage = loc.errorLocationServicesDisabled;
       retTitle = loc.errorError;
@@ -107,7 +112,6 @@ class _LocationTestBodyState extends State<LocationTestBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.watch<LocationClient>();
-    final String coords = getCoords(locationClient.currentPosition);
     return SafeArea(
       top: false,
       child: Padding(
