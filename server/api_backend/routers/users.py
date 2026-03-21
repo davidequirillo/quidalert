@@ -10,8 +10,11 @@ from starlette.exceptions import HTTPException
 from models.general import Alert, EmailListDict, PromotionSchema, User, UserInCompleteProfile, UserOut, UserOutPaginated, UserOutWithAlerts
 from dependencies import get_db_session, get_current_user, get_redis_session
 from core.exceptions import forbidden_exception
-from core.dbmgr import get_redis_chief_locations_key, REDIS_MUTEX_CHIEF_UPDATE_KEY
-from services.security import now_tz_naive
+from core.dbmgr import (
+    get_redis_chief_locations_key, 
+    REDIS_MUTEX_CHIEF_UPDATE_KEY,
+    get_redis_chief_demotions_key)
+from services.security import ensure_tz_aware, now_tz_naive
 
 router = APIRouter(
     tags=["Users"]
@@ -233,8 +236,15 @@ async def promote_users(
                         for user_id, chief_value in crit_upd_rows:
                             if chief_value == False:
                                 user_id_str = str(user_id)
-                                chief_key = get_redis_chief_locations_key(user_id_str)
-                                pipe.zrem(chief_key, user_id_str)
+                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
+                                chief_locations_key = get_redis_chief_locations_key(user_id_str)
+                                chief_demoted_at = int(ensure_tz_aware(now_tz_naive()).timestamp())
+                                pipe.zadd(chief_demotions_key, {user_id_str: chief_demoted_at})
+                                pipe.zrem(chief_locations_key, user_id_str)
+                            else:
+                                user_id_str = str(user_id)
+                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
+                                pipe.zrem(chief_demotions_key, user_id_str)
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
@@ -329,15 +339,22 @@ async def promote_users_by_emails(
             sleep=5, # sleep time between lock acquisition attempts
             blocking_timeout=60 # max time to wait for the lock
             ):
-            try: 
+            try:
                 crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
                 if crit_upd_rows:
                     async with redis_client.pipeline(transaction=False) as pipe:
                         for user_id, chief_value in crit_upd_rows:
                             if chief_value == False:
                                 user_id_str = str(user_id)
-                                chief_key = get_redis_chief_locations_key(user_id_str)
-                                pipe.zrem(chief_key, user_id_str)
+                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
+                                chief_locations_key = get_redis_chief_locations_key(user_id_str)
+                                chief_demoted_at = int(ensure_tz_aware(now_tz_naive()).timestamp())
+                                pipe.zadd(chief_demotions_key, {user_id_str: chief_demoted_at})
+                                pipe.zrem(chief_locations_key, user_id_str)
+                            else:
+                                user_id_str = str(user_id)
+                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
+                                pipe.zrem(chief_demotions_key, user_id_str)
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
@@ -360,3 +377,4 @@ async def promote_users_by_emails(
                 detail="Error updating user roles"
             )
         return msg_obj
+    

@@ -48,9 +48,13 @@ def get_redis_conn(pool):
 REDIS_TOTAL_SHARDS = 16
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
+REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT = 172800 # 48 hours in seconds
+REDIS_COOLDOWN_DEMOTIONS_CLEANUP_KEY = "{shard:0}:cooldowns:demotions_cleanup"
+REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT = 2592000 # 1 month in seconds
 REDIS_USER_LOCATIONS_KEY = "{{shard:{i}}}:locations:users"
 REDIS_CHIEF_LOCATIONS_KEY = "{{shard:{i}}}:locations:chiefs"
 REDIS_LOCATION_LAST_UPDATES_KEY = "{{shard:{i}}}:locations:last_updates"
+REDIS_CHIEF_DEMOTIONS_KEY = "{{shard:{i}}}:demotions:chiefs"
 
 # Simple sharding (for clustering), to distribute the load of location updates and geospatial queries across multiple keys and avoid bottlenecks. 
 # With 16 shards, we can have 16 different keys for user locations, 
@@ -77,6 +81,12 @@ def get_redis_location_last_updates_key(uuid: str) -> str:
     shard_index = hash_value % REDIS_TOTAL_SHARDS
     return REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
 
+def get_redis_chief_demotions_key(uuid: str) -> str:
+    data_bytes = uuid.encode('utf-8')
+    hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
+    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    return REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
+
 def get_all_redis_user_locations_keys() -> list[str]:
     return [REDIS_USER_LOCATIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
 
@@ -85,3 +95,6 @@ def get_all_redis_chief_locations_keys() -> list[str]:
 
 def get_all_redis_location_last_updates_keys() -> list[str]:
     return [REDIS_LOCATION_LAST_UPDATES_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
+
+def get_all_redis_chief_demotions_keys() -> list[str]:
+    return [REDIS_CHIEF_DEMOTIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]

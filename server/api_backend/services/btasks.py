@@ -12,8 +12,10 @@ from models.general import (
     RefreshToken, User, UserLanguage, 
     Alert, AlertedUser)
 from core.btask_events import (
-    log_alert_error_searching_closest_chief,
+    log_alert_error_searching_closest_chiefs,
     log_alert_error_searching_nearby_users,
+    log_alert_error_checking_chiefs,
+    log_alert_orphan_id_found_in_checking_chiefs,
     log_alert_error_saving_chief_and_users,
     log_alert_orphan_ids_found_in_saving_chief_and_users,
     log_alert_no_user_to_notify,
@@ -57,8 +59,8 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
     nearby_users_can_be_notified = False
     chief_can_be_notified = False
     sender_can_be_notified = False # sender: the user who created the alert
-    chief, nearby_users = asyncio.run(
-        get_closest_chief_and_nearby_users(
+    closest_chiefs, nearby_users = asyncio.run(
+        get_closest_chiefs_and_nearby_users(
             alert, request_info, redis_pool)
         )
     sender = { # info about the user who created the alert, to be used in logging and notifications
@@ -71,9 +73,10 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
     }
     users = nearby_users if nearby_users else []
     users.append(sender)
+    chief = check_chiefs_against_db_and_get_the_first(alert, closest_chiefs, request_info, db_engine)
     if (chief):
         users.append(chief)
-    users_to_fcm_tokens = check_users_against_db_and_save(alert, users, request_info, db_engine)
+    users_to_fcm_tokens = save_users_in_db_and_get_fcm_tokens(alert, users, request_info, db_engine)
     if not users_to_fcm_tokens:
         log_alert_no_user_to_notify(str(alert.id), request_info)
         return
@@ -136,20 +139,21 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     
-async def get_closest_chief_and_nearby_users(alert, request_info, redis_pool):
-    chief, users = None, []
+async def get_closest_chiefs_and_nearby_users(alert, request_info, redis_pool):
+    chiefs, users = [], []
     if settings.redis_mode == "cluster":
-        chief = await get_closest_chief(alert, request_info, redis_pool)
+        chiefs = await get_closest_chiefs(alert, request_info, redis_pool)
         users = await get_nearby_users(alert, request_info, redis_pool)
-        return chief, users
+        return chiefs, users
     else:
         async with redis.Redis(connection_pool=redis_pool, decode_responses=True) as redis_client:
-            chief = await get_closest_chief(alert, request_info, redis_client)
+            chiefs = await get_closest_chiefs(alert, request_info, redis_client)
             users = await get_nearby_users(alert, request_info, redis_client)
-        return chief, users
+        return chiefs, users
 
-async def get_closest_chief(alert, request_info, redis_client):
-    # We obtain all shards keys for chief locations
+async def get_closest_chiefs(alert, request_info, redis_client):
+    closest_chiefs = []
+    # We obtain all shards keys for chiefs locations
     shard_keys = get_all_redis_chief_locations_keys()
     try:    
         # 1. Preparation: we create the tasks (one for each shard) to search for the closest chief in each shard in parallel 
@@ -161,7 +165,7 @@ async def get_closest_chief(alert, request_info, redis_client):
                 radius=10000, 
                 unit="km",
                 sort="asc",
-                count=10, # we search for the closest 10 chiefs
+                count=100, # we search for the closest 100 chiefs
                 withdist=True,
                 withcoord=True
             ) for key in shard_keys
@@ -177,17 +181,18 @@ async def get_closest_chief(alert, request_info, redis_client):
             raise Exception("No chiefs found within 10,000 km radius")
         # 4. Sorting
         all_candidates.sort(key=lambda x: x[1]) # x[1] is the distance
-        user_id, distance, coords = all_candidates[0]
-        return {
-            "user_id": user_id,
-            "distance_km": round(distance, 3),
-            "location": {
-                "latitude": coords[1],
-                "longitude": coords[0]
-            }
-        }
+        for user_id, distance, coords in all_candidates[:100]:
+            closest_chiefs.append({
+                "user_id": user_id,
+                "distance_km": round(distance, 3),
+                "location": {
+                    "latitude": coords[1], # Redis returns (lon, lat)
+                    "longitude": coords[0]
+                }
+            })
+        return closest_chiefs
     except Exception as e:
-        log_alert_error_searching_closest_chief(str(alert.id), request_info, detail=str(e))
+        log_alert_error_searching_closest_chiefs(str(alert.id), request_info, detail=str(e))
         return None
         
 async def get_nearby_users(alert, request_info, redis_client):
@@ -237,7 +242,38 @@ async def get_nearby_users(alert, request_info, redis_client):
         log_alert_error_searching_nearby_users(str(alert.id), request_info, detail=str(e))
         return []
 
-def check_users_against_db_and_save(alert, users, request_info, db_engine):
+def check_chiefs_against_db_and_get_the_first(alert, chiefs, request_info, db_engine):
+    if not chiefs:
+        return None
+    chief = None
+    chief_ids = [c["user_id"] for c in chiefs]
+    chief_ids_as_uuid = []
+    for uid in chief_ids:
+        try:
+            chief_ids_as_uuid.append(uuid.UUID(uid))
+        except Exception as e:
+            log_alert_error_checking_chiefs(str(alert.id), request_info, detail=f"Error converting chief user_id string to UUID: {e}")
+            continue
+    with Session(db_engine) as db_session:
+        statement = select(User.id, User.is_chief).where(
+            User.id.in_(chief_ids_as_uuid)).where( # type:ignore
+                User.is_chief==True)
+        try:
+            db_results = db_session.exec(statement).all()
+            existing_chief_ids_in_db = set(str(row[0]) for row in db_results)
+            for c in chiefs:
+                if c["user_id"] in existing_chief_ids_in_db:
+                    chief = c
+                    break
+                else:
+                    log_alert_orphan_id_found_in_checking_chiefs(str(alert.id), request_info, detail=f"Chief user_id found in Redis but not in Postgres: {c['user_id']}")
+        except Exception as e:
+            log_alert_error_saving_chief_and_users(str(alert.id), request_info, detail=str(e))
+    return chief
+
+def save_users_in_db_and_get_fcm_tokens(alert, users, request_info, db_engine):
+    if not users:
+        return {}
     ids = [u["user_id"] for u in users]
     ids_as_uuid = []
     for uid in ids:
