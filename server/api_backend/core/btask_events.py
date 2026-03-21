@@ -6,9 +6,21 @@ from core.logging import get_tasks_logger
 
 logger = get_tasks_logger()
 
-def log_alert_error_searching_closest_chief(alert_id: str, request_info: dict, detail: str):
+def log_alert_error_searching_closest_chiefs(alert_id: str, request_info: dict, detail: str):
     logger.error(
-        f"alert_error_searching_closest_chief, alert_id={alert_id}, detail={detail}",
+        f"alert_error_searching_closest_chiefs, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_checking_chiefs(alert_id: str, request_info: dict, detail: str):
+    logger.error(
+        f"alert_error_checking_chiefs, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_orphan_id_found_in_checking_chiefs(alert_id: str, request_info: dict, detail: str = ""):
+    logger.warning(
+        f"alert_orphan_id_found_in_checking_chiefs, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 

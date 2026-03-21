@@ -18,6 +18,8 @@ class BackgroundLocationService {
   static double distanceFilterInMeters = 250; // 250 meters
   static int timeFilterInSeconds = 1800; // 30 minutes
   static int dailyLimitInSeconds = 86400; // 24 hours
+  static double distanceLimitInMeters = 15000; // 15 km
+  static double accuracyLimitInMeters = 500; // 500 meters
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static Future<void> init() async {
@@ -37,7 +39,9 @@ class BackgroundLocationService {
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
-        desiredAccuracy: bg.Config.DESIRED_ACCURACY_MEDIUM,
+        desiredAccuracy: bg
+            .Config
+            .DESIRED_ACCURACY_MEDIUM, // balance between accuracy and battery
         distanceFilter:
             distanceFilterInMeters, // get location if there is a significant movement
         stopOnTerminate: false,
@@ -45,7 +49,7 @@ class BackgroundLocationService {
         foregroundService:
             true, // keep the service running in the foreground to prevent it from being killed by the OS
         stopTimeout:
-            5, // stop tracking if the device is stationary for 5 minutes
+            5, // stop tracking if the device is stationary for 5 minutes (to save battery)
         stopOnStationary: true, // stop tracking when the device is stationary
         heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
         preventSuspend: true, // prevent the app from being suspended by the OS
@@ -71,6 +75,8 @@ class BackgroundLocationService {
   static Future<void> stopTracking() async {
     await bg.BackgroundGeolocation.stop();
     debugPrintC("Background location tracking stopped.");
+    _lastSentLocation = null;
+    _lastSentTime = null;
   }
 
   static Future<void> _handleLocation(bg.Location location) async {
@@ -82,15 +88,25 @@ class BackgroundLocationService {
         location.coords.latitude,
         location.coords.longitude,
       );
+      double accuracy = location.coords.accuracy;
+      debugPrintC("Location accuracy=${accuracy.toStringAsFixed(2)} meters");
+      if (accuracy > accuracyLimitInMeters &&
+          (distance > accuracyLimitInMeters)) {
+        debugPrintC("Location accuracy is bad, skipping update");
+        return;
+      }
       final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
       // don't send the update to the backend if not enough time is passed
-      // or there hasn't been a significant movement, but force the update after a daily limit
+      // or there hasn't been a significant movement,
+      // but force the update after a daily limit or if the user moved very far away
+      debugPrintC(
+        "Difference between last sent location and current location: ${distance.toStringAsFixed(2)} meters, $secondsSinceLast seconds",
+      );
       if ((distance < distanceFilterInMeters ||
               secondsSinceLast < timeFilterInSeconds) &&
-          secondsSinceLast < dailyLimitInSeconds) {
-        debugPrintC(
-          "Location update skipped: distance=${distance.toStringAsFixed(2)}m, secondsSinceLast=$secondsSinceLast",
-        );
+          (distance < distanceLimitInMeters) &&
+          (secondsSinceLast < dailyLimitInSeconds)) {
+        debugPrintC("Location update skipped");
         return;
       }
     }

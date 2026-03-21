@@ -20,3 +20,24 @@ def log_cleanup_expired_locations_completed(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_completed, detail={detail}"
     )
+
+def log_cleanup_expired_demotions_error(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_demotions_error, detail={detail}"
+    )
+
+def log_cleanup_expired_demotions_started(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_demotions_started, detail={detail}"
+    )
+
+def log_cleaning_demotions_shard(detail: str = ""):
+    logger.info(
+        f"cleaning_demotions_shard, detail={detail}"
+    )
+
+def log_cleanup_expired_demotions_completed(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_demotions_completed, detail={detail}"
+    )
+

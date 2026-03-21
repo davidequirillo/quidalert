@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import timedelta
-from fastapi import APIRouter, Depends, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from dependencies import (get_current_user, 
             get_db_session, get_redis_session, 
             get_geoposition_token_data,
@@ -16,7 +16,8 @@ from core.security_events import get_request_info
 from core.dbmgr import (
     get_redis_chief_locations_key, 
     get_redis_user_locations_key, 
-    get_redis_location_last_updates_key)
+    get_redis_location_last_updates_key,
+    get_redis_chief_demotions_key)
 from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
 from services.security import now_tz_naive, ensure_tz_aware
 from services.btasks import (
@@ -99,15 +100,20 @@ async def update_gps_position(
     userloc_key = get_redis_user_locations_key(user_id_str)
     chiefloc_key = get_redis_chief_locations_key(user_id_str)
     last_upd_key = get_redis_location_last_updates_key(user_id_str)
-    async with redis_client.pipeline(transaction=True) as pipe:
-        if is_chief:
-            pipe.zrem(userloc_key, user_id_str)
-            pipe.geoadd(chiefloc_key, (lon, lat, user_id_str))
-        else:
-            pipe.zrem(chiefloc_key, user_id_str)
-            pipe.geoadd(userloc_key, (lon, lat, user_id_str))
-        pipe.zadd(last_upd_key, {user_id_str: now_int_ts})      
-        await pipe.execute()
+    chief_dem_key = get_redis_chief_demotions_key(user_id_str)
+    chief_demoted_at = await redis_client.zscore(chief_dem_key, user_id_str)
+    try:
+        async with redis_client.pipeline(transaction=True) as pipe:
+            if is_chief and (not chief_demoted_at):
+                pipe.zrem(userloc_key, user_id_str)
+                pipe.geoadd(chiefloc_key, (lon, lat, user_id_str))
+            else:
+                pipe.zrem(chiefloc_key, user_id_str)
+                pipe.geoadd(userloc_key, (lon, lat, user_id_str))
+            pipe.zadd(last_upd_key, {user_id_str: now_int_ts})      
+            await pipe.execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
     return {"status": "success", "message": "GPS position updated"}
 
 @router.post("/api/alert-close")
