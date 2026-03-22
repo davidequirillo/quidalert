@@ -22,8 +22,9 @@ DB_POOL_RECYCLE = 1800
 # Redis DBMS
 REDIS_MODE = "single" # "single" or "cluster"
 REDIS_URL="redis://localhost:6379/0"
+REDIS_CLUSTER_NODES="redis-node-1:7001,redis-node-2:7002,redis-node-3:7003"
 REDIS_MAX_CONNECTIONS = 200
-REDIS_MAX_CONNECTIONS_CLUSTER = 1000
+REDIS_MAX_CONNECTIONS_PER_NODE = 32 # in cluster mode
 
 # Mail sender configuration
 SMTP_HOST = "mailserver" # to send activation mail messages to clients

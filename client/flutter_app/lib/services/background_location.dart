@@ -88,9 +88,11 @@ class BackgroundLocationService {
         location.coords.latitude,
         location.coords.longitude,
       );
-      double accuracy = location.coords.accuracy;
-      debugPrintC("Location accuracy=${accuracy.toStringAsFixed(2)} meters");
-      if (accuracy > accuracyLimitInMeters &&
+      double accuracyMeters = location.coords.accuracy;
+      debugPrintC(
+        "Location accuracy=${accuracyMeters.toStringAsFixed(2)} meters",
+      );
+      if (accuracyMeters > accuracyLimitInMeters &&
           (distance > accuracyLimitInMeters)) {
         debugPrintC("Location accuracy is bad, skipping update");
         return;
