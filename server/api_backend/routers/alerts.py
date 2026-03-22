@@ -102,6 +102,9 @@ async def update_gps_position(
     last_upd_key = get_redis_location_last_updates_key(user_id_str)
     chief_dem_key = get_redis_chief_demotions_key(user_id_str)
     chief_demoted_at = await redis_client.zscore(chief_dem_key, user_id_str)
+    # Potential race condition here if a chief is demoted while updating position,
+    # but it's not a big issue because the inconsistency will be temporary (until the next position update)
+    # and in the case of an alert, chiefs returned by redis are always checked against the postgres database for safety
     try:
         async with redis_client.pipeline(transaction=True) as pipe:
             if is_chief and (not chief_demoted_at):

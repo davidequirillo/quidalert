@@ -38,7 +38,8 @@ class Settings(BaseSettings):
     redis_user: str = "" # from environment, critical for security
     redis_pass: str = "" # same as above
     redis_max_connections: int = config.REDIS_MAX_CONNECTIONS
-    redis_max_connections_cluster: int = config.REDIS_MAX_CONNECTIONS_CLUSTER
+    redis_cluster_nodes: str = config.REDIS_CLUSTER_NODES
+    redis_max_connections_per_node: int = config.REDIS_MAX_CONNECTIONS_PER_NODE
     # Mail sender conf
     smtp_user: str = "" # from environment, critical for security
     smtp_pass: str = "" # same as above

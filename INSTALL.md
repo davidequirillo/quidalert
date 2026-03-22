@@ -19,6 +19,7 @@ Install Flutter SDK
 [https://docs.flutter.dev/get-started](https://docs.flutter.dev/get-started)
 
 On terminal, go to "quidalert/client/flutter_app" folder and call these commands:
+
 ```
 flutter clean
 
@@ -55,11 +56,13 @@ You must:
 - In your developer machine, install Node.js latest LTS version, from [https://nodejs.org/en/download](https://nodejs.org/en/download)
 
 - Install Firebase CLI using npm
+
     ```bash
    npm install -g firebase-tools
    ```
 
 - In your terminal, do firebase login:
+
     ```bash
     firebase login
     ```
@@ -71,6 +74,7 @@ You must:
    ```
 
 - Run:
+
     ```bash
    flutterfire configure
    ```
@@ -90,9 +94,7 @@ Without these steps, the application will not compile and will not run.
 ### About background location updates
 
 This project uses the flutter_background_geolocation plugin.
-
 The plugin works without a license in DEBUG builds.
-
 However, a commercial license is required for RELEASE builds.
 
 If you plan to distribute this app, you must purchase a single application license from Transistorsoft and add it to the AndroidManifest.xml file (see AndroidManifest.xml, license meta)
@@ -125,13 +127,21 @@ See ".env.example" for additional info about those variables.
 
 Postgres DBMS, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file, so read this file for more info about them.
 To download them automatically, and start them, you only need to write this single command:
+
 ```
 docker-compose up -d
+```
+
+If you want to use Redis in cluster mode (not in single mode), you must join redis nodes:
+
+```
+docker exec -it redis-node-1 redis-cli --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
 ```
 
 Now you will have all the required servers ready to receive requests.
 
 Do all migrations to postgres database (to build the entire database tables) from existent migration sources using the following command:
+
 ```
 alembic upgrade head
 ```
@@ -172,11 +182,9 @@ The Windows version currently has a problem with Firebase package (so probably w
 
 ### Send push notification to client
 
-To receive push notifications, the app requires registration to **Firebase Cloud Messaging (FCM)**.
+To send push notifications to the client, the backend need to connect to FCM cloud using the account secret key assigned to it by the FCM platform.
 
-Push notifications are not enabled by default in this repository because each distributor must use their own Firebase project.
-
-In your Firebase Project, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
+In your Firebase Project web console, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
 
 ### Redis ram database integration
 
@@ -197,9 +205,9 @@ map $http_x_request_id $req_id {
     default $http_x_request_id;
     ""      $request_id;
 }
-
 proxy_set_header X-Request-ID $req_id;
 ```
+
 To log the request_id in nginx too:
 
 ```

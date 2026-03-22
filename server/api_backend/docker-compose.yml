@@ -24,6 +24,42 @@ services:
     volumes:
       - redis_data:/data
 
+  redis-node-1:
+    image: redis:7.4-alpine
+    container_name: redis-node-1
+    volumes:
+      - redis-data-1:/data
+    command: redis-server --port 7001 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0 --cluster-announce-ip redis-node-1 --cluster-announce-port 7001 --cluster-announce-bus-port 17001
+    ports:
+      - "7001:7001"
+      - "17001:17001"
+    networks:
+      - redis-cluster-net
+
+  redis-node-2:
+    image: redis:7.4-alpine
+    container_name: redis-node-2
+    volumes:
+      - redis-data-2:/data
+    command: redis-server --port 7002 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0 --cluster-announce-ip redis-node-2 --cluster-announce-port 7002 --cluster-announce-bus-port 17002
+    ports:
+      - "7002:7002"
+      - "17002:17002"
+    networks:
+      - redis-cluster-net
+
+  redis-node-3:
+    image: redis:7.4-alpine
+    container_name: redis-node-3
+    volumes:
+      - redis-data-3:/data
+    command: redis-server --port 7003 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0 --cluster-announce-ip redis-node-3 --cluster-announce-port 7003 --cluster-announce-bus-port 17003
+    ports:
+      - "7003:7003"
+      - "17003:17003"
+    networks:
+      - redis-cluster-net
+
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
     image: minio/minio:RELEASE.2024-11-07T00-52-20Z
@@ -54,5 +90,13 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  redis-data-1:
+  redis-data-2:
+  redis-data-3:
   minio_data:
   mailpit_data:
+
+# Networks definition
+networks:
+  redis-cluster-net:
+    driver: bridge

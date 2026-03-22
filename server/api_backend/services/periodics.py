@@ -81,7 +81,7 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client)
         )
         if not expired_user_ids:
             break
-        # Little potential race condition here, but it's not a big issue for consistency (the client will just have to update the location again)
+        # Potential race condition here, but it's not a big issue for consistency (the client will just have to update the location again)
         async with redis_client.pipeline(transaction=True) as pipe:
             pipe.zrem(chiefloc_key, *expired_user_ids)
             pipe.zrem(uloc_key, *expired_user_ids)
@@ -147,7 +147,9 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client)
         )
         if not expired_user_ids:
             break
-        # Little potential race condition here, but it's not a big issue for consistency (a chief cannot be demoted two times in a row without being promoted in between)
+        # Potential race condition here, but it's not a big issue for consistency 
+        # because if a chief is demoted again during the cleanup (and the cleanup will accidentally delete the new demotion), 
+        # the client meanwhile will have received a "not chief" status by a new gps token (via refresh api or login)
         async with redis_client.pipeline(transaction=True) as pipe:
             pipe.zrem(demotions_key, *expired_user_ids)
             await pipe.execute()

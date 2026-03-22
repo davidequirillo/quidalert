@@ -5,6 +5,7 @@
 import zlib
 from sqlmodel import create_engine, Session
 import redis.asyncio as redis
+import redis.asyncio.cluster as cluster
 from core.settings import settings
 
 def get_engine():
@@ -23,12 +24,14 @@ def get_session(engine):
 
 def get_redis_pool():
     if settings.redis_mode == "cluster":
-        redis_host = settings.redis_url.split("://")[1].split(":")[0]
-        redis_port = settings.redis_url.split("://")[1].split(":")[1].split("/")[0]
+        nodes_raw = settings.redis_cluster_nodes  
+        startup_nodes = []
+        for node in nodes_raw.split(","):
+            host, port = node.split(":")
+            startup_nodes.append(cluster.ClusterNode(host=host, port=int(port)))
         options = {
-            "host": redis_host,
-            "port": int(redis_port),
-            "max_connections": settings.redis_max_connections_cluster,
+            "startup_nodes": startup_nodes,
+            "max_connections": settings.redis_max_connections_per_node,
             "decode_responses": True
         }
         redis.RedisCluster(**options)
