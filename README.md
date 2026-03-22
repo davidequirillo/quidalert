@@ -5,7 +5,7 @@
 NOTE: at the moment, this project is in an early non-functional stage, and is under development.
 
 Quidalert is a network alert manager: when the server receives an alert from a connected client (mostly a mobile device), it takes the alert description, and then it sends a push notification to all geolocalized nearby clients and to the closest "chief", to notify them about the alert.  
-At this point a group chat will be automatically opened by the system and will include the user who sent the alert, nearby users and the "chief" user, who will be able to communicate with them, helping them.
+At this point a group chat will be automatically created by the system and will include the user who sent the alert, nearby users and the "chief" user, who will be able to communicate with them, helping them.
 
 Clients can also receive different notification instructions based on user account role (citizen, military, police, firemen, civil protection, medics).
 
