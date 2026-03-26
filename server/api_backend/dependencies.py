@@ -19,11 +19,14 @@ def get_db_session(request: Request):
     yield from dbmgr.get_session(engine)
 
 async def get_redis_session(request: Request):
-    pool = request.app.state.redis_pool
-    if settings.redis_mode == "cluster":
-        yield pool
-    async with dbmgr.get_redis_conn(pool) as client:
-        yield client
+    handle = request.app.state.redis_handle
+    if isinstance(handle, dbmgr.cluster.RedisCluster):
+        yield handle
+    elif isinstance(handle, dbmgr.redis.ConnectionPool):
+        async with dbmgr.get_redis_conn(handle) as redis_session:
+            yield redis_session
+    else:
+        raise dbmgr.RedisHandleTypeError(handle)
 
 def get_s3_client(request: Request):
     return request.app.state.s3_client

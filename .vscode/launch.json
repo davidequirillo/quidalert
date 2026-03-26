@@ -2,14 +2,6 @@
   "version": "0.2.0",
   "configurations": [
   {
-    "name": "Debug Server (FastAPI)",
-    "type": "debugpy",
-    "request": "launch",
-    "cwd": "${workspaceFolder}/server/api_backend",
-    "program": "start.py",
-    "console": "integratedTerminal"
-  },
-  {
     "name": "Debug Client (Flutter - Windows)",
     "type": "dart",
     "request": "launch",
@@ -22,7 +14,7 @@
     "request": "launch",
     "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "emulator-5554"
-  }
+  },
   {
     "name": "Debug Client (Flutter - Web)",
     "type": "dart",

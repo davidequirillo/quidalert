@@ -3,7 +3,6 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import asyncio
-import redis.asyncio as redis
 from datetime import timedelta
 from core.settings import settings
 from services.security import now_tz_naive, GEOPOSITION_TOKEN_TTL_MINUTES
@@ -17,6 +16,7 @@ from core.periodic_events import (
     log_cleanup_expired_demotions_completed
     )
 from core.dbmgr import (
+    redis, cluster, RedisHandleTypeError,
     REDIS_CHIEF_DEMOTIONS_KEY,
     REDIS_USER_LOCATIONS_KEY,
     REDIS_CHIEF_LOCATIONS_KEY,
@@ -27,13 +27,16 @@ from core.dbmgr import (
     REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT,
     REDIS_TOTAL_SHARDS)
 
-async def do_locations_cleanup(redis_pool):
-    if settings.redis_mode == "cluster":
-        await cleanup_expired_locations(redis_pool)
+async def do_locations_cleanup(redis_handle):
+    if isinstance(redis_handle, cluster.RedisCluster):
+        await cleanup_expired_locations(redis_handle)
+        return
+    elif isinstance(redis_handle, redis.ConnectionPool):
+        async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
+            await cleanup_expired_locations(redis_session)
+        return
     else:
-        async with redis.Redis(connection_pool=redis_pool, decode_responses=True) as redis_client:
-            await cleanup_expired_locations(redis_client)
-    return
+        raise RedisHandleTypeError(redis_handle)
 
 async def cleanup_expired_locations(redis_client):
     now = now_tz_naive()
@@ -91,13 +94,16 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client)
         await asyncio.sleep(0.05) 
     return deleted_in_shard
 
-async def do_demotions_cleanup(redis_pool):
-    if settings.redis_mode == "cluster":
-        await cleanup_expired_demotions(redis_pool)
+async def do_demotions_cleanup(redis_handle):
+    if isinstance(redis_handle, cluster.RedisCluster):
+        await cleanup_expired_demotions(redis_handle)
+        return
+    elif isinstance(redis_handle, redis.ConnectionPool):
+        async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
+            await cleanup_expired_demotions(redis_session)
+        return
     else:
-        async with redis.Redis(connection_pool=redis_pool, decode_responses=True) as redis_client:
-            await cleanup_expired_demotions(redis_client)
-    return
+        raise RedisHandleTypeError(redis_handle)
 
 async def cleanup_expired_demotions(redis_client):
     now = now_tz_naive()

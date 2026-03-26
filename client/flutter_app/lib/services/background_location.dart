@@ -1,6 +1,10 @@
 // Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
 // Copyright (C) 2025  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
+//
+// Additional permission under GNU GPL version 3 section 7:
+// This program may be linked with the "flutter_background_geolocation"
+// plugin by Transistor Software. See the LICENSE file for full details.
 
 import 'dart:math';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
@@ -37,6 +41,13 @@ class BackgroundLocationService {
       await bg.BackgroundGeolocation.getCurrentPosition();
       // Note: it triggers the "onLocation" event too
     });
+    bg.BackgroundGeolocation.onMotionChange((bg.Location location) {
+      if (location.isMoving) {
+        debugPrintC("[GPS ON] MotionChange, state: moving");
+      } else {
+        debugPrintC("[GPS OFF] MotionChange, state: stationary");
+      }
+    });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         desiredAccuracy: bg
@@ -69,11 +80,15 @@ class BackgroundLocationService {
     final state = await bg.BackgroundGeolocation.state;
     if (!state.enabled) {
       await bg.BackgroundGeolocation.start();
+      debugPrintC("Background location tracking started.");
+    } else {
+      debugPrintC("Background location tracking is already running.");
     }
   }
 
   static Future<void> stopTracking() async {
     await bg.BackgroundGeolocation.stop();
+    await bg.BackgroundGeolocation.destroyLocations();
     debugPrintC("Background location tracking stopped.");
     _lastSentLocation = null;
     _lastSentTime = null;

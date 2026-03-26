@@ -5,6 +5,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import config 
 
+# Note: Settings priority: docker environment variables > .env file > default values in the code
+
 class Settings(BaseSettings):
     # App conf
     app_mode: str = "production"
