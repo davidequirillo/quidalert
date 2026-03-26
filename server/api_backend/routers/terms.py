@@ -20,7 +20,7 @@ router = APIRouter(
     tags=["Terms"]
 )
 
-FILES_DIR = "./files"
+FILES_DIR = "files"
 
 @router.get("/api/terms")
 def get_terms(request: Request,
@@ -32,13 +32,15 @@ def get_terms(request: Request,
         lang = UserLanguage.en
     response.headers["Content-Type"] = "text/markdown; charset=utf-8"
     try:
+        fkey = f"terms_{lang}.md"
         obj = s3_client.get_object(
             Bucket=settings.minio_bucket_name, 
-            Key=f"terms_{lang}.md")
+            Key=fkey)
     except Exception:
         obj = None
     if not obj:
-        fpath = os.path.join(FILES_DIR, f"terms_{lang}.md.example")
+        fname = f"terms_{lang}.md.example"
+        fpath = os.path.join(FILES_DIR, fname)
         return FileResponse(fpath)
     else:
         content = obj["Body"]
@@ -81,6 +83,7 @@ async def upload_terms(file: UploadFile = File(...),
             )
         )   
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error uploading file to S3"

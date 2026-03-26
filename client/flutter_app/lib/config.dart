@@ -7,7 +7,7 @@
 // plugin by Transistor Software. See the LICENSE file for full details.
 
 const appName = 'Quidalert';
-const apiBaseUrl = 'http://10.0.2.2:8080/api';
+const apiBaseUrl = 'http://10.0.2.2:8000/api';
 
 // The competence territory, examples:
 // "Rome", "Milan", "Milan City and near", "California", "New York", etc. etc.

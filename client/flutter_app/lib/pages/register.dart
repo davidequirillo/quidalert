@@ -9,7 +9,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/utils/fileutils.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
@@ -78,6 +81,7 @@ class _RegisterBodyState extends State<RegisterBody> {
   Future<void> _doRegistration(Map<String, String> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
+    final isLoggedIn = context.read<AuthClient>().isLoggedIn();
     String? registerError;
     String endMessage;
     String endTitle;
@@ -125,7 +129,7 @@ class _RegisterBodyState extends State<RegisterBody> {
         title: endTitle,
         content: endMessage,
         condition: (registerError == null),
-        route: "/login",
+        route: (isLoggedIn) ? "/home" : "/login",
       ),
     );
   }
@@ -175,6 +179,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                   ),
                   SizedBox(height: 5),
                   TextFormField(
+                    keyboardType: TextInputType.emailAddress,
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',
@@ -187,6 +192,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                   ),
                   SizedBox(height: 5),
                   TextFormField(
+                    keyboardType: TextInputType.visiblePassword,
                     controller: _passwordController,
                     decoration: InputDecoration(
                       labelText: 'Password',
@@ -200,6 +206,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                   ),
                   SizedBox(height: 5),
                   TextFormField(
+                    keyboardType: TextInputType.visiblePassword,
                     controller: _rePasswordController,
                     decoration: InputDecoration(
                       labelText: loc.labelConfirmPassword,
@@ -209,7 +216,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                       if (value != _passwordController.text) {
                         return loc.errorPasswordsDoNotMatch;
                       }
-                      return validateName(context, value);
+                      return validatePassword(context, value);
                     },
                     obscureText: !showPasswordFlag,
                   ),

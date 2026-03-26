@@ -305,12 +305,12 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
                 const SizedBox(height: 50),
                 Text(loc.labelCompileToChangeAuthorizer),
                 TextFormField(
+                  keyboardType: TextInputType.emailAddress,
                   controller: _authorizerController,
                   decoration: InputDecoration(
                     labelText: loc.labelAuthorizedBy,
                     border: OutlineInputBorder(),
                   ),
-                  keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if ((value == null) || (value.isEmpty)) {
                       return null;

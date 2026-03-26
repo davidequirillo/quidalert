@@ -101,9 +101,9 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
             child: Column(
               children: [
                 TextFormField(
+                  keyboardType: TextInputType.emailAddress,
                   controller: _emailController,
                   decoration: InputDecoration(labelText: "Email"),
-                  keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if ((value == null) || (value.isEmpty)) {
                       return null;
