@@ -402,7 +402,7 @@ def register_device_for_push_notifications(
     db_session.commit()
     return {"message": "Device registered for push notifications"}
 
-# USER REGISTRATION ENDPOINTS (registration, activation, password change)
+# USER REGISTRATION ENDPOINTS (registration, activation, password change).
 @app.post("/api/register")
 def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
     # We will return a unique registration message for almost all cases, for security

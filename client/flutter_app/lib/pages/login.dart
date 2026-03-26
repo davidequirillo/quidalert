@@ -134,6 +134,7 @@ class _LoginBodyState extends State<LoginBody> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             TextField(
+              keyboardType: TextInputType.emailAddress,
               controller: _usernameController,
               decoration: InputDecoration(
                 labelText: 'Email',
@@ -142,6 +143,7 @@ class _LoginBodyState extends State<LoginBody> {
             ),
             SizedBox(height: 20),
             TextField(
+              keyboardType: TextInputType.visiblePassword,
               controller: _passwordController,
               decoration: InputDecoration(
                 labelText: 'Password',

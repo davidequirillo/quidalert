@@ -199,6 +199,7 @@ class _ResetBodyState extends State<ResetBody> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   TextFormField(
+                    keyboardType: TextInputType.emailAddress,
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',

@@ -132,7 +132,7 @@ Do all migrations to postgres database (to build the entire database tables) fro
 alembic upgrade head
 ```
 
-Now you can start the backend and the client via VSCode launcher (see debugging/run section).
+Now, the backend is running as a docker container, and you can launch the client via VSCode launcher (see debugging/run section).
 
 IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using your custom password you have placed in ADMIN_PASS environment variable.  
 After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
@@ -156,7 +156,8 @@ To run (debug) client, go to VS Code menu -> View -> Run.
 - Choose "Debug - Client (Flutter) Windows" and click to play to debug the client.
 - Choose "Debug - Client (Flutter) Android" and click to play to debug the client
 
-To debug the backend (FastAPI), attach VSCode to running fastapi container and read/edit the code there 
+The backend is already running (it has started when we have done "docker-compose up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping).  
+To intensively debug the backend (FastAPI), we can attach VSCode to running fastapi container and read/edit the code there. 
 
 NOTES
 - "Debug - Client (Flutter) Windows" requires Microsoft Visual Studio (C++ desktop development package).   
