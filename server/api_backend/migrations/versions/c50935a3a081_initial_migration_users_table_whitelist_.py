@@ -1,8 +1,8 @@
-"""initial migration: users, whitelist_entries, alerts, alerted_users
+"""initial migration: users table, whitelist table, alerts table, etc.
 
-Revision ID: 094e81ec4ad6
+Revision ID: c50935a3a081
 Revises: 
-Create Date: 2026-02-28 11:57:29.035056
+Create Date: 2026-03-23 20:33:47.232917
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '094e81ec4ad6'
+revision: str = 'c50935a3a081'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -103,6 +103,8 @@ def upgrade() -> None:
     sa.Column('raw_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('ip_address', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('device_info', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('fcm_token', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
+    sa.Column('fcm_token_updated_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('is_revoked', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),

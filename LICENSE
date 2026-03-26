@@ -672,3 +672,9 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+### Additional Permission under GNU GPL version 3 section 7
+
+If you modify this Program, or any covered work, by linking or combining it with the "flutter_background_geolocation" plugin by Transistor Software (including its proprietary native SDKs and binaries), the copyright holders of this Program grant you additional permission to convey the resulting work. 
+
+The terms of the GNU GPL version 3 remain fully applicable to all other parts of the Program. This exception does not imply a license grant for the "flutter_background_geolocation" plugin itself; users must comply with the commercial licensing terms provided by Transistor Software for release distributions.

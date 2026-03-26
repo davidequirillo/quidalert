@@ -2,6 +2,7 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+from typing import Union, TypeAlias
 import zlib
 from sqlmodel import create_engine, Session
 import redis.asyncio as redis
@@ -22,32 +23,55 @@ def get_session(engine):
     with Session(engine) as session:
         yield session
 
-def get_redis_pool():
-    if settings.redis_mode == "cluster":
-        nodes_raw = settings.redis_cluster_nodes  
-        startup_nodes = []
-        for node in nodes_raw.split(","):
-            host, port = node.split(":")
-            startup_nodes.append(cluster.ClusterNode(host=host, port=int(port)))
-        options = {
-            "startup_nodes": startup_nodes,
-            "max_connections": settings.redis_max_connections_per_node,
-            "decode_responses": True
-        }
-        redis.RedisCluster(**options)
-    else:
-        redis_pool = redis.ConnectionPool.from_url(
-        settings.redis_url, 
-        max_connections=settings.redis_max_connections, 
-        decode_responses=True)
-        return redis_pool
+RedisHandle: TypeAlias = Union[redis.ConnectionPool, cluster.RedisCluster]
+RedisConnection: TypeAlias = Union[redis.Redis, cluster.RedisCluster]
 
-def get_redis_conn(pool):
-    if settings.redis_mode == "cluster":
-        return pool
-    else:
-        return redis.Redis(connection_pool=pool, decode_responses=True)
+class RedisHandleTypeError(ValueError):
+    def __init__(self, handle: object):
+        self.message = f"Invalid Redis handle type: {type(handle)}. Expected ConnectionPool or RedisCluster."
+        super().__init__(self.message)
 
+def get_redis_handle() -> RedisHandle:
+    if settings.redis_mode == "cluster":
+        return get_redis_cluster_client()
+    else:
+        return get_redis_pool()
+
+def get_redis_pool() -> redis.ConnectionPool:
+    redis_pool: redis.ConnectionPool = redis.ConnectionPool.from_url(
+    settings.redis_url, 
+    max_connections=settings.redis_max_connections, 
+    decode_responses=True)
+    return redis_pool
+    
+def get_redis_cluster_client() -> cluster.RedisCluster:
+    nodes_raw = settings.redis_cluster_nodes  
+    startup_nodes = []
+    for node in nodes_raw.split(","):
+        host, port = node.split(":")
+        startup_nodes.append(cluster.ClusterNode(host=host, port=int(port)))
+    options = {
+        "startup_nodes": startup_nodes,
+        "max_connections": settings.redis_max_connections_per_node,
+        "decode_responses": True
+    }
+    return cluster.RedisCluster(**options)
+
+def get_redis_conn(handle: RedisHandle) -> RedisConnection:
+    if isinstance(handle, cluster.RedisCluster):
+        return handle
+    elif isinstance(handle, redis.ConnectionPool):
+        return redis.Redis(connection_pool=handle, decode_responses=True)
+    raise RedisHandleTypeError(handle)
+
+async def shutdown_redis_handle(handle: RedisHandle):
+    if isinstance(handle, cluster.RedisCluster):
+        await handle.close()
+    elif isinstance(handle, redis.ConnectionPool):
+        await handle.disconnect()
+    else:
+        raise RedisHandleTypeError(handle)
+    
 REDIS_TOTAL_SHARDS = 16
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"

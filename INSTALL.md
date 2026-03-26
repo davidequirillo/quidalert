@@ -105,31 +105,17 @@ Compile the app, distribute it (or install it in the mobile/client device manual
 
 ## Backend
 
-Install miniconda:
-
-[https://www.anaconda.com/download/success](https://www.anaconda.com/download/success)
-
-On miniconda prompt (terminal), go to "quidalert/server/api_backend" folder and write:
-
-```
-conda env create -f environment.yml
-```
-
-```
-conda activate quidalert_env
-```
-
 Change default settings in config.py file, and read the comments contained in the file, to know how to proceed with the env variables.
 
 Copy ".env.example" to ".env" file and change the desired environment variables (useful for development).
 
 See ".env.example" for additional info about those variables.
 
-Postgres DBMS, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file, so read this file for more info about them.
+FastAPI, Postgres DBMS, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file, so read this file for more info about them.
 To download them automatically, and start them, you only need to write this single command:
 
 ```
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 If you want to use Redis in cluster mode (not in single mode), you must join redis nodes:
@@ -166,11 +152,11 @@ code .quidalert.code-workspace
 
 NOTE: code workspace has been configured to ignore some useless folders from the programming IDE view (for example “build” directories)
 
-To run (debug) client and server, go to VS Code menu -> View -> Run.
+To run (debug) client, go to VS Code menu -> View -> Run.
 - Choose "Debug - Client (Flutter) Windows" and click to play to debug the client.
-- Choose "Debug - Server (Python)" and click to play to debug the server.
+- Choose "Debug - Client (Flutter) Android" and click to play to debug the client
 
-Obviously they can be executed together (client and server), in parallel, to test the entire system.
+To debug the backend (FastAPI), attach VSCode to running fastapi container and read/edit the code there 
 
 NOTES
 - "Debug - Client (Flutter) Windows" requires Microsoft Visual Studio (C++ desktop development package).   

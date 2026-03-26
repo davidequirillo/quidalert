@@ -81,7 +81,7 @@ def create_alert(alert_in: AlertIn,
         curr_user, 
         request_info=req_info,
         db_engine=request.app.state.db_engine,
-        redis_pool=request.app.state.redis_pool
+        redis_handle=request.app.state.redis_handle
         )
     return {"message": "Alert created"}
 
@@ -143,6 +143,6 @@ def close_alert(alert_id: int,
         curr_user, 
         request_info=req_info,
         db_engine=request.app.state.db_engine,
-        redis_pool=request.app.state.redis_pool
+        redis_handle=request.app.state.redis_handle
         )
     return {"message": "Alert created"}

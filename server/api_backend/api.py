@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import asyncio
+from multiprocessing import pool
 import os
 from datetime import timedelta
 from fastapi import (FastAPI, Depends,
@@ -77,10 +78,23 @@ def init_settings():
 async def lifespan(app: FastAPI):
     print("Starting up api framework...")
     init_settings()
-    print("Initializing database and other resources...")
+    print("Initializing database engine...")
     app.state.db_engine = dbmgr.get_engine()
-    app.state.redis_pool = dbmgr.get_redis_pool()
+    print("Initializing redis handle...")
+    app.state.redis_handle = dbmgr.get_redis_handle()
+    print("Testing redis connection...")
+    redis_conn = dbmgr.get_redis_conn(app.state.redis_handle)
+    try:
+        redis_is_ok = redis_conn.ping()
+        if redis_is_ok:
+            print("Redis connection successful")
+        else:
+            print("Redis ping failed")
+    except Exception as e:
+        print(f"Redis connection failed: {e}")
+    print("Initializing s3 client...")
     app.state.s3_client = bucketmgr.get_s3_client()
+    print("Initializing Firebase Admin SDK...")
     fbase_path = settings.firebase_keys_path
     firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
     if not firebase_admin._apps:
@@ -92,13 +106,13 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         do_locations_cleanup,
         trigger=CronTrigger(hour=19, minute=35), 
-        args=[app.state.redis_pool],
+        args=[app.state.redis_handle],
         id="cleanup_expired_locations_job_v1",
     )
     scheduler.add_job(
         do_demotions_cleanup,
         trigger=CronTrigger(hour=17, minute=30), 
-        args=[app.state.redis_pool],
+        args=[app.state.redis_handle],
         id="cleanup_expired_demotions_job_v1",
     )
     print("Starting periodic tasks scheduler...")
@@ -110,18 +124,13 @@ async def lifespan(app: FastAPI):
     if app.state.db_engine:
         app.state.db_engine.dispose()
     print("Shutting down redis...")
-    if app.state.redis_pool:
-        if settings.redis_mode == "cluster":
-            print("Disconnecting redis cluster...")
-            await app.state.redis_pool.disconnect() # for cluster, disconnect is async
-        else:
-            print("Disconnecting redis...")
-            await app.state.redis_pool.disconnect()
+    if app.state.redis_handle:
+        await dbmgr.shutdown_redis_handle(app.state.redis_handle)
     print("Shutting down s3 client...")
     if app.state.s3_client:
         app.state.s3_client.close()
     app.state.db_engine = None
-    app.state.redis_pool = None
+    app.state.redis_handle = None
     app.state.s3_client = None
     print("API shutdown complete")
 

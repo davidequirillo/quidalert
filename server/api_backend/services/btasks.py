@@ -4,7 +4,6 @@
 
 import asyncio
 import uuid
-import redis.asyncio as redis
 from sqlmodel import Session, select, insert, update
 from firebase_admin import messaging
 from core.settings import settings
@@ -31,6 +30,7 @@ from core.btask_events import (
     log_alert_notify_sender)
 
 from core.dbmgr import (
+    cluster, redis, RedisHandleTypeError,
     get_all_redis_chief_locations_keys,
     get_all_redis_user_locations_keys)
 
@@ -53,7 +53,7 @@ alert_notification_templates = {
 
 def task_alert_search_and_notify( # notify chief and nearby users about the new alert
             alert: Alert, user: User, request_info: dict,
-            db_engine, redis_pool):    
+            db_engine, redis_handle):    
     if alert.is_closed:
         return
     nearby_users_can_be_notified = False
@@ -61,7 +61,7 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
     sender_can_be_notified = False # sender: the user who created the alert
     closest_chiefs, nearby_users = asyncio.run(
         get_closest_chiefs_and_nearby_users(
-            alert, request_info, redis_pool)
+            alert, request_info, redis_handle)
         )
     sender = { # info about the user who created the alert, to be used in logging and notifications
         "user_id": str(user.id),
@@ -139,18 +139,20 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     
-async def get_closest_chiefs_and_nearby_users(alert, request_info, redis_pool):
+async def get_closest_chiefs_and_nearby_users(alert, request_info, redis_handle):
     chiefs, users = [], []
-    if settings.redis_mode == "cluster":
-        chiefs = await get_closest_chiefs(alert, request_info, redis_pool)
-        users = await get_nearby_users(alert, request_info, redis_pool)
+    if isinstance(redis_handle, cluster.RedisCluster):
+        chiefs = await get_closest_chiefs(alert, request_info, redis_handle)
+        users = await get_nearby_users(alert, request_info, redis_handle)
+        return chiefs, users
+    elif isinstance(redis_handle, redis.ConnectionPool):
+        async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
+            chiefs = await get_closest_chiefs(alert, request_info, redis_session)
+            users = await get_nearby_users(alert, request_info, redis_session)
         return chiefs, users
     else:
-        async with redis.Redis(connection_pool=redis_pool, decode_responses=True) as redis_client:
-            chiefs = await get_closest_chiefs(alert, request_info, redis_client)
-            users = await get_nearby_users(alert, request_info, redis_client)
-        return chiefs, users
-
+        raise RedisHandleTypeError(redis_handle)
+        
 async def get_closest_chiefs(alert, request_info, redis_client):
     closest_chiefs = []
     # We obtain all shards keys for chiefs locations
@@ -401,6 +403,6 @@ def notify_single_user(alert, user_id, fcm_token, message: str, request_info, lo
     
 def task_alert_cleanup(
             alert: Alert, user: User, request_info: dict,
-            db_engine, redis_pool):
+            db_engine, redis_handle):
     # alert cleanups
     return

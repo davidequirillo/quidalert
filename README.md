@@ -58,7 +58,15 @@ The author does NOT collect any personal or sensible data from the end users of 
 
 User personal data, during registration and use of the software, will be collected by the server to which the mobile application (the client) will be connected at runtime. Therefore, please refer to the terms of use and privacy policy that will be returned by that server, and shown on the client device upon initial connection.
 
-## 📄 License
+## ⚖️ License & Commercial Dependencies
 
-This project is released under the GPLv3 license.
-See the LICENSE file for details.
+This project is licensed under the **GNU GPL v3** with a specific exception for hardware-optimized location tracking.
+
+### The "Flutter Background Geolocation" Exception
+This application utilizes the [flutter_background_geolocation](https://github.com/transistorsoft/flutter-background-geolocation) plugin by Transistor Software. 
+* **The Code:** My original source code is 100% Open Source under the GPL v3.
+* **The Plugin:** While the plugin's Dart wrapper is open, its native SDKs require a **commercial license** for production/release builds.
+
+**Important:** In accordance with Section 7 of the GPL v3, I have granted a specific exception in the `LICENSE` file. This allows you to compile and distribute this app with the Transistor Software SDK without violating the GPL, provided that all other parts of the application remain under the GPL v3. 
+
+*Note: You are responsible for acquiring your own commercial license from Transistor Software if you intend to release a production version of this app.*
