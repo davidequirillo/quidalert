@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import logging
+from middleware.request_ctx import request_id_ctx, client_ip_ctx, client_ua_ctx
 from core.settings import settings
 
 class DefaultExtrasFilter(logging.Filter):
@@ -45,6 +46,35 @@ def get_tasks_logger():
 def get_periodics_logger():
     return logging.getLogger("periodics")
 
+def get_api_logger():
+    return logging.getLogger("api")
+
 sql_logger = logging.getLogger('sqlalchemy.engine')
 sql_logger.propagate = False # to avoid duplicates log records
 sql_logger.setLevel(logging.INFO)
+
+def get_client_ip() -> str | None:
+    try:
+        return client_ip_ctx.get()
+    except LookupError:
+        return None
+
+def get_request_id() -> str | None:
+    try:
+        return request_id_ctx.get()
+    except LookupError:
+        return None
+
+def get_client_ua() -> str | None:
+    try:
+        return client_ua_ctx.get()
+    except LookupError:
+        return None
+    
+def get_request_info(user_id: str) -> dict:
+    return {
+        "client_ip": get_client_ip(),
+        "request_id": get_request_id(),
+        "user_agent": get_client_ua(),
+        "user_id": user_id
+    }

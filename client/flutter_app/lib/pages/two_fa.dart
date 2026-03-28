@@ -133,6 +133,7 @@ class _TwoFABodyState extends State<TwoFABody> {
               ),
               SizedBox(height: 15),
               TextFormField(
+                keyboardType: TextInputType.number,
                 controller: _codeController,
                 decoration: InputDecoration(
                   labelText: loc.labelVerificationCode,

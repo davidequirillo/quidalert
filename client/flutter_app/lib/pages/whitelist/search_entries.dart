@@ -169,6 +169,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                   child: Column(
                     children: [
                       TextFormField(
+                        keyboardType: TextInputType.emailAddress,
                         controller: _emailController,
                         decoration: InputDecoration(labelText: "Email"),
                         validator: (value) => validateEmail(context, value),

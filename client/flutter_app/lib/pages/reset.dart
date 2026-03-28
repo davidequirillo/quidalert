@@ -213,6 +213,7 @@ class _ResetBodyState extends State<ResetBody> {
                   SizedBox(height: 5),
                   if (resetRequestIsSent)
                     TextFormField(
+                      keyboardType: TextInputType.number,
                       controller: _codeController,
                       decoration: InputDecoration(
                         labelText: loc.labelVerificationCode,
@@ -227,6 +228,7 @@ class _ResetBodyState extends State<ResetBody> {
                   SizedBox(height: 5),
                   if (resetRequestIsSent)
                     TextFormField(
+                      keyboardType: TextInputType.visiblePassword,
                       controller: _passwordController,
                       decoration: InputDecoration(
                         labelText: loc.labelNewPassword,
@@ -241,6 +243,7 @@ class _ResetBodyState extends State<ResetBody> {
                   SizedBox(height: 5),
                   if (resetRequestIsSent)
                     TextFormField(
+                      keyboardType: TextInputType.visiblePassword,
                       controller: _rePasswordController,
                       decoration: InputDecoration(
                         labelText: loc.labelConfirmNewPassword,
@@ -250,7 +253,7 @@ class _ResetBodyState extends State<ResetBody> {
                         if (value != _passwordController.text) {
                           return loc.errorPasswordsDoNotMatch;
                         }
-                        return validateName(context, value);
+                        return validatePassword(context, value);
                       },
                       obscureText: !showPasswordFlag,
                     ),

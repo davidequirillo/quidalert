@@ -2,8 +2,6 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import asyncio
-from multiprocessing import pool
 import os
 from datetime import timedelta
 from fastapi import (FastAPI, Depends,
@@ -28,19 +26,8 @@ import firebase_admin
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.settings import settings
-from core.logging import setup_logging
-from core.security_events import (
-    get_client_ip,
-    get_request_info,
-    log_password_reset_code_generation,
-    log_password_reset_successful,
-    log_password_reset_locked,
-    log_deleted_user_to_renew_registration,
-    log_login_successful,
-    log_login_code_generation,
-    log_login_locked,
-    log_login_token_generation
-)
+from core.logging import setup_logging, get_client_ip
+from core import api_events, security_events
 import services.localization as i18n
 from models.general import (UserIn, User, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
@@ -82,6 +69,10 @@ async def lifespan(app: FastAPI):
     app.state.db_engine = dbmgr.get_engine()
     print("Initializing redis handle...")
     app.state.redis_handle = dbmgr.get_redis_handle()
+    if settings.redis_mode == "cluster":
+        print("Redis cluster mode enabled")
+    else:
+        print("Redis single mode enabled")
     print("Testing redis connection...")
     redis_conn = dbmgr.get_redis_conn(app.state.redis_handle)
     try:
@@ -292,7 +283,7 @@ def login(data: LoginSchema,
                 user.login_expires_at = None
                 user.login_locked_until = now + timedelta(hours=LOGIN_LOCK_HOURS)
                 user.login_2fa_attempts = 0
-                log_login_locked(str(user.id))
+                security_events.log_login_locked(str(user.id))
             db_session.add(user)
             db_session.commit()
             raise two_factor_not_valid_exception()
@@ -302,7 +293,7 @@ def login(data: LoginSchema,
         user.login_locked_until = None
         user.login_2fa_attempts = 0
         skip_2fa = True # 2FA verified successfully
-        log_login_token_generation(str(user.id))
+        security_events.log_login_token_generation(str(user.id))
     # if a valid login_token is provided, we skip 2FA check
     elif data.login_token:
         try:
@@ -333,7 +324,7 @@ def login(data: LoginSchema,
                 expires_at = otp_expiry()
                 user.login_code_hash = code_hash
                 user.login_expires_at = expires_at
-                log_login_code_generation(str(user.id)) 
+                security_events.log_login_code_generation(str(user.id))
         if code:
             user.last_login_mail_code_at = now
             db_session.add(user)
@@ -377,7 +368,7 @@ def login(data: LoginSchema,
     rtoken = create_refresh_token(
         str(user.id), str(refresh_token_id), 
         raw_random_str, created_at=now)
-    log_login_successful(str(user.id))
+    security_events.log_login_successful(str(user.id))
     if can_send:
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
     return {"access_token": atoken, "refresh_token": rtoken, "gps_token": gps_token, "login_token": new_login_token, "token_type": "bearer"}
@@ -467,7 +458,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     db_session.commit()
     db_session.refresh(user)
     if log_deleted_user:
-        log_deleted_user_to_renew_registration(str(user.id))
+        api_events.log_deleted_user_to_renew_registration(str(user.id))
     background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
     return { "message": reg_message }
 
@@ -536,7 +527,7 @@ def request_password_reset(data: PasswordResetRequest, background_tasks: Backgro
                 expires_at = otp_expiry()
                 user.reset_code_hash = code_hash
                 user.reset_expires_at = expires_at
-                log_password_reset_code_generation(str(user.id))
+                security_events.log_password_reset_code_generation(str(user.id))
     if code:
         user.last_reset_mail_code_at = now
         db_session.add(user)
@@ -574,7 +565,7 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
             user.reset_expires_at = None
             user.reset_locked_until = now + timedelta(hours=RESET_LOCK_HOURS)
             user.reset_attempts = 0
-            log_password_reset_locked(str(user.id))
+            security_events.log_password_reset_locked(str(user.id))
         db_session.add(user)
         db_session.commit()
         raise HTTPException(
@@ -595,7 +586,7 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
         user.last_reset_mail_confirmation_at = now
     db_session.add(user)
     db_session.commit()
-    log_password_reset_successful(str(user.id))
+    security_events.log_password_reset_successful(str(user.id))
     if can_send:
         background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
 
