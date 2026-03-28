@@ -14,6 +14,7 @@ from core.dbmgr import (
     get_redis_chief_locations_key, 
     REDIS_MUTEX_CHIEF_UPDATE_KEY,
     get_redis_chief_demotions_key)
+from core import api_events
 from services.security import ensure_tz_aware, now_tz_naive
 
 router = APIRouter(
@@ -248,7 +249,7 @@ async def promote_users(
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
-                print(f"Error: {e}") # todo: proper logging
+                api_events.log_promote_users_error(user_id=str(current_user.id), detail=f"{e}")
                 await run_in_threadpool(db_session.rollback)
                 raise HTTPException(
                     status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -260,7 +261,7 @@ async def promote_users(
             crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
             await run_in_threadpool(db_session.commit)
         except Exception as e:
-            print(f"Error: {e}") # todo: proper logging
+            api_events.log_promote_users_error(user_id=str(current_user.id), detail=f"{e}")
             await run_in_threadpool(db_session.rollback)
             raise HTTPException(
                 status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -358,7 +359,7 @@ async def promote_users_by_emails(
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
-                print(f"Error: {e}") # todo: proper logging
+                api_events.log_promote_users_by_emails_error(user_id=str(current_user.id), detail=f"{e}")
                 await run_in_threadpool(db_session.rollback)
                 raise HTTPException(
                     status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -370,7 +371,7 @@ async def promote_users_by_emails(
             crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
             await run_in_threadpool(db_session.commit)
         except Exception as e:
-            print(f"Error: {e}") # todo: proper logging
+            api_events.log_promote_users_by_emails_error(user_id=str(current_user.id), detail=f"{e}")
             await run_in_threadpool(db_session.rollback)
             raise HTTPException(
                 status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,

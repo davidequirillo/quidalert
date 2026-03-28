@@ -10,6 +10,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
+    as bg;
+import 'package:quidalert_flutter/services/background_location.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
+import 'package:quidalert_flutter/services/headless_task.dart';
 import 'package:quidalert_flutter/firebase_options.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/config.dart' as config;
@@ -17,7 +22,6 @@ import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/services/notification.dart';
-import 'package:quidalert_flutter/services/background_location.dart';
 import 'package:quidalert_flutter/widgets/app_keys.dart';
 import 'package:quidalert_flutter/pages/startup.dart';
 import 'package:quidalert_flutter/pages/terms/terms_and_info.dart';
@@ -45,6 +49,10 @@ import 'package:quidalert_flutter/pages/profile/complete.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrintC("Registering headless task for background location...");
+  await bg.BackgroundGeolocation.registerHeadlessTask(
+    backgroundLocationHeadlessTask,
+  );
   await BackgroundLocationService.init();
   try {
     if (Firebase.apps.isEmpty) {

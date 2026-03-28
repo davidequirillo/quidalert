@@ -20,19 +20,23 @@ class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;
   static double distanceFilterInMeters = 250; // 250 meters
-  static int timeFilterInSeconds = 1800; // 30 minutes
+  static int timeFilterInSeconds = 300; // 30 minutes
   static int dailyLimitInSeconds = 86400; // 24 hours
   static double distanceLimitInMeters = 15000; // 15 km
   static double accuracyLimitInMeters = 500; // 500 meters
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static Future<void> init() async {
+    debugPrintC(
+      "Cleaning pre-existing background location listeners and locations...",
+    );
+    //await bg.BackgroundGeolocation.removeListeners(); // not needed probably
     debugPrintC("Initializing background location service...");
     bg.BackgroundGeolocation.onLocation((bg.Location location) async {
       debugPrintC(
-        "Background location received: ${location.coords.latitude}, ${location.coords.longitude}",
+        "Background location received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
-      await _handleLocation(location);
+      await handleLocation(location);
     });
     bg.BackgroundGeolocation.onHeartbeat((bg.HeartbeatEvent event) async {
       debugPrintC(
@@ -41,29 +45,22 @@ class BackgroundLocationService {
       await bg.BackgroundGeolocation.getCurrentPosition();
       // Note: it triggers the "onLocation" event too
     });
-    bg.BackgroundGeolocation.onMotionChange((bg.Location location) {
-      if (location.isMoving) {
-        debugPrintC("[GPS ON] MotionChange, state: moving");
-      } else {
-        debugPrintC("[GPS OFF] MotionChange, state: stationary");
-      }
-    });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
+        allowIdenticalLocations: false,
         desiredAccuracy: bg
             .Config
             .DESIRED_ACCURACY_MEDIUM, // balance between accuracy and battery
-        distanceFilter:
-            distanceFilterInMeters, // get location if there is a significant movement
+        distanceFilter: distanceFilterInMeters,
+        heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
+        stopOnStationary: false, // we don't stop completely when stationary
         stopOnTerminate: false,
         startOnBoot: true,
         foregroundService:
             true, // keep the service running in the foreground to prevent it from being killed by the OS
-        stopTimeout:
-            5, // stop tracking if the device is stationary for 5 minutes (to save battery)
-        stopOnStationary: true, // stop tracking when the device is stationary
-        heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
-        preventSuspend: true, // prevent the app from being suspended by the OS
+        disableMotionActivityUpdates:
+            true, // we don't need motion activity updates
+        enableHeadless: true,
         debug: false,
       ),
     );
@@ -94,7 +91,7 @@ class BackgroundLocationService {
     _lastSentTime = null;
   }
 
-  static Future<void> _handleLocation(bg.Location location) async {
+  static Future<void> handleLocation(bg.Location location) async {
     final now = DateTime.now();
     if (_lastSentLocation != null && _lastSentTime != null) {
       final distance = _calculateDistance(

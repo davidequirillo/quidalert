@@ -12,7 +12,7 @@ from sqlmodel import Session, select
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from core.exceptions import forbidden_exception
-from core.security_events import get_request_info
+from core.logging import get_request_info
 from core.dbmgr import (
     get_redis_chief_locations_key, 
     get_redis_user_locations_key, 
@@ -20,7 +20,7 @@ from core.dbmgr import (
     get_redis_chief_demotions_key)
 from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
 from services.security import now_tz_naive, ensure_tz_aware
-from services.btasks import (
+from services.alert_btasks import (
     task_alert_search_and_notify, task_alert_cleanup)
 
 router = APIRouter(

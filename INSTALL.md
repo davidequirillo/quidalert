@@ -111,6 +111,24 @@ Copy ".env.example" to ".env" file and change the desired environment variables 
 
 See ".env.example" for additional info about those variables.
 
+Conda environment is not required for our fastapi backend (because fastapi runs inside a container, see docker-compose.yml), but it can be useful for development and testing.
+
+Install miniconda:
+
+[https://www.anaconda.com/download/success](https://www.anaconda.com/download/success)
+
+On miniconda prompt (terminal), go to "quidalert/server/api_backend" folder and write:
+
+```
+conda env create -f environment.yml
+```
+
+To activate the created environment, call the following:
+
+```
+conda activate quidalert_env
+```
+
 FastAPI, Postgres DBMS, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file, so read this file for more info about them.
 To download them automatically, and start them, you only need to write this single command:
 

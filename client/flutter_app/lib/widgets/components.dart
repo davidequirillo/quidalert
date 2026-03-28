@@ -85,11 +85,12 @@ class CAppDrawer extends StatelessWidget {
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('Logout'),
-              onTap: () {
-                BackgroundLocationService.stopTracking();
+              onTap: () async {
+                await BackgroundLocationService.stopTracking();
                 // we don't register anymore to the backend for notifications
                 notifProvider.setAuthClient(null);
-                authClient.logout();
+                await authClient.logout();
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/login');
               },

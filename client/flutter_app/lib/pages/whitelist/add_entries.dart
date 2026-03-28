@@ -241,6 +241,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
                 children: [
                   const SizedBox(height: 5),
                   TextFormField(
+                    keyboardType: TextInputType.emailAddress,
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: "Email",
