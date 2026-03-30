@@ -46,7 +46,6 @@ class _LocationTestBodyState extends State<LocationTestBody> {
   Future<void> _fetchCurrentLocation() async {
     String retMessage = "";
     String retTitle = "";
-    bool gotoSettings = false;
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.read<LocationClient>();
     try {
@@ -54,18 +53,9 @@ class _LocationTestBodyState extends State<LocationTestBody> {
       setState(() {
         coords = getCoords(locationClient.currentPosition);
       });
-    } on LocationClientServiceDisabledException {
-      retMessage = loc.errorLocationServicesDisabled;
-      retTitle = loc.errorError;
-      gotoSettings = true;
     } on LocationClientPermissionDeniedException {
       retMessage = loc.errorLocationPermissionDenied;
       retTitle = loc.errorError;
-      gotoSettings = true;
-    } on LocationClientPermissionsForeverException {
-      retMessage = loc.errorLocationPermissionDeniedForever;
-      retTitle = loc.errorError;
-      gotoSettings = true;
     } on LocationClientTimeoutException {
       retMessage = loc.errorLocationFetchTimeout;
       retTitle = loc.errorError;
@@ -85,9 +75,6 @@ class _LocationTestBodyState extends State<LocationTestBody> {
           builder: (context) =>
               SimpleAlertDialog(title: retTitle, content: retMessage),
         );
-        if (gotoSettings) {
-          await locationClient.openAppSettings();
-        }
       }
     }
   }

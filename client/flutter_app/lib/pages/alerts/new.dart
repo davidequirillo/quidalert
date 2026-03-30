@@ -108,23 +108,13 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   Future<void> _fetchLocation() async {
     String retMessage = "";
     String retTitle = "";
-    bool gotoSettings = false;
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.read<LocationClient>();
     try {
       await locationClient.fetchLocation();
-    } on LocationClientServiceDisabledException {
-      retMessage = loc.errorLocationServicesDisabled;
-      retTitle = loc.errorError;
-      gotoSettings = true;
     } on LocationClientPermissionDeniedException {
       retMessage = loc.errorLocationPermissionDenied;
       retTitle = loc.errorError;
-      gotoSettings = true;
-    } on LocationClientPermissionsForeverException {
-      retMessage = loc.errorLocationPermissionDeniedForever;
-      retTitle = loc.errorError;
-      gotoSettings = true;
     } on LocationClientTimeoutException {
       retMessage = loc.errorLocationFetchTimeout;
       retTitle = loc.errorError;
@@ -146,9 +136,6 @@ class _NewAlertBodyState extends State<NewAlertBody> {
           builder: (context) =>
               SimpleAlertDialog(title: retTitle, content: retMessage),
         );
-        if (gotoSettings) {
-          await locationClient.openAppSettings();
-        }
       }
     }
   }
