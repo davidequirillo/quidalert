@@ -96,15 +96,8 @@ class LocationClient extends ChangeNotifier {
     try {
       bg.Location returnedPosition;
       try {
-        returnedPosition = await bg.BackgroundGeolocation.getCurrentPosition(
-          persist: false,
-          samples: 3,
-          desiredAccuracy: accuracy,
-          maximumAge:
-              30000, // if a cached location is available and is not older than 30 seconds, it will be returned
-          timeout: 30, // Max time (in seconds) to wait for a location fix
-          extras: {"reason": "foreground_location_test"},
-        );
+        returnedPosition =
+            await BackgroundLocationService.getForegroundCurrentPosition();
       } catch (errorCode) {
         // it can throw an error code (int) if the position cannot be fetched, for example:
         // 0: Location unknown, 1: Location permission denied, 2: Network error, 4: Location timeout

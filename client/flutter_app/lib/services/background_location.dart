@@ -47,7 +47,7 @@ class BackgroundLocationService {
         "Background heartbeat received, fetching current location...",
       );
       try {
-        await BackgroundLocationService.getCurrentPositionForHeartbeat();
+        await BackgroundLocationService.getBackgroundCurrentPosition();
       } catch (e) {
         debugPrintC(
           '[BackgroundLocationService] Error fetching heartbeat location: $e',
@@ -207,21 +207,22 @@ class BackgroundLocationService {
     return DateTime.now().toUtc().isAfter(expiry);
   }
 
-  static Future<bg.Location?> getCurrentPositionForHeartbeat() async {
+  // This method is used to fetch the current position in background. We use it in the heartbeat event
+  static Future<bg.Location> getBackgroundCurrentPosition() async {
     bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
       persist: false,
       samples: 1,
       desiredAccuracy:
           100, // 100 meters accuracy for heartbeat-triggered location fetches, to save battery, since it's used just to check if the user moved significantly
       maximumAge:
-          30000, // 30 seconds, to avoid fetching a new location if the last one is recent enough
+          120000, // 120 seconds, to avoid fetching a new location if the last one is recent enough
       timeout: 30,
       extras: {"reason": "heartbeat location fetch"},
     );
     return location;
   }
 
-  static Future<bg.Location?> getCurrentPositionForForeground() async {
+  static Future<bg.Location> getForegroundCurrentPosition() async {
     bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
       persist: false,
       samples: 3,
