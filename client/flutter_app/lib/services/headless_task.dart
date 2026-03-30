@@ -24,7 +24,7 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
       );
       await BackgroundLocationService.handleLocation(location);
     } else if (event.name == bg.Event.HEARTBEAT) {
-      await BackgroundLocationService.getCurrentPositionForHeartbeat();
+      await BackgroundLocationService.getBackgroundCurrentPosition();
       // Note: it triggers the "onLocation" event too
     }
   } catch (e) {
