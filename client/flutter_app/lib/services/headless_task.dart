@@ -12,6 +12,7 @@ import 'package:flutter_background_geolocation/flutter_background_geolocation.da
 import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/services/background_location.dart';
 
+@pragma('vm:entry-point')
 void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -23,11 +24,8 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
       );
       await BackgroundLocationService.handleLocation(location);
     } else if (event.name == bg.Event.HEARTBEAT) {
-      bg.Location location = event.event;
-      debugPrintC(
-        "Headless location received (${event.name}): ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
-      );
-      await BackgroundLocationService.handleLocation(location);
+      await BackgroundLocationService.getCurrentPositionForHeartbeat();
+      // Note: it triggers the "onLocation" event too
     }
   } catch (e) {
     debugPrintC('[HeadlessTask] Error: $e');

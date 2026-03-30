@@ -8,18 +8,11 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
+    as bg;
 import 'package:geocoding/geocoding.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
-
-class LocationClientServiceDisabledException implements Exception {
-  final String message;
-  LocationClientServiceDisabledException([
-    this.message = 'Location services are disabled',
-  ]);
-  @override
-  String toString() => 'LocationClientServiceDisabledException: $message';
-}
 
 class LocationClientPermissionDeniedException implements Exception {
   final String message;
@@ -28,15 +21,6 @@ class LocationClientPermissionDeniedException implements Exception {
   ]);
   @override
   String toString() => 'LocationClientPermissionDeniedException: $message';
-}
-
-class LocationClientPermissionsForeverException implements Exception {
-  final String message;
-  LocationClientPermissionsForeverException([
-    this.message = 'Location permissions are permanently denied',
-  ]);
-  @override
-  String toString() => 'LocationClientPermissionsForeverException: $message';
 }
 
 class LocationClientAddressNotFoundException implements Exception {
@@ -67,11 +51,13 @@ class LocationClientTimeoutException implements Exception {
 // Main class for fetching location and translating it to an address
 // Used for foreground location tracking (e.g., when user is filling an alert form)
 class LocationClient extends ChangeNotifier {
-  Position? _currentPosition;
+  bg.Location? _currentPosition;
   String? _currentAddress;
   bool _isFetching = false;
   DateTime? _lastFetchingTime;
 
+  static const double accuracy =
+      10; // meters, high accuracy, used for fetching location with the "getCurrentPosition" method
   static const int distanceBoundary = 30; // meters
   static const int timeBoundary = 60; // seconds
   // distanceBoundary and timeBoundary, used to optimize battery
@@ -85,8 +71,8 @@ class LocationClient extends ChangeNotifier {
   Map<String, double>? get currentPosition {
     if (_currentPosition != null) {
       final Map<String, double> gpsMap = {
-        "lat": _currentPosition!.latitude,
-        "long": _currentPosition!.longitude,
+        "lat": _currentPosition!.coords.latitude,
+        "long": _currentPosition!.coords.longitude,
       };
       return gpsMap;
     } else {
@@ -102,42 +88,41 @@ class LocationClient extends ChangeNotifier {
   Future<void> fetchLocation({bool forceUpdate = false}) async {
     _isFetching = true;
     notifyListeners();
-    int distanceFilterValue = forceUpdate ? 0 : LocationClient.distanceBoundary;
+    double accuracy = LocationClient.accuracy;
+    int distanceBoundary = LocationClient.distanceBoundary;
     debugPrintC(
-      "Fetching location with distance filter: $distanceFilterValue m, force update: $forceUpdate",
+      "Fetching foreground location with accuracy: $accuracy m, distance boundary: $distanceBoundary m, force update: $forceUpdate",
     );
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrintC("Location services are disabled");
-        throw LocationClientServiceDisabledException();
-      }
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        debugPrintC("Location permissions are denied, requesting permissions");
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          debugPrintC("Location permissions are still denied after requesting");
+      bg.Location returnedPosition;
+      try {
+        returnedPosition = await bg.BackgroundGeolocation.getCurrentPosition(
+          persist: false,
+          samples: 3,
+          desiredAccuracy: accuracy,
+          maximumAge:
+              30000, // if a cached location is available and is not older than 30 seconds, it will be returned
+          timeout: 30, // Max time (in seconds) to wait for a location fix
+          extras: {"reason": "foreground_location_test"},
+        );
+      } catch (errorCode) {
+        // it can throw an error code (int) if the position cannot be fetched, for example:
+        // 0: Location unknown, 1: Location permission denied, 2: Network error, 4: Location timeout
+        debugPrintC("Error during foreground location fetch: $errorCode");
+        if (errorCode == 0) {
+          throw LocationClientFetchPositionException("Location unknown");
+        } else if (errorCode == 1) {
           throw LocationClientPermissionDeniedException();
+        } else if (errorCode == 2) {
+          throw LocationClientFetchPositionException("Network error");
+        } else if (errorCode == 4) {
+          throw LocationClientTimeoutException();
+        } else {
+          throw LocationClientFetchPositionException("Error code: $errorCode");
         }
       }
-      if (permission == LocationPermission.deniedForever) {
-        debugPrintC("Location permissions are permanently denied");
-        throw LocationClientPermissionsForeverException();
-      }
-      debugPrintC("Location permissions granted, fetching position");
-      Position returnedPosition = await Geolocator.getCurrentPosition(
-        locationSettings: LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter:
-              distanceFilterValue, // we update gps position only if moved significantly (to save battery)
-          timeLimit: const Duration(
-            seconds: LocationClient.maxTimeout,
-          ), // timeout after x seconds
-        ),
-      );
       debugPrintC(
-        "Fetched position: ${returnedPosition.latitude}, ${returnedPosition.longitude}",
+        "Fetched position: ${returnedPosition.coords.latitude}, ${returnedPosition.coords.longitude}",
       );
       // We optimize battery consumption
       // by not updating the relative address if the user
@@ -150,11 +135,11 @@ class LocationClient extends ChangeNotifier {
         debugPrintC(
           "Time has passed? $isTimePassed (last fetching: $_lastFetchingTime)",
         );
-        double gap = Geolocator.distanceBetween(
-          _currentPosition!.latitude,
-          _currentPosition!.longitude,
-          returnedPosition.latitude,
-          returnedPosition.longitude,
+        double gap = BackgroundLocationService.calculateDistance(
+          _currentPosition!.coords.latitude,
+          _currentPosition!.coords.longitude,
+          returnedPosition.coords.latitude,
+          returnedPosition.coords.longitude,
         );
         debugPrintC(
           "Distance from last position: $gap m (threshold: ${LocationClient.distanceBoundary} m)",
@@ -175,15 +160,7 @@ class LocationClient extends ChangeNotifier {
         throw LocationClientAddressNotFoundException();
       }
       return;
-    } on LocationClientServiceDisabledException catch (_) {
-      _currentPosition = null;
-      _currentAddress = null;
-      rethrow;
     } on LocationClientPermissionDeniedException catch (_) {
-      _currentPosition = null;
-      _currentAddress = null;
-      rethrow;
-    } on LocationClientPermissionsForeverException catch (_) {
       _currentPosition = null;
       _currentAddress = null;
       rethrow;
@@ -194,61 +171,36 @@ class LocationClient extends ChangeNotifier {
     } on LocationClientAddressNotFoundException catch (_) {
       _currentAddress = null;
       rethrow;
-    } on PermissionDeniedException catch (_) {
+    } on LocationClientTimeoutException catch (_) {
+      debugPrintC("Location fetch timed out");
       _currentPosition = null;
       _currentAddress = null;
-      throw LocationClientPermissionDeniedException();
-    } on LocationServiceDisabledException catch (_) {
-      _currentPosition = null;
-      _currentAddress = null;
-      throw LocationClientServiceDisabledException();
-    } on TimeoutException catch (_) {
-      // Geolocator throws a TimeoutException if the position cannot be fetched within the specified time limit
-      debugPrintC(
-        "Location fetch timed out, trying to get last known position",
-      );
-      Position? lastPos = await Geolocator.getLastKnownPosition();
-      if (lastPos != null) {
-        debugPrintC(
-          "Last known position: ${lastPos.latitude}, ${lastPos.longitude}, using it as current position",
-        );
-        _currentPosition = lastPos;
-        try {
-          _currentAddress = await _translateToAddress(_currentPosition!);
-        } catch (_) {
-          _currentAddress = null;
-        }
-      } else {
-        debugPrintC("No last known position available");
-        _currentPosition = null;
-        _currentAddress = null;
-      }
-      throw LocationClientTimeoutException();
+      rethrow;
     } on NoResultFoundException catch (_) {
       debugPrintC("No address found for the current position");
       _currentAddress = null;
       throw LocationClientAddressNotFoundException();
     } catch (e) {
-      debugPrintC("Error fetching location: $e");
+      debugPrintC("Error fetching foreground location: $e");
       _currentPosition = null;
       _currentAddress = null;
       throw LocationClientFetchPositionException(e.toString());
     } finally {
-      debugPrintC("Finished fetching location");
+      debugPrintC("Finished fetching foreground location");
       _isFetching = false;
       notifyListeners();
       debugPrintC("Notified listeners about fetching state change");
     }
   }
 
-  Future<String?> _translateToAddress(Position pos) async {
+  Future<String?> _translateToAddress(bg.Location pos) async {
     debugPrintC(
-      "Translating position to address: ${pos.latitude}, ${pos.longitude}",
+      "Translating position to address: ${pos.coords.latitude}, ${pos.coords.longitude}",
     );
     try {
       List<Placemark> p = await placemarkFromCoordinates(
-        pos.latitude,
-        pos.longitude,
+        pos.coords.latitude,
+        pos.coords.longitude,
       );
       if (p.isNotEmpty) {
         final addr = p.first;
@@ -262,9 +214,5 @@ class LocationClient extends ChangeNotifier {
       debugPrintC("Unknown error translating position to address: $e");
       return null;
     }
-  }
-
-  Future<void> openAppSettings() async {
-    await Geolocator.openAppSettings();
   }
 }

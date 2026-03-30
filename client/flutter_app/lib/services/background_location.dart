@@ -36,14 +36,23 @@ class BackgroundLocationService {
       debugPrintC(
         "Background location received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
-      await handleLocation(location);
+      try {
+        await handleLocation(location);
+      } catch (e) {
+        debugPrintC('[BackgroundLocationService] Error handling location: $e');
+      }
     });
     bg.BackgroundGeolocation.onHeartbeat((bg.HeartbeatEvent event) async {
       debugPrintC(
         "Background heartbeat received, fetching current location...",
       );
-      await bg.BackgroundGeolocation.getCurrentPosition();
-      // Note: it triggers the "onLocation" event too
+      try {
+        await BackgroundLocationService.getCurrentPositionForHeartbeat();
+      } catch (e) {
+        debugPrintC(
+          '[BackgroundLocationService] Error fetching heartbeat location: $e',
+        );
+      }
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
@@ -94,7 +103,7 @@ class BackgroundLocationService {
   static Future<void> handleLocation(bg.Location location) async {
     final now = DateTime.now();
     if (_lastSentLocation != null && _lastSentTime != null) {
-      final distance = _calculateDistance(
+      final distance = calculateDistance(
         _lastSentLocation!.coords.latitude,
         _lastSentLocation!.coords.longitude,
         location.coords.latitude,
@@ -129,7 +138,7 @@ class BackgroundLocationService {
     _lastSentTime = now;
   }
 
-  static double _calculateDistance(
+  static double calculateDistance(
     double lat1,
     double lon1,
     double lat2,
@@ -196,5 +205,32 @@ class BackgroundLocationService {
     if (exp == null) return true;
     final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
     return DateTime.now().toUtc().isAfter(expiry);
+  }
+
+  static Future<bg.Location?> getCurrentPositionForHeartbeat() async {
+    bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
+      persist: false,
+      samples: 1,
+      desiredAccuracy:
+          100, // 100 meters accuracy for heartbeat-triggered location fetches, to save battery, since it's used just to check if the user moved significantly
+      maximumAge:
+          30000, // 30 seconds, to avoid fetching a new location if the last one is recent enough
+      timeout: 30,
+      extras: {"reason": "heartbeat location fetch"},
+    );
+    return location;
+  }
+
+  static Future<bg.Location?> getCurrentPositionForForeground() async {
+    bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
+      persist: false,
+      samples: 3,
+      desiredAccuracy: 10,
+      maximumAge:
+          30000, // if a cached location is available and is not older than 30 seconds, it will be returned
+      timeout: 30, // Max time (in seconds) to wait for a location fix
+      extras: {"reason": "foreground location"},
+    );
+    return location;
   }
 }

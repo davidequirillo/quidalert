@@ -39,7 +39,6 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   jose: ^0.3.5
   file_picker: ^10.3.9
-  geolocator: ^14.0.2
   geocoding: ^4.0.0
   flutter_background_geolocation: ^5.0.5 # it requires commercial license key for production release
   firebase_core: ^4.5.0
