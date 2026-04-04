@@ -20,7 +20,7 @@ class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;
   static double distanceFilterInMeters = 250; // 250 meters
-  static int timeFilterInSeconds = 300; // 30 minutes
+  static int timeFilterInSeconds = 1800; // 30 minutes
   static int dailyLimitInSeconds = 86400; // 24 hours
   static double distanceLimitInMeters = 15000; // 15 km
   static double accuracyLimitInMeters = 500; // 500 meters
@@ -226,10 +226,11 @@ class BackgroundLocationService {
     bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
       persist: false,
       samples: 3,
-      desiredAccuracy: 10,
+      desiredAccuracy:
+          10, // 10 meters accuracy for foreground location fetches, since it's used for user-initiated actions that require more precision
       maximumAge:
-          30000, // if a cached location is available and is not older than 30 seconds, it will be returned
-      timeout: 30, // Max time (in seconds) to wait for a location fix
+          15000, // if a cached location is available and is not older than 15 seconds, it will be returned
+      timeout: 60, // Max time (in seconds) to wait for a location fix
       extras: {"reason": "foreground location"},
     );
     return location;
