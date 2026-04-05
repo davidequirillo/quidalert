@@ -64,7 +64,14 @@
     <string>To provide continuous protection, this app monitors your location in the background, sending the updates to the server, even when the app is closed, to ensure you can receive eventual alerts created by other users nearby.</string>
     <key>UIBackgroundModes</key>
     <array>
-        <string>location</string>
+	    <string>location</string>
+	    <string>fetch</string>
+	    <string>processing</string>
+    </array>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.transistorsoft.fetch</string>
+        <string>com.transistorsoft.customtask</string>
     </array>
 </dict>
 </plist>
