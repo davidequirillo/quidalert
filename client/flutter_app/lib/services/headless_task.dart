@@ -18,12 +18,15 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
   try {
     debugPrintC('[HeadlessTask] Triggered: ${event.name}');
     if (event.name == bg.Event.LOCATION) {
-      bg.Location location = event.event;
+      bg.Location location = event.event as bg.Location;
       debugPrintC(
         "Headless location received (${event.name}): ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
       await BackgroundLocationService.handleLocation(location);
     } else if (event.name == bg.Event.HEARTBEAT) {
+      debugPrintC(
+        "Headless heartbeat received (${event.name}), fetching current location...",
+      );
       await BackgroundLocationService.getBackgroundCurrentPosition();
       // Note: it triggers the "onLocation" event too
     }

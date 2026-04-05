@@ -1,6 +1,6 @@
 # App info
 
-Questa app è utile per inviare richieste di allerta al fine di ricevere aiuto: l'utente, compilando un semplice modulo di richiesta, può inviare una richiesta al server, il quale farà i suoi calcoli ed invierà un'opportuna notifica alle autorità competenti e/o agli utenti geograficamente vicini.
+Questa app è utile per inviare richieste di allerta al fine di ricevere aiuto: l'utente, compilando un semplice modulo di richiesta, può inviare una richiesta al server, il quale farà i suoi calcoli ed invierà un'opportuna notifica al capo dei soccorsi presente nella zona e agli utenti geograficamente vicini.
 
 Per poter usare questa applicazione, devi fare le seguenti cose:
 
