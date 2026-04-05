@@ -98,21 +98,27 @@ class LocationClient extends ChangeNotifier {
       try {
         returnedPosition =
             await BackgroundLocationService.getForegroundCurrentPosition();
-      } catch (errorCode) {
+      } on bg.LocationError catch (e) {
+        final msg = e.message.toLowerCase();
         // it can throw an error code (int) if the position cannot be fetched, for example:
-        // 0: Location unknown, 1: Location permission denied, 2: Network error, 4: Location timeout
-        debugPrintC("Error during foreground location fetch: $errorCode");
-        if (errorCode == 0) {
+        // 1: Location unknown, 2: Location timeout, 3: Permission denied, 4: Network error, 408: Network timeout
+        debugPrintC("Error during foreground location fetch: ${e.code}");
+        if (e.code == 1 || msg.contains("unknown")) {
           throw LocationClientFetchPositionException("Location unknown");
-        } else if (errorCode == 1) {
+        } else if (e.code == 3 || msg.contains("permission")) {
           throw LocationClientPermissionDeniedException();
-        } else if (errorCode == 2) {
+        } else if (e.code == 4 || msg.contains("network")) {
           throw LocationClientFetchPositionException("Network error");
-        } else if (errorCode == 4) {
+        } else if ((e.code == 2) ||
+            (e.code == 408) ||
+            msg.contains("timeout")) {
           throw LocationClientTimeoutException();
         } else {
-          throw LocationClientFetchPositionException("Error code: $errorCode");
+          throw LocationClientFetchPositionException("Error code: ${e.code}");
         }
+      } catch (e) {
+        debugPrintC("Unknown error during foreground location fetch: $e");
+        throw LocationClientFetchPositionException(e.toString());
       }
       debugPrintC(
         "Fetched position: ${returnedPosition.coords.latitude}, ${returnedPosition.coords.longitude}",
@@ -196,9 +202,11 @@ class LocationClient extends ChangeNotifier {
         pos.coords.longitude,
       );
       if (p.isNotEmpty) {
+        debugPrintC("Address found");
         final addr = p.first;
         return "${addr.street}, ${addr.locality}, ${addr.administrativeArea}, ${addr.country}";
       } else {
+        debugPrintC("No address found");
         return null;
       }
     } on NoResultFoundException catch (_) {
