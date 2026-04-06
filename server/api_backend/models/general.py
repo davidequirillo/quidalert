@@ -39,22 +39,25 @@ class UserBase(SQLModel, table=False):
         if not s in [UserLanguage.en, UserLanguage.it]:
             raise ValueError("Wrong language")
         return s
-    
+
+def validate_password_strength(s):
+    if not re.search(r"[A-Z]", s):
+        raise ValueError("Password must contain at least an uppercase character")
+    if not re.search(r"[a-z]", s):
+        raise ValueError("Password must contain at least a lowercase character")
+    if not re.search(r"[0-9]", s):
+        raise ValueError("Password must contain at least a digit")
+    if not re.search(r"[!@#$%\^&*()\[\],;+=.?\":{}|<>_\-]", s):
+        raise ValueError("Password must contain a special character")
+    return s
+
 class UserIn(UserBase, table=False):
     password: str = Field(min_length=10, max_length=256)
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, s):
-        if not re.search(r"[A-Z]", s):
-            raise ValueError("Password must contain at least an uppercase character")
-        if not re.search(r"[a-z]", s):
-            raise ValueError("Password must contain at least a lowercase character")
-        if not re.search(r"[0-9]", s):
-            raise ValueError("Password must contain at least a digit")
-        if not re.search(r"[!@#$%\^&*()\[\],;+=.?\":{}|<>_\-]", s):
-            raise ValueError("Password must contain a special character")
-        return s
+        return validate_password_strength(s)
 
 class UserInCompleteProfile(BaseModel):
     firstname: str = Field(min_length=2, max_length=64)
@@ -183,15 +186,7 @@ class PasswordResetConfirm(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_password(cls, s):
-        if not re.search(r"[A-Z]", s):
-            raise ValueError("Password must contain at least an uppercase character")
-        if not re.search(r"[a-z]", s):
-            raise ValueError("Password must contain at least a lowercase character")
-        if not re.search(r"[0-9]", s):
-            raise ValueError("Password must contain at least a digit")
-        if not re.search(r"[!@#$%\^&*()\[\],;+=.?\":{}|<>_\-]", s):
-            raise ValueError("Password must contain a special character")
-        return s    
+        return validate_password_strength(s)
 
 class RefreshToken(SQLModel, table=True):
     __tablename__: str = 'refresh_tokens'
