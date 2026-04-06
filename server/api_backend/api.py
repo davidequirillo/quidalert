@@ -11,6 +11,7 @@ from fastapi import (FastAPI, Depends,
 from fastapi import status as http_status
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
 import uuid_utils as uuid_pkg
@@ -74,9 +75,8 @@ async def lifespan(app: FastAPI):
     else:
         print("Redis single mode enabled")
     print("Testing redis connection...")
-    redis_conn = dbmgr.get_redis_conn(app.state.redis_handle)
     try:
-        redis_is_ok = redis_conn.ping()
+        redis_is_ok = await dbmgr.ping_redis(app.state.redis_handle)
         if redis_is_ok:
             print("Redis connection successful")
         else:
