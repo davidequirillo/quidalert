@@ -53,7 +53,7 @@ def get_redis_cluster_client() -> cluster.RedisCluster:
     options = {
         "startup_nodes": startup_nodes,
         "max_connections": settings.redis_max_connections_per_node,
-        "decode_responses": True
+        "decode_responses": True,
     }
     return cluster.RedisCluster(**options)
 
@@ -64,9 +64,23 @@ def get_redis_conn(handle: RedisHandle) -> RedisConnection:
         return redis.Redis(connection_pool=handle, decode_responses=True)
     raise RedisHandleTypeError(handle)
 
+async def ping_redis(handle: RedisHandle):
+    try:
+        if isinstance(handle, cluster.RedisCluster):
+            return await handle.ping() # type:ignore            
+        elif isinstance(handle, redis.ConnectionPool):
+            async with get_redis_conn(handle) as redis_session:
+                res = await redis_session.ping() # type:ignore
+            return res
+        else:
+            raise RedisHandleTypeError(handle)
+    except Exception as e:
+        print(f"Error pinging Redis: {e}")
+        return False
+    
 async def shutdown_redis_handle(handle: RedisHandle):
     if isinstance(handle, cluster.RedisCluster):
-        await handle.close()
+        await handle.aclose()
     elif isinstance(handle, redis.ConnectionPool):
         await handle.disconnect()
     else:
