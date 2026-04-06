@@ -62,7 +62,7 @@ def add_whitelist_entries(
             if (e is None) or (e.strip() == ""):
                 continue
             entry = WhiteListEntry.model_validate({
-                "email": e.lower(), 
+                "email": e.strip().lower(), 
                 "created_by": current_user.email
             })
             if db_session.exec(

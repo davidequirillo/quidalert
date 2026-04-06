@@ -403,10 +403,26 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     is_in_whitelist = False 
     auth_by = None # authorized by
     auth_at = None # authorized at
+    now = now_tz_naive()
+    log_deleted_user = False
     if user_in.email and user_in.email.strip() != "":
-        email_lowercase = user_in.email.lower()
+        email_lowercase = user_in.email.strip().lower()
     else:
         email_lowercase = ""
+    existing_user = db_session.exec(
+        select(User).where(User.email == email_lowercase)
+    ).first()
+    if existing_user:
+        if existing_user.is_active:
+            return { "message": reg_message }
+        else:
+            if (existing_user.activation_expires_at and 
+                    (existing_user.activation_expires_at < now)):
+                db_session.delete(existing_user)
+                db_session.flush()
+                log_deleted_user = True
+            else:
+                return { "message": reg_message }
     # If database is empty and password is correct we insert the admin
     if db_session.exec(select(User).limit(1)).first() is None:
         if (user_in.password == settings.admin_pass):
@@ -422,24 +438,9 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
             is_in_whitelist = True
     if (not is_in_whitelist) and (not is_the_superuser):
         return { "message": reg_message }
-    existing_user = db_session.exec(
-        select(User).where(User.email == email_lowercase)
-    ).first()
-    if existing_user and existing_user.is_active:
-        return { "message": reg_message }
     password_hashed = get_password_hash(user_in.password)
     act_token = generate_activation_token()
     act_expires_at = activation_expiry()
-    now = now_tz_naive()
-    log_deleted_user = False
-    if (existing_user and (not existing_user.is_active)):
-        if (existing_user.activation_expires_at and 
-            (existing_user.activation_expires_at < now)):
-                db_session.delete(existing_user)
-                db_session.flush()
-                log_deleted_user = True
-        else:
-            return { "message": reg_message }
     user = User(
         firstname=user_in.firstname,
         surname=user_in.surname,
@@ -447,7 +448,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         language=user_in.language,
         password_hash=password_hashed,
         is_superuser=is_the_superuser,
-        is_admin = is_an_admin,
+        is_admin=is_an_admin,
         is_active=False,
         activation_code=act_token,
         activation_expires_at=act_expires_at,

@@ -2,10 +2,12 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+from datetime import timedelta
 import pytest
 from sqlmodel import select
 from models.general import User, WhiteListEntry
 from core.settings import settings
+from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
 
 def test_register_missing_fields(client):
     payload = {"firstname": "John", "surname": "Doe"}
@@ -46,42 +48,116 @@ def test_register_password_too_simple(client):
     response = client.post("/api/register", json=payload)
     assert response.status_code == 422 or response.status_code == 400
 
-def test_register_duplicate_silent(client, db_session):
+def test_register_superuser_with_wrong_password(client, db_session):
     payload = {
-        "firstname": "John",
-        "surname": "Doe",
+        "firstname": "Admin",
+        "surname": "Super",
         "email": "admin@example.com",
-        "password": settings.admin_pass
-    }   
-    # 1. First registration (should succeed)
-    client.post("/api/register", json=payload)   
-    # 2. Second registration (same email)
+        "password": "WrongPassword123!" # wrong password for admin
+    }
+    # Check the database to ensure is empty
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 0
+    # Attempt to register the superuser with the wrong password
     response = client.post("/api/register", json=payload)
     # Check that for the client everything appears "normal"
-    assert response.status_code in [200, 201, 202]
-    # 3. Check the database to ensure that no duplicate user was created
+    assert response.status_code == 200 or response.status_code == 201 or response.status_code == 202
+    # Check the database to ensure that no user was created with the admin email
+    statement = select(User).where(User.email == "admin@example.com")
+    results = db_session.exec(statement).all()
+    assert len(results) == 0
+
+def test_register_superuser_with_correct_password(client, db_session):
+    payload = {
+        "firstname": "Admin",
+        "surname": "Super",
+        "email": "admin@example.com",
+        "password": settings.admin_pass
+    }
+    # Check the database to ensure is empty
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 0
+    # Attempt to register the superuser with the correct password
+    response = client.post("/api/register", json=payload)
+    assert response.status_code == 200 or response.status_code == 201 or response.status_code == 202
+    # Check the database to ensure that the superadmin was created
     statement = select(User).where(User.email == "admin@example.com")
     results = db_session.exec(statement).all()
     assert len(results) == 1
+    user = results[0]
+    assert user.is_superuser == True
+    assert user.is_admin == True
+    assert user.authorized_by is None
 
-def test_register_not_in_whitelist_silent(client, db_session):
+@pytest.fixture(name="superuser_in_db")
+def existing_superuser(db_session):
+    superuser = User(
+        firstname="Admin",
+        surname="Super",
+        email="admin@example.com",
+        password_hash="fakepwdhash",
+        activation_code="fakeactivationcode",
+        activation_expires_at=now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS),
+        is_active=False,
+        is_superuser=True,
+        is_admin=True
+    )
+    db_session.add(superuser)
+    db_session.commit()
+    return superuser
+
+def test_register_duplicate_superuser(client, db_session, superuser_in_db):
     payload = {
-        "firstname": "John",
-        "surname": "Doe",
-        "email": "admin@example.com",
+        "firstname": "DupAdmin",
+        "surname": "Super",
+        "email": superuser_in_db.email,
         "password": settings.admin_pass
-    }   
-    # 1. First registration (should succeed)
-    client.post("/api/register", json=payload)   
-    # 2. Second registration (another email, not in the whitelist)
-    payload["email"] = "not_in_whitelist@example.com"
-    response = client.post("/api/register", json=payload)
+    }
+    # Check the database to ensure the superuser exists
+    users = db_session.exec(select(User).where(User.email == superuser_in_db.email)).all()
+    assert len(users) == 1
+    # Attempt to register another superuser with the same email
+    response = client.post("/api/register", json=payload)   
     # Check that for the client everything appears "normal"
     assert response.status_code in [200, 201, 202]
-    # 3. Check the database to ensure that no user was created with the email not in the whitelist
-    statement = select(User).where(User.email == "not_in_whitelist@example.com")
+    # Check the database to ensure that no duplicate user was created
+    results = db_session.exec(select(User).where(User.email == superuser_in_db.email)).all()
+    assert len(results) == 1
+
+def test_register_overwrite_superuser_if_inactive_and_expired(client, db_session, superuser_in_db):
+    # Check the database to ensure the superuser exists
+    users = db_session.exec(select(User).where(User.email == superuser_in_db.email)).all()
+    assert len(users) == 1
+    # Modify the superuser to be inactive for too long
+    superuser_in_db.activation_expires_at = now_tz_naive() - timedelta(hours=1) # expired token
+    db_session.add(superuser_in_db)
+    db_session.commit()
+    assert superuser_in_db.activation_expires_at < now_tz_naive()
+    # Attempt to register a new superuser with the same email
+    payload = {
+        "firstname": "NewAdmin",
+        "surname": "Super",
+        "email": superuser_in_db.email,
+        "password": settings.admin_pass
+    }
+    response =client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the old superuser was overwritten  
+    statement = select(User).where(User.email == superuser_in_db.email)
     results = db_session.exec(statement).all()
-    assert len(results) == 0
+    assert len(results) == 1
+    user = results[0]
+    assert user.is_superuser == True
+    assert user.is_admin == True
+    assert user.authorized_by is None
+    assert user.activation_code is not None
+    assert user.activation_expires_at is not None
+    # The new superuser should have a new activation code and expiration time, so they should be different from the old one
+    assert user.activation_code != superuser_in_db.activation_code
+    assert user.activation_expires_at != superuser_in_db.activation_expires_at
+    assert user.activation_expires_at > now_tz_naive()
+    assert user.firstname == payload["firstname"]
+    assert user.surname == payload["surname"]
 
 @pytest.fixture(name="whitelist_entry")
 def existing_whitelist_entry(db_session):
@@ -89,21 +165,128 @@ def existing_whitelist_entry(db_session):
     db_session.add(entry)
     db_session.commit()
     return entry
-    
-def test_register_in_whitelist(client, db_session, whitelist_entry):
+
+def test_register_not_in_whitelist(client, db_session, superuser_in_db):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
     payload = {
         "firstname": "John",
         "surname": "Doe",
-        "email": "admin@example.com",
-        "password": settings.admin_pass
-    }   
-    # 1. First registration (should succeed)
-    client.post("/api/register", json=payload)   
-    # 2. Second registration (another email, valid, in the whitelist)
+        "email": "john.doe@example.com",
+        "password": "MyValidPassword123!"
+    }
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that no user was created with the email not in the whitelist
+    statement = select(User).where(User.email == payload["email"])
+    results = db_session.exec(statement).all()
+    assert len(results) == 0
+
+def test_register_in_whitelist(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "whitelisted@example.com",
+        "password": "MyValidPassword123!"
+    }     
     payload["email"] = whitelist_entry.email
     response = client.post("/api/register", json=payload)
     assert response.status_code in [200, 201, 202]
-    # 3. Check the database to ensure that the user was created with the email in the whitelist
+    # Check the database to ensure that the user was created with the email in the whitelist
     statement = select(User).where(User.email == whitelist_entry.email)
     results = db_session.exec(statement).all()
     assert len(results) == 1
+    assert results[0].email == whitelist_entry.email
+    assert results[0].firstname == payload["firstname"]
+    assert results[0].surname == payload["surname"]
+    assert results[0].is_superuser == False
+    assert results[0].is_admin == False
+    assert results[0].authorized_by == whitelist_entry.created_by # the user should be authorized by the creator of the whitelist entry
+
+def test_register_duplicate_user(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": whitelist_entry.email,
+        "password": "MyValidPassword123!"
+    }
+    # 1st registration attempt with the email in the whitelist
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # 2nd registration attempt with the same email
+    response = client.post("/api/register", json=payload)
+    # Check that for the client everything appears "normal"
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that no duplicate user was created with the same email
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    assert results[0].email == whitelist_entry.email
+
+def test_register_overwrite_user_if_inactive_and_expired(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": whitelist_entry.email,
+        "password": "MyValidPassword123!"
+    }
+    # 1st registration attempt with the email in the whitelist
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the user was created with the email in the whitelist
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user_in_db = results[0]
+    assert user_in_db.email == whitelist_entry.email
+    assert user_in_db.firstname == payload["firstname"]
+    assert user_in_db.surname == payload["surname"]
+    assert user_in_db.is_superuser == False
+    assert user_in_db.is_admin == False
+    # Modify the user to be inactive for too long
+    user_in_db.activation_expires_at = now_tz_naive() - timedelta(hours=1) # expired token
+    db_session.add(user_in_db)
+    db_session.commit()
+    assert user_in_db.activation_expires_at < now_tz_naive()
+    # 2nd registration attempt with the same email
+    payload["firstname"] = "NewJohn"
+    payload["surname"] = "NewDoe"
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the old user was overwritten  
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user = results[0]
+    assert user.is_superuser == False
+    assert user.is_admin == False
+    assert user.authorized_by == user_in_db.authorized_by # the user should keep the same authorized_by as before
+    assert user.activation_code is not None
+    assert user.activation_expires_at is not None
+    assert user.activation_code != user_in_db.activation_code
+    assert user.activation_expires_at != user_in_db.activation_expires_at
+    assert user.activation_expires_at > now_tz_naive()
+    assert user.firstname == payload["firstname"] # the new user should have the new firstname and surname from the new payload
+    assert user.surname == payload["surname"] # the new user should have the new firstname and surname from the new payload
