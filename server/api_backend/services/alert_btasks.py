@@ -8,7 +8,7 @@ from sqlmodel import Session, select, insert, update
 from firebase_admin import messaging
 from core.settings import settings
 from models.general import (
-    RefreshToken, User, UserLanguage, 
+    RefreshToken, User, 
     Alert, AlertedUser)
 from core.btask_events import (
     log_alert_error_searching_closest_chiefs,

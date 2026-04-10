@@ -9,6 +9,15 @@ from models.general import User, WhiteListEntry
 from core.settings import settings
 from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
 
+@pytest.fixture(autouse=True)
+def disable_emails():
+    old_value = settings.send_emails
+    settings.send_emails = False
+    try:
+        yield
+    finally:
+        settings.send_emails = old_value
+
 def test_register_missing_fields(client):
     payload = {"firstname": "John", "surname": "Doe"}
     response = client.post("/api/register", json=payload)
@@ -140,7 +149,7 @@ def test_register_overwrite_superuser_if_inactive_and_expired(client, db_session
         "email": superuser_in_db.email,
         "password": settings.admin_pass
     }
-    response =client.post("/api/register", json=payload)
+    response=client.post("/api/register", json=payload)
     assert response.status_code in [200, 201, 202]
     # Check the database to ensure that the old superuser was overwritten  
     statement = select(User).where(User.email == superuser_in_db.email)

@@ -11,11 +11,8 @@ from fastapi import (FastAPI, Depends,
 from fastapi import status as http_status
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.concurrency import run_in_threadpool
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
-import uuid_utils as uuid_pkg
-import uuid
 from sqlmodel import Session, select, update, delete, desc
 from fastapi.templating import Jinja2Templates
 from jwt.exceptions import (
@@ -66,6 +63,7 @@ def init_settings():
 async def lifespan(app: FastAPI):
     print("Starting up api framework...")
     init_settings()
+    is_testing = (settings.app_mode == "testing")
     print("Initializing database engine...")
     app.state.db_engine = dbmgr.get_engine()
     print("Initializing redis handle...")
@@ -83,46 +81,52 @@ async def lifespan(app: FastAPI):
             print("Redis ping failed")
     except Exception as e:
         print(f"Redis connection failed: {e}")
-    print("Initializing s3 client...")
-    app.state.s3_client = bucketmgr.get_s3_client()
-    print("Initializing Firebase Admin SDK...")
-    fbase_path = settings.firebase_keys_path
-    firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(firebase_cred)
-        print("Firebase Admin SDK initialized")
-    else:
-        print("Firebase Admin SDK already initialized")
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        do_locations_cleanup,
-        trigger=CronTrigger(hour=19, minute=35), 
-        args=[app.state.redis_handle],
-        id="cleanup_expired_locations_job_v1",
-    )
-    scheduler.add_job(
-        do_demotions_cleanup,
-        trigger=CronTrigger(hour=17, minute=30), 
-        args=[app.state.redis_handle],
-        id="cleanup_expired_demotions_job_v1",
-    )
-    print("Starting periodic tasks scheduler...")
-    scheduler.start()
+    if not is_testing:
+        print("Initializing s3 client...")
+        app.state.s3_client = bucketmgr.get_s3_client()
+    if not is_testing:
+        print("Initializing Firebase Admin SDK...")
+        fbase_path = settings.firebase_keys_path
+        firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(firebase_cred)
+            print("Firebase Admin SDK initialized")
+        else:
+            print("Firebase Admin SDK already initialized")
+    if not is_testing:
+        print("Initializing periodic tasks scheduler...")
+        scheduler = AsyncIOScheduler()
+        scheduler.add_job(
+            do_locations_cleanup,
+            trigger=CronTrigger(hour=19, minute=35), 
+            args=[app.state.redis_handle],
+            id="cleanup_expired_locations_job_v1",
+        )
+        scheduler.add_job(
+            do_demotions_cleanup,
+            trigger=CronTrigger(hour=17, minute=30), 
+            args=[app.state.redis_handle],
+            id="cleanup_expired_demotions_job_v1",
+        )
+        print("Starting periodic tasks scheduler...")
+        scheduler.start()
     yield
-    print("Shutting down periodic tasks scheduler...")
-    scheduler.shutdown()
+    if not is_testing:
+        print("Shutting down periodic tasks scheduler...")
+        scheduler.shutdown()
     print("Shutting down postgres database...")
     if app.state.db_engine:
         app.state.db_engine.dispose()
     print("Shutting down redis...")
     if app.state.redis_handle:
         await dbmgr.shutdown_redis_handle(app.state.redis_handle)
-    print("Shutting down s3 client...")
-    if app.state.s3_client:
-        app.state.s3_client.close()
+    if not is_testing:
+        print("Shutting down s3 client...")
+        if app.state.s3_client:
+            app.state.s3_client.close()
+            app.state.s3_client = None
     app.state.db_engine = None
     app.state.redis_handle = None
-    app.state.s3_client = None
     print("API shutdown complete")
 
 app = FastAPI(lifespan=lifespan)
@@ -269,6 +273,7 @@ def login(data: LoginSchema,
             (not check_password_against_hash(data.password, user.password_hash))):
         raise credentials_exception()
     # if the 2FA code is present, we must verify it to generate a login token
+    skip_2fa = False
     if data.login_code:
         if user.login_locked_until and now < user.login_locked_until:
             raise two_factor_locked_exception()
@@ -306,10 +311,6 @@ def login(data: LoginSchema,
             token_data = None
         if check_login_token(token_data, user):
             skip_2fa = True
-        else:
-            skip_2fa = False
-    else:
-        skip_2fa = False
     if (not skip_2fa):
         # check if login has locked due to too many failed attempts
         if user.login_locked_until and (now < user.login_locked_until):
@@ -341,11 +342,9 @@ def login(data: LoginSchema,
         oldest_token = active_tokens[-1]
         db_session.delete(oldest_token)
         db_session.flush()
-    refresh_token_id = uuid.UUID(bytes=uuid_pkg.uuid7().bytes)
     raw_random_str = generate_random_token()
     raw_str_hash = get_token_hash(raw_random_str)
     refresh_token = RefreshToken(
-        id=refresh_token_id,
         user_id=user.id,
         raw_hash=raw_str_hash,
         ip_address=get_client_ip(),
@@ -362,11 +361,12 @@ def login(data: LoginSchema,
     db_session.add(refresh_token)
     db_session.add(user)
     db_session.commit()
+    db_session.refresh(refresh_token)
     atoken = create_access_token(str(user.id))
     gps_token = create_geoposition_token(
         str(user.id), user.is_chief, user.role)
     rtoken = create_refresh_token(
-        str(user.id), str(refresh_token_id), 
+        str(user.id), str(refresh_token.id), 
         raw_random_str, created_at=now)
     security_events.log_login_successful(str(user.id))
     if can_send:
@@ -460,7 +460,8 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     db_session.refresh(user)
     if log_deleted_user:
         api_events.log_deleted_user_to_renew_registration(str(user.id))
-    background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
+    if settings.send_emails:
+        background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
     return { "message": reg_message }
 
 @app.get("/api/activate", response_class=HTMLResponse)

@@ -39,7 +39,7 @@ langmap = {
 }
 
 def localize_activation_mail(activation_url: str, lang: str):
-    if (lang == UserLanguage.it):
+    if (lang == UserLanguage.it.value):
         return f"""Ciao, 
         
 per attivare il tuo account clicca sul seguente link:
@@ -59,7 +59,7 @@ If you haven't asked this mail message, you can ignore it.
 """
     
 def localize_reset_code_mail(code: str, lang: str):
-    if (lang == UserLanguage.it):
+    if (lang == UserLanguage.it.value):
         return f"""Ciao,
 
 hai richiesto il reset della password.
@@ -85,7 +85,7 @@ If you haven't asked the reset, you can ignore this message.
 """
     
 def localize_reset_successful_mail(lang: str):
-    if (lang == UserLanguage.it):
+    if (lang == UserLanguage.it.value):
         return f"""Ciao,
 
 hai modificato la password con successo.
@@ -105,7 +105,7 @@ If the problem persists, please contact the competent territorial authority
 """
     
 def localize_login_successful_mail(lang: str):
-    if (lang == UserLanguage.it):
+    if (lang == UserLanguage.it.value):
         return f"""Ciao,
 
 hai effettuato l'accesso (login) con successo.
@@ -125,7 +125,7 @@ If the problem persists, please contact the competent territorial authority.
 """
 
 def localize_login_code_mail(code: str, lang: str):
-    if (lang == UserLanguage.it):
+    if (lang == UserLanguage.it.value):
         return f"""Ciao,
 
 Per completare l'accesso (login), inserisci il codice di verifica.
