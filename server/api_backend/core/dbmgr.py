@@ -19,7 +19,7 @@ def get_engine():
         echo=settings.db_engine_echo)
     return engine
 
-def get_session(engine):
+def get_yielded_session(engine):
     with Session(engine) as session:
         yield session
 

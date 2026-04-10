@@ -28,8 +28,8 @@ def get_terms(request: Request,
             s3_client = Depends(get_s3_client),
             ):
     lang = request.headers.get('Accept-Language')
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
+    if (lang != UserLanguage.en.value) and (lang != UserLanguage.it.value):
+        lang = UserLanguage.en.value
     response.headers["Content-Type"] = "text/markdown; charset=utf-8"
     try:
         fkey = f"terms_{lang}.md"
@@ -70,8 +70,8 @@ async def upload_terms(file: UploadFile = File(...),
         raise bad_file_upload_exception()
     safe_text = html.escape(text_content)
     lang = language
-    if (lang != UserLanguage.en) and (lang != UserLanguage.it):
-        lang = UserLanguage.en
+    if (lang != UserLanguage.en.value) and (lang != UserLanguage.it.value):
+        lang = UserLanguage.en.value
     fname = f"terms_{lang}.md"
     try:
         await run_in_threadpool(

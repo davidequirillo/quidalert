@@ -16,7 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
     
 def get_db_session(request: Request):
     engine = request.app.state.db_engine
-    yield from dbmgr.get_session(engine)
+    yield from dbmgr.get_yielded_session(engine)
 
 async def get_redis_session(request: Request):
     handle = request.app.state.redis_handle

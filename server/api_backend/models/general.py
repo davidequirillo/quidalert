@@ -31,12 +31,12 @@ class UserBase(SQLModel, table=False):
     firstname: str = Field(nullable=False, min_length=2, max_length=64)
     surname: str = Field(nullable=False, min_length=2, max_length=64)
     email: EmailStr = Field(index=True, nullable=False, unique=True, min_length=3, max_length=128)
-    language: str = Field(default=UserLanguage.en, nullable=False)
+    language: str = Field(default=UserLanguage.en.value, nullable=False)
 
     @field_validator("language")
     @classmethod
     def validate_language(cls, s):
-        if not s in [UserLanguage.en, UserLanguage.it]:
+        if not s in [UserLanguage.en.value, UserLanguage.it.value]:
             raise ValueError("Wrong language")
         return s
 
@@ -94,7 +94,7 @@ class UserOut(UserBase, table=False):
     is_admin: bool = Field(default=False, nullable=False)
     is_officer: bool = Field(default=False, nullable=False)
     is_chief: bool = Field(default=False, nullable=False)
-    role: str = Field(default=UserRole.citizen, nullable=False)
+    role: str = Field(default=UserRole.citizen.value, nullable=False)
     is_reliable: bool = Field(default=True, nullable=False)
     reliability_score: int = Field(default=100, ge=0, le=100, nullable=False)
     is_blocked: bool = Field(default=False, nullable=False)

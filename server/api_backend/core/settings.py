@@ -10,6 +10,7 @@ import config
 class Settings(BaseSettings):
     # App conf
     app_mode: str = "production"
+    send_emails: bool = True
     host: str = "localhost" # backend host
     port: int = 8080 # backend port
     protocol: str = "https"
