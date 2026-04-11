@@ -84,6 +84,12 @@ class UserInCompleteProfile(BaseModel):
             raise ValueError("Invalid birthdate format, must be YYYY-MM-DD")
         return s
 
+def string_as_uuid(s):
+    try:
+        return uuid.UUID(s)
+    except ValueError:
+        raise ValueError("Invalid UUID format")
+
 class UserOut(UserBase, table=False):
     id: uuid.UUID = Field(
         default_factory=lambda: uuid.UUID(bytes=uuid_pkg.uuid7().bytes),

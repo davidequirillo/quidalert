@@ -31,9 +31,9 @@ SMTP_HOST = "mailserver" # to send activation mail messages to clients
 SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
 
-# MinIO conf (for file uploads storage)
-MINIO_ENDPOINT="http://localhost:9000"
-MINIO_BUCKET_NAME="quidalert-uploads"
+# S3 conf (for file uploads storage)
+S3_ENDPOINT="http://localhost:9000"
+S3_BUCKET_NAME="quidalert-uploads"
 
 # IMPORTANT note about security configurations.
 # The following variables are critical for security and should not be hardcoded in the codebase. The application will not start if any of these variables is missing or empty.
@@ -44,7 +44,7 @@ MINIO_BUCKET_NAME="quidalert-uploads"
 # Variables:
 # APP_MODE, ADMIN_PASS, 
 # OTP_PEPPER, EMAIL_PEPPER, GLOBAL_PEPPER, JWT_SECRET_KEY
-# MINIO_USER, MINIO_PASSWORD, MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+# S3_USER, S3_PASSWORD, S3_ACCESS_KEY, S3_SECRET_KEY
 # SMTP_USER, SMTP_PASSWORD  
 # DB_USER, DB_PASSWORD
 # REDIS_USER, REDIS_PASSWORD

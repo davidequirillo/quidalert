@@ -101,8 +101,8 @@ services:
       - "9000:9000" # API port
       - "9001:9001" # Web console port
     environment:
-      MINIO_ROOT_USER: ${MINIO_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASS:-password123}
+      MINIO_ROOT_USER: ${S3_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${S3_PASS:-password123}
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"

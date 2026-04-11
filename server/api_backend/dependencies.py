@@ -6,10 +6,9 @@ from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from jwt import ExpiredSignatureError, InvalidTokenError
 from sqlmodel import Session, select
-from core.settings import settings
 from core import dbmgr
 from core.exceptions import token_expired_exception, token_not_valid_exception
-from models.general import User, GpsTokenData
+from models.general import string_as_uuid, User, GpsTokenData
 from services.security import decode_token, from_timestamp_to_datetime_tz_naive
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -49,8 +48,12 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
     token_type = token_data.get("type")
     if (not user_id) or (not token_iat) or (not token_exp) or \
         (not token_type) or (token_type != "access"): 
-            raise token_not_valid_exception() 
-    statement = select(User).where(User.id == user_id)
+            raise token_not_valid_exception()
+    try:
+        user_id_as_uuid = string_as_uuid(user_id)
+    except ValueError:
+        raise token_not_valid_exception()
+    statement = select(User).where(User.id == user_id_as_uuid)
     user = db_session.exec(statement).first()
     if user is None:
         raise token_not_valid_exception()
