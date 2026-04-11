@@ -5,15 +5,13 @@
 import os
 from datetime import timedelta
 from fastapi import (FastAPI, Depends,
-    Request, Response, 
-    HTTPException, BackgroundTasks, 
-    File, UploadFile, Form)
+    Request, HTTPException, BackgroundTasks)
 from fastapi import status as http_status
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
-from sqlmodel import Session, select, update, delete, desc
+from sqlmodel import Session, select, desc
 from fastapi.templating import Jinja2Templates
 from jwt.exceptions import (
     InvalidTokenError, ExpiredSignatureError,
@@ -56,7 +54,7 @@ from core.exceptions import (
 from dependencies import get_db_session, get_current_user
 from routers import users, alerts, terms, whitelist_entries
 
-def init_settings():
+def init_logging_and_others():
     setup_logging()
 
 async def init_engines(app: FastAPI):
@@ -120,12 +118,14 @@ async def shutdown_engines(app: FastAPI):
     app.state.s3_client = None
     app.state.db_engine = None
     app.state.redis_handle = None
+    app.state.scheduler = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up api framework...")
-    init_settings()
     is_testing = (settings.app_mode == "testing")
+    if not is_testing:
+        init_logging_and_others()
     if not is_testing:
         await init_engines(app)
     yield

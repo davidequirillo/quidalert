@@ -9,12 +9,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quidalert_flutter/config.dart' as config;
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class ExpiredTokenException implements Exception {
   final String message;
@@ -83,117 +83,83 @@ class AuthClient extends ChangeNotifier {
   }
 
   Future<void> _init() async {
-    if (kDebugMode) {
-      debugPrint('AuthClient initialization started');
-    }
+    debugPrintC('AuthClient initialization started');
     await loadRefreshToken(); // load local refresh token
     await loadGpsToken(); // load local GPS token
     try {
       await refreshTokens(); // get new auth tokens if needed
     } on InvalidTokenException catch (_) {
-      if (kDebugMode) {
-        debugPrint('AuthClient init, refresh token not valid');
-      }
+      debugPrintC('AuthClient init, refresh token not valid');
     } on ExpiredTokenException catch (_) {
-      if (kDebugMode) {
-        debugPrint('AuthClient init, refresh token expired');
-      }
+      debugPrintC('AuthClient init, refresh token expired');
     } on BadRequestException catch (_) {
-      if (kDebugMode) {
-        debugPrint('AuthClient init, bad request during token refresh');
-      }
+      debugPrintC('AuthClient init, bad request during token refresh');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('AuthClient init, cannot refresh tokens: $e');
-      }
+      debugPrintC('AuthClient init, cannot refresh tokens: $e');
     }
     await loadLoginToken();
     await checkLoginTokenValidity();
     lastFcmTokenRegistrationAt = null;
     initDone = true;
-    if (kDebugMode) {
-      debugPrint('AuthClient initialization completed');
-    }
+    debugPrintC('AuthClient initialization completed');
     notifyListeners();
   }
 
   Future<void> saveRefreshToken() async {
     await _secureStorage.write(key: 'refreshToken', value: refreshToken);
-    if (kDebugMode) {
-      debugPrint('Refresh token saved');
-    }
+    debugPrintC('Refresh token saved');
   }
 
   Future<void> loadRefreshToken() async {
     final token = await _secureStorage.read(key: 'refreshToken');
-    if (kDebugMode) {
-      debugPrint('Refresh token loaded: $token');
-    }
+    debugPrintC('Refresh token loaded: $token');
     refreshToken = token;
   }
 
   Future<void> deleteRefreshToken() async {
     await _secureStorage.delete(key: 'refreshToken');
-    if (kDebugMode) {
-      debugPrint('Refresh token deleted');
-    }
+    debugPrintC('Refresh token deleted');
   }
 
   Future<void> saveLoginToken() async {
     await _secureStorage.write(key: 'loginToken', value: loginToken);
-    if (kDebugMode) {
-      debugPrint('Login token saved');
-    }
+    debugPrintC('Login token saved');
   }
 
   Future<void> loadLoginToken() async {
     final token = await _secureStorage.read(key: 'loginToken');
-    if (kDebugMode) {
-      debugPrint('Login token loaded: $token');
-    }
+    debugPrintC('Login token loaded: $token');
     loginToken = token;
   }
 
   Future<void> deleteLoginToken() async {
     await _secureStorage.delete(key: 'loginToken');
-    if (kDebugMode) {
-      debugPrint('Login token deleted');
-    }
+    debugPrintC('Login token deleted');
   }
 
   Future<void> saveGpsToken() async {
     await _secureStorage.write(key: 'gpsToken', value: gpsToken);
-    if (kDebugMode) {
-      debugPrint('GPS token saved');
-    }
+    debugPrintC('GPS token saved');
   }
 
   Future<void> loadGpsToken() async {
     final token = await _secureStorage.read(key: 'gpsToken');
-    if (kDebugMode) {
-      debugPrint('GPS token loaded: $token');
-    }
+    debugPrintC('GPS token loaded: $token');
     gpsToken = token;
   }
 
   Future<void> deleteGpsToken() async {
     await _secureStorage.delete(key: 'gpsToken');
-    if (kDebugMode) {
-      debugPrint('GPS token deleted');
-    }
+    debugPrintC('GPS token deleted');
   }
 
   Future<void> checkLoginTokenValidity() async {
     if (loginToken == null) {
-      if (kDebugMode) {
-        debugPrint('Check login token: is null');
-      }
+      debugPrintC('Check login token: is null');
       return;
     }
     if (_isTokenExpired(loginToken!)) {
-      if (kDebugMode) {
-        debugPrint('Check login token: expired, deleting it');
-      }
+      debugPrintC('Check login token: expired, deleting it');
       await deleteLoginToken();
       loginToken = null;
     }
@@ -211,17 +177,13 @@ class AuthClient extends ChangeNotifier {
     // Get new refresh, access, and GPS tokens (api/auth/refresh),
     // using current refresh token as api input
     if (refreshToken == null) {
-      if (kDebugMode) {
-        debugPrint('Try refresh tokens: refresh_token is null');
-      }
+      debugPrintC('Try refresh tokens: refresh_token is null');
       accessToken = null;
       gpsToken = null;
       return;
     }
     if (_isTokenExpired(refreshToken!)) {
-      if (kDebugMode) {
-        debugPrint('Try refresh tokens: local check, refresh_token expired)');
-      }
+      debugPrintC('Try refresh tokens: local check, refresh_token expired)');
       await setAuthTokens(null, null, null);
       throw ExpiredTokenException();
     }
@@ -237,45 +199,31 @@ class AuthClient extends ChangeNotifier {
       if (resp.statusCode < 200 || resp.statusCode >= 300) {
         if (resp.statusCode == 401 && respMessage == msgTokenExpired) {
           await setAuthTokens(null, null, null);
-          if (kDebugMode) {
-            debugPrint('Try refresh tokens, refresh_token expired');
-          }
+          debugPrintC('Try refresh tokens, refresh_token expired');
           throw ExpiredTokenException();
         } else if (resp.statusCode == 401 && respMessage == msgTokenNotValid) {
           await setAuthTokens(null, null, null);
-          if (kDebugMode) {
-            debugPrint('Try refresh tokens, refresh_token not valid');
-          }
+          debugPrintC('Try refresh tokens, refresh_token not valid');
           throw InvalidTokenException();
         } else if (resp.statusCode == 401) {
           await setAuthTokens(null, null, null);
-          if (kDebugMode) {
-            debugPrint('Try refresh tokens, refresh_token wrong or null');
-          }
+          debugPrintC('Try refresh tokens, refresh_token wrong or null');
           throw InvalidTokenException();
         } else {
-          if (kDebugMode) {
-            debugPrint(
-              "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
-            );
-          }
+          debugPrintC(
+            "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
+          );
           throw BadRequestException();
         }
       }
-      if (kDebugMode) {
-        debugPrint('Try refresh tokens, tokens refreshed successfully');
-      }
+      debugPrintC('Try refresh tokens, tokens refreshed successfully');
       String? rToken = jsonResp['refresh_token'];
       String? aToken = jsonResp['access_token'];
       String? gToken = jsonResp['gps_token'];
       await setAuthTokens(rToken, aToken, gToken);
-      if (kDebugMode) {
-        debugPrint('The refresh token is: $refreshToken');
-      }
+      debugPrintC('The refresh token is: $refreshToken');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Try refresh tokens, network error: $e');
-      }
+      debugPrintC('Try refresh tokens, network error: $e');
       throw NetworkException();
     }
   }
@@ -342,9 +290,7 @@ class AuthClient extends ChangeNotifier {
       headers: {"Content-Type": "application/json"},
     );
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      if (kDebugMode) {
-        debugPrint("Login, HTTP ${resp.statusCode}: ${resp.body}");
-      }
+      debugPrintC("Login, HTTP ${resp.statusCode}: ${resp.body}");
       if ((resp.statusCode == 401) && resp.body.contains('2FA required')) {
         await setLoginToken(
           null,
@@ -358,9 +304,7 @@ class AuthClient extends ChangeNotifier {
     String? gtoken = data['gps_token'];
     String? ltoken = data['login_token'];
     lastFcmTokenRegistrationAt = null;
-    if (kDebugMode) {
-      debugPrint('Login successful');
-    }
+    debugPrintC('Login successful');
     await setAuthTokens(rtoken, atoken, gtoken);
     if ((ltoken != null) && (ltoken != "")) {
       await setLoginToken(ltoken);
@@ -381,9 +325,7 @@ class AuthClient extends ChangeNotifier {
       headers: {"Content-Type": "application/json"},
     );
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      if (kDebugMode) {
-        debugPrint("Logout error, HTTP ${resp.statusCode}: ${resp.body}");
-      }
+      debugPrintC("Logout error, HTTP ${resp.statusCode}: ${resp.body}");
       return resp;
     }
     await setAuthTokens(null, null, null);
@@ -473,9 +415,7 @@ class AuthClient extends ChangeNotifier {
     final m = method.toUpperCase();
     late http.Response resp;
     final merged = {..._authHeaders(), if (headers != null) ...headers};
-    if (kDebugMode) {
-      debugPrint('$m (auth), url: $baseUrl$relPath, headers: $merged');
-    }
+    debugPrintC('$m (auth), url: $baseUrl$relPath, headers: $merged');
     final url = '$baseUrl$relPath';
     try {
       if (file != null) {
@@ -498,9 +438,7 @@ class AuthClient extends ChangeNotifier {
       }
       String respMessage = '';
       String respMessageKey = '';
-      if (kDebugMode) {
-        debugPrint('$m (auth), response headers: ${resp.headers}');
-      }
+      debugPrintC('$m (auth), response headers: ${resp.headers}');
       if (resp.headers.containsKey('Content-Type')) {
         respMessageKey = 'Content-Type';
       } else if (resp.headers.containsKey('content-type')) {
@@ -525,15 +463,11 @@ class AuthClient extends ChangeNotifier {
           (resp.statusCode < 200 || resp.statusCode >= 300)) {
         throw BadRequestException('$m (auth), bad request');
       }
-      if (kDebugMode) {
-        debugPrint('$m (auth), access token: $accessToken');
-      }
+      debugPrintC('$m (auth), access token: $accessToken');
       if (isExpired) {
         await refreshTokens();
         final newMerged = {..._authHeaders(), if (headers != null) ...headers};
-        if (kDebugMode) {
-          debugPrint('$m (retry auth), access token: $accessToken');
-        }
+        debugPrintC('$m (retry auth), access token: $accessToken');
         if (file != null) {
           if ((body is Map<String, String>)) {
             await sendMultipartFileUploadRequest(
@@ -569,9 +503,7 @@ class AuthClient extends ChangeNotifier {
           throw BadRequestException('$m (retry auth), bad request');
         }
       }
-      if (kDebugMode) {
-        debugPrint("$m (response), HTTP ${resp.statusCode}");
-      }
+      debugPrintC("$m (response), HTTP ${resp.statusCode}");
       return resp;
     } on ExpiredTokenException catch (_) {
       throw GenericNotAuthorizedException();
@@ -580,16 +512,12 @@ class AuthClient extends ChangeNotifier {
     } on ForbiddenRequestException catch (_) {
       rethrow;
     } on BadRequestException catch (_) {
-      if (kDebugMode) {
-        debugPrint("$m (auth), bad request exception");
-      }
+      debugPrintC("$m (auth), bad request exception");
       rethrow;
     } on NetworkException catch (_) {
       rethrow;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('$m (auth), unexpected error: $e');
-      }
+      debugPrintC('$m (auth), unexpected error: $e');
       throw Exception("$m (auth), unexpected error: $e");
     }
   }
@@ -620,28 +548,20 @@ class AuthClient extends ChangeNotifier {
   }) async {
     bool isError = false;
     bool alreadyRegistered = false;
-    if (kDebugMode) {
-      debugPrint(
-        'Registering device for push notifications with token: $fcmToken',
-      );
-    }
+    debugPrintC(
+      'Registering device for push notifications with token: $fcmToken',
+    );
     try {
       if ((fcmToken == null) || (fcmToken.isEmpty)) {
-        if (kDebugMode) {
-          debugPrint(
-            'FCM token is null or empty, cannot register for push notifications',
-          );
-        }
+        debugPrintC(
+          'FCM token is null or empty, cannot register for push notifications',
+        );
         throw BadRequestException('FCM token is empty');
       }
       if (lastFcmTokenRegistrationAt != null &&
           DateTime.now().difference(lastFcmTokenRegistrationAt!) <
               const Duration(hours: 24)) {
-        if (kDebugMode) {
-          debugPrint(
-            'FCM token was registered recently, skipping registration',
-          );
-        }
+        debugPrintC('FCM token was registered recently, skipping registration');
         alreadyRegistered = true;
         return;
       }
@@ -651,33 +571,21 @@ class AuthClient extends ChangeNotifier {
         body: {'fcm_token': fcmToken},
       );
       lastFcmTokenRegistrationAt = DateTime.now();
-      if (kDebugMode) {
-        debugPrint('Ok, device registered for push notifications');
-      }
+      debugPrintC('Ok, device registered for push notifications');
     } on GenericNotAuthorizedException catch (_) {
-      if (kDebugMode) {
-        debugPrint('Not authorized');
-      }
+      debugPrintC('Not authorized');
       isError = true;
     } on ForbiddenRequestException catch (_) {
-      if (kDebugMode) {
-        debugPrint('Forbidden request');
-      }
+      debugPrintC('Forbidden request');
       isError = true;
     } on BadRequestException catch (_) {
-      if (kDebugMode) {
-        debugPrint('Bad request');
-      }
+      debugPrintC('Bad request');
       isError = true;
     } on NetworkException catch (_) {
-      if (kDebugMode) {
-        debugPrint('Network error');
-      }
+      debugPrintC('Network error');
       isError = true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Unexpected error: $e');
-      }
+      debugPrintC('Unexpected error: $e');
       isError = true;
     } finally {
       final successColor = Colors.green;
@@ -707,13 +615,9 @@ class AuthClient extends ChangeNotifier {
         body: {'fcm_token': fcmToken},
       );
       lastFcmTokenRegistrationAt = DateTime.now();
-      if (kDebugMode) {
-        debugPrint('FCM token synced with backend successfully');
-      }
+      debugPrintC('FCM token synced with backend successfully');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error syncing FCM token with backend: $e');
-      }
+      debugPrintC('Error syncing FCM token with backend: $e');
     }
   }
 }

@@ -53,7 +53,7 @@ async def upload_terms(file: UploadFile = File(...),
     ):
     if not current_user.is_admin:
         raise forbidden_exception()
-    if (file is None) or (file.filename is None) or (file.filename == ""):
+    if (file is None) or (not file.filename):
         raise bad_file_upload_exception()
     if not file.filename.endswith(('.md', '.markdown')):
         raise invalid_file_type_exception()
@@ -69,7 +69,7 @@ async def upload_terms(file: UploadFile = File(...),
         raise bad_file_upload_exception()
     safe_text = html.escape(text_content)
     lang = language
-    if (lang != UserLanguage.en.value) and (lang != UserLanguage.it.value):
+    if (lang != UserLanguage.en.value and lang != UserLanguage.it.value):
         lang = UserLanguage.en.value
     fname = f"terms_{lang}.md"
     try:

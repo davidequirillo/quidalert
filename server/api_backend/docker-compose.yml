@@ -17,7 +17,7 @@ services:
       REDIS_CLUSTER_NODES: redis-node-1:7001,redis-node-2:7002,redis-node-3:7003
       SMTP_HOST: mailpit
       SMTP_FROM: no-reply@mailpit.local
-      MINIO_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://minio:9000
     networks:
       - redis-cluster-net
     depends_on:
