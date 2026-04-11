@@ -9,10 +9,9 @@ from fastapi.concurrency import run_in_threadpool
 from starlette import status as http_status
 from starlette.exceptions import HTTPException
 import html
-from core.bucketmgr import get_s3_client
 from core.exceptions import forbidden_exception, bad_file_upload_exception, invalid_file_type_exception, file_too_large_exception
 from core.settings import settings
-from dependencies import get_current_user
+from dependencies import get_current_user, get_s3_client
 from models.general import User, UserLanguage
 from services.fileutils import (MAX_FILE_SIZE, MAX_SMALL_FILE_SIZE)
 
@@ -34,7 +33,7 @@ def get_terms(request: Request,
     try:
         fkey = f"terms_{lang}.md"
         obj = s3_client.get_object(
-            Bucket=settings.minio_bucket_name, 
+            Bucket=settings.s3_bucket_name, 
             Key=fkey)
     except Exception:
         obj = None
@@ -77,7 +76,7 @@ async def upload_terms(file: UploadFile = File(...),
         await run_in_threadpool(
             lambda: s3_client.put_object(
                 Body=safe_text.encode("utf-8"), 
-                Bucket=settings.minio_bucket_name, 
+                Bucket=settings.s3_bucket_name, 
                 Key=fname,
                 ContentType=file.content_type
             )

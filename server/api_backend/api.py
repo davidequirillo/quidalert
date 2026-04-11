@@ -53,17 +53,13 @@ from core.exceptions import (
     two_factor_not_valid_exception, two_factor_required_response,
     forbidden_exception, invalid_request_exception,
     )
-from dependencies import get_db_session, get_current_user, get_redis_session, get_s3_client
+from dependencies import get_db_session, get_current_user
 from routers import users, alerts, terms, whitelist_entries
 
 def init_settings():
     setup_logging()
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Starting up api framework...")
-    init_settings()
-    is_testing = (settings.app_mode == "testing")
+async def init_engines(app: FastAPI):
     print("Initializing database engine...")
     app.state.db_engine = dbmgr.get_engine()
     print("Initializing redis handle...")
@@ -81,52 +77,60 @@ async def lifespan(app: FastAPI):
             print("Redis ping failed")
     except Exception as e:
         print(f"Redis connection failed: {e}")
-    if not is_testing:
-        print("Initializing s3 client...")
-        app.state.s3_client = bucketmgr.get_s3_client()
-    if not is_testing:
-        print("Initializing Firebase Admin SDK...")
-        fbase_path = settings.firebase_keys_path
-        firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
-        if not firebase_admin._apps:
-            firebase_admin.initialize_app(firebase_cred)
-            print("Firebase Admin SDK initialized")
-        else:
-            print("Firebase Admin SDK already initialized")
-    if not is_testing:
-        print("Initializing periodic tasks scheduler...")
-        scheduler = AsyncIOScheduler()
-        scheduler.add_job(
-            do_locations_cleanup,
-            trigger=CronTrigger(hour=19, minute=35), 
-            args=[app.state.redis_handle],
-            id="cleanup_expired_locations_job_v1",
-        )
-        scheduler.add_job(
-            do_demotions_cleanup,
-            trigger=CronTrigger(hour=17, minute=30), 
-            args=[app.state.redis_handle],
-            id="cleanup_expired_demotions_job_v1",
-        )
-        print("Starting periodic tasks scheduler...")
-        scheduler.start()
-    yield
-    if not is_testing:
-        print("Shutting down periodic tasks scheduler...")
-        scheduler.shutdown()
-    print("Shutting down postgres database...")
-    if app.state.db_engine:
-        app.state.db_engine.dispose()
+    print("Initializing s3 client...")
+    app.state.s3_client = bucketmgr.build_s3_client()
+    print("Initializing Firebase Admin SDK...")
+    fbase_path = settings.firebase_keys_path
+    firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
+    if not firebase_admin._apps:
+        firebase_admin.initialize_app(firebase_cred)
+        print("Firebase Admin SDK initialized")
+    else:
+        print("Firebase Admin SDK already initialized")
+    print("Initializing periodic tasks scheduler...")
+    app.state.scheduler = AsyncIOScheduler()
+    app.state.scheduler.add_job(
+        do_locations_cleanup,
+        trigger=CronTrigger(hour=19, minute=35), 
+        args=[app.state.redis_handle],
+        id="cleanup_expired_locations_job_v1",
+    )
+    app.state.scheduler.add_job(
+        do_demotions_cleanup,
+        trigger=CronTrigger(hour=17, minute=30), 
+        args=[app.state.redis_handle],
+        id="cleanup_expired_demotions_job_v1",
+    )
+    print("Starting periodic tasks scheduler...")
+    app.state.scheduler.start()
+
+async def shutdown_engines(app: FastAPI):
+    print("Shutting down periodic tasks scheduler..")
+    if app.state.scheduler:
+        app.state.scheduler.shutdown()
+    print("Shutting down s3 client...")
+    if app.state.s3_client:
+        app.state.s3_client.close()
     print("Shutting down redis...")
     if app.state.redis_handle:
         await dbmgr.shutdown_redis_handle(app.state.redis_handle)
-    if not is_testing:
-        print("Shutting down s3 client...")
-        if app.state.s3_client:
-            app.state.s3_client.close()
-            app.state.s3_client = None
+    print("Shutting down postgres database...")
+    if app.state.db_engine:
+        app.state.db_engine.dispose()
+    app.state.s3_client = None
     app.state.db_engine = None
     app.state.redis_handle = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up api framework...")
+    init_settings()
+    is_testing = (settings.app_mode == "testing")
+    if not is_testing:
+        await init_engines(app)
+    yield
+    if not is_testing:
+        await shutdown_engines(app)
     print("API shutdown complete")
 
 app = FastAPI(lifespan=lifespan)

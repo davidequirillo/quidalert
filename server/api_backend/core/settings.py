@@ -50,12 +50,12 @@ class Settings(BaseSettings):
     smtp_port: int = config.SMTP_PORT
     smtp_from: str = config.SMTP_FROM
     # MinIO conf
-    minio_user: str = "" # from environment, critical for security
-    minio_pass: str = "" # same as above
-    minio_endpoint: str = config.MINIO_ENDPOINT
-    minio_bucket_name: str = config.MINIO_BUCKET_NAME
-    minio_access_key: str = "" # from environment, critical for security
-    minio_secret_key: str = "" # same as above
+    s3_user: str = "" # from environment, critical for security
+    s3_pass: str = "" # same as above
+    s3_endpoint: str = config.S3_ENDPOINT
+    s3_bucket_name: str = config.S3_BUCKET_NAME
+    s3_access_key: str = "" # from environment, critical for security
+    s3_secret_key: str = "" # same as above
     firebase_keys_path: str = "" # from environment, critical for security
 
     # Initialized after loading the settings, not from environment 
@@ -102,12 +102,12 @@ if (not settings.jwt_secret_key) or (settings.jwt_secret_key==""):
     print(f"Configuration error: environment var JWT_SECRET_KEY not found")
     raise SystemExit(1)
 
-if (not settings.minio_user) or (settings.minio_user==""):
-    print(f"Configuration error: environment var MINIO_USER not found")
+if (not settings.s3_user) or (settings.s3_user==""):
+    print(f"Configuration error: environment var S3_USER not found")
     raise SystemExit(1)
 
-if (not settings.minio_pass) or (settings.minio_pass==""):
-    print(f"Configuration error: environment var MINIO_PASS not found")
+if (not settings.s3_pass) or (settings.s3_pass==""):
+    print(f"Configuration error: environment var S3_PASS not found")
     raise SystemExit(1)
 
 if (not settings.smtp_user) or (settings.smtp_user==""):

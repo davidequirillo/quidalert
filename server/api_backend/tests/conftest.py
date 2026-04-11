@@ -4,10 +4,12 @@
 
 from start import app
 import pytest
+import boto3
+from moto import mock_aws
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, StaticPool
-from models.general import User, UserRole, RefreshToken
-from dependencies import get_db_session
+from models.general import User, UserRole, UserLanguage, RefreshToken
+from dependencies import get_db_session, get_s3_client
 from services.security import (
     create_access_token, 
     create_refresh_token,
@@ -43,36 +45,55 @@ def db_session_fixture():
 
 @pytest.fixture(name="client")
 def client_fixture(db_session: Session):
-    # Definition of the "fake" function
-    # It doesn't matter what the original does, FastAPI will use THIS one instead of the original:
+    mock = mock_aws()
+    mock.start()
+    bucket_name = "test-bucket"
+    s3_mock_client = boto3.client("s3", 
+        region_name="us-east-1",
+        aws_access_key_id="fake_access_key",
+        aws_secret_access_key="fake_secret_key",
+        aws_session_token="testing"
+    )
+    s3_mock_client.create_bucket(Bucket=bucket_name)
     def get_db_session_override():
         yield db_session
+    def get_s3_client_override():
+        return s3_mock_client
     # Override some settings for testing
     original_app_mode = settings.app_mode
+    original_bucket_name = settings.s3_bucket_name
     settings.app_mode = "testing"
-    # Override the dependency in the app with our "fake" function
+    settings.s3_bucket_name = bucket_name
+    # Override some dependencies in the app with our "fake" function
     app.dependency_overrides[get_db_session] = get_db_session_override
-    # Override app state (useful for background task testing)
-    # Save the original engine to restore it later
+    app.dependency_overrides[get_s3_client] = get_s3_client_override
+    # Override app state with our test engines/clients
     original_db_engine = getattr(app.state, "db_engine", None)
+    original_s3_client = getattr(app.state, "s3_client", None)
     app.state.db_engine = engine_test
+    app.state.s3_client = s3_mock_client
     with TestClient(app) as client:
         try:
             yield client
         finally:
-            # IMPORTANT: restore the original engine after the test
+            if app.state.s3_client:
+                app.state.s3_client.close()
+            # IMPORTANT: restore the original app state after the test
             app.state.db_engine = original_db_engine
-            # IMPORTANT: clean up the override after the test
+            app.state.s3_client = original_s3_client
+            # IMPORTANT: clean up the overrides after the test
             app.dependency_overrides.clear()
             # Restore original settings
             settings.app_mode = original_app_mode
+            settings.s3_bucket_name = original_bucket_name
+            mock.stop()
 
 def create_test_logged_user(user_type, db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
         "surname": "Surname1",
         "email": f"test_{user_type}@example.com",
-        "language": "en",
+        "language": UserLanguage.en.value,
         "password_hash": "fakehashedpassword!ABC123",
         "is_superuser": False,
         "is_admin": (user_type == "admin"),
