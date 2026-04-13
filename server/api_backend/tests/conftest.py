@@ -94,7 +94,7 @@ def create_test_logged_user(user_type, db_session: Session):
         "surname": "Surname1",
         "email": f"test_{user_type}@example.com",
         "language": UserLanguage.en.value,
-        "password_hash": "fakehashedpassword!ABC123",
+        "password_hash": "myfakehashedpasswordabcde",
         "is_superuser": False,
         "is_admin": (user_type == "admin"),
         "is_chief": (user_type == "chief"),
@@ -154,4 +154,3 @@ def create_test_chief(db_session: Session):
 @pytest.fixture(name="test_officer")
 def create_test_officer(db_session: Session):
     return create_test_logged_user("officer", db_session)
-

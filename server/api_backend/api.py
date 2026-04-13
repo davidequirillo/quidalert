@@ -539,7 +539,6 @@ def request_password_reset(data: PasswordResetRequest, background_tasks: Backgro
         db_session.add(user)
         db_session.commit()   
         background_tasks.add_task(send_reset_code_mail, user.email, code, user.language)
-    
     return {"message": if_mail_exists_str}
 
 @app.post("/api/password-reset/confirm")
@@ -595,5 +594,4 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
     security_events.log_password_reset_successful(str(user.id))
     if can_send:
         background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
-
     return {"message": "Password reset successful"}
