@@ -111,7 +111,7 @@ def create_test_user(db_session: Session):
     db_session.refresh(test_user)
     return test_user
 
-def create_test_logged_user(user_type, db_session: Session):
+def create_logged_test_user(user_type, db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
         "surname": "Surname1",
@@ -164,20 +164,20 @@ def create_test_logged_user(user_type, db_session: Session):
 
 @pytest.fixture(name="test_baseuser")
 def create_test_baseuser(db_session: Session):
-    return create_test_logged_user("baseuser", db_session)
+    return create_logged_test_user("baseuser", db_session)
 
 @pytest.fixture(name="test_admin")
 def create_test_admin(db_session: Session):
-    return create_test_logged_user("admin", db_session)
+    return create_logged_test_user("admin", db_session)
 
 @pytest.fixture(name="test_chief")
 def create_test_chief(db_session: Session):
-    return create_test_logged_user("chief", db_session)
+    return create_logged_test_user("chief", db_session)
 
 @pytest.fixture(name="test_officer")
 def create_test_officer(db_session: Session):
-    return create_test_logged_user("officer", db_session)
+    return create_logged_test_user("officer", db_session)
 
-@pytest.fixture(name="test_user_not_logged")
-def create_test_user_not_logged(db_session: Session):
+@pytest.fixture(name="not_logged_test_user")
+def create_not_logged_test_user(db_session: Session):
     return create_test_user(db_session)

@@ -31,16 +31,16 @@ def test_login_request_password_empty(client):
     assert response.status_code == credentials_exception().status_code
     assert response.json()["detail"] == credentials_exception().detail
 
-def test_login_request_invalid_credentials(client, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_invalid_credentials(client, not_logged_test_user):
+    user: User = not_logged_test_user
     assert user.email != "invalid@example.com"
     payload = {"email": "invalid@example.com", "password": "InvalidPassword123?"}
     response = client.post("/api/auth/login", json=payload)
     assert response.status_code == credentials_exception().status_code
     assert response.json()["detail"] == credentials_exception().detail
 
-def test_login_request_invalid_password(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_invalid_password(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -51,8 +51,8 @@ def test_login_request_invalid_password(client, db_session, test_user_not_logged
     assert response.status_code == credentials_exception().status_code
     assert response.json()["detail"] == credentials_exception().detail
 
-def test_login_request_valid_password(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_valid_password(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -68,8 +68,8 @@ def test_login_request_valid_password(client, db_session, test_user_not_logged):
     assert user.login_expires_at is not None
     assert user.last_login_mail_code_at is not None
 
-def test_login_request_user_not_active(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_user_not_active(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -81,8 +81,8 @@ def test_login_request_user_not_active(client, db_session, test_user_not_logged)
     assert response.status_code == credentials_exception().status_code
     assert response.json()["detail"] == credentials_exception().detail
 
-def test_login_request_user_not_found(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_user_not_found(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -94,8 +94,8 @@ def test_login_request_user_not_found(client, db_session, test_user_not_logged):
     assert response.status_code == credentials_exception().status_code
     assert response.json()["detail"] == credentials_exception().detail
 
-def test_login_request_again_too_soon(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_again_too_soon(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -120,8 +120,8 @@ def test_login_request_again_too_soon(client, db_session, test_user_not_logged):
     assert user.login_code_hash == old_login_code_hash
     assert user.login_expires_at == old_login_expires_at
 
-def test_login_request_again_after_expiry(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_request_again_after_expiry(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -147,8 +147,8 @@ def test_login_request_again_after_expiry(client, db_session, test_user_not_logg
     assert user.login_code_hash != old_login_code_hash
     assert user.login_expires_at > now_tz_naive()
 
-def test_login_2fa_wrong_code(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_wrong_code(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -178,8 +178,8 @@ def test_login_2fa_wrong_code(client, db_session, test_user_not_logged):
     db_session.refresh(user)
     assert user.login_2fa_attempts == 2
 
-def test_login_2fa_expired_code(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_expired_code(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # We can skip the initial login request and directly set the login code and expires_at for convenience
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
@@ -197,8 +197,8 @@ def test_login_2fa_expired_code(client, db_session, test_user_not_logged):
     assert response_2fa.status_code == two_factor_not_valid_exception().status_code
     assert response_2fa.json()["detail"] == two_factor_not_valid_exception().detail
 
-def test_login_2fa_code_not_requested(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_code_not_requested(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -214,8 +214,8 @@ def test_login_2fa_code_not_requested(client, db_session, test_user_not_logged):
     assert user.login_code_hash is None
     assert user.login_expires_at is None
 
-def test_login_2fa_too_many_attempts(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_too_many_attempts(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # We can skip the initial login request and directly set the login code, expires_at and attempts for convenience
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
@@ -253,8 +253,8 @@ def test_login_2fa_too_many_attempts(client, db_session, test_user_not_logged):
     assert response_login.status_code == two_factor_locked_exception().status_code
     assert response_login.json()["detail"] == two_factor_locked_exception().detail
 
-def test_login_2fa_successful(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_successful(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -284,8 +284,8 @@ def test_login_2fa_successful(client, db_session, test_user_not_logged):
     assert user.last_login_done_at is not None
     assert user.last_login_mail_confirmation_at is not None
 
-def test_login_2fa_successful_again_too_soon(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # We can skip the initial login request and directly set the login code and expires_at for convenience
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
@@ -336,8 +336,8 @@ def test_login_2fa_successful_again_too_soon(client, db_session, test_user_not_l
     # The last_login_mail_confirmation_at should be unchanged, because the mail should not be sent again, because we are within the cooldown period for sending a new mail
     assert user.last_login_mail_confirmation_at == old_last_mail_confirmation_at # No new mail should be sent, so the timestamp should be unchanged
 
-def test_login_2fa_successful_again_after_cooldown(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # We can skip the initial login request and directly set the login code and expires_at for convenience
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
@@ -368,8 +368,8 @@ def test_login_2fa_successful_again_after_cooldown(client, db_session, test_user
     # A new mail should be sent, so the timestamp should be updated
     assert user.last_login_mail_confirmation_at > old_last_mail_confirmation_at
 
-def test_login_2fa_successful_login_token_works(client, db_session, test_user_not_logged):
-    user: User = test_user_not_logged
+def test_login_2fa_successful_login_token_works(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
