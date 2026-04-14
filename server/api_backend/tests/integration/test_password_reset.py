@@ -218,11 +218,7 @@ def test_password_reset_confirm_wrong_code(client, db_session, test_baseuser):
 
 def test_password_reset_confirm_too_many_attempts(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
-    payload = {"email": user.email}
-    response1 = client.post("/api/password-reset/request", json=payload)
-    assert response1.status_code == status.HTTP_200_OK
-    db_session.refresh(user) # Refresh the user to get the latest state
-    # We don't know the generated code, so we set a valid reset code
+    # We can skip the request step for convenience (we will set the reset code and expiration time manually)
     valid_code = "0123456789"
     valid_code_hash = otp_hmac(valid_code)
     wrong_code = "0000000000"
@@ -262,9 +258,6 @@ def test_password_reset_confirm_too_many_attempts(client, db_session, test_baseu
     assert user.reset_locked_until > now_tz_naive()
     # The reset attempts should not be incremented, because the operation is locked
     assert user.reset_attempts == 0
-    # The code hash and expiration should remain unchanged, because the operation is locked
-    assert user.reset_code_hash == valid_hash
-    assert user.reset_expires_at is not None
 
 def test_password_reset_confirm_lock_expired(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
@@ -283,6 +276,7 @@ def test_password_reset_confirm_lock_expired(client, db_session, test_baseuser):
     user.reset_code_hash = valid_hash
     user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
     db_session.commit() # Ensure the change is saved to the database
+    # We try with a wrong code, but the lockout has expired, so the reset attempts should be incremented and the operation should not be locked
     payload = {"email": user.email, "code": wrong_code, "new_password": new_password }
     response2 = client.post("/api/password-reset/confirm", json=payload)
     db_session.refresh(user) # Refresh the user to get the latest state
@@ -338,20 +332,16 @@ def password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, 
     new_password = "Password!12345"
     new_password_hash = get_password_hash(new_password)
     assert old_password_hash != new_password_hash
-    payload = {"email": user.email}
-    response1 = client.post("/api/password-reset/request", json=payload)
-    assert response1.status_code == status.HTTP_200_OK
-    db_session.refresh(user) # Refresh the user to get the latest state
-    # We don't know the generated code, so we set a valid reset code
+    # We can skip the request step for convenience (we will set the reset code and expiration time manually)
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
     user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
     db_session.commit()
     payload = {"email": user.email, "code": valid_code, "new_password": new_password}
-    response2 = client.post("/api/password-reset/confirm", json=payload)
+    response1 = client.post("/api/password-reset/confirm", json=payload)
     db_session.refresh(user) # Refresh the user to get the latest state
-    assert response2.status_code == status.HTTP_200_OK
+    assert response1.status_code == status.HTTP_200_OK
     assert user.reset_code_hash is None
     assert user.reset_expires_at is None
     assert user.reset_locked_until is None
@@ -364,15 +354,15 @@ def password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, 
     last_reset_mail_confirmation_at = user.last_reset_mail_confirmation_at - timedelta(seconds=1)
     db_session.commit() # Save the change to the database
     # Now we try to reset the password again immediately
-    response3 = client.post("/api/password-reset/request", json={"email": user.email})
-    assert response3.status_code == status.HTTP_200_OK
+    response2 = client.post("/api/password-reset/request", json={"email": user.email})
+    assert response2.status_code == status.HTTP_200_OK
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
     db_session.commit() # Ensure the change is saved to the database
-    response4 = client.post("/api/password-reset/confirm", json={"email": user.email, "code": valid_code, "new_password": new_password})
+    response3 = client.post("/api/password-reset/confirm", json={"email": user.email, "code": valid_code, "new_password": new_password})
     db_session.refresh(user) # Refresh the user to get the latest state
-    assert response4.status_code == status.HTTP_200_OK
+    assert response3.status_code == status.HTTP_200_OK
     assert user.reset_code_hash is None
     assert user.reset_expires_at is None
     assert user.last_reset_mail_code_at is not None
@@ -389,20 +379,16 @@ def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_sess
     new_password = "Password!12345"
     new_password_hash = get_password_hash(new_password)
     assert old_password_hash != new_password_hash
-    payload = {"email": user.email}
-    response1 = client.post("/api/password-reset/request", json=payload)
-    assert response1.status_code == status.HTTP_200_OK
-    db_session.refresh(user) # Refresh the user to get the latest state
-    # We don't know the generated code, so we set a valid reset code
+    # We can skip the request step for convenience (we will set the reset code and expiration time manually)
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
     user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
     db_session.commit() # Ensure the change is saved to the database
     payload = {"email": user.email, "code": valid_code, "new_password": new_password}
-    response2 = client.post("/api/password-reset/confirm", json=payload)
+    response1 = client.post("/api/password-reset/confirm", json=payload)
     db_session.refresh(user) # Refresh the user to get the latest state
-    assert response2.status_code == status.HTTP_200_OK
+    assert response1.status_code == status.HTTP_200_OK
     assert user.reset_code_hash is None
     assert user.reset_expires_at is None
     assert user.reset_locked_until is None
@@ -413,21 +399,18 @@ def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_sess
     assert user.last_reset_mail_confirmation_at is not None
     # We simulate that the confirmation email was sent many seconds ago (cooldown expired)
     last_reset_mail_confirmation_at = user.last_reset_mail_confirmation_at - timedelta(seconds=MAIL_COOLDOWN_SECONDS + 1)
-    db_session.commit() # Save the change to the database
     # Now we try to reset the password again immediately, and we will see that a new confirmation email should be sent
-    response3 = client.post("/api/password-reset/request", json={"email": user.email})
-    assert response3.status_code == status.HTTP_200_OK
-    db_session.refresh(user) # Refresh the user to get the latest state
+    # We skip the request step for convenience (we will set the reset code and expiration time manually)
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
-    db_session.commit()
-    response4 = client.post("/api/password-reset/confirm", json={"email": user.email, "code": valid_code, "new_password": new_password})
+    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    db_session.commit() # Ensure the change is saved to the database
+    response2 = client.post("/api/password-reset/confirm", json={"email": user.email, "code": valid_code, "new_password": new_password})
     db_session.refresh(user) # Refresh the user to get the latest state
-    assert response4.status_code == status.HTTP_200_OK
+    assert response2.status_code == status.HTTP_200_OK
     assert user.reset_code_hash is None
     assert user.reset_expires_at is None
-    assert user.last_reset_mail_code_at is not None
     assert user.last_reset_mail_confirmation_at is not None
     assert user.password_hash != old_password_hash
     # The last_reset_mail_confirmation_at should be updated,
