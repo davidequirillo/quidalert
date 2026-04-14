@@ -275,6 +275,7 @@ def login(data: LoginSchema,
     user = db_session.exec(q).first()
     if ((not user) or (not user.is_active) or 
             (not check_password_against_hash(data.password, user.password_hash))):
+        security_events.log_login_failed(str(user.id) if user else "unknown", reason="invalid_credentials")
         raise credentials_exception()
     # if the 2FA code is present, we must verify it to generate a login token
     skip_2fa = False
@@ -287,6 +288,7 @@ def login(data: LoginSchema,
             raise two_factor_not_valid_exception()
         if (not otp_verify(data.login_code, user.login_code_hash)):
             user.login_2fa_attempts += 1
+            security_events.log_login_2fa_failed(str(user.id), reason="invalid_code", attempts=user.login_2fa_attempts)
             if user.login_2fa_attempts > 3:
                 user.login_code_hash = None
                 user.login_expires_at = None
@@ -314,7 +316,8 @@ def login(data: LoginSchema,
         except:
             token_data = None
         if check_login_token(token_data, user):
-            skip_2fa = True
+            skip_2fa = True 
+            security_events.log_login_token_used(str(user.id))
     if (not skip_2fa):
         # check if login has locked due to too many failed attempts
         if user.login_locked_until and (now < user.login_locked_until):
@@ -565,6 +568,7 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
         )
     if (not otp_verify(data.code, user.reset_code_hash)):
         user.reset_attempts += 1
+        security_events.log_password_reset_failed(str(user.id), reason="invalid_code", attempts=user.reset_attempts)
         if user.reset_attempts > 3:
             user.reset_code_hash = None
             user.reset_expires_at = None

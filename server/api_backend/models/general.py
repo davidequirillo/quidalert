@@ -217,8 +217,8 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
     login_code: Optional[str] = Field(default=None, min_length=6, max_length=6) # 2FA code
-    login_token: Optional[str] = None # jwt token to skip 2FA
-    device_model: Optional[str] = None
+    login_token: Optional[str] = Field(default=None, min_length=0, max_length=256) # jwt token to skip 2FA
+    device_model: Optional[str] = Field(default=None, min_length=0, max_length=256)
 
     @field_validator("login_code")
     @classmethod

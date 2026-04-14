@@ -39,6 +39,18 @@ def log_login_successful(user_id: str):
         extra=get_request_info(user_id)
     )
 
+def log_login_failed(user_id: str, reason: str | None = None):
+    logger.warning(
+        f"login_failed, detail={reason}",
+        extra=get_request_info(user_id)
+    )
+
+def log_login_2fa_failed(user_id: str, reason: str | None = None, attempts: int | None = None):
+    logger.warning(
+        f"login_2fa_failed, detail={reason}, attempts={attempts}",
+        extra=get_request_info(user_id)
+    )
+
 def log_login_code_generation(user_id: str):
     logger.info(
         "login_code_generation",
@@ -54,5 +66,11 @@ def log_login_locked(user_id: str):
 def log_login_token_generation(user_id: str):
     logger.info(
         "login_token_generation",
+        extra=get_request_info(user_id)
+    )
+
+def log_login_token_used(user_id: str):
+    logger.info(
+        "login_token_used",
         extra=get_request_info(user_id)
     )

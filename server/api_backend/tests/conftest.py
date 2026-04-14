@@ -88,6 +88,29 @@ def client_fixture(db_session: Session):
             settings.s3_bucket_name = original_bucket_name
             mock.stop()
 
+def create_test_user(db_session: Session):
+    test_user = User.model_validate({
+        "firstname": "Firstname1",
+        "surname": "Surname1",
+        "email": "test_user_not_logged@example.com",
+        "language": UserLanguage.en.value,
+        "password_hash": "myfakehashedpasswordabcde",
+        "is_superuser": False,
+        "is_admin": False,
+        "is_chief": False,
+        "is_officer": False,
+        "role": UserRole.citizen.value,
+        "is_active": True,
+        "activation_code": "fakeacttoken",
+        "activation_code_expires_at": activation_expiry(),
+        "authorized_by": "superuser@example.com",
+        "authorized_at": now_tz_naive(),
+    })
+    db_session.add(test_user)
+    db_session.commit()
+    db_session.refresh(test_user)
+    return test_user
+
 def create_test_logged_user(user_type, db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
@@ -154,3 +177,7 @@ def create_test_chief(db_session: Session):
 @pytest.fixture(name="test_officer")
 def create_test_officer(db_session: Session):
     return create_test_logged_user("officer", db_session)
+
+@pytest.fixture(name="test_user_not_logged")
+def create_test_user_not_logged(db_session: Session):
+    return create_test_user(db_session)
