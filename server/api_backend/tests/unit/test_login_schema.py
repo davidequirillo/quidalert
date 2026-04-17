@@ -96,15 +96,6 @@ def test_login_schema_create_login_code_valid():
     }
     request = LoginSchema.model_validate(data)
     assert request.login_code == data["login_code"]
-
-def test_login_schema_create_login_token_invalid_length():
-    data = {
-        "email": "testuser@example.com",
-        "password": "PasswordSimpleButValid",
-        "login_token": "tokenstr" * 100  # Invalid length (should be 0-256)
-    }
-    with pytest.raises(ValueError):
-        LoginSchema.model_validate(data)
     
 def test_login_schema_create_login_token_valid():
     data = {

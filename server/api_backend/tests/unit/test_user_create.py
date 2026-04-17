@@ -3,8 +3,9 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import UserIn, UserLanguage
+from models.general import UserIn, User, UserLanguage
 
+## Test UserIn model
 def test_user_create_success():
     data = {
         "firstname": "John",
@@ -132,3 +133,15 @@ def test_user_create_wrong_language_attribute():
     }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
+
+# Test User model
+def test_user_create_check_default_timestamp_fields():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password_hash": "hashed_password"
+    }
+    user = User.model_validate(data)
+    assert user.created_at is not None
+    assert user.last_reset_done_at is not None

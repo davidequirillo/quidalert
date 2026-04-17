@@ -10,7 +10,7 @@ from core.settings import settings
 from services.security import (
     now_tz_naive, 
     RESET_LOCK_HOURS, 
-    otp_hmac, OTP_CODE_TTL_MINUTES, 
+    otp_hmac, otp_expiry, OTP_CODE_TTL_MINUTES, 
     MAIL_COOLDOWN_SECONDS,
     get_password_hash)
 
@@ -175,7 +175,7 @@ def test_password_reset_confirm_user_exists_but_is_not_active(client, db_session
     # We set a valid reset code and expiration time, to ensure that the reset code is valid but the user is not active
     valid_code = "0123456789"
     user.reset_code_hash = otp_hmac(valid_code)
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit() # Ensure the change is saved to the database
     payload = {"email": user.email, "code": valid_code, "new_password": "Password!12345"}
     response = client.post("/api/password-reset/confirm", json=payload)
@@ -208,7 +208,7 @@ def test_password_reset_confirm_wrong_code(client, db_session, test_baseuser):
     valid_code = "0123456789"
     valid_code_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_code_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit() # Ensure the change is saved to the database
     # A code that is different from the valid code
     wrong_code = "0000000000"
@@ -223,7 +223,7 @@ def test_password_reset_confirm_too_many_attempts(client, db_session, test_baseu
     valid_code_hash = otp_hmac(valid_code)
     wrong_code = "0000000000"
     user.reset_code_hash = valid_code_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit() # Ensure the change is saved to the database
     for i in range(0, 3): # Simulate 3 failed attempts
          payload = {"email": user.email, "code": wrong_code, "new_password": "Password!12345"}
@@ -247,7 +247,7 @@ def test_password_reset_confirm_too_many_attempts(client, db_session, test_baseu
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit()
     # The code is valid, but the operation should still be locked
     payload = {"email": user.email, "code": valid_code, "new_password": "Password!12345"}
@@ -274,7 +274,7 @@ def test_password_reset_confirm_lock_expired(client, db_session, test_baseuser):
     valid_hash = otp_hmac(valid_code)
     wrong_code = "0000000000"
     user.reset_code_hash = valid_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit() # Ensure the change is saved to the database
     # We try with a wrong code, but the lockout has expired, so the reset attempts should be incremented and the operation should not be locked
     payload = {"email": user.email, "code": wrong_code, "new_password": new_password }
@@ -311,7 +311,9 @@ def test_password_reset_confirm_valid_code(client, db_session, test_baseuser):
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
+    assert user.reset_expires_at > now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES - 1)
+    assert user.reset_expires_at <= now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
     db_session.commit() # Ensure the change is saved to the database
     payload = {"email": user.email, "code": valid_code, "new_password": new_password}
     response2 = client.post("/api/password-reset/confirm", json=payload)
@@ -336,7 +338,7 @@ def password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, 
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit()
     payload = {"email": user.email, "code": valid_code, "new_password": new_password}
     response1 = client.post("/api/password-reset/confirm", json=payload)
@@ -383,7 +385,7 @@ def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_sess
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit() # Ensure the change is saved to the database
     payload = {"email": user.email, "code": valid_code, "new_password": new_password}
     response1 = client.post("/api/password-reset/confirm", json=payload)
@@ -404,7 +406,7 @@ def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_sess
     valid_code = "0123456789"
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
-    user.reset_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.reset_expires_at = otp_expiry()
     db_session.commit() # Ensure the change is saved to the database
     response2 = client.post("/api/password-reset/confirm", json={"email": user.email, "code": valid_code, "new_password": new_password})
     db_session.refresh(user) # Refresh the user to get the latest state

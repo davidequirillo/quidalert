@@ -7,15 +7,17 @@ from fastapi import status
 from models.general import User
 from services.security import (
     get_password_hash, 
-    otp_hmac, OTP_CODE_TTL_MINUTES,
-    now_tz_naive, MAIL_COOLDOWN_SECONDS,
+    otp_hmac, otp_expiry, OTP_CODE_TTL_MINUTES,
+    now_tz_naive, from_timestamp_to_datetime_tz_naive,
+    MAIL_COOLDOWN_SECONDS,
     LOGIN_TOKEN_TTL_MINUTES,
-    decode_token)
+    decode_token, create_login_token)
 from core.exceptions import (
     credentials_exception, 
     two_factor_required_response,
     two_factor_not_valid_exception,
-    two_factor_locked_exception)
+    two_factor_locked_exception,
+    forbidden_exception)
 
 def test_login_request_missing_credentials(client):
     payload = {}
@@ -66,6 +68,8 @@ def test_login_request_valid_password(client, db_session, not_logged_test_user):
     db_session.refresh(user)
     assert user.login_code_hash is not None
     assert user.login_expires_at is not None
+    assert user.login_expires_at > now_tz_naive() + timedelta(minutes=(OTP_CODE_TTL_MINUTES-1))
+    assert user.login_expires_at <= now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
     assert user.last_login_mail_code_at is not None
 
 def test_login_request_user_not_active(client, db_session, not_logged_test_user):
@@ -224,7 +228,7 @@ def test_login_2fa_too_many_attempts(client, db_session, not_logged_test_user):
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
     user.login_code_hash = valid_otp_code_hash
-    user.login_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.login_expires_at = otp_expiry()
     user.login_2fa_attempts = 3 # Simulate max attempts reached
     db_session.commit() # Ensure the updated login code hash, expires_at and attempts are saved to the database
     wrong_otp_code = "000000"
@@ -268,7 +272,7 @@ def test_login_2fa_successful(client, db_session, not_logged_test_user):
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
     user.login_code_hash = valid_otp_code_hash
-    user.login_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.login_expires_at = otp_expiry()
     db_session.commit() # Ensure the updated login code hash and expires_at are saved to the database
     payload_2fa = {"email": user.email, "password": valid_password, "login_code": valid_otp_code}
     response_2fa = client.post("/api/auth/login", json=payload_2fa)
@@ -295,7 +299,7 @@ def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test
     valid_otp_code_hash = otp_hmac(valid_otp_code)
     user.password_hash = valid_password_hash
     user.login_code_hash = valid_otp_code_hash
-    user.login_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.login_expires_at = otp_expiry()
     db_session.commit() # Ensure the updated login code hash and expires_at are saved to the database
     payload_2fa = {"email": user.email, "password": valid_password, "login_code": valid_otp_code}
     response1 = client.post("/api/auth/login", json=payload_2fa)
@@ -314,7 +318,7 @@ def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test
     # We can skip again the initial login request and directly set the login code and the expires_at for convenience
     # We set the code hash from a valid code
     user.login_code_hash = otp_hmac(valid_otp_code)
-    user.login_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.login_expires_at = otp_expiry()
     # We also simulate that the mail was sent just now, more or less, 1 second ago
     user.last_login_mail_confirmation_at = now_tz_naive() - timedelta(seconds=1)
     old_last_mail_confirmation_at = user.last_login_mail_confirmation_at
@@ -346,7 +350,7 @@ def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logge
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
     user.login_code_hash = valid_otp_code_hash
-    user.login_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.login_expires_at = otp_expiry()
     # We simulate that the mail was already sent many seconds ago (cooldown expired)
     # We skip the last 2fa login and directly set the last_login_mail_confirmation_at in the past
     user.last_login_mail_confirmation_at = now_tz_naive() - timedelta(seconds=MAIL_COOLDOWN_SECONDS + 1)
@@ -370,6 +374,8 @@ def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logge
 
 def test_login_2fa_successful_login_token_works(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
+    # Last reset done at is a default timestamp, equal to created_at when the user is created
+    assert user.last_reset_done_at is not None
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -383,10 +389,12 @@ def test_login_2fa_successful_login_token_works(client, db_session, not_logged_t
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
     user.login_code_hash = valid_otp_code_hash
-    user.login_expires_at = now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
+    user.login_expires_at = otp_expiry()
     db_session.commit() # Ensure the updated login code hash and expires_at are saved to the database
     payload_2fa = {"email": user.email, "password": valid_password, "login_code": valid_otp_code}
     response_2fa = client.post("/api/auth/login", json=payload_2fa)
+    db_session.refresh(user) # Refresh to get the latest last_2fa_success_at
+    assert user.last_2fa_success_at is not None
     assert response_2fa.status_code == status.HTTP_200_OK
     assert "access_token" in response_2fa.json()
     assert response_2fa.json()["token_type"] == "bearer"
@@ -396,21 +404,93 @@ def test_login_2fa_successful_login_token_works(client, db_session, not_logged_t
     assert login_token is not None
     # Test that the login token is valid and contains the expected data
     login_token_data = decode_token(login_token)
+    login_token_sub = login_token_data.get("sub")
+    login_token_type = login_token_data.get("type")
+    login_token_exp = login_token_data.get("exp")
+    login_token_iat = login_token_data.get("iat")
     assert login_token_data is not None
-    assert login_token_data.get("sub") == str(user.id)
-    assert login_token_data.get("type") == "login"
-    assert login_token_data.get("exp") is not None
-    assert login_token_data.get("iat") is not None
+    assert login_token_sub == str(user.id)
+    assert login_token_type == "login"
+    assert login_token_exp is not None
+    assert login_token_iat is not None
     # The issued at time should be in the past, but not too much in the past (e.g. not more than 1 minute ago)
-    assert login_token_data.get("iat") <= int(now_tz_naive().timestamp())
-    assert login_token_data.get("iat") > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    assert login_token_iat <= int(now_tz_naive().timestamp())
+    assert login_token_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    iat_dt = from_timestamp_to_datetime_tz_naive(login_token_iat)
+    # The issued at time should be after the last password reset time, otherwise the token should be invalid
+    assert iat_dt >= user.last_reset_done_at
+    # The issued at time should be after the last successful 2FA time
+    assert iat_dt >= user.last_2fa_success_at
     # The token should not be expired (expiration more or less at timedelta of LOGIN_TOKEN_TTL_MINUTES)
-    assert login_token_data.get("exp") > int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES - 1)).timestamp())
-    assert login_token_data.get("exp") <= int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES)).timestamp())
+    assert login_token_exp > int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES - 1)).timestamp())
+    assert login_token_exp <= int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES)).timestamp())
+    
     # Now we try to login again with the login token, without providing the 2FA code, and it should work
-    payload_login_token = {"email": user.email, "password": valid_password, "login_token": login_token}
-    response_login_token = client.post("/api/auth/login", json=payload_login_token)
-    assert response_login_token.status_code == status.HTTP_200_OK
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
     db_session.refresh(user)
     assert user.last_login_done_at is not None
     assert user.last_refresh_at is not None
+
+def test_login_user_is_blocked(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    user.is_blocked = True
+    db_session.commit() # Ensure the updated password hash and blocked status are saved to the database
+    # we skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == forbidden_exception().status_code
+    assert response.json()["detail"] == forbidden_exception().detail
+
+def test_login_user_is_blocked_but_is_superuser(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    user.is_blocked = True
+    user.is_superuser = True    
+    db_session.commit() # Ensure the updated password hash and blocked status are saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    # Even if the user is blocked, since it's a superuser, it should be allowed to login
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+
+def test_login_2fa_code_and_login_token_together(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # We skip the initial login request for convenience, and we directly set the login code and expires_at for convenience
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    valid_otp_code = "123456"
+    user.login_code_hash = otp_hmac(valid_otp_code)
+    user.login_expires_at = otp_expiry()
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We create a login token with a custom expiry time
+    # it ensures that the new login token will be different from this one
+    login_token = create_login_token(str(user.id), expires_delta=timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES + 10))
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token, "login_code": valid_otp_code}
+    response = client.post("/api/auth/login", json=payload)
+    # When both otp code and login token are provided, login token is ignored, and the otp code is used for authentication
+    # A new login token is generated and returned to the client
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+    assert "login_token" in response.json()
+    new_login_token = response.json()["login_token"]
+    assert new_login_token is not None
+    # The new login token should be different from the old one, because the old one should be ignored and a new one should be generated based on the successful 2FA authentication
+    assert new_login_token != login_token
+

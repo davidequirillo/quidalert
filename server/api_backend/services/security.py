@@ -97,8 +97,8 @@ LOGIN_TOKEN_TTL_MINUTES = 60 * 24 * 240  # 240 days
 MAX_ACTIVE_REFRESH_TOKENS = 1 # IMPORTANT: at the moment we allow only one active refresh token per user (one device)
 JWT_ALGORITHM = "HS256"
 
-def create_access_token(subject: str, expires_delta: Optional[timedelta] = None):
-    now = now_tz_naive()
+def create_access_token(subject: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
+    now = issued_at or now_tz_naive()
     expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
@@ -109,8 +109,8 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None)
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
 
-def create_geoposition_token(user_id, user_is_chief, user_role, expires_delta: Optional[timedelta] = None):
-    now = now_tz_naive()
+def create_geoposition_token(user_id, user_is_chief, user_role, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
+    now = issued_at or now_tz_naive()
     expire = now + (expires_delta or timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
     data = {
         "sub": user_id,
@@ -123,23 +123,23 @@ def create_geoposition_token(user_id, user_is_chief, user_role, expires_delta: O
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
 
-def create_refresh_token(subject: str, token_id: str, raw_code: str, created_at: Optional[datetime], expires_delta: Optional[timedelta] = None):
-    if created_at is None:
-        created_at = now_tz_naive()
-    expire = created_at + (expires_delta or timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+def create_refresh_token(subject: str, token_id: str, raw_code: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
+    if issued_at is None:
+        issued_at = now_tz_naive()
+    expire = issued_at + (expires_delta or timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
         "type": "refresh",
         "jti": token_id,
         "raw": raw_code,
-        "iat": created_at,
+        "iat": issued_at,
         "exp": expire
     }
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
 
-def create_login_token(subject: str, expires_delta: Optional[timedelta] = None):
-    now = now_tz_naive()
+def create_login_token(subject: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
+    now = issued_at or now_tz_naive()
     expire = now + (expires_delta or timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,

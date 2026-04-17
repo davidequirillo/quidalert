@@ -7,7 +7,7 @@ import pytest
 from sqlmodel import select
 from models.general import User, WhiteListEntry
 from core.settings import settings
-from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
+from services.security import now_tz_naive, activation_expiry, ACTIVATION_TOKEN_TTL_HOURS
 
 @pytest.fixture(autouse=True)
 def disable_emails():
@@ -106,7 +106,7 @@ def existing_superuser(db_session):
         email="admin@example.com",
         password_hash="fakepwdhash",
         activation_code="fakeactivationcode",
-        activation_expires_at=now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS),
+        activation_expires_at=activation_expiry(),
         is_active=False,
         is_superuser=True,
         is_admin=True
@@ -221,6 +221,10 @@ def test_register_in_whitelist(client, db_session, superuser_in_db, whitelist_en
     assert results[0].is_superuser == False
     assert results[0].is_admin == False
     assert results[0].authorized_by == whitelist_entry.created_by # the user should be authorized by the creator of the whitelist entry
+    assert results[0].activation_code is not None
+    assert results[0].activation_expires_at is not None
+    assert results[0].activation_expires_at > now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS - 1)
+    assert results[0].activation_expires_at <= now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
 
 def test_register_duplicate_user(client, db_session, superuser_in_db, whitelist_entry):
     # Check the database to ensure the superuser already exists

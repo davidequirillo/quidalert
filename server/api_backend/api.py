@@ -175,6 +175,7 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
     return (user, refresh_token) # user and db refresh token
 
 def check_login_token(token_data: dict | None, user: User):
+    print("Checking login token validity...")
     if token_data is None:
         return False
     user_id = token_data.get("sub")
@@ -188,6 +189,8 @@ def check_login_token(token_data: dict | None, user: User):
         return False
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)
     if token_iat_dt < user.last_reset_done_at:
+        return False
+    if user.last_2fa_success_at and token_iat_dt < user.last_2fa_success_at:
         return False
     return True
 
@@ -231,7 +234,7 @@ def refresh_auth_tokens(
         str(user.id), user.is_chief, user.role)
     new_refresh_token = create_refresh_token(
         str(user.id), str(rtoken.id), 
-        new_raw_secret, created_at=now)
+        new_raw_secret, issued_at=now)
     return {
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
@@ -298,22 +301,27 @@ def login(data: LoginSchema,
             db_session.add(user)
             db_session.commit()
             raise two_factor_not_valid_exception()
-        new_login_token = create_login_token(str(user.id))
         user.login_code_hash = None
         user.login_expires_at = None
         user.login_locked_until = None
         user.login_2fa_attempts = 0
+        user.last_2fa_success_at = now
+        new_login_token = create_login_token(str(user.id))
         skip_2fa = True # 2FA verified successfully
         security_events.log_login_token_generation(str(user.id))
     # if a valid login_token is provided, we skip 2FA check
     elif data.login_token:
         try:
+            print("Login token provided, checking validity...")
             token_data = decode_token(data.login_token)
         except ExpiredSignatureError:
+            print("Login token expired")
             token_data = None
         except InvalidTokenError:
+            print("Login token invalid")
             token_data = None
         except:
+            print("Unexpected error while checking login token")
             token_data = None
         if check_login_token(token_data, user):
             skip_2fa = True 
@@ -374,7 +382,7 @@ def login(data: LoginSchema,
         str(user.id), user.is_chief, user.role)
     rtoken = create_refresh_token(
         str(user.id), str(refresh_token.id), 
-        raw_random_str, created_at=now)
+        raw_random_str, issued_at=now)
     security_events.log_login_successful(str(user.id))
     if can_send:
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
