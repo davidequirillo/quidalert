@@ -6,6 +6,7 @@ from start import app
 import pytest
 import boto3
 from moto import mock_aws
+from freezegun import freeze_time
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, StaticPool
 from models.general import User, UserRole, UserLanguage, RefreshToken
@@ -32,6 +33,11 @@ engine_test = create_engine(
     poolclass=StaticPool,
     echo=False
 )
+
+@pytest.fixture(autouse=True)
+def frozen_now():
+    with freeze_time() as frozen:
+        yield frozen
 
 @pytest.fixture(name="db_session")
 def db_session_fixture():
@@ -150,7 +156,7 @@ def create_logged_test_user(user_type, db_session: Session):
     atoken = create_access_token(str(test_user.id))
     rtoken = create_refresh_token(
         str(test_user.id), str(refresh_token.id), 
-        raw_random_str, created_at=now)
+        raw_random_str, issued_at=now)
     gps_token = create_geoposition_token(
         str(test_user.id), test_user.is_chief, test_user.role)
     login_token = create_login_token(str(test_user.id))

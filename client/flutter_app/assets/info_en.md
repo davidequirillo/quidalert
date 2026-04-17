@@ -20,6 +20,8 @@ To receive alerts from others nearby, the app needs to update your position appr
 
 Note: to maximize battery efficiency, the system only sends updates when a significant change in location is detected.
 
+Note: the server will temporarily store, for each user, only the last received gps position, not the complete tracking history. If the user does a logout, their gps location will no longer be refreshed, and after a few days the system will automatically delete this old location.
+
 [Legal terms](/terms)
 
 [Account registration](/register)

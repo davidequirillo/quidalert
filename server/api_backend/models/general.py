@@ -119,6 +119,7 @@ class UserOut(UserBase, table=False):
     login_locked_until: Optional[datetime] = Field(default=None)
     last_login_mail_code_at: Optional[datetime] = Field(default=None) 
     last_login_done_at: Optional[datetime] = Field(default=None)   
+    last_2fa_success_at: Optional[datetime] = Field(default=None)
     last_login_mail_confirmation_at: Optional[datetime] = Field(default=None)
     last_refresh_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(
@@ -217,7 +218,7 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
     login_code: Optional[str] = Field(default=None, min_length=6, max_length=6) # 2FA code
-    login_token: Optional[str] = Field(default=None, min_length=0, max_length=256) # jwt token to skip 2FA
+    login_token: Optional[str] = Field(default=None) # jwt token to skip 2FA
     device_model: Optional[str] = Field(default=None, min_length=0, max_length=256)
 
     @field_validator("login_code")

@@ -20,6 +20,8 @@ Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle v
 
 Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento, garantendo così il massimo risparmio della batteria e del traffico dati.
 
+Nota: il server memorizzerà temporaneamente, per ciascun utente, solo l'ultima posizione GPS ricevuta, non l'intera cronologia di tracciamento. Se l'utente effettua il logout, la sua posizione GPS non verrà più aggiornata e, dopo alcuni giorni, il sistema eliminerà automaticamente questa vecchia posizione.
+
 [Termini legali](/terms)
 
 [Registrazione account](/register)
