@@ -13,11 +13,6 @@ from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
 from sqlmodel import Session, select, desc
 from fastapi.templating import Jinja2Templates
-from jwt.exceptions import (
-    InvalidTokenError, ExpiredSignatureError,
-    InvalidSubjectError, InvalidIssuedAtError,
-    InvalidJTIError
-)
 import firebase_admin
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -37,7 +32,8 @@ from services.security import (
     generate_otp_code, otp_expiry, otp_hmac, otp_verify,
     RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS,
     create_access_token, create_geoposition_token, create_refresh_token, decode_token, MAX_ACTIVE_REFRESH_TOKENS,
-    check_token_against_hash, create_login_token
+    check_token_against_hash, create_login_token,
+    TokenExpiredException, TokenNotValidException
     )
 from core import dbmgr, bucketmgr
 from services.network import (
@@ -147,7 +143,7 @@ templates = Jinja2Templates(directory=os.path.join(api_dirpath, "templates"))
 
 def check_refresh_token(token_data: dict | None, db_session: Session):
     if token_data is None:
-        raise InvalidTokenError
+        raise TokenNotValidException()
     user_id = token_data.get("sub")
     token_iat = token_data.get("iat")
     token_exp = token_data.get("exp")
@@ -157,25 +153,24 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
     if (not user_id) or (not token_iat) or (not token_exp) or \
         (not token_type) or (token_type != "refresh") or \
             (not token_jti) or (not token_raw_secret): 
-        raise InvalidTokenError
+        raise TokenNotValidException()
     statement = select(User).where(User.id == user_id)
     user = db_session.exec(statement).first()
     if user is None:
-        raise InvalidSubjectError
+        raise TokenNotValidException()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)
     if token_iat_dt < user.last_reset_done_at:
-        raise InvalidIssuedAtError
+        raise TokenExpiredException()
     q = select(RefreshToken).where(
         (RefreshToken.id == token_jti) and (RefreshToken.user_id == user.id))
     refresh_token = db_session.exec(q).first()
     if (refresh_token is None) or (refresh_token.is_revoked):
-        raise ExpiredSignatureError
+        raise TokenExpiredException()
     if not check_token_against_hash(token_raw_secret, refresh_token.raw_hash):
-        raise InvalidJTIError
+        raise TokenNotValidException()
     return (user, refresh_token) # user and db refresh token
 
 def check_login_token(token_data: dict | None, user: User):
-    print("Checking login token validity...")
     if token_data is None:
         return False
     user_id = token_data.get("sub")
@@ -207,16 +202,18 @@ def refresh_auth_tokens(
             db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(wrapper.refresh_token)
-    except ExpiredSignatureError:
+    except TokenExpiredException:
         raise token_expired_exception()
-    except InvalidTokenError:
+    except TokenNotValidException:
         raise token_not_valid_exception()
     except:
         token_data = None
     try: # check token validity (it returns user and database refresh token)
         user, rtoken = check_refresh_token(token_data, db_session)
-    except InvalidIssuedAtError or ExpiredSignatureError:
+    except TokenExpiredException:
         raise token_expired_exception()
+    except TokenNotValidException:
+        raise token_not_valid_exception()
     except:
         raise token_not_valid_exception()
     now = now_tz_naive()
@@ -225,7 +222,7 @@ def refresh_auth_tokens(
     rtoken.raw_hash = new_raw_secret_hash
     rtoken.ip_address=get_client_ip()
     rtoken.updated_at=now
-    user.last_refresh_at = now
+    user.last_refresh_at=now
     db_session.add(user)
     db_session.add(rtoken)
     db_session.commit()
@@ -248,16 +245,18 @@ def revoke_token(
             db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(wrapper.refresh_token)
-    except ExpiredSignatureError:
+    except TokenExpiredException:
         raise token_expired_exception()
-    except InvalidTokenError:
+    except TokenNotValidException:
         raise token_not_valid_exception()
     except:
         token_data = None
     try: # check token validity (it returns user and database refresh token)
         _, rtoken = check_refresh_token(token_data, db_session)
-    except InvalidIssuedAtError or ExpiredSignatureError:
+    except TokenExpiredException:
         raise token_expired_exception()
+    except TokenNotValidException:
+        raise token_not_valid_exception()
     except:
         raise token_not_valid_exception()
     rtoken.is_revoked = True
@@ -312,16 +311,12 @@ def login(data: LoginSchema,
     # if a valid login_token is provided, we skip 2FA check
     elif data.login_token:
         try:
-            print("Login token provided, checking validity...")
             token_data = decode_token(data.login_token)
-        except ExpiredSignatureError:
-            print("Login token expired")
+        except TokenExpiredException:
             token_data = None
-        except InvalidTokenError:
-            print("Login token invalid")
+        except TokenNotValidException:
             token_data = None
         except:
-            print("Unexpected error while checking login token")
             token_data = None
         if check_login_token(token_data, user):
             skip_2fa = True 

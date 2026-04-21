@@ -124,8 +124,8 @@ def create_logged_test_user(user_type, db_session: Session):
         "email": f"test_{user_type}@example.com",
         "language": UserLanguage.en.value,
         "password_hash": "myfakehashedpasswordabcde",
-        "is_superuser": False,
-        "is_admin": (user_type == "admin"),
+        "is_superuser": (user_type == "superuser"),
+        "is_admin": (user_type == "admin") or (user_type == "superuser"),
         "is_chief": (user_type == "chief"),
         "is_officer": (user_type == "officer"),
         "role": UserRole.citizen.value,
@@ -171,6 +171,10 @@ def create_logged_test_user(user_type, db_session: Session):
 @pytest.fixture(name="test_baseuser")
 def create_test_baseuser(db_session: Session):
     return create_logged_test_user("baseuser", db_session)
+
+@pytest.fixture(name="test_superuser")
+def create_test_superuser(db_session: Session):
+    return create_logged_test_user("superuser", db_session)
 
 @pytest.fixture(name="test_admin")
 def create_test_admin(db_session: Session):

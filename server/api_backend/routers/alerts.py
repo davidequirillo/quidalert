@@ -91,8 +91,7 @@ async def update_gps_position(
     user_data: GpsTokenData = Depends(get_geoposition_token_data),
     redis_client = Depends(get_redis_session)
 ):
-    user_id = user_data.user_id
-    user_id_str = str(user_id)
+    user_id_str = user_data.user_id # already a string, no need to convert from UUID
     is_chief = user_data.user_is_chief
     now = ensure_tz_aware(now_tz_naive())
     now_int_ts = int(now.timestamp())

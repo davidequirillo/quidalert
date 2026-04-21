@@ -5,7 +5,7 @@
 import pytest
 from models.general import UserInCompleteProfile
 
-def test_user_create_success():
+def test_create_user_success():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -21,7 +21,7 @@ def test_user_create_success():
     assert user.firstname == data["firstname"]
     assert user.street == data["street"]
 
-def test_user_create_invalid_birthdate():
+def test_create_user_invalid_birthdate():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -36,7 +36,7 @@ def test_user_create_invalid_birthdate():
     with pytest.raises(ValueError):
         UserInCompleteProfile.model_validate(data)
 
-def test_user_create_blank_or_none_birthdate():
+def test_create_user_blank_or_none_birthdate():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -54,7 +54,7 @@ def test_user_create_blank_or_none_birthdate():
         UserInCompleteProfile.model_validate(data)
         assert True
 
-def test_user_create_blank_or_none_phone():
+def test_create_user_blank_or_none_phone():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -71,7 +71,7 @@ def test_user_create_blank_or_none_phone():
     with pytest.raises(ValueError):        
         UserInCompleteProfile.model_validate(data)
 
-def test_user_create_invalid_phone():
+def test_create_user_invalid_phone():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -86,7 +86,7 @@ def test_user_create_invalid_phone():
     with pytest.raises(ValueError):
         UserInCompleteProfile.model_validate(data)
 
-def test_user_create_phone_too_short():
+def test_create_user_phone_too_short():
     data = {
         "firstname": "John",
         "surname": "Doe",

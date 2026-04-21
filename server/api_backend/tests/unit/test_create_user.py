@@ -6,7 +6,7 @@ import pytest
 from models.general import UserIn, User, UserLanguage
 
 ## Test UserIn model
-def test_user_create_success():
+def test_create_user_success():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -18,7 +18,7 @@ def test_user_create_success():
     assert user.email == data["email"]
     assert user.language == UserLanguage.en # default language
 
-def test_user_create_firstname_or_surname_blank():
+def test_create_user_firstname_or_surname_blank():
     data = {
         "firstname": "",
         "surname": "Doe",
@@ -36,7 +36,7 @@ def test_user_create_firstname_or_surname_blank():
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
 
-def test_user_create_firstname_or_surname_too_short():
+def test_create_user_firstname_or_surname_too_short():
     data = {
         "firstname": "J",
         "surname": "Doe",
@@ -51,7 +51,7 @@ def test_user_create_firstname_or_surname_too_short():
         UserIn.model_validate(data)
         assert True
 
-def test_user_create_firstname_or_surname_too_long():
+def test_create_user_firstname_or_surname_too_long():
     data = {
         "firstname": "J" * 256,
         "surname": "Doe",
@@ -66,7 +66,7 @@ def test_user_create_firstname_or_surname_too_long():
         UserIn.model_validate(data)
         assert True
 
-def test_user_create_invalid_email():
+def test_create_user_invalid_email():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -76,7 +76,7 @@ def test_user_create_invalid_email():
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
 
-def test_user_create_email_with_external_whitespace():
+def test_create_user_email_with_external_whitespace():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -86,7 +86,7 @@ def test_user_create_email_with_external_whitespace():
     user = UserIn.model_validate(data)
     assert user.email == data["email"].strip().lower()
 
-def test_user_create_email_with_internal_whitespace():
+def test_create_user_email_with_internal_whitespace():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -96,7 +96,7 @@ def test_user_create_email_with_internal_whitespace():
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
 
-def test_user_create_email_with_uppercase():
+def test_create_user_email_with_uppercase():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -106,7 +106,7 @@ def test_user_create_email_with_uppercase():
     user = UserIn.model_validate(data)
     assert user.email.lower() == data["email"].lower() # the email should always be normalized to lowercase
 
-def test_user_create_blank_or_invalid_password():
+def test_create_user_blank_or_invalid_password():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -123,7 +123,7 @@ def test_user_create_blank_or_invalid_password():
         UserIn.model_validate(data)
         assert True
 
-def test_user_create_wrong_language_attribute():
+def test_create_user_wrong_language_attribute():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -135,7 +135,7 @@ def test_user_create_wrong_language_attribute():
         UserIn.model_validate(data)
 
 # Test User model
-def test_user_create_check_default_timestamp_fields():
+def test_create_user_check_default_timestamp_fields():
     data = {
         "firstname": "John",
         "surname": "Doe",

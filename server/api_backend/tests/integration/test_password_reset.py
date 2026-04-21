@@ -312,7 +312,7 @@ def test_password_reset_confirm_valid_code(client, db_session, test_baseuser):
     valid_hash = otp_hmac(valid_code)
     user.reset_code_hash = valid_hash
     user.reset_expires_at = otp_expiry()
-    assert user.reset_expires_at > now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES - 1)
+    assert user.reset_expires_at > now_tz_naive() + timedelta(minutes=(OTP_CODE_TTL_MINUTES-1))
     assert user.reset_expires_at <= now_tz_naive() + timedelta(minutes=OTP_CODE_TTL_MINUTES)
     db_session.commit() # Ensure the change is saved to the database
     payload = {"email": user.email, "code": valid_code, "new_password": new_password}
@@ -328,7 +328,7 @@ def test_password_reset_confirm_valid_code(client, db_session, test_baseuser):
     assert user.password_hash != old_password_hash
     assert user.last_reset_mail_confirmation_at is not None
 
-def password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, test_baseuser):
+def test_password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     old_password_hash = user.password_hash
     new_password = "Password!12345"
@@ -353,7 +353,8 @@ def password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, 
     assert user.password_hash != old_password_hash
     assert user.last_reset_mail_confirmation_at is not None
     # We simulate that the confirmation email was sent just 1 second ago (just now more or less)
-    last_reset_mail_confirmation_at = user.last_reset_mail_confirmation_at - timedelta(seconds=1)
+    user.last_reset_mail_confirmation_at -= timedelta(seconds=1)
+    old_last_reset_mail_confirmation_at = user.last_reset_mail_confirmation_at
     db_session.commit() # Save the change to the database
     # Now we try to reset the password again immediately
     response2 = client.post("/api/password-reset/request", json={"email": user.email})
@@ -373,7 +374,7 @@ def password_reset_confirm_no_email_if_reset_again_too_soon(client, db_session, 
     # The last_reset_mail_confirmation_at should remain unchanged, 
     # because the second request should be ignored due to cooldown
     # so the confirmation email should not be sent again
-    assert user.last_reset_mail_confirmation_at == last_reset_mail_confirmation_at
+    assert user.last_reset_mail_confirmation_at == old_last_reset_mail_confirmation_at
 
 def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
@@ -400,7 +401,8 @@ def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_sess
     assert user.password_hash != old_password_hash
     assert user.last_reset_mail_confirmation_at is not None
     # We simulate that the confirmation email was sent many seconds ago (cooldown expired)
-    last_reset_mail_confirmation_at = user.last_reset_mail_confirmation_at - timedelta(seconds=MAIL_COOLDOWN_SECONDS + 1)
+    user.last_reset_mail_confirmation_at -= timedelta(seconds=MAIL_COOLDOWN_SECONDS + 1)
+    old_last_reset_mail_confirmation_at = user.last_reset_mail_confirmation_at
     # Now we try to reset the password again immediately, and we will see that a new confirmation email should be sent
     # We skip the request step for convenience (we will set the reset code and expiration time manually)
     valid_code = "0123456789"
@@ -417,4 +419,4 @@ def test_password_reset_confirm_email_resent_if_cooldown_expired(client, db_sess
     assert user.password_hash != old_password_hash
     # The last_reset_mail_confirmation_at should be updated,
     # because the cooldown has expired and a new confirmation email should be sent
-    assert user.last_reset_mail_confirmation_at != last_reset_mail_confirmation_at
+    assert user.last_reset_mail_confirmation_at != old_last_reset_mail_confirmation_at
