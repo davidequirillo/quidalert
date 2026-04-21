@@ -18,6 +18,11 @@ def from_timestamp_to_datetime_tz_naive(timestamp: int) -> datetime:
     dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
     return dt.replace(tzinfo=None, microsecond=0)
 
+def from_datetime_to_timestamp(dt: datetime) -> int:
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return int(dt.timestamp())
+
 def ensure_tz_aware(dt: datetime) -> datetime:
     if dt is None:
         raise Exception("datetime is None")
@@ -150,7 +155,22 @@ def create_login_token(subject: str, expires_delta: Optional[timedelta] = None, 
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
     return token
 
+class TokenExpiredException(Exception):
+    pass
+
+class TokenNotValidException(Exception):
+    pass
+
 def decode_token(token):
-    data = jwt.decode(token, settings.jwt_secret_key, 
+    try:
+        data = jwt.decode(token, settings.jwt_secret_key, 
         algorithms=[JWT_ALGORITHM])
-    return data
+        return data
+    except jwt.ExpiredSignatureError:
+        raise TokenExpiredException()
+    except jwt.InvalidSignatureError:
+        raise TokenNotValidException()
+    except jwt.InvalidTokenError:
+        raise TokenNotValidException()
+    except:
+        raise TokenNotValidException()

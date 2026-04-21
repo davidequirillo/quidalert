@@ -375,7 +375,7 @@ class AlertedUser(SQLModel, table=True):
     closing_vote: int = Field(default=0, ge=-15, le=+15, nullable=False)
 
 class GpsTokenData(BaseModel):
-    user_id: uuid.UUID
+    user_id: str # here we use a string instead of UUID
     user_is_chief: bool
     user_role: str
 

@@ -4,12 +4,13 @@
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from jwt import ExpiredSignatureError, InvalidTokenError
 from sqlmodel import Session, select
 from core import dbmgr
 from core.exceptions import token_expired_exception, token_not_valid_exception
 from models.general import string_as_uuid, User, GpsTokenData
-from services.security import decode_token, from_timestamp_to_datetime_tz_naive
+from services.security import (
+    decode_token, from_timestamp_to_datetime_tz_naive, 
+    TokenExpiredException, TokenNotValidException)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
     
@@ -34,14 +35,12 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
                     db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(access_token)
-    except ExpiredSignatureError:
-        raise token_expired_exception() # we raise a specific error
-    except InvalidTokenError:
+    except TokenExpiredException:
+        raise token_expired_exception()
+    except TokenNotValidException:
         raise token_not_valid_exception()
     except:
-        token_data = None
-    if token_data is None:
-        raise token_not_valid_exception() 
+        raise token_not_valid_exception()
     user_id = token_data.get("sub")
     token_iat = token_data.get("iat")
     token_exp = token_data.get("exp")
@@ -58,7 +57,7 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
     if user is None:
         raise token_not_valid_exception()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)   
-    if token_iat_dt < user.last_reset_done_at:
+    if token_iat_dt < user.last_reset_done_at: 
         raise token_expired_exception()
     if user.is_superuser: # the superuser cannot be downgraded
         if ((user.is_admin == False) or 
@@ -77,9 +76,9 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
 def get_geoposition_token_data(gps_token: str = Depends(oauth2_scheme)):
     try:
         token_data = decode_token(gps_token)
-    except ExpiredSignatureError:
+    except TokenExpiredException:
         raise token_expired_exception()
-    except InvalidTokenError:
+    except TokenNotValidException:
         raise token_not_valid_exception()
     except:
         raise token_not_valid_exception() 
@@ -87,10 +86,11 @@ def get_geoposition_token_data(gps_token: str = Depends(oauth2_scheme)):
     if (not token_type) or (token_type != "gps-update"): 
         raise token_not_valid_exception()
     user_id = token_data.get("sub")
-    is_chief = token_data.get("user_is_chief") == 1
+    user_is_chief_value = token_data.get("user_is_chief")
     user_role = token_data.get("user_role")
-    if (not user_id) or (not user_role):
+    if (not user_id) or (not user_role) or (user_is_chief_value is None):
         raise token_not_valid_exception()
+    is_chief = True if user_is_chief_value == 1 else False
     return GpsTokenData(user_id=user_id, 
                     user_is_chief=is_chief, 
                     user_role=user_role)

@@ -5,7 +5,7 @@
 import pytest
 from models.general import LoginSchema
 
-def test_login_schema_create_success():
+def test_login_schema_success():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid"
@@ -22,7 +22,7 @@ def test_login_schema_empty_credentials():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_missing_credentials():
+def test_login_schema_missing_credentials():
     data = {
         "email": None,
         "password": None
@@ -30,7 +30,7 @@ def test_login_schema_create_missing_credentials():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_invalid_or_blank_email():
+def test_login_schema_invalid_or_blank_email():
     data = {
         "email": "invalid-email",
         "password": "PasswordSimpleButValid"
@@ -50,7 +50,7 @@ def test_login_schema_create_invalid_or_blank_email():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_missing_password():
+def test_login_schema_missing_password():
     data = {
         "email": "testuser@example.com",
         "password": None
@@ -58,7 +58,7 @@ def test_login_schema_create_missing_password():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_password_empty():
+def test_login_schema_password_empty():
     data = {
         "email": "testuser@example.com",
         "password": ""
@@ -67,7 +67,7 @@ def test_login_schema_create_password_empty():
     LoginSchema.model_validate(data)
     assert data["password"] == ""
 
-def test_login_schema_create_login_code_invalid_length():
+def test_login_schema_login_code_invalid_length():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
@@ -79,7 +79,7 @@ def test_login_schema_create_login_code_invalid_length():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_login_code_not_valid():
+def test_login_schema_login_code_not_valid():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
@@ -88,7 +88,7 @@ def test_login_schema_create_login_code_not_valid():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_login_code_valid():
+def test_login_schema_login_code_valid():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
@@ -97,7 +97,7 @@ def test_login_schema_create_login_code_valid():
     request = LoginSchema.model_validate(data)
     assert request.login_code == data["login_code"]
     
-def test_login_schema_create_login_token_valid():
+def test_login_schema_login_token_valid():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
@@ -106,7 +106,7 @@ def test_login_schema_create_login_token_valid():
     request = LoginSchema.model_validate(data)
     assert request.login_token == data["login_token"]
 
-def test_login_schema_create_device_model_invalid_length():
+def test_login_schema_device_model_invalid_length():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
@@ -115,7 +115,7 @@ def test_login_schema_create_device_model_invalid_length():
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
-def test_login_schema_create_device_model_valid():
+def test_login_schema_device_model_valid():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",

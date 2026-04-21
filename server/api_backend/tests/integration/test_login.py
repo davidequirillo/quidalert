@@ -4,14 +4,21 @@
 
 from datetime import timedelta
 from fastapi import status
-from models.general import User
+from sqlmodel import select
+from models.general import User, RefreshToken
 from services.security import (
     get_password_hash, 
     otp_hmac, otp_expiry, OTP_CODE_TTL_MINUTES,
-    now_tz_naive, from_timestamp_to_datetime_tz_naive,
+    now_tz_naive, 
+    from_timestamp_to_datetime_tz_naive,
+    from_datetime_to_timestamp,
     MAIL_COOLDOWN_SECONDS,
     LOGIN_TOKEN_TTL_MINUTES,
-    decode_token, create_login_token)
+    REFRESH_TOKEN_TTL_MINUTES,
+    ACCESS_TOKEN_TTL_MINUTES,
+    GEOPOSITION_TOKEN_TTL_MINUTES,
+    decode_token, create_login_token,
+    check_token_against_hash)
 from core.exceptions import (
     credentials_exception, 
     two_factor_required_response,
@@ -372,7 +379,7 @@ def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logge
     # A new mail should be sent, so the timestamp should be updated
     assert user.last_login_mail_confirmation_at > old_last_mail_confirmation_at
 
-def test_login_2fa_successful_login_token_works(client, db_session, not_logged_test_user):
+def test_login_2fa_successful_and_login_token_works(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
     # Last reset done at is a default timestamp, equal to created_at when the user is created
     assert user.last_reset_done_at is not None
@@ -422,9 +429,8 @@ def test_login_2fa_successful_login_token_works(client, db_session, not_logged_t
     # The issued at time should be after the last successful 2FA time
     assert iat_dt >= user.last_2fa_success_at
     # The token should not be expired (expiration more or less at timedelta of LOGIN_TOKEN_TTL_MINUTES)
-    assert login_token_exp > int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES - 1)).timestamp())
+    assert login_token_exp > int((now_tz_naive() + timedelta(minutes=(LOGIN_TOKEN_TTL_MINUTES-1))).timestamp())
     assert login_token_exp <= int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES)).timestamp())
-    
     # Now we try to login again with the login token, without providing the 2FA code, and it should work
     payload = {"email": user.email, "password": valid_password, "login_token": login_token}
     response = client.post("/api/auth/login", json=payload)
@@ -432,6 +438,21 @@ def test_login_2fa_successful_login_token_works(client, db_session, not_logged_t
     db_session.refresh(user)
     assert user.last_login_done_at is not None
     assert user.last_refresh_at is not None
+
+def test_login_token_expired(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id), expires_delta=timedelta(minutes=-1)) # Create an already expired token
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    # The token is expired, so the login will send to the user the 2FA required response (2FA code via mail)
+    assert response.status_code == two_factor_required_response().status_code
+    assert response.content == two_factor_required_response().body
 
 def test_login_user_is_blocked(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
@@ -494,3 +515,208 @@ def test_login_2fa_code_and_login_token_together(client, db_session, not_logged_
     # The new login token should be different from the old one, because the old one should be ignored and a new one should be generated based on the successful 2FA authentication
     assert new_login_token != login_token
 
+def test_login_refresh_token_saved_in_db(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    db_session.commit()
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token, "device_model": "Example device model"}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_refresh_at is not None
+    assert response.json()["token_type"] == "bearer"
+    assert "access_token" in response.json()
+    assert "refresh_token" in response.json()
+    assert "gps_token" in response.json()
+    assert "login_token" in response.json()
+    # If we provide login token in place of 2FA, 
+    # a successful login will not return a new login token
+    assert response.json()["login_token"] is None
+    refresh_token = response.json()["refresh_token"]
+    refresh_token_data = decode_token(refresh_token)
+    rtoken_sub = refresh_token_data.get("sub")
+    rtoken_type = refresh_token_data.get("type")
+    rtoken_exp = refresh_token_data.get("exp")
+    rtoken_iat = refresh_token_data.get("iat")
+    rtoken_raw = refresh_token_data.get("raw")
+    rtoken_jti = refresh_token_data.get("jti")
+    assert rtoken_sub == str(user.id)
+    assert rtoken_type == "refresh"
+    assert rtoken_iat <= int(now_tz_naive().timestamp())
+    assert rtoken_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    iat_dt = from_timestamp_to_datetime_tz_naive(rtoken_iat)
+    assert iat_dt >= user.last_reset_done_at
+    assert rtoken_exp > int((now_tz_naive() + timedelta(minutes=(REFRESH_TOKEN_TTL_MINUTES-1))).timestamp())
+    assert rtoken_exp <= int((now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES)).timestamp())
+    # Now we check if the refresh token is in the database, is unique, and has a valid raw hash
+    statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    db_token: RefreshToken = results[0]
+    assert str(db_token.id) == rtoken_jti
+    assert check_token_against_hash(rtoken_raw, db_token.raw_hash) == True
+    assert db_token.updated_at is not None
+    assert db_token.updated_at <= now_tz_naive()
+    assert db_token.updated_at > now_tz_naive() - timedelta(minutes=1)
+    assert db_token.device_info is not None
+    assert db_token.device_info == payload["device_model"]
+
+def test_login_refresh_token_overwritten_if_login_again(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    db_session.commit()
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token, "device_model": "Example device model"}
+    response1 = client.post("/api/auth/login", json=payload)
+    assert response1.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_refresh_at is not None
+    assert response1.json()["token_type"] == "bearer"
+    assert "access_token" in response1.json()
+    assert "refresh_token" in response1.json()
+    refresh_token1 = response1.json()["refresh_token"]
+    # Now we do another login, which should overwrite the previous refresh token in the database with a new one
+    response2 = client.post("/api/auth/login", json=payload)
+    assert response2.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_refresh_at is not None
+    assert response2.json()["token_type"] == "bearer"
+    assert "access_token" in response2.json()
+    assert "refresh_token" in response2.json()
+    refresh_token2 = response2.json()["refresh_token"]
+    # The new refresh token should be different from the old one, because it should have overwritten the previous one in the database
+    refresh_token_data1 = decode_token(refresh_token1)
+    refresh_token_data2 = decode_token(refresh_token2)
+    rtoken_jti1 = refresh_token_data1.get("jti")
+    rtoken_jti2 = refresh_token_data2.get("jti")
+    assert rtoken_jti1 != rtoken_jti2
+    # Now we check if the new refresh token is in the database, and the old not
+    statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    db_token: RefreshToken = results[0]
+    assert str(db_token.id) == rtoken_jti2
+    assert check_token_against_hash(refresh_token_data2['raw'], db_token.raw_hash) == True
+
+def test_login_returned_access_token_is_ok(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # For convenience, we skip the initial login request and 2FA, and we directly generate a login token for the user
+    login_token = create_login_token(str(user.id))
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    db_session.refresh(user) # Refresh to get the latest last_login_done_at and last_refresh_at
+    assert response.status_code == status.HTTP_200_OK
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    assert response.json()["token_type"] == "bearer"
+    assert "access_token" in response.json()
+    access_token = response.json()["access_token"]
+    assert access_token is not None
+    access_token_data = decode_token(access_token)
+    atoken_sub = access_token_data.get("sub")
+    atoken_type = access_token_data.get("type")
+    atoken_exp = access_token_data.get("exp")
+    atoken_iat = access_token_data.get("iat")
+    assert atoken_sub == str(user.id)
+    assert atoken_type == "access"
+    assert atoken_iat <= int(now_tz_naive().timestamp())
+    assert atoken_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    iat_dt = from_timestamp_to_datetime_tz_naive(atoken_iat)
+    assert iat_dt >= user.last_login_done_at
+    assert iat_dt >= user.last_refresh_at
+    assert atoken_exp > from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=(ACCESS_TOKEN_TTL_MINUTES-1)))
+    assert atoken_exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
+    # Now we can use the access token to access a protected route (e.g. /api/users/me) to verify that it works
+    headers = {"Authorization": f"Bearer {access_token}"}
+    protected_response = client.get("/api/user/profile", headers=headers)
+    assert protected_response.status_code == status.HTTP_200_OK
+    protected_data = protected_response.json()
+    assert protected_data["email"] == user.email
+
+def test_login_returned_gps_token_is_ok(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # For convenience, we skip the initial login request and 2FA, and we directly generate a login token for the user
+    login_token = create_login_token(str(user.id))
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh to get the latest last_login_done_at and last_refresh_at
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    assert "gps_token" in response.json()
+    gps_token = response.json()["gps_token"]
+    assert gps_token is not None
+    gps_token_data = decode_token(gps_token)
+    gt_token_type = gps_token_data.get("type")
+    gt_sub = gps_token_data.get("sub")
+    gt_exp = gps_token_data.get("exp")
+    gt_iat = gps_token_data.get("iat")
+    gt_is_chief = gps_token_data.get("user_is_chief")
+    gt_role = gps_token_data.get("user_role")
+    assert gt_sub == str(user.id)
+    assert gt_token_type == "gps-update"
+    assert gt_is_chief == (1 if user.is_chief else 0)
+    assert gt_role == user.role
+    assert gt_iat <= int(now_tz_naive().timestamp())
+    assert gt_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    iat_dt = from_timestamp_to_datetime_tz_naive(gt_iat)
+    assert iat_dt >= user.last_login_done_at
+    assert iat_dt >= user.last_refresh_at
+    assert gt_exp > from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=(GEOPOSITION_TOKEN_TTL_MINUTES-1)))
+    assert gt_exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
+
+def test_login_returned_refresh_token_is_ok(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # For convenience, we skip the initial login request and 2FA, and we directly generate a login token for the user
+    login_token = create_login_token(str(user.id))
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh to get the latest last_login_done_at and last_refresh_at
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    assert "refresh_token" in response.json()
+    refresh_token = response.json()["refresh_token"]
+    assert refresh_token is not None
+    decoded_refresh_token = decode_token(refresh_token)
+    rtoken_sub = decoded_refresh_token.get("sub")
+    rtoken_type = decoded_refresh_token.get("type")
+    rtoken_exp = decoded_refresh_token.get("exp")
+    rtoken_iat = decoded_refresh_token.get("iat")
+    rtoken_raw = decoded_refresh_token.get("raw")
+    rtoken_jti = decoded_refresh_token.get("jti")
+    assert rtoken_sub == str(user.id)
+    assert rtoken_type == "refresh"
+    assert rtoken_iat <= from_datetime_to_timestamp(now_tz_naive())
+    assert rtoken_iat > from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=1))
+    assert rtoken_iat >= from_datetime_to_timestamp(user.last_reset_done_at)
+    assert rtoken_exp > from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=(REFRESH_TOKEN_TTL_MINUTES-1)))
+    assert rtoken_exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    assert rtoken_iat >= from_datetime_to_timestamp(user.last_login_done_at)
+    assert rtoken_iat >= from_datetime_to_timestamp(user.last_refresh_at)
+    assert rtoken_jti is not None
+    assert rtoken_raw is not None
