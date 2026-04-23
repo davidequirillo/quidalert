@@ -20,7 +20,7 @@ from core.settings import settings
 from core.logging import setup_logging, get_client_ip
 from core import api_events, security_events
 import services.localization as i18n
-from models.general import (UserIn, User, UserLanguage, 
+from models.general import (string_as_uuid, UserIn, User, UserLanguage, 
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
     WhiteListEntry
@@ -45,7 +45,7 @@ from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
     two_factor_not_valid_exception, two_factor_required_response,
-    forbidden_exception, invalid_request_exception,
+    forbidden_exception, invalid_request_exception
     )
 from dependencies import get_db_session, get_current_user
 from routers import users, alerts, terms, whitelist_entries
@@ -154,7 +154,9 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
         (not token_type) or (token_type != "refresh") or \
             (not token_jti) or (not token_raw_secret): 
         raise TokenNotValidException()
-    statement = select(User).where(User.id == user_id)
+    user_id_as_uuid = string_as_uuid(user_id)
+    token_jti_as_uuid = string_as_uuid(token_jti)
+    statement = select(User).where(User.id == user_id_as_uuid)
     user = db_session.exec(statement).first()
     if user is None:
         raise TokenNotValidException()
@@ -162,7 +164,7 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
     if token_iat_dt < user.last_reset_done_at:
         raise TokenExpiredException()
     q = select(RefreshToken).where(
-        (RefreshToken.id == token_jti) and (RefreshToken.user_id == user.id))
+        (RefreshToken.id == token_jti_as_uuid) and (RefreshToken.user_id == user.id))
     refresh_token = db_session.exec(q).first()
     if (refresh_token is None) or (refresh_token.is_revoked):
         raise TokenExpiredException()
