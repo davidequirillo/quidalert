@@ -166,7 +166,9 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
     q = select(RefreshToken).where(
         (RefreshToken.id == token_jti_as_uuid) and (RefreshToken.user_id == user.id))
     refresh_token = db_session.exec(q).first()
-    if (refresh_token is None) or (refresh_token.is_revoked):
+    if (refresh_token is None):
+        raise TokenNotValidException
+    if (refresh_token.is_revoked):
         raise TokenExpiredException()
     if not check_token_against_hash(token_raw_secret, refresh_token.raw_hash):
         raise TokenNotValidException()

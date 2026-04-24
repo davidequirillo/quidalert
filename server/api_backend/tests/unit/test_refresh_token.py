@@ -308,7 +308,7 @@ def test_check_refresh_token_jti_not_found_in_db(db_session, test_baseuser):
     try:
         check_refresh_token(token_data=token_data, db_session=db_session)
         assert False, "Expected check_refresh_token to raise an exception when 'jti' is not found in the database"
-    except TokenExpiredException: # if jti is not found, we consider the token as expired
+    except TokenNotValidException: # if jti is not found, we consider the token as expired
         assert True  # expected outcome
 
 def test_check_refresh_token_is_revoked(db_session, test_baseuser):

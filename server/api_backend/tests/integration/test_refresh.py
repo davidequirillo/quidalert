@@ -1,0 +1,163 @@
+# Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Copyright (C) 2025  Davide Quirillo
+# Licensed under the GNU GPL v3 or later. See LICENSE for details.
+
+from datetime import timedelta
+from fastapi import status
+from sqlmodel import select
+from core.exceptions import (
+    token_expired_exception, 
+    token_not_valid_exception
+)
+from models.general import User, RefreshToken, string_as_uuid
+from services.security import (
+    now_tz_naive,
+    create_refresh_token,
+    decode_token
+)
+
+def test_refresh_successful(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated refresh token
+    assert "access_token" in response.json()
+    assert "refresh_token" in response.json()
+    assert "gps_token" in response.json()
+    new_refresh_token = response.json()["refresh_token"]
+    assert new_refresh_token != refresh_token
+
+def test_refresh_expired_token(client, test_baseuser):
+    user: User = test_baseuser['user']
+    assert user.id is not None
+    refresh_token = test_baseuser['refresh_token']
+    refresh_token_decoded = decode_token(refresh_token)
+    token_jti = refresh_token_decoded.get("jti")
+    token_raw = refresh_token_decoded.get("raw")
+    token_sub = refresh_token_decoded.get("sub")
+    # Create an expired refresh token 
+    exp = timedelta(seconds=-1)
+    iat = now_tz_naive()
+    rtoken_expired = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, expires_delta=exp, issued_at=iat)
+    payload = {"refresh_token": rtoken_expired}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == token_expired_exception().status_code
+    assert response.json()["detail"] == token_expired_exception().detail
+
+def test_refresh_invalid_token(client, test_baseuser):
+    refresh_token = test_baseuser['refresh_token']
+    # Create an invalid refresh token by modifying the original token
+    invalid_refresh_token = refresh_token[:-3] # Remove the last 3 characters to make it invalid
+    payload = {"refresh_token": invalid_refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == token_not_valid_exception().status_code
+    assert response.json()["detail"] == token_not_valid_exception().detail
+
+def test_refresh_missing_token(client):
+    payload = {} # No refresh token provided
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+def test_refresh_invalid_token_format(client):
+    payload = {"refresh_token": "not_a_valid_token_format"}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == token_not_valid_exception().status_code
+    assert response.json()["detail"] == token_not_valid_exception().detail
+
+def test_refresh_with_a_cloned_valid_token(client, test_baseuser):
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    token_decoded = decode_token(refresh_token)
+    token_jti = token_decoded.get("jti")
+    token_raw = token_decoded.get("raw")
+    token_sub = token_decoded.get("sub")
+    # Create a new refresh token with the same jti, raw_code, subject, and with a valid issued at time to simulate a cloned token
+    new_refresh_token = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, issued_at=now_tz_naive())
+    payload = {"refresh_token": new_refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
+    assert "refresh_token" in response.json()
+    assert "gps_token" in response.json()
+
+def test_refresh_token_iat_too_old(client, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    refresh_token_decoded = decode_token(refresh_token)
+    token_jti = refresh_token_decoded.get("jti")
+    token_raw = refresh_token_decoded.get("raw")
+    token_sub = refresh_token_decoded.get("sub")
+    assert user.last_reset_done_at is not None
+    # Create a refresh token with an issued less than last_reset_done_at to simulate an old token
+    iat = user.last_reset_done_at - timedelta(seconds=1) # Set issued at to just before last_reset_done_at
+    rtoken_old_iat = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, issued_at=iat)
+    payload = {"refresh_token": rtoken_old_iat}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == token_expired_exception().status_code
+    assert response.json()["detail"] == token_expired_exception().detail
+
+def test_refresh_reuse_old_token(client, db_session, test_baseuser, frozen_now):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    old_timestamp = now_tz_naive()
+    # We go ahead with time (simulate a delay)
+    frozen_now.tick(delta=timedelta(seconds=5))
+    new_timestamp = now_tz_naive()
+    # First refresh to get a new token
+    response1 = client.post("/api/auth/refresh", json=payload)
+    assert response1.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated refresh token
+    new_refresh_token = response1.json()["refresh_token"]
+    assert new_refresh_token != refresh_token
+    decoded_token = decode_token(refresh_token)
+    decoded_new_token = decode_token(new_refresh_token)
+    decoded_token_jti = decoded_token.get("jti")
+    decoded_new_token_jti = decoded_new_token.get("jti")
+    decoded_token_user_id = decoded_token.get("sub")
+    decoded_new_token_user_id = decoded_new_token.get("sub")
+    decoded_token_iat = decoded_token.get("iat")
+    decoded_new_token_iat = decoded_new_token.get("iat")
+    decoded_token_exp = decoded_token.get("exp")
+    decoded_new_token_exp = decoded_new_token.get("exp")
+    # Curiosity check: it's a refresh (an update), so the jti should be the same for both tokens
+    assert decoded_token_jti == decoded_new_token_jti
+    # Obviously the user ID should be the same for both tokens
+    assert decoded_token_user_id == decoded_new_token_user_id
+    assert decoded_token_iat < decoded_new_token_iat
+    assert decoded_token_exp < decoded_new_token_exp
+    jti_as_uuid = string_as_uuid(decoded_token_jti)
+    statement = select(RefreshToken).where(RefreshToken.id == jti_as_uuid)
+    db_rtoken: RefreshToken = db_session.exec(statement).first()
+    assert db_rtoken is not None
+    assert db_rtoken.updated_at > old_timestamp
+    assert db_rtoken.updated_at <= new_timestamp
+    assert user.last_refresh_at is not None
+    assert user.last_refresh_at > old_timestamp
+    assert user.last_refresh_at <= new_timestamp
+    # Attempt to reuse the old refresh token
+    payload = {"refresh_token": refresh_token}
+    # Use the old refresh token to get another new token
+    response2 = client.post("/api/auth/refresh", json=payload)
+    # We expect a token not valid exception because the old token 
+    # has a raw code that doesn't match with the hash stored in the database anymore after the first refresh, 
+    # so it should not be valid for a second refresh
+    assert response2.status_code == token_not_valid_exception().status_code
+    assert response2.json()["detail"] == token_not_valid_exception().detail
+
+def test_refresh_token_user_not_found(client, test_baseuser):
+    refresh_token = test_baseuser['refresh_token']
+    refresh_token_decoded = decode_token(refresh_token)
+    token_raw = refresh_token_decoded.get("raw")
+    token_jti = refresh_token_decoded.get("jti")
+    token_sub = refresh_token_decoded.get("sub")
+    token_wrong_user = str(123456) # Assuming this user ID does not exist in the database
+    assert token_sub != token_wrong_user
+    # Create a refresh token for a non-existent user
+    invalid_refresh_token = create_refresh_token(subject=token_wrong_user, token_id=token_jti, raw_code=token_raw)
+    payload = {"refresh_token": invalid_refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == token_not_valid_exception().status_code
+    assert response.json()["detail"] == token_not_valid_exception().detail
