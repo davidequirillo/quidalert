@@ -9,7 +9,11 @@ from moto import mock_aws
 from freezegun import freeze_time
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, StaticPool
-from models.general import User, UserRole, UserLanguage, RefreshToken
+from models.general import (
+    User, UserRole, UserLanguage, 
+    RefreshToken,
+    WhiteListEntry
+)
 from dependencies import get_db_session, get_s3_client
 from services.security import (
     create_access_token, 
@@ -191,3 +195,27 @@ def create_test_officer(db_session: Session):
 @pytest.fixture(name="not_logged_test_user")
 def create_not_logged_test_user(db_session: Session):
     return create_test_user(db_session)
+
+@pytest.fixture(name="superuser_in_db")
+def existing_superuser(db_session):
+    superuser = User(
+        firstname="Admin",
+        surname="Super",
+        email="admin@example.com",
+        password_hash="fakepwdhash",
+        activation_code="fakeactivationcode",
+        activation_expires_at=activation_expiry(),
+        is_active=False,
+        is_superuser=True,
+        is_admin=True
+    )
+    db_session.add(superuser)
+    db_session.commit()
+    return superuser
+
+@pytest.fixture(name="whitelist_entry")
+def existing_whitelist_entry(db_session):
+    entry = WhiteListEntry(email="whitelisted@example.com", created_by="admin@example.com")
+    db_session.add(entry)
+    db_session.commit()
+    return entry
