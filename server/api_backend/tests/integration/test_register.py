@@ -5,9 +5,9 @@
 from datetime import timedelta
 import pytest
 from sqlmodel import select
-from models.general import User, WhiteListEntry
+from models.general import User
 from core.settings import settings
-from services.security import now_tz_naive, activation_expiry, ACTIVATION_TOKEN_TTL_HOURS
+from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
 
 @pytest.fixture(autouse=True)
 def disable_emails():
@@ -98,23 +98,6 @@ def test_register_superuser_with_correct_password(client, db_session):
     assert user.is_admin == True
     assert user.authorized_by is None
 
-@pytest.fixture(name="superuser_in_db")
-def existing_superuser(db_session):
-    superuser = User(
-        firstname="Admin",
-        surname="Super",
-        email="admin@example.com",
-        password_hash="fakepwdhash",
-        activation_code="fakeactivationcode",
-        activation_expires_at=activation_expiry(),
-        is_active=False,
-        is_superuser=True,
-        is_admin=True
-    )
-    db_session.add(superuser)
-    db_session.commit()
-    return superuser
-
 def test_register_duplicate_superuser(client, db_session, superuser_in_db):
     payload = {
         "firstname": "DupAdmin",
@@ -168,12 +151,7 @@ def test_register_overwrite_superuser_if_inactive_and_expired(client, db_session
     assert user.firstname == payload["firstname"]
     assert user.surname == payload["surname"]
 
-@pytest.fixture(name="whitelist_entry")
-def existing_whitelist_entry(db_session):
-    entry = WhiteListEntry(email="whitelisted@example.com", created_by="admin@example.com")
-    db_session.add(entry)
-    db_session.commit()
-    return entry
+
 
 def test_register_not_in_whitelist(client, db_session, superuser_in_db):
     # Check the database to ensure the superuser already exists

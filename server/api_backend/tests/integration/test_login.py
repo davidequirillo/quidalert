@@ -2,9 +2,11 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import pytest
 from datetime import timedelta
 from fastapi import status
 from sqlmodel import select
+from core.settings import settings
 from models.general import User, RefreshToken
 from services.security import (
     get_password_hash, 
@@ -25,6 +27,15 @@ from core.exceptions import (
     two_factor_not_valid_exception,
     two_factor_locked_exception,
     forbidden_exception)
+
+@pytest.fixture(autouse=True)
+def disable_emails():
+    old_value = settings.send_emails
+    settings.send_emails = False
+    try:
+        yield
+    finally:
+        settings.send_emails = old_value
 
 def test_login_request_missing_credentials(client):
     payload = {}

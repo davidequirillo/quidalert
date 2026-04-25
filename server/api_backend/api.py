@@ -387,7 +387,7 @@ def login(data: LoginSchema,
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
     return {"access_token": atoken, "refresh_token": rtoken, "gps_token": gps_token, "login_token": new_login_token, "token_type": "bearer"}
 
-@app.post("/api/auth/register-device")
+@app.post("/api/register-device")
 def register_device_for_push_notifications(
     data: FcmTokenWrapper,
     current_user: User = Depends(get_current_user),
@@ -512,9 +512,9 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
         db_session.add(user)
         db_session.commit()
     return templates.TemplateResponse(
+        request,
         "activation_result.html",
         {
-            "request": request,
             "language": language,
             "title": title,
             "message": message,
