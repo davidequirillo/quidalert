@@ -43,6 +43,15 @@ def frozen_now():
     with freeze_time() as frozen:
         yield frozen
 
+@pytest.fixture(autouse=True)
+def disable_emails():
+    old_value = settings.send_emails
+    settings.send_emails = False
+    try:
+        yield
+    finally:
+        settings.send_emails = old_value
+
 @pytest.fixture(name="db_session")
 def db_session_fixture():
     # Create all tables in the test database

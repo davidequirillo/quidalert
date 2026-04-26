@@ -474,8 +474,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     db_session.refresh(user)
     if log_deleted_user:
         api_events.log_deleted_user_to_renew_registration(str(user.id))
-    if settings.send_emails:
-        background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
+    background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
     return { "message": reg_message }
 
 @app.get("/api/activate", response_class=HTMLResponse)
