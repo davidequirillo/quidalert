@@ -151,8 +151,6 @@ def test_register_overwrite_superuser_if_inactive_and_expired(client, db_session
     assert user.firstname == payload["firstname"]
     assert user.surname == payload["surname"]
 
-
-
 def test_register_not_in_whitelist(client, db_session, superuser_in_db):
     # Check the database to ensure the superuser already exists
     users = db_session.exec(select(User)).all()
@@ -203,6 +201,30 @@ def test_register_in_whitelist(client, db_session, superuser_in_db, whitelist_en
     assert results[0].activation_expires_at is not None
     assert results[0].activation_expires_at > now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS - 1)
     assert results[0].activation_expires_at <= now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
+
+def test_register_in_whitelist_with_email_uppercase(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    # We also check that the whitelist entry exists with the correct email (lowercase)
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    assert whitelist_entry.email.lower() == whitelist_entry.email
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        # This email is in uppercase, but it should still be accepted as valid and converted to lowercase
+        "email": whitelist_entry.email.upper(),
+        "password": "MyValidPassword123!"
+    }
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the user was created with the email in the whitelist (case-insensitive)
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    assert results[0].email == whitelist_entry.email # it should be lowercase
 
 def test_register_duplicate_user(client, db_session, superuser_in_db, whitelist_entry):
     # Check the database to ensure the superuser already exists
