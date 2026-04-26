@@ -174,11 +174,12 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         );
         final int totalCount = respObj['total_count'];
         final int addedCount = respObj['added_count'];
+        final int skippedCount = respObj['skipped_count'];
         final int failedCount = respObj['failed_count'];
         final int existingCount = respObj['existing_count'];
         retTitle = loc.successGeneric;
         retMessage =
-            '${loc.labelRowsTotal}: $totalCount\n${loc.labelEntriesAdded}: $addedCount\n${loc.labelEntriesFailed}: $failedCount\n${loc.labelEntriesExisting}: $existingCount';
+            '${loc.labelRowsTotal}: $totalCount\n${loc.labelEntriesAdded}: $addedCount\n${loc.labelEntriesSkipped}: $skippedCount\n${loc.labelEntriesFailed}: $failedCount\n${loc.labelEntriesExisting}: $existingCount';
         if (emailsNotAdded.isNotEmpty) {
           retMessage += '\n\n${loc.labelEntriesFailed}:\n';
           for (var email in emailsNotAdded) {

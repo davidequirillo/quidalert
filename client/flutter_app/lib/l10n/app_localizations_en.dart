@@ -276,6 +276,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelEntriesFailed => 'Failed entries';
 
   @override
+  String get labelEntriesSkipped => 'Skipped entries';
+
+  @override
   String get labelEntriesTotal => 'Total entries';
 
   @override

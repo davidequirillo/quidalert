@@ -99,7 +99,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     try {
       final response = await authClient.doProtectedApiRequest(
         "delete",
-        '/whitelist-entries?email=${Uri.encodeComponent(email)}',
+        '/whitelist-entries/single?email=${Uri.encodeComponent(email)}',
       );
       final Map<String, dynamic> respObj = json.decode(response.body);
       final int deletedCount = respObj['deleted_count'];
@@ -149,11 +149,11 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
   }
 
   Future<void> deleteMyEntries() async {
-    await deleteEntries('/whitelist-entries?my_entries=yes');
+    await deleteEntries('/whitelist-entries/mine');
   }
 
   Future<void> deleteAllEntries() async {
-    await deleteEntries('/whitelist-entries?all=yes');
+    await deleteEntries('/whitelist-entries/all');
   }
 
   Future<void> deleteEntries(String relativeUrl) async {
@@ -191,9 +191,9 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } finally {
       if (mounted) {
         setState(() {
-          if (relativeUrl.contains('my_entries=yes')) {
+          if (relativeUrl.contains('/mine')) {
             _confirmation1Controller.text = "";
-          } else if (relativeUrl.contains('all=yes')) {
+          } else if (relativeUrl.contains('/all')) {
             _confirmation2Controller.text = "";
           }
         });

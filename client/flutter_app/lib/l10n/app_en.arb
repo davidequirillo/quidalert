@@ -89,6 +89,7 @@
   "labelEnterVerificationMailCode": "Enter the verification code just sent to you by email",
   "labelEntriesDeleted": "Deleted entries",
   "labelEntriesFailed": "Failed entries",
+  "labelEntriesSkipped": "Skipped entries",
   "labelEntriesTotal": "Total entries",
   "labelEntriesAdded": "Added entries",
   "labelEntriesExisting": "Existing entries",
