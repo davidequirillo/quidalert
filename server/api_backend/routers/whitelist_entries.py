@@ -57,9 +57,11 @@ def add_whitelist_entries(
     failed_emails = []
     added_count = 0
     existing_count = 0
+    skipped_count = 0
     for e in dict.emails:
         try:
             if (e is None) or (e.strip() == ""):
+                skipped_count += 1
                 continue
             entry = WhiteListEntry.model_validate({
                 "email": e.strip().lower(), 
@@ -75,11 +77,20 @@ def add_whitelist_entries(
         except Exception:
             failed_emails.append(e)
             continue
+        if (added_count > 0) and (added_count % 1000 == 0): # commit every 1000 entries to avoid long transactions
+            try:
+                db_session.commit()
+            except Exception:
+                db_session.rollback()
     if added_count > 0:
-        db_session.commit()
+        try:
+            db_session.commit()
+        except Exception:
+            db_session.rollback()
     return {
         "message": "Entries processed",
         "total_count": len(dict.emails),
+        "skipped_count": skipped_count,
         "added_count": added_count,
         "existing_count": existing_count,
         "failed_count": len(failed_emails), 
