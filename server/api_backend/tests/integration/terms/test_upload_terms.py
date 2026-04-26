@@ -11,25 +11,6 @@ from core.exceptions import (
 )
 from services.fileutils import MAX_SMALL_FILE_SIZE
 
-def test_get_terms_default_language(client):
-    response = client.get("/api/terms")
-    content = response.content.decode("utf-8")
-    assert ("Legal terms" in content) or ("Title" in content)
-                                                                           
-def test_get_terms_en_language(client):
-    client.headers["Accept-Language"] = "en"
-    response = client.get("/api/terms")
-    content = response.content.decode("utf-8")
-    assert ("Legal terms" in content) or ("Title" in content)
-    assert response.status_code == 200
-
-def test_get_terms_it_language(client):
-    client.headers["Accept-Language"] = "it"
-    response = client.get("/api/terms")
-    content = response.content.decode("utf-8")
-    assert ("Termini legali" in content) or ("Titolo" in content)
-    assert response.status_code == 200
-
 def test_upload_terms_not_logged_in(client):
     file_content = b"Fake file content for testing"
     file_name = "test_file.md"

@@ -28,15 +28,6 @@ from core.exceptions import (
     two_factor_locked_exception,
     forbidden_exception)
 
-@pytest.fixture(autouse=True)
-def disable_emails():
-    old_value = settings.send_emails
-    settings.send_emails = False
-    try:
-        yield
-    finally:
-        settings.send_emails = old_value
-
 def test_login_request_missing_credentials(client):
     payload = {}
     response = client.post("/api/auth/login", json=payload)

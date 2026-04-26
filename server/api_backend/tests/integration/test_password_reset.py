@@ -14,15 +14,6 @@ from services.security import (
     MAIL_COOLDOWN_SECONDS,
     get_password_hash)
 
-@pytest.fixture(autouse=True)
-def disable_emails():
-    old_value = settings.send_emails
-    settings.send_emails = False
-    try:
-        yield
-    finally:
-        settings.send_emails = old_value
-
 def test_password_reset_request_missing_fields(client):
     payload = {}
     response = client.post("/api/password-reset/request", json=payload)

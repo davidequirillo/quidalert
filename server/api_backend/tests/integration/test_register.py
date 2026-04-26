@@ -9,15 +9,6 @@ from models.general import User
 from core.settings import settings
 from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
 
-@pytest.fixture(autouse=True)
-def disable_emails():
-    old_value = settings.send_emails
-    settings.send_emails = False
-    try:
-        yield
-    finally:
-        settings.send_emails = old_value
-
 def test_register_missing_fields(client):
     payload = {"firstname": "John", "surname": "Doe"}
     response = client.post("/api/register", json=payload)

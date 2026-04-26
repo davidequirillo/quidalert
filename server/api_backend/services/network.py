@@ -13,6 +13,8 @@ from services.localization import (langmap,
     )
 
 def send_mail_message(data):
+    if not settings.send_emails: # in testing mode we can disable sending emails
+        return
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
         server.send_message(data)
 
