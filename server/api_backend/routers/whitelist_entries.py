@@ -73,6 +73,7 @@ def add_whitelist_entries(
                 existing_count += 1
                 continue # skip entry if already exists
             db_session.add(entry)
+            db_session.flush()
             added_count += 1
         except Exception:
             failed_emails.append(e)
@@ -82,7 +83,7 @@ def add_whitelist_entries(
                 db_session.commit()
             except Exception:
                 db_session.rollback()
-    if added_count > 0:
+    if (added_count > 0) and (added_count % 1000 != 0): # commit remaining entries
         try:
             db_session.commit()
         except Exception:
@@ -97,18 +98,17 @@ def add_whitelist_entries(
         "failed_emails": failed_emails
     }
 
-@router.delete("/api/whitelist-entries")
+@router.delete("/api/whitelist-entries/{mode}")
 def delete_whitelist_entries(
+                mode: str,
                 email: str | None = None,
-                my_entries: str | None = None,
-                all: str | None = None,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
     deleted_count = 0
     total_count = 0
-    if email and (email != ""):
+    if mode == "single" and email:
         q = select(WhiteListEntry).where(WhiteListEntry.email == email.lower())
         entry = db_session.exec(q).first()
         if entry: # officers can delete only their own entries
@@ -118,13 +118,13 @@ def delete_whitelist_entries(
             db_session.delete(entry)
             db_session.commit()
             deleted_count = 1
-    elif my_entries and (my_entries.lower() == "yes"):
+    elif mode == "mine":
         statement = delete(WhiteListEntry).where(WhiteListEntry.created_by == current_user.email) # type: ignore
         result = db_session.exec(statement)
         deleted_count = result.rowcount
         total_count = deleted_count
         db_session.commit()
-    elif all and (all.lower() == "yes"):
+    elif mode == "all":
         if not current_user.is_admin: # officers cannot delete all entries
             raise forbidden_exception()
         statement = delete(WhiteListEntry).where(True) # type: ignore

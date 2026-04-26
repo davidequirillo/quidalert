@@ -130,6 +130,8 @@ def test_add_whitelist_entries_with_existing_email(client, db_session, test_admi
     assert response_data["total_count"] == 2
     assert response_data["added_count"] == 1
     assert response_data["existing_count"] == 1
+    assert response_data["failed_count"] == 0
+    assert response_data["skipped_count"] == 0
     statement = select(WhiteListEntry)
     results = db_session.exec(statement).all()
     assert len(results) == 2
@@ -219,7 +221,28 @@ def test_add_whitelist_entries_with_duplicate_emails_in_request(client, db_sessi
     results = db_session.exec(statement).all()
     assert len(results) == 1
 
-def test_add_whitelist_entries_with_large_number_of_emails(client, db_session, test_admin):
+def test_add_whitelist_entries_with_many_emails(client, db_session, test_admin):
+    admin: User = test_admin["user"]
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    emails = [f"user{i}@example.com" for i in range(0, 3000)]
+    data = {
+        "emails": emails
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["total_count"] == len(emails)
+    assert response_data["added_count"] == len(emails)
+    assert response_data["existing_count"] == 0
+    assert response_data["skipped_count"] == 0
+    assert response_data["failed_count"] == 0
+    statement = select(WhiteListEntry)
+    results = db_session.exec(statement).all()
+    assert len(results) == len(emails)
+
+def test_add_whitelist_entries_with_many_emails_plus_failed(client, db_session, test_admin):
     admin: User = test_admin["user"]
     headers = {
         "Authorization": f"Bearer {test_admin['access_token']}"
@@ -235,7 +258,7 @@ def test_add_whitelist_entries_with_large_number_of_emails(client, db_session, t
     db_session.add(existing_entry1)
     db_session.add(existing_entry2)
     db_session.commit()
-    correct_emails = [f"user{i}@example.com" for i in range(1, 2100)]
+    correct_emails = [f"user{i}@example.com" for i in range(0, 2100)]
     skipped_emails = ["", " ", "   "] # 3 blank emails that should be skipped
     wrong_emails = ["invalid_email1", "invalid_email2", "invalid_email3@example"] # 3 invalid emails
     duplicate_emails = [

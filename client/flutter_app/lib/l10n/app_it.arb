@@ -89,6 +89,7 @@
   "labelEnterVerificationMailCode": "Inserisci il codice di verifica che ti è stato appena inviato via email",
   "labelEntriesDeleted": "Voci cancellate",
   "labelEntriesFailed": "Voci fallite",
+  "labelEntriesSkipped": "Voci saltate",
   "labelEntriesTotal": "Voci totali",
   "labelEntriesAdded": "Voci aggiunte",
   "labelEntriesExisting": "Voci esistenti",

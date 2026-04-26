@@ -629,6 +629,12 @@ abstract class AppLocalizations {
   /// **'Failed entries'**
   String get labelEntriesFailed;
 
+  /// No description provided for @labelEntriesSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped entries'**
+  String get labelEntriesSkipped;
+
   /// No description provided for @labelEntriesTotal.
   ///
   /// In en, this message translates to:
