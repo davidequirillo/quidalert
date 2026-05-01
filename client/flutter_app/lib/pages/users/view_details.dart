@@ -36,6 +36,9 @@ class UserDetailsBody extends StatelessWidget {
   Future<List<dynamic>> getUserDetails(BuildContext context, String id) async {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest("get", '/user/$id');
+    if (response.statusCode == 404) {
+      throw Exception("User not found");
+    }
     final Map<String, dynamic> respobj = json.decode(response.body);
     if (respobj["user"] == null || respobj["user"].isEmpty) {
       throw Exception("User not found");

@@ -27,6 +27,17 @@ class UserLanguage(str, Enum):
     en = "en"
     it = "it"
 
+class UserStatus(str, Enum):
+    ok = "ok"
+    unreliable = "unreliable"
+    blocked = "blocked"
+
+class UserType(str, Enum):
+    base = "base"
+    admin = "admin"
+    officer = "officer"
+    chief = "chief"
+
 class UserBase(SQLModel, table=False):
     firstname: str = Field(nullable=False, min_length=2, max_length=64)
     surname: str = Field(nullable=False, min_length=2, max_length=64)
@@ -164,7 +175,7 @@ class UserOutSmall(BaseModel):
     is_blocked: bool
     reliability_score: int
 
-class UserOutPaginated(BaseModel):
+class UsersOutPaginated(BaseModel):
     users: List[UserOutSmall]
     next_cursor: Optional[uuid.UUID] = None
 

@@ -2,11 +2,9 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import pytest
 from datetime import timedelta
 from fastapi import status
 from sqlmodel import select
-from core.settings import settings
 from models.general import User, RefreshToken
 from services.security import (
     get_password_hash, 
