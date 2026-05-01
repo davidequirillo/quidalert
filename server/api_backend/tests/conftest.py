@@ -107,7 +107,8 @@ def client_fixture(db_session: Session):
             settings.s3_bucket_name = original_bucket_name
             mock.stop()
 
-def create_test_user(db_session: Session):
+@pytest.fixture(name="not_logged_test_user")
+def create_not_logged_test_user(db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
         "surname": "Surname1",
@@ -200,10 +201,6 @@ def create_test_chief(db_session: Session):
 @pytest.fixture(name="test_officer")
 def create_test_officer(db_session: Session):
     return create_logged_test_user("officer", db_session)
-
-@pytest.fixture(name="not_logged_test_user")
-def create_not_logged_test_user(db_session: Session):
-    return create_test_user(db_session)
 
 @pytest.fixture(name="superuser_in_db")
 def existing_superuser(db_session):

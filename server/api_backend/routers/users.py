@@ -4,12 +4,19 @@
 
 from fastapi import APIRouter, Depends
 from fastapi.concurrency import run_in_threadpool
-from sqlmodel import Session, any_, desc, select, update
+from sqlmodel import Session, desc, select, update
 from starlette import status as http_status
 from starlette.exceptions import HTTPException
-from models.general import Alert, EmailListDict, PromotionSchema, User, UserInCompleteProfile, UserOut, UserOutPaginated, UserOutWithAlerts
+from models.general import (
+    string_as_uuid,
+    Alert, 
+    EmailListDict,
+    PromotionSchema, User, UserInCompleteProfile, 
+    UserOut, UsersOutPaginated, UserOutWithAlerts,
+    UserStatus, UserType
+)
 from dependencies import get_db_session, get_current_user, get_redis_session
-from core.exceptions import forbidden_exception
+from core.exceptions import forbidden_exception, not_found_exception
 from core.dbmgr import (
     get_redis_chief_locations_key, 
     REDIS_MUTEX_CHIEF_UPDATE_KEY,
@@ -42,7 +49,7 @@ def update_profile(user_data: UserInCompleteProfile,
     db_session.commit()
     return { "message": "Profile updated" }
 
-@router.get("/api/users", response_model=UserOutPaginated, status_code=http_status.HTTP_200_OK)
+@router.get("/api/users", response_model=UsersOutPaginated, status_code=http_status.HTTP_200_OK)
 def get_users(
             email: str | None = None,
             firstname: str | None = None,
@@ -70,26 +77,30 @@ def get_users(
     if authorizer:
         statement = statement.where(User.authorized_by == authorizer.lower()) 
     if last_seen_id:
-        statement = statement.where(User.id < last_seen_id) # type: ignore
+        last_seen_id_as_uuid = string_as_uuid(last_seen_id)
+        statement = statement.where(User.id < last_seen_id_as_uuid) # type: ignore
     if firstname and (firstname != ""):
         statement = statement.where(User.firstname == firstname) 
     if surname and (surname != ""):
         statement = statement.where(User.surname == surname) 
     if type and (type != ""):
-        if type == "admin":
+        if type == UserType.admin.value:
             statement = statement.where(User.is_admin == True) 
-        elif type == "officer":
+        elif type == UserType.officer.value:
             statement = statement.where(User.is_officer == True) 
-        elif type == "chief":
+        elif type == UserType.chief.value:
             statement = statement.where(User.is_chief == True)
+        elif type == UserType.base.value:
+            statement = statement.where(
+                (User.is_chief == False) & (User.is_admin == False) & (User.is_officer == False))
     if role and (role != ""):
         statement = statement.where(User.role == role)
     if status and (status != ""):
-        if status == "ok":
-            statement = statement.where(User.is_reliable == True) 
-        elif status == "unreliable":
+        if status == UserStatus.ok.value:
+            statement = statement.where(User.is_reliable == True).where(User.is_blocked == False)
+        elif status == UserStatus.unreliable.value:
             statement = statement.where(User.is_reliable == False) 
-        elif status == "blocked":
+        elif status == UserStatus.blocked.value:
             statement = statement.where(User.is_blocked == True)
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
@@ -97,7 +108,7 @@ def get_users(
         next_cursor = str(users[-1].id)
     return { 'users': users, 'next_cursor': next_cursor }
 
-@router.post("/api/users/get-by-emails", response_model=UserOutPaginated, status_code=http_status.HTTP_200_OK)
+@router.post("/api/users/get-by-emails", response_model=UsersOutPaginated, status_code=http_status.HTTP_200_OK)
 def get_users_by_emails(
             dict: EmailListDict,
             last_seen_id: str | None = None,
@@ -111,8 +122,9 @@ def get_users_by_emails(
     next_cursor = None
     statement = select(User)
     if (last_seen_id):
-        statement = statement.where(User.id < last_seen_id) # type: ignore
-    statement = statement.where(User.email == any_(dict.emails))
+        last_seen_id_as_uuid = string_as_uuid(last_seen_id)
+        statement = statement.where(User.id < last_seen_id_as_uuid)
+    statement = statement.where(User.email.in_(dict.emails)) # type:ignore
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
@@ -125,9 +137,12 @@ def get_user(user_id: str,
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    user = db_session.exec(select(User).where(User.id == user_id)).first()
+    user_id_as_uuid = string_as_uuid(user_id)
+    user = db_session.exec(select(User).where(User.id == user_id_as_uuid)).first()
+    if not user:
+        raise not_found_exception(detail="User not found")
     recent_alerts = db_session.exec(
-        select(Alert).where(Alert.user_id == user_id).order_by(desc(Alert.created_at)).limit(5)
+        select(Alert).where(Alert.user_id == user_id_as_uuid).order_by(desc(Alert.created_at)).limit(5)
     ).all()
     return {"user": user, "alerts": recent_alerts}
 
@@ -164,38 +179,41 @@ async def promote_users(
         if surname and (surname != ""):
             statement = statement.where(User.surname == surname) # type: ignore 
         if type and (type != ""):
-            if type == "admin":
+            if type == UserType.admin.value:
                 statement = statement.where(User.is_admin == True) # type: ignore 
-            elif type == "officer":
+            elif type == UserType.officer.value:
                 statement = statement.where(User.is_officer == True) # type: ignore
-            elif type == "chief":
+            elif type == UserType.chief.value:
                 statement = statement.where(User.is_chief == True) # type: ignore
+            elif type == UserType.base.value:
+                statement = statement.where(
+                    (User.is_chief == False) & (User.is_admin == False) & (User.is_officer == False)) # type: ignore
         if role and (role != ""):
             statement = statement.where(User.role == role) # type: ignore
         if status and (status != ""):
-            if status == "ok":
-                statement = statement.where(User.is_reliable == True) # type: ignore 
-            elif status == "unreliable":
+            if status == UserStatus.ok.value:
+                statement = statement.where(User.is_reliable == True).where(User.is_blocked == False) # type: ignore 
+            elif status == UserStatus.unreliable.value:
                 statement = statement.where(User.is_reliable == False) # type: ignore
-            elif status == "blocked":
+            elif status == UserStatus.blocked.value:
                 statement = statement.where(User.is_blocked == True) # type: ignore
         # update fields according to promotion schema
-        if (promotion_schema.type == "admin"):
+        if (promotion_schema.type == UserType.admin.value):
             statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
-        elif (promotion_schema.type == "officer"):
+        elif (promotion_schema.type == UserType.officer.value):
             statement = statement.values(is_officer=True, is_admin=False, is_chief=False)
-        elif (promotion_schema.type == "chief"):
+        elif (promotion_schema.type == UserType.chief.value):
             statement = statement.values(is_chief=True, is_admin=False, is_officer=False)
-        elif (promotion_schema.type == "base"):
+        elif (promotion_schema.type == UserType.base.value):
             statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
         if promotion_schema.role:
             statement = statement.values(role = promotion_schema.role)
         if promotion_schema.status:
-            if promotion_schema.status == "ok":
+            if promotion_schema.status == UserStatus.ok.value:
                 statement = statement.values(is_reliable=True, is_blocked=False)
-            elif promotion_schema.status == "unreliable":
+            elif promotion_schema.status == UserStatus.unreliable.value:
                 statement = statement.values(is_reliable=False, is_blocked=False)
-            elif promotion_schema.status == "blocked":
+            elif promotion_schema.status == UserStatus.blocked.value:
                 statement = statement.values(is_blocked=True, is_reliable=False)
         if promotion_schema.notes is not None:
             statement = statement.values(notes = promotion_schema.notes)
@@ -288,24 +306,24 @@ async def promote_users_by_emails(
             statement = update(User)
         else: # officers can update only users authorized by them
             statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
-        statement = statement.where(User.email == any_(emails)) # type:ignore
+        statement = statement.where(User.email.in_(emails)) # type:ignore
         # update fields according to promotion schema
-        if (update_fields.type == "admin"):
+        if (update_fields.type == UserType.admin.value):
             statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
-        elif (update_fields.type == "officer"):
+        elif (update_fields.type == UserType.officer.value):
             statement = statement.values(is_officer=True, is_admin=False, is_chief=False)
-        elif (update_fields.type == "chief"):
+        elif (update_fields.type == UserType.chief.value):
             statement = statement.values(is_chief=True, is_admin=False, is_officer=False)
-        elif (update_fields.type == "base"):
+        elif (update_fields.type == UserType.base.value):
             statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
         if update_fields.role:
             statement = statement.values(role = update_fields.role)
         if update_fields.status:
-            if update_fields.status == "ok":
+            if update_fields.status == UserStatus.ok.value:
                 statement = statement.values(is_reliable=True, is_blocked=False)
-            elif update_fields.status == "unreliable":
+            elif update_fields.status == UserStatus.unreliable.value:
                 statement = statement.values(is_reliable=False, is_blocked=False)
-            elif update_fields.status == "blocked":
+            elif update_fields.status == UserStatus.blocked.value:
                 statement = statement.values(is_blocked=True, is_reliable=False)
         if update_fields.notes is not None:
             statement = statement.values(notes = update_fields.notes)
