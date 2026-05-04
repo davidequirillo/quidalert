@@ -154,8 +154,11 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
         (not token_type) or (token_type != "refresh") or \
             (not token_jti) or (not token_raw_secret): 
         raise TokenNotValidException()
-    user_id_as_uuid = string_as_uuid(user_id)
-    token_jti_as_uuid = string_as_uuid(token_jti)
+    try: 
+        user_id_as_uuid = string_as_uuid(user_id)
+        token_jti_as_uuid = string_as_uuid(token_jti)
+    except ValueError:
+        raise TokenNotValidException()
     statement = select(User).where(User.id == user_id_as_uuid)
     user = db_session.exec(statement).first()
     if user is None:

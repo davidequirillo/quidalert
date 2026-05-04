@@ -5,8 +5,8 @@
 import asyncio
 import uuid
 from sqlmodel import Session, select, insert, update
+from fakeredis import FakeRedis
 from firebase_admin import messaging
-from core.settings import settings
 from models.general import (
     RefreshToken, User, 
     Alert, AlertedUser)
@@ -149,6 +149,10 @@ async def get_closest_chiefs_and_nearby_users(alert, request_info, redis_handle)
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
             chiefs = await get_closest_chiefs(alert, request_info, redis_session)
             users = await get_nearby_users(alert, request_info, redis_session)
+        return chiefs, users
+    elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
+        chiefs = await get_closest_chiefs(alert, request_info, redis_handle)
+        users = await get_nearby_users(alert, request_info, redis_handle)
         return chiefs, users
     else:
         raise RedisHandleTypeError(redis_handle)

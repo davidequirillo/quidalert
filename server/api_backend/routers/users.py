@@ -77,8 +77,11 @@ def get_users(
     if authorizer:
         statement = statement.where(User.authorized_by == authorizer.lower()) 
     if last_seen_id:
-        last_seen_id_as_uuid = string_as_uuid(last_seen_id)
-        statement = statement.where(User.id < last_seen_id_as_uuid) # type: ignore
+        try:
+            last_seen_id_as_uuid = string_as_uuid(last_seen_id)
+            statement = statement.where(User.id < last_seen_id_as_uuid) # type: ignore
+        except ValueError:
+            raise not_found_exception(detail="Last seen id not valid")
     if firstname and (firstname != ""):
         statement = statement.where(User.firstname == firstname) 
     if surname and (surname != ""):
@@ -97,7 +100,7 @@ def get_users(
         statement = statement.where(User.role == role)
     if status and (status != ""):
         if status == UserStatus.ok.value:
-            statement = statement.where(User.is_reliable == True).where(User.is_blocked == False)
+            statement = statement.where(User.is_reliable == True, User.is_blocked == False)
         elif status == UserStatus.unreliable.value:
             statement = statement.where(User.is_reliable == False) 
         elif status == UserStatus.blocked.value:
@@ -122,8 +125,11 @@ def get_users_by_emails(
     next_cursor = None
     statement = select(User)
     if (last_seen_id):
-        last_seen_id_as_uuid = string_as_uuid(last_seen_id)
-        statement = statement.where(User.id < last_seen_id_as_uuid)
+        try:
+            last_seen_id_as_uuid = string_as_uuid(last_seen_id)
+            statement = statement.where(User.id < last_seen_id_as_uuid)
+        except ValueError:
+            raise not_found_exception(detail="Last seen id not valid")
     statement = statement.where(User.email.in_(dict.emails)) # type:ignore
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
@@ -137,7 +143,10 @@ def get_user(user_id: str,
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    user_id_as_uuid = string_as_uuid(user_id)
+    try:
+        user_id_as_uuid = string_as_uuid(user_id)
+    except ValueError:
+        raise not_found_exception(detail="User id not valid")
     user = db_session.exec(select(User).where(User.id == user_id_as_uuid)).first()
     if not user:
         raise not_found_exception(detail="User not found")
@@ -192,7 +201,7 @@ async def promote_users(
             statement = statement.where(User.role == role) # type: ignore
         if status and (status != ""):
             if status == UserStatus.ok.value:
-                statement = statement.where(User.is_reliable == True).where(User.is_blocked == False) # type: ignore 
+                statement = statement.where(User.is_reliable == True, User.is_blocked == False) # type: ignore 
             elif status == UserStatus.unreliable.value:
                 statement = statement.where(User.is_reliable == False) # type: ignore
             elif status == UserStatus.blocked.value:
@@ -207,7 +216,7 @@ async def promote_users(
         elif (promotion_schema.type == UserType.base.value):
             statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
         if promotion_schema.role:
-            statement = statement.values(role = promotion_schema.role)
+            statement = statement.values(role=promotion_schema.role)
         if promotion_schema.status:
             if promotion_schema.status == UserStatus.ok.value:
                 statement = statement.values(is_reliable=True, is_blocked=False)
@@ -222,9 +231,8 @@ async def promote_users(
                 select(User).where( # check if authorizer (an admin, or an officer) exists
                     User.email == promotion_schema.authorizer.lower()
                 )).first()
-            if auth_user:
-                if ((auth_user.is_admin) or (auth_user.is_officer)):
-                    statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
+            if auth_user and ((auth_user.is_admin) or (auth_user.is_officer)):
+                statement = statement.values(authorized_by = promotion_schema.authorizer.lower(), authorized_at = now_tz_naive())
             else:
                 return None, {"message": "Authorizer email not valid", "updated_count": 0}
         statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())
@@ -332,9 +340,8 @@ async def promote_users_by_emails(
                 select(User).where( # check if authorizer (an admin, or an officer) exists
                     User.email == update_fields.authorizer.lower()
                 )).first()
-            if auth_user:
-                if ((auth_user.is_admin) or (auth_user.is_officer)):
-                    statement = statement.values(authorized_by = update_fields.authorizer.lower(), authorized_at = now_tz_naive())
+            if auth_user and ((auth_user.is_admin) or (auth_user.is_officer)):
+                statement = statement.values(authorized_by = update_fields.authorizer.lower(), authorized_at = now_tz_naive())
             else:
                 return None, {"message": "Authorizer email not valid", "updated_count": 0}
         statement = statement.values(updated_by = current_user.email, updated_at = now_tz_naive())

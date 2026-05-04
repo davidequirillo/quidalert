@@ -4,7 +4,7 @@
 
 import asyncio
 from datetime import timedelta
-from core.settings import settings
+from fakeredis import FakeRedis
 from services.security import now_tz_naive, GEOPOSITION_TOKEN_TTL_MINUTES
 from core.periodic_events import (
     log_cleanup_expired_locations_error,
@@ -34,6 +34,9 @@ async def do_locations_cleanup(redis_handle):
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
             await cleanup_expired_locations(redis_session)
+        return
+    elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
+        await cleanup_expired_locations(redis_handle)
         return
     else:
         raise RedisHandleTypeError(redis_handle)
@@ -101,6 +104,9 @@ async def do_demotions_cleanup(redis_handle):
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
             await cleanup_expired_demotions(redis_session)
+        return
+    elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
+        await cleanup_expired_demotions(redis_handle)
         return
     else:
         raise RedisHandleTypeError(redis_handle)
