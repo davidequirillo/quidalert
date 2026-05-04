@@ -9,7 +9,7 @@ from moto import mock_aws
 from freezegun import freeze_time
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, StaticPool
-from fakeredis import FakeRedis
+from fakeredis.aioredis import FakeRedis
 from models.general import (
     User, UserRole, UserLanguage, 
     RefreshToken,
@@ -68,10 +68,10 @@ def db_session_fixture():
     SQLModel.metadata.drop_all(db_engine_test)
 
 @pytest.fixture(name="redis_session")
-def redis_session_fixture():
+async def redis_session_fixture():
     yield redis_engine_test
-    redis_engine_test.flushall()
-    redis_engine_test.close()
+    await redis_engine_test.flushall()
+    await redis_engine_test.aclose()
 
 @pytest.fixture(name="client")
 def client_fixture(db_session: Session):
@@ -87,7 +87,7 @@ def client_fixture(db_session: Session):
     s3_mock_client.create_bucket(Bucket=bucket_name)
     def get_db_session_override():
         yield db_session
-    def get_redis_session_override():
+    async def get_redis_session_override():
         yield redis_engine_test
     def get_s3_client_override():
         return s3_mock_client
