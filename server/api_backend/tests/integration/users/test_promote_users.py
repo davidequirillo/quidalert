@@ -16,6 +16,10 @@ from models.general import (
 from services.security import (
     now_tz_naive
 )
+from core.dbmgr import (
+    get_redis_chief_demotions_key,
+    get_redis_chief_locations_key
+)
 
 @pytest.fixture(autouse=True)
 def setup_and_teardown(db_session):
@@ -629,6 +633,109 @@ def test_promote_users_modify_authorizer_called_by_admin(client, db_session, tes
     assert response_data["updated_count"] == 1
     db_session.refresh(chief1)
     assert chief1.authorized_by == "officer2@example.com"
+
+async def test_promote_users_modify_type_called_by_admin(client, db_session, redis_session, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {
+        "email": "testuser1@example.com"
+    }
+    data = {
+        "type": UserType.chief.value
+    }
+    statement = select(User).where(User.email=="testuser1@example.com")
+    testuser1 = db_session.exec(statement).first()
+    # The user should be normal type before
+    assert testuser1.is_chief == False
+    assert testuser1.is_officer == False 
+    assert testuser1.is_admin == False 
+    response = client.post("/api/users/promote", params=params, json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    # Admin role can modify the type of any user
+    assert response_data["updated_count"] == 1
+    # We verify the update in the database
+    db_session.refresh(testuser1)
+    assert testuser1.is_chief == True
+    assert testuser1.is_officer == False
+    assert testuser1.is_admin == False
+    assert testuser1.updated_by == user.email
+    assert testuser1.updated_at is not None
+    assert testuser1.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
+    # in Redis cache, the chief users just promoted should be removed from chief demoted zset
+    # so, the user should not be present in the chief demoted zset
+    chief_demotion_key = get_redis_chief_demotions_key(str(testuser1.id))
+    chief_demoted = await redis_session.zscore(chief_demotion_key, str(testuser1.id))
+    assert chief_demoted is None
+    # We can also manually add, in Redis, a gps chief location for testuser1
+    chief_location_key = get_redis_chief_locations_key(str(testuser1.id))
+    positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
+    assert all(p is None for p in positions) # The user should not have a location in Redis before we add it
+    longitude = 12.34
+    latitude = 56.78
+    await redis_session.geoadd(chief_location_key, (longitude, latitude, str(testuser1.id)))
+    positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
+    assert positions is not None
+    assert all(p is not None for p in positions) # The user should have a location in Redis after we add it
+    # Now we try to demote the same user back to normal type, but this time we use an officer token, so the update should fail because only admin can modify the type of the users
+    params = {
+        "email": "testuser1@example.com"
+    }
+    data = {
+        "type": UserType.base.value
+    }
+    response = client.post("/api/users/promote", params=params, json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    # Now, we verify that testuser1 is not a chief anymore
+    db_session.refresh(testuser1)
+    assert testuser1.is_chief == False
+    assert testuser1.is_officer == False
+    assert testuser1.is_admin == False
+    assert testuser1.updated_by == user.email
+    assert testuser1.updated_at is not None
+    assert testuser1.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
+    # in Redis cache, the chief users just demoted should be added to chief demoted zset
+    # so, the user should be present in the chief demoted zset
+    chief_demoted = await redis_session.zscore(chief_demotion_key, str(testuser1.id))
+    assert chief_demoted is not None
+    # The chief location should be removed from Redis when the user is demoted from chief
+    positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
+    assert all(p is None for p in positions)
+    # Now we try to demote all current chiefs to normal type
+    # We add a gps position in Redis for all current chiefs to verify that the positions are removed when they are demoted
+    statement = select(User).where(User.is_chief==True)
+    chiefs = db_session.exec(statement).all()
+    for chief in chiefs:
+        chief_location_key = get_redis_chief_locations_key(str(chief.id))
+        await redis_session.geoadd(chief_location_key, (longitude, latitude, str(chief.id)))
+    params = {
+        "type": UserType.chief.value
+    }
+    data = {
+        "type": UserType.base.value
+    }
+    response = client.post("/api/users/promote", params=params, json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    # All chief users should be demoted to normal type
+    assert response_data["updated_count"] >= 4 # In the setup fixture we created 4 chief users, so at least those should be updated
+    # We verify that all chief users are now normal type
+    statement = select(User).where(User.is_chief==True)
+    chiefs = db_session.exec(statement).all()
+    assert len(chiefs) == 0
+    # And all those users should be present in the chief demoted zset in Redis
+    for chief in chiefs:
+        # The chief users just demoted should be added to chief demoted zset
+        chief_demotion_key = get_redis_chief_demotions_key(str(chief.id))
+        chief_demoted = await redis_session.zscore(chief_demotion_key, str(chief.id))
+        assert chief_demoted is not None
+        # The chief location should be removed from Redis when the user is demoted from chief
+        chief_location_key = get_redis_chief_locations_key(str(chief.id))
+        positions = await redis_session.geopos(chief_location_key, str(chief.id))
+        assert all(p is None for p in positions)
 
 ## TESTS: POST /api/users/promote-by-emails
 

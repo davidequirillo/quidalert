@@ -261,25 +261,23 @@ async def promote_users(
                 if crit_upd_rows:
                     async with redis_client.pipeline(transaction=False) as pipe:
                         for user_id, chief_value in crit_upd_rows:
+                            user_id_str = str(user_id)
+                            chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
                             if chief_value == False:
-                                user_id_str = str(user_id)
-                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
                                 chief_locations_key = get_redis_chief_locations_key(user_id_str)
                                 chief_demoted_at = int(ensure_tz_aware(now_tz_naive()).timestamp())
                                 pipe.zadd(chief_demotions_key, {user_id_str: chief_demoted_at})
                                 pipe.zrem(chief_locations_key, user_id_str)
                             else:
-                                user_id_str = str(user_id)
-                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
                                 pipe.zrem(chief_demotions_key, user_id_str)
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
-                api_events.log_promote_users_type_error(user_id=str(current_user.id), detail=f"{e}")
+                api_events.log_promote_users_error(user_id=str(current_user.id), detail=f"{e}")
                 await run_in_threadpool(db_session.rollback)
                 raise HTTPException(
                     status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error updating user roles"
+                    detail="Error updating users (type) in bulk"
                 )
         return msg_obj
     else:
@@ -287,11 +285,11 @@ async def promote_users(
             crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
             await run_in_threadpool(db_session.commit)
         except Exception as e:
-            api_events.log_promote_users_type_error(user_id=str(current_user.id), detail=f"{e}")
+            api_events.log_promote_users_error(user_id=str(current_user.id), detail=f"{e}")
             await run_in_threadpool(db_session.rollback)
             raise HTTPException(
                 status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error updating user roles"
+                detail="Error updating users in bulk"
             )
         return msg_obj
 
@@ -370,25 +368,23 @@ async def promote_users_by_emails(
                 if crit_upd_rows:
                     async with redis_client.pipeline(transaction=False) as pipe:
                         for user_id, chief_value in crit_upd_rows:
+                            user_id_str = str(user_id)
+                            chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
                             if chief_value == False:
-                                user_id_str = str(user_id)
-                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
                                 chief_locations_key = get_redis_chief_locations_key(user_id_str)
                                 chief_demoted_at = int(ensure_tz_aware(now_tz_naive()).timestamp())
                                 pipe.zadd(chief_demotions_key, {user_id_str: chief_demoted_at})
                                 pipe.zrem(chief_locations_key, user_id_str)
                             else:
-                                user_id_str = str(user_id)
-                                chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
                                 pipe.zrem(chief_demotions_key, user_id_str)
                         await pipe.execute()
                 await run_in_threadpool(db_session.commit)
             except Exception as e:
-                api_events.log_promote_users_type_by_emails_error(user_id=str(current_user.id), detail=f"{e}")
+                api_events.log_promote_users_by_emails_error(user_id=str(current_user.id), detail=f"{e}")
                 await run_in_threadpool(db_session.rollback)
                 raise HTTPException(
                     status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error updating user roles"
+                    detail="Error updating users type in bulk by emails"
                 )
         return msg_obj
     else:
@@ -396,11 +392,11 @@ async def promote_users_by_emails(
             crit_upd_rows, msg_obj = await run_in_threadpool(db_update_logic)
             await run_in_threadpool(db_session.commit)
         except Exception as e:
-            api_events.log_promote_users_type_by_emails_error(user_id=str(current_user.id), detail=f"{e}")
+            api_events.log_promote_users_by_emails_error(user_id=str(current_user.id), detail=f"{e}")
             await run_in_threadpool(db_session.rollback)
             raise HTTPException(
                 status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error updating user roles"
+                detail="Error updating users in bulk by emails"
             )
         return msg_obj
     

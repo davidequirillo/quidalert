@@ -15,13 +15,13 @@ def log_deleted_user_to_renew_registration(user_id: str):
         extra=get_request_info(user_id)
     )
 
-def log_promote_users_type_by_emails_error(user_id: str, detail: str):
+def log_promote_users_by_emails_error(user_id: str, detail: str):
     logger.warning(
         f"promote_users_by_emails_error, detail={detail}",
         extra=get_request_info(user_id)
     )
 
-def log_promote_users_type_error(user_id: str, detail: str):
+def log_promote_users_error(user_id: str, detail: str):
     logger.warning(
         f"promote_users_error, detail={detail}",
         extra=get_request_info(user_id)
