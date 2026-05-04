@@ -103,6 +103,25 @@ def test_get_user_success(client, db_session, test_admin):
     assert response_alerts[1]["description"] in ["Test alert 1", "Test alert 2"]
     assert response_alerts[0]["user_id"] == str(testuser.id)
     assert response_alerts[1]["user_id"] == str(testuser.id)
+    # If the user hasn't created any alert... (testuser2 has no alerts)
+    statement = select(User).where(User.email == "testuser2@example.com")
+    testuser = db_session.exec(statement).first()
+    response = client.get(f"/api/user/{testuser.id}", headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    response_user = response_data["user"]
+    response_alerts = response_data["alerts"]
+    assert response_user["id"] == str(testuser.id)
+    assert response_user["email"] == testuser.email
+    assert response_user["firstname"] == testuser.firstname
+    assert response_user["surname"] == testuser.surname
+    assert response_user["is_active"] == testuser.is_active
+    assert response_user["role"] == testuser.role
+    assert response_user["language"] == testuser.language
+    assert "password_hash" not in response_user
+    assert "password" not in response_user
+    assert isinstance(response_alerts, list)
+    assert len(response_alerts) == 0
 
 def test_get_user_not_found(client, test_admin):
     user: User = test_admin['user']
@@ -113,3 +132,22 @@ def test_get_user_not_found(client, test_admin):
     response = client.get(f"/api/user/{non_existent_user_id}", headers=headers)
     assert response.status_code == not_found_exception(detail="User not found").status_code
     assert response.json()['detail'] == not_found_exception(detail="User not found").detail
+
+def test_get_user_invalid_user_id(client, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    invalid_user_id = "invalid-uuid"
+    response = client.get(f"/api/user/{invalid_user_id}", headers=headers)
+    assert response.status_code == not_found_exception(detail="User id not valid").status_code
+    assert response.json()['detail'] == not_found_exception(detail="User id not valid").detail
+
+def test_get_user_blank_user_id(client, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    blank_user_id = ""
+    response = client.get(f"/api/user/{blank_user_id}", headers=headers)
+    assert response.status_code == status.HTTP_404_NOT_FOUND

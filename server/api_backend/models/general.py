@@ -98,7 +98,7 @@ class UserInCompleteProfile(BaseModel):
 def string_as_uuid(s):
     try:
         return uuid.UUID(s)
-    except ValueError:
+    except:
         raise ValueError("Invalid UUID format")
 
 class UserOut(UserBase, table=False):
@@ -271,7 +271,7 @@ class PromotionSchema(BaseModel):
     @field_validator("type")
     @classmethod
     def validate_type(cls, s):
-        if not s in ["admin", "officer", "chief", "base"]:
+        if not s in [t.value for t in UserType]:
             raise ValueError("Wrong type")
         return s
     
@@ -285,7 +285,7 @@ class PromotionSchema(BaseModel):
     @field_validator("status")
     @classmethod
     def validate_status(cls, s):
-        if not s in ["ok", "unreliable", "blocked"]:
+        if not s in [t.value for t in UserStatus]:
             raise ValueError("Wrong status")
         return s
     
@@ -310,7 +310,7 @@ class ChangeStatusSchema(BaseModel):
     @field_validator("status")
     @classmethod
     def validate_status(cls, s):
-        if not s in ["ok", "unreliable", "blocked"]:
+        if not s in [t.value for t in UserStatus]:
             raise ValueError("Wrong status")
         return s
 

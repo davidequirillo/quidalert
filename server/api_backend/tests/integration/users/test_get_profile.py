@@ -34,5 +34,5 @@ def test_get_profile_successful(client, test_baseuser):
     assert data["surname"] == user.surname
     assert data["role"] == user.role
     assert data["language"] == user.language
-    assert data.get("password") == None
-    assert data.get("password_hash") == None
+    assert "password" not in data
+    assert "password_hash" not in data

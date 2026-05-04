@@ -9,12 +9,13 @@ from moto import mock_aws
 from freezegun import freeze_time
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, StaticPool
+from fakeredis import FakeRedis
 from models.general import (
     User, UserRole, UserLanguage, 
     RefreshToken,
     WhiteListEntry
 )
-from dependencies import get_db_session, get_s3_client
+from dependencies import get_db_session, get_redis_session, get_s3_client
 from services.security import (
     create_access_token, 
     create_refresh_token,
@@ -31,11 +32,15 @@ logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 # Engine for testing, using in-memory SQLite database
 sqlite_url = "sqlite:///:memory:"
-engine_test = create_engine(
+db_engine_test = create_engine(
     sqlite_url, 
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
     echo=False
+)
+redis_engine_test = FakeRedis(
+    decode_responses=True,
+    cluster_mode=True,
 )
 
 @pytest.fixture(autouse=True)
@@ -55,12 +60,18 @@ def disable_emails():
 @pytest.fixture(name="db_session")
 def db_session_fixture():
     # Create all tables in the test database
-    SQLModel.metadata.create_all(engine_test)
+    SQLModel.metadata.create_all(db_engine_test)
     # Yield a session to be used in tests
-    with Session(engine_test) as session:
+    with Session(db_engine_test) as session:
         yield session
     # Drop all tables after the tests are done
-    SQLModel.metadata.drop_all(engine_test)
+    SQLModel.metadata.drop_all(db_engine_test)
+
+@pytest.fixture(name="redis_session")
+def redis_session_fixture():
+    yield redis_engine_test
+    redis_engine_test.flushall()
+    redis_engine_test.close()
 
 @pytest.fixture(name="client")
 def client_fixture(db_session: Session):
@@ -76,20 +87,27 @@ def client_fixture(db_session: Session):
     s3_mock_client.create_bucket(Bucket=bucket_name)
     def get_db_session_override():
         yield db_session
+    def get_redis_session_override():
+        yield redis_engine_test
     def get_s3_client_override():
         return s3_mock_client
     # Override some settings for testing
     original_app_mode = settings.app_mode
+    original_redis_mode = settings.redis_mode
     original_bucket_name = settings.s3_bucket_name
     settings.app_mode = "testing"
+    settings.redis_mode = "cluster"
     settings.s3_bucket_name = bucket_name
     # Override some dependencies in the app with our "fake" function
     app.dependency_overrides[get_db_session] = get_db_session_override
+    app.dependency_overrides[get_redis_session] = get_redis_session_override
     app.dependency_overrides[get_s3_client] = get_s3_client_override
     # Override app state with our test engines/clients
     original_db_engine = getattr(app.state, "db_engine", None)
+    original_redis_handle = getattr(app.state, "redis_handle", None)
     original_s3_client = getattr(app.state, "s3_client", None)
-    app.state.db_engine = engine_test
+    app.state.db_engine = db_engine_test
+    app.state.redis_handle = redis_engine_test
     app.state.s3_client = s3_mock_client
     with TestClient(app) as client:
         try:
@@ -99,11 +117,13 @@ def client_fixture(db_session: Session):
                 app.state.s3_client.close()
             # IMPORTANT: restore the original app state after the test
             app.state.db_engine = original_db_engine
+            app.state.redis_handle = original_redis_handle
             app.state.s3_client = original_s3_client
             # IMPORTANT: clean up the overrides after the test
             app.dependency_overrides.clear()
             # Restore original settings
             settings.app_mode = original_app_mode
+            settings.redis_mode = original_redis_mode
             settings.s3_bucket_name = original_bucket_name
             mock.stop()
 

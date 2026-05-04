@@ -85,7 +85,7 @@ def setup_and_teardown(db_session):
             surname=f"Surname{i}",
             is_active=True,
             role=roles[random_role_index],
-            authorized_by=f"officer{i%2 + 1}@example.com", # Alternate authorization between the 5 officers
+            authorized_by=f"officer{i%5 + 1}@example.com", # Alternate authorization between the 5 officers
             authorized_at=now_tz_naive(),
             language=UserLanguage.en.value
         )
@@ -117,6 +117,7 @@ def test_get_users_not_authorized_token_invalid(client):
 
 def test_get_users_forbidden_access_by_chief(client, test_chief):
     user: User = test_chief['user']
+    assert user is not None
     headers = {"Authorization": f"Bearer {test_chief['access_token']}"}
     response = client.get("/api/users", headers=headers)
     # Chief role is not allowed to access this endpoint, only admin or officers can access it
@@ -141,6 +142,8 @@ def test_get_users_by_email_success(client, db_session, test_officer):
     user_data = data["users"][0]
     assert user_data["id"] == str(user5.id)
     assert user_data["email"] == "testuser5@example.com"
+    assert "password" not in user_data
+    assert "password_hash" not in user_data
 
 def test_get_users_by_email_not_found(client, test_admin):
     user: User = test_admin['user']
@@ -327,6 +330,9 @@ def test_get_users_pagination_default_limit(client, db_session, test_admin):
     assert len(page_entries) == (total_users_num if total_users_num < 100 else 100)
     assert next_cursor is not None
     assert next_cursor == page_entries[-1]["id"]
+    for user_data in page_entries:
+        assert "password" not in user_data
+        assert "password_hash" not in user_data
 
 def test_get_users_called_by_an_officer(client, db_session, test_officer):
     user: User = test_officer['user']
@@ -335,7 +341,7 @@ def test_get_users_called_by_an_officer(client, db_session, test_officer):
     users = db_session.exec(statement).all()
     assert users is not None
     total_users_num = len(users)
-    # Create 7 users authorized by this officer
+    # Create 7 users authorized by test_officer
     for i in range(total_users_num + 1, total_users_num + 8):
         test_user = User(
             email=f"testuser{i}@example.com",
@@ -365,7 +371,7 @@ def test_get_users_called_by_an_officer(client, db_session, test_officer):
     statement = select(User).where(User.email == "testuser1@example.com")
     user1 = db_session.exec(statement).first()
     assert user1 is not None
-    assert user1.authorized_by != user.email # testuser1 is not authorized by this officer
+    assert user1.authorized_by != user.email # testuser1 is not authorized by test_officer
     data = {
         "email": "testuser1@example.com"
     }
@@ -386,7 +392,7 @@ def test_get_users_called_by_an_officer(client, db_session, test_officer):
     data = response.json()
     assert "users" in data
     assert len(data["users"]) == 0
-    # But if "authorizer" is equal to this officer, it will work
+    # But if "authorizer" is equal to test_officer.email, it will work
     data = {
         "authorizer": user.email
     }
@@ -485,8 +491,9 @@ def test_get_users_by_type_and_role(client, db_session, test_admin):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert "users" in data
-    # There are at least 12 users with role "citizen" (see setup fixture)
-    assert len(data["users"]) >= 12 
+    # There are at least 13 users with role "citizen" (see setup fixture, and the test_admin user that is a citizen)
+    assert user.role == UserRole.citizen.value # test_admin user is a citizen
+    assert len(data["users"]) >= 13 
     assert len(data["users"]) == len(results)
     for user_data in data["users"]:
         assert user_data["role"] == UserRole.citizen.value
@@ -549,7 +556,7 @@ def test_get_users_by_all_parameters(client, db_session, test_admin):
     data = {
         "firstname": "Firstname2",
         "surname": "Surname2",
-        # "email": "testuser2@example.com",
+        # "email": "testuser2@example.com", we don't specify email as search filter
         "type": UserType.base.value,
         "role": res_user.role,
         "status": UserStatus.ok.value,
@@ -559,6 +566,8 @@ def test_get_users_by_all_parameters(client, db_session, test_admin):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert "users" in data
+    # Note: the result is only 1. Even test_admin user has the same firstname and surname
+    # but it's authorized by a different user, so it will not be included in the result
     assert len(data["users"]) == 1
     user_data = data["users"][0]
     assert user_data["firstname"] == res_user.firstname
@@ -570,6 +579,30 @@ def test_get_users_by_all_parameters(client, db_session, test_admin):
     assert user_data["is_reliable"] == True
     assert user_data["is_blocked"] == False
     assert user_data["email"] == res_user.email
+
+def test_get_users_by_firstname_and_surname(client, db_session, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    assert user.firstname == "Firstname1"
+    assert user.surname == "Surname1"
+    headers = {"Authorization": f"Bearer {test_admin['access_token']}"}
+    # We search for a specific user with firstname and surname
+    data = {
+        "firstname": "Firstname1",
+        "surname": "Surname1"
+    }
+    response = client.get("/api/users", headers=headers, params=data)
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert "users" in data
+    # There are 2 users with firstname "Firstname1" and surname "Surname1" (one in the setup fixture and one is test_admin user)
+    assert len(data["users"]) == 2
+    user_data1 = data["users"][0]
+    user_data2 = data["users"][1]
+    assert user_data1["firstname"] == "Firstname1"
+    assert user_data1["surname"] == "Surname1"
+    assert user_data2["firstname"] == "Firstname1"
+    assert user_data2["surname"] == "Surname1"
 
 def test_get_users_by_status(client, db_session, test_admin):
     user: User = test_admin['user']
@@ -728,6 +761,8 @@ def test_get_users_by_emails_success(client, db_session, test_admin):
     assert len(data["users"]) == 2
     for user_data in data["users"]:
         assert user_data["email"] in ["testuser1@example.com", "testuser2@example.com"]
+        assert "password" not in user_data
+        assert "password_hash" not in user_data
     # Now we try with 1 existing email and one non-existing email
     data = {
         "emails": ["testuser1@example.com", "nonexistentuser@example.com"]
@@ -739,6 +774,8 @@ def test_get_users_by_emails_success(client, db_session, test_admin):
     assert len(data["users"]) == 1
     user_data = data["users"][0]
     assert user_data["email"] == "testuser1@example.com"
+    assert "password" not in user_data
+    assert "password_hash" not in user_data
 
 def test_get_users_by_emails_with_duplicates(client, db_session, test_admin):
     user: User = test_admin['user']
@@ -758,6 +795,8 @@ def test_get_users_by_emails_with_duplicates(client, db_session, test_admin):
     assert len(data["users"]) == 2
     for user_data in data["users"]:
         assert user_data["email"] in ["testuser1@example.com", "testuser2@example.com"]
+        assert "password" not in user_data
+        assert "password_hash" not in user_data
 
 def test_get_users_by_emails_called_by_an_officer(client, db_session, test_officer):
     user: User = test_officer['user']
@@ -778,6 +817,10 @@ def test_get_users_by_emails_called_by_an_officer(client, db_session, test_offic
     # even if they are not authorized by him, because conceptually 
     # the officer should be able to see any user if he knows their email
     assert len(data["users"]) == 2
+    for user_data in data["users"]:
+        assert user_data["email"] in ["testuser1@example.com", "testuser2@example.com"]
+        assert "password" not in user_data
+        assert "password_hash" not in user_data
 
 def test_get_users_by_emails_with_pagination(client, db_session, test_admin):
     user: User = test_admin['user']

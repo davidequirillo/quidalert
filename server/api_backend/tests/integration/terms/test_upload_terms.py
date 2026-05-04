@@ -22,11 +22,23 @@ def test_upload_terms_not_logged_in(client):
     response = client.post("/api/terms", data={'language': 'en'}, files=files)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-def test_upload_terms_logged_but_not_admin(client, test_baseuser):
+def test_upload_terms_called_by_non_admin(client, test_baseuser):
     file_content = b"Fake file content for testing"
     file_name = "test_file.md"
     headers = {
         "Authorization": f"Bearer {test_baseuser['access_token']}"
+    }
+    files = {
+        "file": (file_name, io.BytesIO(file_content), "text/plain")
+    }
+    response = client.post("/api/terms", data={'language': 'en'}, files=files, headers=headers)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+def test_upload_terms_called_by_officer(client, test_officer):
+    file_content = b"Fake file content for testing"
+    file_name = "test_file.md"
+    headers = {
+        "Authorization": f"Bearer {test_officer['access_token']}"
     }
     files = {
         "file": (file_name, io.BytesIO(file_content), "text/plain")
