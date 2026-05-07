@@ -718,6 +718,15 @@ def test_get_users_by_emails_not_authorized_token_invalid(client):
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
+def test_get_users_by_emails_method_not_allowed(client, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    headers = {"Authorization": f"Bearer {test_admin['access_token']}"}
+    data = { "emails": ["testuser1@example.com", "testuser2@example.com"] }
+    response = client.get("/api/users/get-by-emails", headers=headers, params=data)
+    # GET method is not allowed for this endpoint, only POST is allowed
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
 def test_get_users_by_emails_forbidden_access(client, test_baseuser):
     user: User = test_baseuser['user']
     assert user is not None

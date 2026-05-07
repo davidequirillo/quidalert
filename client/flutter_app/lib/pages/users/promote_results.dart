@@ -173,7 +173,10 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
     final response = await authClient.doProtectedApiRequest(
       "post",
       requestStr,
-      body: {"emails": emails, "update_fields": updateFields},
+      body: {
+        "email_list": {"emails": emails},
+        "update_fields": updateFields,
+      },
     );
     final respObj = json.decode(response.body);
     return respObj;
