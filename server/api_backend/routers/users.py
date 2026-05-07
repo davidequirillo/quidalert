@@ -113,7 +113,7 @@ def get_users(
 
 @router.post("/api/users/get-by-emails", response_model=UsersOutPaginated, status_code=http_status.HTTP_200_OK)
 def get_users_by_emails(
-            dict: EmailListDict,
+            email_list: EmailListDict,
             last_seen_id: str | None = None,
             limit: int = 100,
             current_user: User = Depends(get_current_user), 
@@ -123,6 +123,7 @@ def get_users_by_emails(
     if limit not in [10, 100, 1000]:
         limit = 100
     next_cursor = None
+    emails = [email.lower() for email in email_list.emails]
     statement = select(User)
     if (last_seen_id):
         try:
@@ -130,7 +131,7 @@ def get_users_by_emails(
             statement = statement.where(User.id < last_seen_id_as_uuid)
         except ValueError:
             raise not_found_exception(detail="Last seen id not valid")
-    statement = statement.where(User.email.in_(dict.emails)) # type:ignore
+    statement = statement.where(User.email.in_(emails)) # type:ignore
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
@@ -295,7 +296,7 @@ async def promote_users(
 
 @router.post("/api/users/promote-by-emails") # promote/demote users in bulk (by a list of emails)
 async def promote_users_by_emails(
-            emails: list[str],
+            email_list: EmailListDict,
             update_fields: PromotionSchema,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session),
@@ -305,6 +306,7 @@ async def promote_users_by_emails(
     if (update_fields.type):
         if not current_user.is_admin: # officers cannot change users type
             raise forbidden_exception()
+    emails = [email.lower() for email in email_list.emails]
     def db_update_logic(): 
         if len(emails) == 0:
             return None, {"message": "No emails provided", "updated_count": 0}
