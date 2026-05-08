@@ -138,7 +138,10 @@ def test_promote_users_method_not_allowed(client, test_admin):
     assert admin is not None
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
-    response = client.get("/api/users/promote", headers=headers)
+    params = {
+        "email": "testuser1@example.com"
+    }
+    response = client.get("/api/users/promote", params=params, headers=headers)
     # GET method is not allowed for this endpoint, only POST is allowed
     assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
@@ -679,7 +682,8 @@ async def test_promote_users_modify_type_called_by_admin(client, db_session, red
     positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
     assert positions is not None
     assert all(p is not None for p in positions) # The user should have a location in Redis after we add it
-    # Now we try to demote the same user back to normal type, but this time we use an officer token, so the update should fail because only admin can modify the type of the users
+    # Now we try to demote the same user back to normal type, 
+    # and we verify that the chief location in Redis is removed and the user is added to chief demoted zset in Redis
     params = {
         "email": "testuser1@example.com"
     }
@@ -1251,7 +1255,8 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
     assert positions is not None
     assert all(p is not None for p in positions) # The user should have a location in Redis after we add it
-    # Now we try to demote the same user back to normal type, but this time we use an officer token, so the update should fail because only admin can modify the type of the users
+    # Now we try to demote the same user back to normal type, to see what happens with the Redis cache when a chief user is demoted to normal type, 
+    # the chief location should be removed from Redis and the user should be added to the chief demoted zset in Redis
     data = {
         "email_list": {"emails": ["testuser1@example.com"]},
         "update_fields": {"type": UserType.base.value}
@@ -1310,7 +1315,8 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     assert chief2.is_chief == True
     assert chief2.is_officer == False
     assert chief2.is_admin == False
-    # Now we try to add a position in Redis for chief1 and chief2, to check that when they are demoted, their locations are removed from Redis and they are added to the chief demoted zset
+    # Now we try to add a position in Redis for chief1 and chief2, to check that when they are demoted, 
+    # their locations will be removed from Redis and they will be added to the chief demoted zset
     chief1_location_key = get_redis_chief_locations_key(str(chief1.id))
     chief2_location_key = get_redis_chief_locations_key(str(chief2.id))
     longitude = 12.34

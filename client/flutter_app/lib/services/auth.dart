@@ -567,7 +567,7 @@ class AuthClient extends ChangeNotifier {
       }
       await doProtectedApiRequest(
         "post",
-        '/auth/register-device',
+        '/register-device',
         body: {'fcm_token': fcmToken},
       );
       lastFcmTokenRegistrationAt = DateTime.now();
