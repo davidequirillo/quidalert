@@ -94,10 +94,10 @@ class UserSmall {
     } else {
       t = "base";
     }
-    if (isReliable == false) {
-      st = "unreliable";
-    } else if (isBlocked == true) {
+    if (isBlocked == true) {
       st = "blocked";
+    } else if (isReliable == false) {
+      st = "unreliable";
     } else {
       st = "ok";
     }
@@ -199,10 +199,10 @@ class User {
     final String role = json['role'] ?? '';
     final bool isReliable = json['is_reliable'] ?? true;
     final bool isBlocked = json['is_blocked'] ?? false;
-    if (isReliable == false) {
-      st = "unreliable";
-    } else if (isBlocked == true) {
+    if (isBlocked == true) {
       st = "blocked";
+    } else if (isReliable == false) {
+      st = "unreliable";
     } else {
       st = "ok";
     }
