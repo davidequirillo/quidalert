@@ -231,7 +231,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                     return validateDescription(context, value);
                   },
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

@@ -13,7 +13,7 @@ from services.security import (
     TokenExpiredException, TokenNotValidException)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-    
+
 def get_db_session(request: Request):
     engine = request.app.state.db_engine
     yield from dbmgr.get_yielded_session(engine)
