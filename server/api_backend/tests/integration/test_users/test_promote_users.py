@@ -1364,7 +1364,7 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     assert abs(chief1_demoted_score - now_timestamp) < 60
     assert abs(chief2_demoted_score - now_timestamp) < 60
     # The chief location should be removed from Redis when the user is demoted from chief
-    chief1_positions = await redis_session.geopos(chief1_location_key, str(chief1.id))
-    chief2_positions = await redis_session.geopos(chief2_location_key, str(chief2.id))
-    assert all(p is None for p in chief1_positions)
-    assert all(p is None for p in chief2_positions)
+    chief1_position_results = await redis_session.geopos(chief1_location_key, str(chief1.id))
+    chief2_position_results = await redis_session.geopos(chief2_location_key, str(chief2.id))
+    assert all(p is None for p in chief1_position_results)
+    assert all(p is None for p in chief2_position_results)

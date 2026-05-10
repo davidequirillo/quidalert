@@ -37,6 +37,21 @@ def create_alert(alert_in: AlertIn,
         (current_user.reliability_score <= 0) or \
             (current_user.is_blocked):
         raise forbidden_exception()
+    # The chief can create general alerts without coordinates, but for other users coordinates are required
+    if (alert_in.latitude is None) or (alert_in.longitude is None):
+        if current_user.is_chief:
+            alert = Alert(
+                latitude=None,
+                longitude=None,
+                user_id = current_user.id,
+                description = alert_in.description,
+                address = alert_in.address
+            )
+            db_session.add(alert)
+            db_session.commit()
+            return {"message": "Alert created"}
+        else:
+            raise HTTPException(status_code=422, detail="Latitude and Longitude are required for non-chief users")   
     now = now_tz_naive()
     lat_range = 0.2 # 22 km
     long_range = 0.2 # 22 km (approx, at the equator), less at higher latitudes    
@@ -45,17 +60,17 @@ def create_alert(alert_in: AlertIn,
     recent_alerts = db_session.exec(
         select(Alert).where(
             Alert.created_at > (now - timedelta(hours=1)),
-            Alert.latitude > lat_min,
-            Alert.latitude < lat_max,
-            Alert.longitude > long_min,
-            Alert.longitude < long_max
+            Alert.latitude > lat_min, # type:ignore
+            Alert.latitude < lat_max, # type:ignore
+            Alert.longitude > long_min, # type:ignore
+            Alert.longitude < long_max # type:ignore
         )
     ).all()
     for rec_alert in recent_alerts:
         dist = haversine((alert_in.latitude, alert_in.longitude), (rec_alert.latitude, rec_alert.longitude), unit=Unit.KILOMETERS)
         if dist < rec_alert.radius:
-            d1 = alert_in.description.lower().strip()
-            d2 = rec_alert.description.lower().strip()
+            d1 = alert_in.description.lower().strip() if alert_in.description else ""
+            d2 = rec_alert.description.lower().strip() if rec_alert.description else ""
             similarity = fuzz.token_set_ratio(d1, d2)
             if similarity >= 50: # similarity threshold (50 means 50%)
                 return {"message": "Similar alert already exists in the area", "similarity": similarity}

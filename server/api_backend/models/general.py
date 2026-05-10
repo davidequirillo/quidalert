@@ -316,8 +316,8 @@ class ChangeStatusSchema(BaseModel):
 
 class AlertIn(SQLModel, table=False):
     description: str = Field(default="", nullable=False, min_length=0, max_length=256)
-    latitude: float = Field(nullable=False)
-    longitude: float = Field(nullable=False)
+    latitude: Optional[float] = Field(default=None, nullable=True)
+    longitude: Optional[float] = Field(default=None, nullable=True)
     address: Optional[str] = Field(default=None, nullable=True, min_length=0, max_length=256)
 
     @field_validator("latitude")
@@ -342,6 +342,13 @@ class AlertIn(SQLModel, table=False):
     def check_both_or_none(self):
         if (self.latitude is None) != (self.longitude is None):
             raise ValueError("Latitude and Longitude must have either a value or be None")
+        return self
+    
+    # Useful if we want to allow general alerts without coordinates, but we want to make sure that at least the description is present in this case
+    @model_validator(mode="after")
+    def check_description_or_coordinates(self):
+        if (self.description is None or self.description.strip() == "") and ((self.latitude is None) or (self.longitude is None)):
+            raise ValueError("Either description or coordinates must be provided")
         return self
     
 class AlertOut(AlertIn, table=False):
@@ -393,3 +400,17 @@ class GpsTokenData(BaseModel):
 class GpsCoordinatesSchema(BaseModel):
     latitude: float
     longitude: float
+
+    @field_validator("latitude")
+    @classmethod
+    def validate_latitude(cls, v):
+        if not (-90 <= v <= 90):
+            raise ValueError("Latitude must be between -90 and 90")
+        return v
+
+    @field_validator("longitude")
+    @classmethod
+    def validate_longitude(cls, v):
+        if not (-180 <= v <= 180):
+            raise ValueError("Longitude must be between -180 and 180")
+        return v
