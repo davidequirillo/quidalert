@@ -11,16 +11,25 @@ import hashlib
 import hmac
 from core.settings import settings
 
+def now_tz_aware():
+    return datetime.now(timezone.utc).replace(microsecond=0)
+
 def now_tz_naive():
     return datetime.now(timezone.utc).replace(tzinfo=None, microsecond=0)
+
+def from_timestamp_to_datetime_tz_aware(timestamp: int) -> datetime:
+    dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+    return dt.replace(microsecond=0)
 
 def from_timestamp_to_datetime_tz_naive(timestamp: int) -> datetime:
     dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
     return dt.replace(tzinfo=None, microsecond=0)
 
 def from_datetime_to_timestamp(dt: datetime) -> int:
-    if dt.tzinfo is not None:
-        dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
     return int(dt.timestamp())
 
 def ensure_tz_aware(dt: datetime) -> datetime:
@@ -28,7 +37,8 @@ def ensure_tz_aware(dt: datetime) -> datetime:
         raise Exception("datetime is None")
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+    else:
+        return dt.astimezone(timezone.utc)
 
 def get_password_hash(password):
     return bcrypt.hashpw(

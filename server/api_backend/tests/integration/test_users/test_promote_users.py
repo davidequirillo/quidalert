@@ -87,7 +87,7 @@ def setup_and_teardown(db_session):
     db_session.commit()
     roles = [r.value for r in UserRole]
     roles_len = len(roles)
-    # Create many users to test pagination with random roles
+    # Create many users with random roles
     for i in range(1, 23):
         random_role_index = i % roles_len
         test_user = User(

@@ -4,8 +4,10 @@
 
 import asyncio
 from datetime import timedelta
-from fakeredis import FakeRedis
-from services.security import now_tz_naive, GEOPOSITION_TOKEN_TTL_MINUTES
+from fakeredis.aioredis import FakeRedis
+from services.security import (
+    now_tz_aware,
+    GEOPOSITION_TOKEN_TTL_MINUTES)
 from core.periodic_events import (
     log_cleanup_expired_locations_error,
     log_cleanup_expired_locations_completed,
@@ -27,23 +29,30 @@ from core.dbmgr import (
     REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT,
     REDIS_TOTAL_SHARDS)
 
+LOCATIONS_TTL_HOURS = 48
+
+# expiration threshold: same as geoposition token TTL, 
+# since the demotion is linked to the geoposition update and should last as long as the token validity
+# note: we add a small grace period of 5 minutes to avoid edge cases of demotions being removed just before the token expires
+CHIEF_DEMOTIONS_TTL_MINUTES = GEOPOSITION_TOKEN_TTL_MINUTES + 5
+
 async def do_locations_cleanup(redis_handle):
     if isinstance(redis_handle, cluster.RedisCluster):
-        await cleanup_expired_locations(redis_handle)
-        return
+        deleted_count = await cleanup_expired_locations(redis_handle)
+        return deleted_count
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
-            await cleanup_expired_locations(redis_session)
-        return
+            deleted_count = await cleanup_expired_locations(redis_session)
+        return deleted_count
     elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
-        await cleanup_expired_locations(redis_handle)
-        return
+        deleted_count = await cleanup_expired_locations(redis_handle)
+        return deleted_count
     else:
         raise RedisHandleTypeError(redis_handle)
 
 async def cleanup_expired_locations(redis_client):
-    now = now_tz_naive()
-    exp_dt = now - timedelta(hours=48) # expiration threshold: 48 hours
+    now = now_tz_aware()
+    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
     exp_int_ts = int(exp_dt.timestamp())
     total_deleted = 0
     lock_key = REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY
@@ -72,7 +81,7 @@ async def cleanup_expired_locations(redis_client):
         log_cleanup_expired_locations_error(detail=str(e))
         return total_deleted
 
-async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client):
+async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client, batch_size=5000):
     deleted_in_shard = 0
     last_upd_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
     uloc_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
@@ -83,7 +92,7 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client)
             min = "-inf", 
             max = exp_int_ts, 
             start=0, 
-            num=5000
+            num=batch_size
         )
         if not expired_user_ids:
             break
@@ -94,29 +103,26 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client)
             pipe.zrem(last_upd_key, *expired_user_ids)
             await pipe.execute()
         deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.05) 
+        await asyncio.sleep(0.05) # we add a small sleep between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
 
 async def do_demotions_cleanup(redis_handle):
     if isinstance(redis_handle, cluster.RedisCluster):
-        await cleanup_expired_demotions(redis_handle)
-        return
+        deleted_count = await cleanup_expired_demotions(redis_handle)
+        return deleted_count
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
-            await cleanup_expired_demotions(redis_session)
-        return
+            deleted_count = await cleanup_expired_demotions(redis_session)
+        return deleted_count
     elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
-        await cleanup_expired_demotions(redis_handle)
-        return
+        deleted_count = await cleanup_expired_demotions(redis_handle)
+        return deleted_count
     else:
         raise RedisHandleTypeError(redis_handle)
 
 async def cleanup_expired_demotions(redis_client):
-    now = now_tz_naive()
-    # expiration threshold: same as geoposition token TTL, 
-    # since the demotion is linked to the geoposition update and should last as long as the token validity
-    # note: we add a small grace period of 5 minutes to avoid edge cases of demotions being removed just before the token expires
-    exp_dt = now - timedelta(minutes=(GEOPOSITION_TOKEN_TTL_MINUTES + 5)) 
+    now =  now_tz_aware()
+    exp_dt = now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES) 
     exp_int_ts = int(exp_dt.timestamp())
     total_deleted = 0
     lock_key = REDIS_COOLDOWN_DEMOTIONS_CLEANUP_KEY
@@ -145,7 +151,7 @@ async def cleanup_expired_demotions(redis_client):
         log_cleanup_expired_demotions_error(detail=str(e))
         return total_deleted
 
-async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client):
+async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client, batch_size=5000):
     deleted_in_shard = 0
     demotions_key = REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
     log_cleaning_demotions_shard(detail=f"Cleaning chief demotions for shard {shard_index}")
@@ -155,7 +161,7 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client)
             min = "-inf", 
             max = exp_int_ts, 
             start=0, 
-            num=5000
+            num=batch_size
         )
         if not expired_user_ids:
             break
@@ -166,5 +172,5 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client)
             pipe.zrem(demotions_key, *expired_user_ids)
             await pipe.execute()
         deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.05) 
+        await asyncio.sleep(0.05) # we add a small sleep between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
