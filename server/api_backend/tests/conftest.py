@@ -45,7 +45,7 @@ redis_engine_test = FakeRedis(
 
 @pytest.fixture(autouse=True)
 def frozen_now():
-    with freeze_time() as frozen:
+    with freeze_time(auto_tick_seconds=0.1) as frozen:
         yield frozen
 
 @pytest.fixture(autouse=True)

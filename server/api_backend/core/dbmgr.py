@@ -89,7 +89,7 @@ async def shutdown_redis_handle(handle: RedisHandle):
 REDIS_TOTAL_SHARDS = 16
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
-REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT = 172800 # 48 hours in seconds
+REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT = 86400 # 24 hours in seconds
 REDIS_COOLDOWN_DEMOTIONS_CLEANUP_KEY = "{shard:0}:cooldowns:demotions_cleanup"
 REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT = 2592000 # 1 month in seconds
 REDIS_USER_LOCATIONS_KEY = "{{shard:{i}}}:locations:users"

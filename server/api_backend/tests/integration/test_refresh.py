@@ -133,10 +133,12 @@ def test_refresh_reuse_old_token(client, db_session, test_baseuser, frozen_now):
     db_rtoken: RefreshToken = db_session.exec(statement).first()
     assert db_rtoken is not None
     assert db_rtoken.updated_at > old_timestamp
-    assert db_rtoken.updated_at <= new_timestamp
+    assert db_rtoken.updated_at >= new_timestamp
+    assert db_rtoken.updated_at < new_timestamp + timedelta(minutes=1) # We check that the updated_at time has been updated to a recent time (within the next minute) to ensure that the token has been refreshed in the database
     assert user.last_refresh_at is not None
     assert user.last_refresh_at > old_timestamp
-    assert user.last_refresh_at <= new_timestamp
+    assert user.last_refresh_at >= new_timestamp
+    assert user.last_refresh_at < new_timestamp + timedelta(minutes=1) # We check that the last_refresh_at time has been updated to a recent time (within the next minute) to ensure that the user's last refresh time has been updated in the database
     # Attempt to reuse the old refresh token
     payload = {"refresh_token": refresh_token}
     # Use the old refresh token to get another new token
