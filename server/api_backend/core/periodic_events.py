@@ -6,6 +6,11 @@ from core.logging import get_periodics_logger
 
 logger = get_periodics_logger()
 
+def log_cleanup_expired_locations_in_cooldown(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_locations_in_cooldown, detail={detail}"
+    )
+
 def log_cleanup_expired_locations_error(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_error, detail={detail}"
@@ -16,9 +21,19 @@ def log_cleanup_expired_locations_started(detail: str = ""):
         f"cleanup_expired_locations_started, detail={detail}"
     )
 
+def log_cleanup_expired_locations_shard(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_locations_shard, detail={detail}"
+    )
+
 def log_cleanup_expired_locations_completed(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_completed, detail={detail}"
+    )
+
+def log_cleanup_expired_demotions_in_cooldown(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_demotions_in_cooldown, detail={detail}"
     )
 
 def log_cleanup_expired_demotions_error(detail: str = ""):
@@ -31,13 +46,12 @@ def log_cleanup_expired_demotions_started(detail: str = ""):
         f"cleanup_expired_demotions_started, detail={detail}"
     )
 
-def log_cleaning_demotions_shard(detail: str = ""):
+def log_cleanup_chief_demotions_shard(detail: str = ""):
     logger.info(
-        f"cleaning_demotions_shard, detail={detail}"
+        f"cleanup_chief_demotions_shard, detail={detail}"
     )
 
 def log_cleanup_expired_demotions_completed(detail: str = ""):
     logger.info(
         f"cleanup_expired_demotions_completed, detail={detail}"
     )
-

@@ -14,8 +14,11 @@ from core.periodic_events import (
     log_cleanup_expired_locations_started,
     log_cleanup_expired_demotions_error,
     log_cleanup_expired_demotions_started,
-    log_cleaning_demotions_shard,
-    log_cleanup_expired_demotions_completed
+    log_cleanup_chief_demotions_shard,
+    log_cleanup_expired_locations_shard,
+    log_cleanup_expired_demotions_completed,
+    log_cleanup_expired_locations_in_cooldown,
+    log_cleanup_expired_demotions_in_cooldown
     )
 from core.dbmgr import (
     redis, cluster, RedisHandleTypeError,
@@ -63,6 +66,9 @@ async def cleanup_expired_locations(redis_client):
     if not lock_acquired:
         # if we cannot acquire the lock, it means that another periodic cleanup task is currently running 
         # (or recently ran and is in cooldown), so we skip the execution
+        log_cleanup_expired_locations_in_cooldown(
+            detail=f"Skipping cleanup, waiting for cooldown"
+        )
         return 0
     log_cleanup_expired_locations_started(
         detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
@@ -86,12 +92,14 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client,
     last_upd_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
     uloc_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
     chiefloc_key = REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
+    log_cleanup_expired_locations_shard(detail=f"Cleaning expired locations for shard {shard_index}")
     while True:
-        expired_user_ids = await redis_client.zrangebyscore(
+        expired_user_ids = await redis_client.zrange(
             last_upd_key, 
-            min = "-inf", 
-            max = exp_int_ts, 
-            start=0, 
+            start = "-inf", 
+            end = exp_int_ts, # inclusive range
+            byscore=True,
+            offset=0,
             num=batch_size
         )
         if not expired_user_ids:
@@ -133,6 +141,9 @@ async def cleanup_expired_demotions(redis_client):
     if not lock_acquired:
         # if we cannot acquire the lock, it means that another periodic cleanup task is currently running 
         # (or recently ran and is in cooldown), so we skip the execution
+        log_cleanup_expired_demotions_in_cooldown(
+            detail=f"Skipping cleanup, waiting for cooldown"
+        )
         return 0
     log_cleanup_expired_demotions_started(
         detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
@@ -154,13 +165,14 @@ async def cleanup_expired_demotions(redis_client):
 async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client, batch_size=5000):
     deleted_in_shard = 0
     demotions_key = REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
-    log_cleaning_demotions_shard(detail=f"Cleaning chief demotions for shard {shard_index}")
+    log_cleanup_chief_demotions_shard(detail=f"Cleaning chief demotions for shard {shard_index}")
     while True:
-        expired_user_ids = await redis_client.zrangebyscore(
+        expired_user_ids = await redis_client.zrange(
             demotions_key, 
-            min = "-inf", 
-            max = exp_int_ts, 
-            start=0, 
+            start = "-inf", 
+            end = exp_int_ts, # inclusive range
+            byscore=True, 
+            offset=0, 
             num=batch_size
         )
         if not expired_user_ids:

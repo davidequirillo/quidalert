@@ -85,13 +85,13 @@ async def init_engines(app: FastAPI):
     app.state.scheduler = AsyncIOScheduler()
     app.state.scheduler.add_job(
         do_locations_cleanup,
-        trigger=CronTrigger(hour=19, minute=35), 
+        trigger=CronTrigger(hour=19, minute=15), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_locations_job_v1",
     )
     app.state.scheduler.add_job(
         do_demotions_cleanup,
-        trigger=CronTrigger(hour=17, minute=30), 
+        trigger=CronTrigger(hour=17, minute=15), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_demotions_job_v1",
     )

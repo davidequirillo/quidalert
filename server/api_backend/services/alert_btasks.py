@@ -5,7 +5,7 @@
 import asyncio
 import uuid
 from sqlmodel import Session, select, insert, update
-from fakeredis import FakeRedis
+from fakeredis.aioredis import FakeRedis
 from firebase_admin import messaging
 from models.general import (
     RefreshToken, User, 
@@ -168,7 +168,7 @@ async def get_closest_chiefs(alert, request_info, redis_client):
                 name=key,
                 longitude=alert.longitude,
                 latitude=alert.latitude,
-                radius=10000, 
+                radius=10000, # very large radius, to be sure to find a closest chief
                 unit="km",
                 sort="asc",
                 count=100, # we search for the closest 100 chiefs
