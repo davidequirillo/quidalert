@@ -38,6 +38,12 @@ class UserType(str, Enum):
     officer = "officer"
     chief = "chief"
 
+class AlertType(str, Enum):
+    local = "local" # A local alert is a normal alert with coordinates and radius, that can be created by any user, with chief and nearby users alerted
+    managed = "managed" # A managed alert is like a local alert, but it's created only by a chief, with custom gps location, and can be managed by him (he becomes the "alert manager")
+    general = "general" # A general alert is an alert without coordinates and radius (coordinates and radius not considered), that can only be created by chiefs, and is meant to be used for general information that is not related to a specific location, but it's globally relevant
+    empty = "empty" # An empty alert is a special type of alert without radius (radius not considered, but gps location considered), that can be created by chiefs. Alert is created without including or notifying nearby users. It's useful to create empty alerts to be expanded later by the chief
+
 class UserBase(SQLModel, table=False):
     firstname: str = Field(nullable=False, min_length=2, max_length=64)
     surname: str = Field(nullable=False, min_length=2, max_length=64)
@@ -113,7 +119,10 @@ class UserOut(UserBase, table=False):
     is_chief: bool = Field(default=False, nullable=False)
     role: str = Field(default=UserRole.citizen.value, nullable=False)
     is_reliable: bool = Field(default=True, nullable=False)
-    reliability_score: int = Field(default=100, ge=0, le=100, nullable=False)
+    # At the moment, we don't think about overflow issues with the reliability score:
+    # it's quite hard to reach very high values or very low values, and in case we can easily change the type to a bigger integer
+    reliability_score: int = Field(default=100, nullable=False)
+    last_reliability_score_at: Optional[datetime] = Field(default=None)
     is_blocked: bool = Field(default=False, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
@@ -178,6 +187,9 @@ class UserOutSmall(BaseModel):
 class UsersOutPaginated(BaseModel):
     users: List[UserOutSmall]
     next_cursor: Optional[uuid.UUID] = None
+
+USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS = 180
+USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE = 15
 
 class User(UserOut, table=True):
     __tablename__: str = 'users'
@@ -315,16 +327,30 @@ class ChangeStatusSchema(BaseModel):
         return s
 
 class AlertIn(SQLModel, table=False):
-    description: str = Field(default="", nullable=False, min_length=0, max_length=256)
-    latitude: Optional[float] = Field(default=None, nullable=True)
-    longitude: Optional[float] = Field(default=None, nullable=True)
+    type: str = Field(default=AlertType.local.value, nullable=False)
+    description: str = Field(nullable=False, min_length=1, max_length=512)
+    latitude: float = Field(default=0.0, nullable=False)
+    longitude: float = Field(default=0.0, nullable=False)
+    radius: float = Field(default=1.0, nullable=False, gt=0, lt=50) # in kilometers
     address: Optional[str] = Field(default=None, nullable=True, min_length=0, max_length=256)
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, s):
+        if s.strip() == "":
+            raise ValueError("Description cannot be empty")
+        return s
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, s):
+        if not s in [t.value for t in AlertType]:
+            raise ValueError("Wrong type")
+        return s
 
     @field_validator("latitude")
     @classmethod
     def validate_latitude(cls, v):
-        if v is None:
-            return v
         if not (-90 <= v <= 90):
             raise ValueError("Latitude must be between -90 and 90")
         return v
@@ -332,29 +358,13 @@ class AlertIn(SQLModel, table=False):
     @field_validator("longitude")
     @classmethod
     def validate_longitude(cls, v):
-        if v is None:
-            return v
         if not (-180 <= v <= 180):
             raise ValueError("Longitude must be between -180 and 180")
         return v
     
-    @model_validator(mode="after")
-    def check_both_or_none(self):
-        if (self.latitude is None) != (self.longitude is None):
-            raise ValueError("Latitude and Longitude must have either a value or be None")
-        return self
-    
-    # Useful if we want to allow general alerts without coordinates, but we want to make sure that at least the description is present in this case
-    @model_validator(mode="after")
-    def check_description_or_coordinates(self):
-        if (self.description is None or self.description.strip() == "") and ((self.latitude is None) or (self.longitude is None)):
-            raise ValueError("Either description or coordinates must be provided")
-        return self
-    
 class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    radius: float = Field(default=1.0, nullable=False, ge=0, le=10) # in kilometers
-    severity: int = Field(default=100, ge=0, le=100, nullable=False)
+    severity: int = Field(default=10, ge=0, le=10, nullable=False)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
@@ -387,8 +397,11 @@ class AlertedUser(SQLModel, table=True):
         nullable=False, 
         index=True
     )
+    is_manager: bool = Field(default=False, nullable=False)
     # For all users: -1 = downvote, 0 = no vote, +1 = upvote
     # Chief can do a closing vote: his final vote can be -15, 0, +15;
+    # We will think about the algorythm to use, 
+    # to modify reliability score of involved users (alert sender and alerted users)
     vote: int = Field(default=0, ge=-1, le=+1, nullable=False)
     closing_vote: int = Field(default=0, ge=-15, le=+15, nullable=False)
 

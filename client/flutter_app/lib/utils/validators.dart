@@ -28,7 +28,7 @@ String? validateName(BuildContext context, String? value) {
 String? validateDescription(
   BuildContext context,
   String? value, {
-  int min = 0,
+  int min = 1,
   int max = 512,
 }) {
   final l10n = AppLocalizations.of(context)!;
@@ -213,6 +213,29 @@ String? validatePhoneNumber(BuildContext context, String? value) {
   }
   if (phone.length > 32) {
     return l10n.errorStringTooLong;
+  }
+  return null;
+}
+
+String? validateGpsCoordinates(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  final coords = value.trim().split(",");
+  if (coords.length != 2) {
+    return l10n.errorStringNotValid;
+  }
+  final lat = double.tryParse(coords[0].trim());
+  final lon = double.tryParse(coords[1].trim());
+  if (lat == null || lon == null) {
+    return l10n.errorStringNotValid;
+  }
+  if (lat < -90 || lat > 90) {
+    return l10n.errorStringNotValid;
+  }
+  if (lon < -180 || lon > 180) {
+    return l10n.errorStringNotValid;
   }
   return null;
 }

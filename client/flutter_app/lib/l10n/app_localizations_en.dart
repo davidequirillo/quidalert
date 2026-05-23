@@ -258,6 +258,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelEmailMany => 'Many email addresses';
 
   @override
+  String get labelEmptyF => 'Empty';
+
+  @override
   String get labelEntrySingle => 'Single entry';
 
   @override
@@ -294,6 +297,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelFirstname => 'Firstname';
 
   @override
+  String get labelGeneral => 'General';
+
+  @override
   String get labelGpsLocation => 'GPS location';
 
   @override
@@ -316,6 +322,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelLongitude => 'Longitude';
+
+  @override
+  String get labelLocal => 'Local';
 
   @override
   String get labelNewAlert => 'New alert';

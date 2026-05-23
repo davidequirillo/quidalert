@@ -593,6 +593,12 @@ abstract class AppLocalizations {
   /// **'Many email addresses'**
   String get labelEmailMany;
 
+  /// No description provided for @labelEmptyF.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get labelEmptyF;
+
   /// No description provided for @labelEntrySingle.
   ///
   /// In en, this message translates to:
@@ -665,6 +671,12 @@ abstract class AppLocalizations {
   /// **'Firstname'**
   String get labelFirstname;
 
+  /// No description provided for @labelGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get labelGeneral;
+
   /// No description provided for @labelGpsLocation.
   ///
   /// In en, this message translates to:
@@ -712,6 +724,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Longitude'**
   String get labelLongitude;
+
+  /// No description provided for @labelLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get labelLocal;
 
   /// No description provided for @labelNewAlert.
   ///
