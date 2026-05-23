@@ -20,7 +20,10 @@ from core.settings import settings
 from core.logging import setup_logging, get_client_ip
 from core import api_events, security_events
 import services.localization as i18n
-from models.general import (string_as_uuid, UserIn, User, UserLanguage, 
+from models.general import (string_as_uuid, 
+    UserIn, User, UserLanguage,
+    USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE,
+    USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS, 
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
     WhiteListEntry
@@ -230,6 +233,11 @@ def refresh_auth_tokens(
     rtoken.ip_address=get_client_ip()
     rtoken.updated_at=now
     user.last_refresh_at=now
+    # If user has reliability score <= 0, we check if we can reset it based on the last score update time and the TTL defined for negative scores
+    if (user.reliability_score <= 0):
+        if (user.last_reliability_score_at is None) or (user.last_reliability_score_at < (now - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS))):
+            user.reliability_score = USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+            user.last_reliability_score_at = now
     db_session.add(user)
     db_session.add(rtoken)
     db_session.commit()
@@ -370,6 +378,11 @@ def login(data: LoginSchema,
     )
     user.last_login_done_at = now
     user.last_refresh_at = now
+    # If user has reliability score <= 0, we check if we can reset it based on the last score update time and the TTL defined for negative scores
+    if (user.reliability_score <= 0):
+        if (user.last_reliability_score_at is None) or (user.last_reliability_score_at < (now - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS))):
+            user.reliability_score = USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+            user.last_reliability_score_at = now 
     # Cooldown check to avoid potential DoS attacks to the mail service
     can_send = ((not user.last_login_mail_confirmation_at) or 
         ((now - user.last_login_mail_confirmation_at).total_seconds() > MAIL_COOLDOWN_SECONDS)) 

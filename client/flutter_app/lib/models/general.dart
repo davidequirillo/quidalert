@@ -45,6 +45,8 @@ enum UserRole {
   citizen,
 }
 
+enum AlertType { local, managed, general, empty }
+
 class UserSmall {
   final String id;
   final String email;

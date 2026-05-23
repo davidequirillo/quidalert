@@ -18,7 +18,10 @@ from core.dbmgr import (
     get_redis_user_locations_key, 
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key)
-from models.general import Alert, AlertIn, GpsCoordinatesSchema, GpsTokenData, User
+from models.general import (
+    Alert, AlertType, AlertIn, 
+    GpsCoordinatesSchema, GpsTokenData, User,
+    AlertedUser)
 from services.security import (
     now_tz_naive, now_tz_aware)
 from services.alert_btasks import (
@@ -38,21 +41,13 @@ def create_alert(alert_in: AlertIn,
         (current_user.reliability_score <= 0) or \
             (current_user.is_blocked):
         raise forbidden_exception()
-    # The chief can create general alerts without coordinates, but for other users coordinates are required
-    if (alert_in.latitude is None) or (alert_in.longitude is None):
-        if current_user.is_chief:
-            alert = Alert(
-                latitude=None,
-                longitude=None,
-                user_id = current_user.id,
-                description = alert_in.description,
-                address = alert_in.address
-            )
-            db_session.add(alert)
-            db_session.commit()
-            return {"message": "Alert created"}
-        else:
-            raise HTTPException(status_code=422, detail="Latitude and Longitude are required for non-chief users")   
+    # Only chiefs can create special type of alerts (managed, general, empty)
+    if (alert_in.type != AlertType.local.value):
+        if not current_user.is_chief:
+            raise forbidden_exception("Only chiefs can create special alerts")
+    if (alert_in.radius > 1):
+        if not current_user.is_chief:
+            raise forbidden_exception("Only chiefs can create alerts with radius greater than 1")
     now = now_tz_naive()
     lat_range = 0.2 # 22 km
     long_range = 0.2 # 22 km (approx, at the equator), less at higher latitudes    
@@ -68,38 +63,66 @@ def create_alert(alert_in: AlertIn,
         )
     ).all()
     for rec_alert in recent_alerts:
-        dist = haversine((alert_in.latitude, alert_in.longitude), (rec_alert.latitude, rec_alert.longitude), unit=Unit.KILOMETERS)
-        if dist < rec_alert.radius:
-            d1 = alert_in.description.lower().strip() if alert_in.description else ""
-            d2 = rec_alert.description.lower().strip() if rec_alert.description else ""
+        if (alert_in.type == AlertType.general.value) and (rec_alert.type == AlertType.general.value):
+            d1 = alert_in.description.lower().strip()
+            d2 = rec_alert.description.lower().strip()
             similarity = fuzz.token_set_ratio(d1, d2)
-            if similarity >= 50: # similarity threshold (50 means 50%)
-                return {"message": "Similar alert already exists in the area", "similarity": similarity}
+            if similarity >= 90: # similarity threshold (90 means 90%)
+                return {"message": "Similar alert already exists", "similarity": similarity}
+        if (alert_in.type != AlertType.general.value) and (rec_alert.type != AlertType.general.value):
+            dist = haversine((alert_in.latitude, alert_in.longitude), (rec_alert.latitude, rec_alert.longitude), unit=Unit.KILOMETERS)
+            if dist < rec_alert.radius:
+                d1 = alert_in.description.lower().strip()
+                d2 = rec_alert.description.lower().strip()
+                similarity = fuzz.token_set_ratio(d1, d2)
+                if similarity >= 50: # similarity threshold (50 means 50%)
+                    return {"message": "Similar alert already exists in the area", "similarity": similarity}
     alert = Alert(
+        type=alert_in.type,
+        description = alert_in.description,
         latitude=alert_in.latitude,
         longitude=alert_in.longitude,
+        address = alert_in.address,
+        radius = alert_in.radius,
         user_id = current_user.id,
-        description = alert_in.description,
-        address = alert_in.address
     )
     rel_score = current_user.reliability_score 
-    alert.radius = rel_score / 100 * alert.radius
-    alert.severity = int(rel_score / 100 * alert.severity)
+    alert.radius = min(max(rel_score, 0), 100) / 100 * alert.radius
     db_session.add(alert)
     db_session.commit()
     db_session.refresh(alert)
+    if alert.id is None:
+        raise HTTPException(status_code=500, detail="Unknown error creating alert")
+    if (alert.type == AlertType.general.value):
+        # No need to search for chiefs or users to notify for this type of alert
+        # No need to add the current user (chief) to the alerted users for this type of alert
+        return {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
+    if (alert.type == AlertType.empty.value):
+        # No need to search for chiefs or users to notify for this type of alert
+        # But we add the current user (chief) to the alerted users list in the database as alert manager. It will be useful.
+        alerted_user = AlertedUser(
+            alert_id=alert.id,
+            user_id=current_user.id,
+            is_manager=True
+        )
+        db_session.add(alerted_user)
+        db_session.commit()
+        return {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
+    # For managed alerts, we need to search for nearby users and notify them
+    # For local alerts, we need to search for nearby chiefs and users and notify them
+    # so... we must go on
     alert_copy = alert.model_copy()
-    curr_user = current_user.model_copy()
+    curr_user_copy = current_user.model_copy()
     req_info = get_request_info(str(current_user.id))
     background_tasks.add_task(
         task_alert_search_and_notify, 
         alert_copy, 
-        curr_user, 
+        curr_user_copy, 
         request_info=req_info,
         db_engine=request.app.state.db_engine,
         redis_handle=request.app.state.redis_handle
         )
-    return {"message": "Alert created"}
+    return {"message": "Alert created, searching for nearby users and chiefs to notify"}
 
 @router.post("/api/update-gps-position")
 async def update_gps_position(
@@ -150,14 +173,14 @@ def close_alert(alert_id: int,
     db_session.commit()
     db_session.refresh(alert)
     alert_copy = alert.model_copy()
-    curr_user = current_user.model_copy()
+    curr_user_copy = current_user.model_copy()
     req_info = get_request_info(str(current_user.id))
     background_tasks.add_task(
         task_alert_cleanup, 
         alert_copy, 
-        curr_user, 
+        curr_user_copy, 
         request_info=req_info,
         db_engine=request.app.state.db_engine,
         redis_handle=request.app.state.redis_handle
         )
-    return {"message": "Alert created"}
+    return {"message": "Alert closed"}

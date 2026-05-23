@@ -3,24 +3,42 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import AlertIn
+from models.general import AlertIn, AlertType
 
-def test_create_alert_success():
+def test_create_alert_empty_data():
+    # It fails because a non empty description is required
+    data = {}
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
+
+def test_create_alert_with_empty_description():
+    # Description must be a non empty string
     data = {
-        "description": "This is a test alert",
+        "description": None,
+    }
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
+    
+    data = {
+        "description": "",
+    }
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
+    # Another example with only spaces
+    data = {
+        "description": "   ",
+    }     
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
+    data = {
+        "description": "   ",
         "latitude": 45.123456,
         "longitude": 120.17,
         "address": "Alert Street, 85"
     }
-    alert = AlertIn.model_validate(data)
-    assert alert.description == data["description"]
-    assert alert.latitude == data["latitude"]
-    assert alert.longitude == data["longitude"]
-    assert alert.address == data["address"]
-
-def test_create_alert_description_too_long():
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
     data = {
-        "description": "A" * 512,
         "latitude": 45.123456,
         "longitude": 120.17,
         "address": "Alert Street, 85"
@@ -28,26 +46,29 @@ def test_create_alert_description_too_long():
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)
 
-def test_create_alert_blank_description():
+def test_create_alert_with_only_description():
+    # It's ok, we can create alerts with only a description, 
+    # so we expect the model to be created successfully and the other fields to have their default values
     data = {
-        "description": "   ",
-        "latitude": 45.123456,
-        "longitude": 120.17,
-        "address": "Alert Street, 85"
+        "description": "This is a test alert",
     }
     alert = AlertIn.model_validate(data)
-    assert alert.description is not None
-    assert alert.description.strip() == ""
+    assert alert.description == data["description"]
+    assert alert.type == AlertType.local.value
+    assert alert.latitude == 0.0
+    assert alert.longitude == 0.0
+    assert alert.address is None
+    assert alert.radius == 1.0
 
-def test_create_alert_description_not_present():
+def test_create_alert_description_too_long():
     data = {
+        "description": "A" * 513,
         "latitude": 45.123456,
         "longitude": 120.17,
         "address": "Alert Street, 85"
     }
-    alert = AlertIn.model_validate(data)
-    assert alert.description is not None
-    assert alert.description == ""
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
 
 def test_create_alert_invalid_latitude():
     data = {
@@ -75,9 +96,9 @@ def test_create_alert_longitude_not_present():
         "latitude": 45.123456,
         "address": "Alert Street, 85"
     }
-    with pytest.raises(ValueError):
-        AlertIn.model_validate(data)
-        assert True
+    # Default longitude is 0.0
+    alert = AlertIn.model_validate(data)
+    assert alert.longitude == 0.0
 
 def test_create_alert_latitude_not_present():
     data = {
@@ -85,55 +106,87 @@ def test_create_alert_latitude_not_present():
         "longitude": 120.17,
         "address": "Alert Street, 85"
     }
-    with pytest.raises(ValueError):
-        AlertIn.model_validate(data)
+    # Default latitude is 0.0
+    alert = AlertIn.model_validate(data)
+    assert alert.latitude == 0.0
 
 def test_create_alert_coordinates_not_present():
     data = {
         "description": "This is a test alert",
         "address": "Alert Street, 85"
     }
-    # It's ok, we can create general alerts without coordinates, so we expect the model to be created successfully and the coordinates to be None
-    # The description is present
+    # It's ok, we can create alerts without coordinates, so we expect the model to be created successfully and the latitude and longitude to be 0.0 (default values)
     alert = AlertIn.model_validate(data)
-    assert alert.latitude is None
-    assert alert.longitude is None
+    assert alert.latitude == 0.0
+    assert alert.longitude == 0.0
 
-def test_create_alert_coordinates_not_present_and_description_blank():
+def test_create_alert_with_wrong_radius():
     data = {
-        "description": "   ",
-        "address": "Alert Street, 85"
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
+        "radius": -5 # invalid radius
     }
-    # We expect a validation error because either description or coordinates must be provided
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
+    # Another example
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
+        "radius": 0.0 # must be greater than zero
+    }
+    with pytest.raises(ValueError):
+        AlertIn.model_validate(data)
+    # Another example
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
+        "radius": 1000.00 # it's too large
+    }
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)
 
-def test_create_alert_coordinates_not_present_and_description_not_present():
+def test_create_alert_with_wrong_type():
     data = {
-        "address": "Alert Street, 85"
+        "type": "Wrong type",
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
     }
-    # We expect a validation error because either description or coordinates must be provided
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)
 
-def test_create_alert_with_only_coordinates():
+def test_create_alert_with_correct_type():
     data = {
+        "type": AlertType.local.value,
+        "description": "This is a test alert",
         "latitude": 45.123456,
-        "longitude": 120.17
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
     }
-    # It's ok, we can create alerts with only coordinates, 
-    # so we expect the model to be created successfully and the description to be empty (default value="")
     alert = AlertIn.model_validate(data)
-    assert alert.description is not None
-    assert alert.description == ""
-
-def test_create_alert_with_only_coordinates_and_description_None():
-    # In this case the description is explicitly set to None
+    assert alert.type == AlertType.local.value
+    # Another example
     data = {
-        "description": None,
+        "type": AlertType.general.value,
+        "description": "This is a test alert",
         "latitude": 45.123456,
-        "longitude": 120.17
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
     }
-    # We expect an exception because the description is None (it should be a string)
+
+def test_create_alert_with_address_too_long():
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "A" * 257 # address too long
+    }
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)

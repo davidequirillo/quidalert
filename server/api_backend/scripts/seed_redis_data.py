@@ -60,9 +60,13 @@ async def seed_redis_gps_and_demotions(users, redis_session):
     expired_locations_int_ts_for_update = int((now - timedelta(hours=LOCATIONS_TTL_HOURS + 1)).timestamp())
     expired_demotions_int_ts = int((now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES)).timestamp())
     expired_locations_int_ts = int((now - timedelta(hours=LOCATIONS_TTL_HOURS)).timestamp())
+    at_least_one_chief_has_gps = False
+    at_least_one_chief_has_not_expired_gps = False
     for user in users:
         # Decide if this user has GPS enabled
-        if random.random() < GPS_PROBABILITY:
+        if (random.random() < GPS_PROBABILITY) or (
+            user.is_chief and (at_least_one_chief_has_gps == False)
+            ):
             lat, lon = get_random_coords(DENVER_LAT, DENVER_LON, RADIUS_KM)
             is_chief = user.is_chief
             is_demoted = False
@@ -85,13 +89,18 @@ async def seed_redis_gps_and_demotions(users, redis_session):
                 if is_chief and (not is_demoted):
                     pipe.zrem(user_locations_key, user_id_str)  # Remove from user locations if previously added
                     pipe.geoadd(chief_locations_key, (lon, lat, user_id_str))
+                    at_least_one_chief_has_gps = True
                 else:
                     pipe.zrem(chief_locations_key, user_id_str)  # Remove from chief locations if previously added
                     pipe.geoadd(user_locations_key, (lon, lat, user_id_str)) 
-                if random.random() < GPS_LOCATION_EXPIRATION_PROBABILITY:
+                if (random.random() < GPS_LOCATION_EXPIRATION_PROBABILITY) and (
+                    (not is_chief) or (at_least_one_chief_has_not_expired_gps == True)
+                    ):
                     pipe.zadd(last_updates_key, {user_id_str: expired_locations_int_ts_for_update})  # Expired location
                 else:
-                    pipe.zadd(last_updates_key, {user_id_str: now_int_ts})      
+                    pipe.zadd(last_updates_key, {user_id_str: now_int_ts})
+                    if is_chief and (not is_demoted):
+                        at_least_one_chief_has_not_expired_gps = True      
                 await pipe.execute()
                 placed_count += 1
         else:

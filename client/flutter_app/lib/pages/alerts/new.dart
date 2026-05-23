@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/location.dart';
+import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
@@ -40,12 +41,15 @@ class NewAlertBody extends StatefulWidget {
 class _NewAlertBodyState extends State<NewAlertBody> {
   final _formKey = GlobalKey<FormState>();
   final _description = TextEditingController();
+  final _customCoordinates = TextEditingController();
+  String _selectedType = AlertType.local.name;
   bool alertRequestConfirmed = false;
   bool fetchLocationError = false;
 
   @override
   void dispose() {
     _description.dispose();
+    _customCoordinates.dispose();
     super.dispose();
   }
 
@@ -55,6 +59,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.read<LocationClient>();
     final description = _description.text.trim();
+    final customCoords = _customCoordinates.text.trim();
     final bool result =
         await showDialog<bool>(
           context: context,
@@ -68,33 +73,65 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     if (result == false) {
       return;
     }
-    await _fetchLocation();
-    if (fetchLocationError == true) {
-      setState(() => alertRequestConfirmed = false);
-      return;
-    }
-    final Map<String, double>? pos = locationClient.currentPosition;
-    if (pos == null) {
-      if (mounted) {
-        await showDialog(
-          context: context,
-          builder: (context) => SimpleAlertDialog(
-            title: loc.errorError,
-            content: loc.errorPositionNotAvailable,
-          ),
-        );
-      }
-      setState(() => alertRequestConfirmed = false);
-      return;
-    }
-    final double lat = pos['lat']!;
-    final double long = pos['long']!;
-    final Map<String, dynamic> fields = {
+    Map<String, dynamic> fields = {
+      "type": _selectedType,
       "description": description,
-      "latitude": lat,
-      "longitude": long,
-      "address": locationClient.currentAddress ?? "",
     };
+    // Chiefs can create general alerts (without location)
+    // or managed/empty alerts with custom coordinates.
+    // Local alerts will use the device location as usual.
+    if (_selectedType == AlertType.general.name) {
+      // no operation needed
+    } else if (_selectedType == AlertType.managed.name ||
+        _selectedType == AlertType.empty.name) {
+      if (customCoords.isNotEmpty) {
+        final coordsArray = customCoords.split(",");
+        if (coordsArray.length == 2) {
+          final latitude = double.tryParse(coordsArray[0].trim());
+          final longitude = double.tryParse(coordsArray[1].trim());
+          if (latitude != null && longitude != null) {
+            fields["latitude"] = latitude;
+            fields["longitude"] = longitude;
+          } else {
+            setState(() => alertRequestConfirmed = false);
+            return;
+          }
+        } else {
+          setState(() => alertRequestConfirmed = false);
+          return;
+        }
+      } else {
+        setState(() => alertRequestConfirmed = false);
+        return;
+      }
+    } else {
+      await _fetchLocation();
+      if (fetchLocationError == true) {
+        setState(() => alertRequestConfirmed = false);
+        return;
+      }
+      final Map<String, double>? pos = locationClient.currentPosition;
+      if (pos == null) {
+        if (mounted) {
+          await showDialog(
+            context: context,
+            builder: (context) => SimpleAlertDialog(
+              title: loc.errorError,
+              content: loc.errorPositionNotAvailable,
+            ),
+          );
+        }
+        setState(() => alertRequestConfirmed = false);
+        return;
+      }
+      final double lat = pos['lat']!;
+      final double long = pos['long']!;
+      fields = {
+        "latitude": lat,
+        "longitude": long,
+        "address": locationClient.currentAddress ?? "",
+      };
+    }
     if (mounted) {
       showLoadingDialog(context, loc.labelWaitPlease);
       _sendAlert(fields).whenComplete(() {
@@ -205,6 +242,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.watch<LocationClient>();
+    final authClient = context.read<AuthClient>();
     return SafeArea(
       top: false,
       child: Padding(
@@ -218,6 +256,55 @@ class _NewAlertBodyState extends State<NewAlertBody> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (authClient.isChief())
+                  SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                        value: AlertType.local.name,
+                        label: Text(loc.labelLocal),
+                        icon: Icon(Icons.place),
+                      ),
+                      ButtonSegment(
+                        value: AlertType.managed.name,
+                        label: Text("Custom"),
+                        icon: Icon(Icons.manage_accounts),
+                      ),
+                      ButtonSegment(
+                        value: AlertType.general.name,
+                        label: Text(loc.labelGeneral),
+                        icon: Icon(Icons.public),
+                      ),
+                      ButtonSegment(
+                        value: AlertType.empty.name,
+                        label: Text(loc.labelEmptyF),
+                        icon: Icon(Icons.block),
+                      ),
+                    ],
+                    selected: {_selectedType},
+                    onSelectionChanged: (Set<String> newSelection) {
+                      setState(() {
+                        _selectedType = newSelection.first;
+                      });
+                    },
+                  ),
+                if (authClient.isChief() &&
+                    (_selectedType == AlertType.managed.name ||
+                        _selectedType == AlertType.empty.name))
+                  TextFormField(
+                    controller: _customCoordinates,
+                    decoration: InputDecoration(
+                      labelText: loc.labelGpsPosition,
+                      hintText: "lat, long",
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (_selectedType == AlertType.general.name ||
+                          _selectedType == AlertType.local.name) {
+                        return null; // Manual coordinates are only required for "custom" or "empty" alerts
+                      }
+                      return validateGpsCoordinates(context, value);
+                    },
+                  ),
                 TextFormField(
                   controller: _description,
                   decoration: InputDecoration(

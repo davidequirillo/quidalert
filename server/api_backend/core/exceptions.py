@@ -31,10 +31,10 @@ def two_factor_not_valid_exception():
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="2FA code not valid")
 
-def forbidden_exception():
+def forbidden_exception(s: str = "Forbidden request"):
     return HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Forbidden request")
+        detail=s)
 
 def two_factor_required_response(): # Note: this is not an exception, but a response
     return Response(
