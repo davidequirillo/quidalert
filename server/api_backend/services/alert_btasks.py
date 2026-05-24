@@ -3,7 +3,6 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import asyncio
-import uuid
 from sqlmodel import Session, select, insert, update
 from fakeredis.aioredis import FakeRedis
 from firebase_admin import messaging
@@ -15,14 +14,12 @@ from core.btask_events import (
     log_alert_error_searching_closest_chiefs,
     log_alert_error_checking_chiefs,
     log_alert_orphan_id_found_in_checking_chiefs,
-    log_alert_orphan_id_found_in_saving_chief,
     log_alert_error_saving_chief,
     log_alert_error_notifying_chief,
     log_alert_no_chief_to_notify,
     log_alert_notify_chief,
     log_alert_error_searching_nearby_users,
     log_alert_error_saving_nearby_users,
-    log_alert_orphan_id_found_in_checking_nearby_users,
     log_alert_orphan_ids_found_in_saving_nearby_users,
     log_alert_no_nearby_users_to_notify,
     log_alert_error_notifying_nearby_users,
@@ -75,9 +72,13 @@ def task_alert_search_and_notify( # notify chief and nearby users about the new 
         chief = check_chiefs_against_db_and_get_the_first(alert, closest_chiefs, request_info, db_engine)
     else:
         # For non-local alerts, the chief (alert manager) is the user who created the alert (only chiefs can create non-local alerts)
-        chief = {"user_id": user.id} if user.is_chief else None
+        chief = {"user_id": str(user.id)} if user.is_chief else None
     sender_fcm_token = get_sender_fcm_token(alert, user, request_info, db_engine)
     chief_fcm_token = save_chief_in_db_and_get_fcm_token(alert, chief, request_info, db_engine) if chief else None
+    # To avoid duplicates or errors, we check if nearby users contains the chief (alert manager), and we delete him from nearby users list
+    if chief:
+        nearby_users = [u for u in nearby_users if u["user_id"] != chief["user_id"]]
+    # We save nearby users in database as "alerted users" and we get their fcm tokens
     nearby_users_to_fcm_tokens = save_nearby_users_in_db_and_get_fcm_tokens(alert, nearby_users, request_info, db_engine)
     if sender_fcm_token:
         sender_can_be_notified = True
@@ -191,19 +192,23 @@ async def get_closest_chiefs(alert, request_info, redis_client):
             raise Exception("No chiefs found within 10,000 km radius")
         # 4. Sorting
         all_candidates.sort(key=lambda x: x[1]) # x[1] is the distance
-        for user_id, distance, coords in all_candidates[:100]:
-            closest_chiefs.append({
-                "user_id": user_id,
-                "distance_km": round(distance, 3),
-                "location": {
-                    "latitude": coords[1], # Redis returns (lon, lat)
-                    "longitude": coords[0]
-                }
-            })
+        # 5. Filtering: we keep only the closest 100 chiefs (in case there are more than 100 chiefs in total across all shards)
+        if len(all_candidates) > 100:
+            all_candidates = all_candidates[:100]
+        for user_id, distance, coords in all_candidates:
+            if user_id != str(alert.user_id): # we exclude the user who created the alert (if he is a chief) from the list of closest chiefs, to avoid duplicates or errors
+                closest_chiefs.append({
+                    "user_id": user_id,
+                    "distance_km": round(distance, 3),
+                    "location": {
+                        "latitude": coords[1], # Redis returns (lon, lat)
+                        "longitude": coords[0]
+                    }
+                })
         return closest_chiefs
     except Exception as e:
         log_alert_error_searching_closest_chiefs(str(alert.id), request_info, detail=str(e))
-        return None
+        return []
         
 async def get_nearby_users(alert, request_info, redis_client):
     """
@@ -238,15 +243,18 @@ async def get_nearby_users(alert, request_info, redis_client):
         # 4. Sorting results, based on distance (x[1] contains the distance)
         all_matches.sort(key=lambda x: x[1])
         # 5. Filtering: we keep only the first 1000 entries
-        for user_id, distance, coords in all_matches[:1000]:
-            nearby_users.append({
-                "user_id": user_id,
-                "distance_km": round(distance, 3),
-                "location": {
-                    "latitude": coords[1],  # Redis returns (lon, lat)
-                    "longitude": coords[0]
-                }
-            })
+        if len(all_matches) > 1000:
+            all_matches = all_matches[:1000]
+        for user_id, distance, coords in all_matches:
+            if user_id != str(alert.user_id): # we exclude the user who created the alert from the list of nearby users, to avoid duplicates or errors
+                nearby_users.append({
+                    "user_id": user_id,
+                    "distance_km": round(distance, 3),
+                    "location": {
+                        "latitude": coords[1],  # Redis returns (lon, lat)
+                        "longitude": coords[0]
+                    }
+                })
         return nearby_users
     except Exception as e:
         log_alert_error_searching_nearby_users(str(alert.id), request_info, detail=str(e))
@@ -265,9 +273,11 @@ def check_chiefs_against_db_and_get_the_first(alert, chiefs, request_info, db_en
             log_alert_error_checking_chiefs(str(alert.id), request_info, detail=f"Error converting chief user_id string to UUID: {e}")
             continue
     with Session(db_engine) as db_session:
-        statement = select(User.id, User.is_chief).where(
-            User.id.in_(chief_ids_as_uuid)).where( # type:ignore
-                User.is_chief==True)
+        statement = select(User.id, User.is_chief, RefreshToken.fcm_token)
+        .join(RefreshToken, RefreshToken.user_id == User.id) # type: ignore
+        .where(User.id.in_(chief_ids_as_uuid)).where( # type:ignore
+                User.is_chief==True).where(
+                    RefreshToken.fcm_token != None)
         try:
             db_results = db_session.exec(statement).all()
             existing_chief_ids_in_db = set(str(row[0]) for row in db_results)
@@ -288,7 +298,9 @@ def get_sender_fcm_token(alert, sender, request_info, db_engine):
             RefreshToken.user_id == sender.id).where(
                 RefreshToken.fcm_token != None)
         try:
-            fcm_token = db_session.exec(statement).first()
+            row = db_session.exec(statement).first()
+            if row:
+                fcm_token = row[0]
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     return fcm_token
@@ -299,7 +311,7 @@ def save_chief_in_db_and_get_fcm_token(alert, chief, request_info, db_engine):
     try:    
         chief_id = string_as_uuid(chief["user_id"])
     except Exception as e:
-        log_alert_orphan_id_found_in_saving_chief(str(alert.id), request_info, detail=f"Error converting chief user_id string to UUID: {e}")
+        log_alert_error_saving_chief(str(alert.id), request_info, detail=f"Error converting chief user_id string to UUID: {e}")
         return None
     fcm_token = None
     with Session(db_engine) as db_session:
@@ -307,8 +319,9 @@ def save_chief_in_db_and_get_fcm_token(alert, chief, request_info, db_engine):
             RefreshToken.user_id == chief_id).where(
                 RefreshToken.fcm_token != None)
         try:
-            fcm_token = db_session.exec(statement).first()
-            if fcm_token:
+            row = db_session.exec(statement).first()
+            if row:
+                fcm_token = row[0]
                 # We insert the chief into alerted_users table (if he is the closest chief, we notify only him, not the nearby users, so we insert only him in alerted_users table)
                 stmt = insert(AlertedUser).values(
                     alert_id=alert.id,
@@ -331,9 +344,10 @@ def save_nearby_users_in_db_and_get_fcm_tokens(alert, users, request_info, db_en
     ids_as_uuid = []
     for uid in ids:
         try:
-            ids_as_uuid.append(string_as_uuid(uid))
+            uuid = string_as_uuid(uid)
+            ids_as_uuid.append(uuid)
         except Exception as e:
-            log_alert_orphan_id_found_in_checking_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
+            log_alert_error_saving_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
             continue
     users_to_tokens = {}
     with Session(db_engine) as db_session:
@@ -343,24 +357,28 @@ def save_nearby_users_in_db_and_get_fcm_tokens(alert, users, request_info, db_en
             .where(RefreshToken.fcm_token != None))
         try:
             db_results = db_session.exec(statement).all()
-            users_to_tokens = {row[0]: row[1] for row in db_results}
+            users_to_tokens = {str(row[0]): row[1] for row in db_results}
             # Identification of orphans 
             # Who is in Redis, but not in Postgres? (very rare event)
             existing_ids_in_db = set(users_to_tokens.keys())
-            orphans = [uid for uid in ids_as_uuid if uid not in existing_ids_in_db]
+            orphans = [uid for uid in ids_as_uuid if str(uid) not in existing_ids_in_db]
             if orphans:
                 err_detail = f"Orphan user_ids found (in Redis but not in Postgres): {orphans}"
                 log_alert_orphan_ids_found_in_saving_nearby_users(str(alert.id), request_info, detail=err_detail)
             valid_data_for_db_bulk_insert = []
             for u_id in existing_ids_in_db:
-                if u_id != alert.user_id: # don't insert the user who created the alert into alerted_users table (we insert only the chief and nearby users)
-                    valid_data_for_db_bulk_insert.append({
-                        "alert_id": alert.id,
-                        "user_id": u_id,
-                        "is_manager": False,
-                        "vote": 0,
-                        "closing_vote": 0
-                    })
+                try:
+                    uuid = string_as_uuid(u_id)
+                except Exception as e:
+                    log_alert_error_saving_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
+                    continue
+                valid_data_for_db_bulk_insert.append({
+                    "alert_id": alert.id,
+                    "user_id": uuid,
+                    "is_manager": False,
+                    "vote": 0,
+                    "closing_vote": 0
+                })
             if valid_data_for_db_bulk_insert:
                 # bulk insert chief and nearby users into alerted_users table 
                 stmt = insert(AlertedUser)
@@ -399,10 +417,16 @@ def notify_nearby_users(alert, user_ids, fcm_tokens, message: str, request_info,
                         tokens_to_delete_by_ids.append(chunk_user_ids[index])
                         tokens_to_delete.append(chunk_tokens[index])
             if tokens_to_delete_by_ids:
+                tokens_to_delete_by_uuids = []
+                for uid in tokens_to_delete_by_ids:
+                    try:
+                        tokens_to_delete_by_uuids.append(string_as_uuid(uid))
+                    except Exception as e:
+                        log_alert_warning_notifying_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
                 with Session(db_engine) as db_session:
                 # We clean unregistered FCM tokens (by ids in...) from database
                     statement = update(RefreshToken).where(
-                        RefreshToken.user_id.in_(tokens_to_delete_by_ids) # type:ignore
+                        RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
                         ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
                         ).values(
                             fcm_token=None, fcm_token_updated_at=None)
@@ -439,8 +463,12 @@ def notify_single_user(alert, user_id, fcm_token, message: str, request_info, lo
     except messaging.UnregisteredError as e:
         with Session(db_engine) as db_session: # needed to do some cleaning (if there are invalid fcm tokens)
             # We clean unregistered FCM token from database
+            try:
+                user_id_as_uuid = string_as_uuid(user_id)
+            except Exception as e:
+                raise Exception(f"Error converting user_id string to UUID: {e}")
             statement = select(RefreshToken).where(
-                RefreshToken.user_id == user_id).where(
+                RefreshToken.user_id == user_id_as_uuid).where(
                     RefreshToken.fcm_token == fcm_token)
             rtoken = db_session.exec(statement).first()
             if rtoken:

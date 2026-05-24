@@ -30,12 +30,6 @@ def log_alert_orphan_id_found_in_checking_chiefs(alert_id: str, request_info: di
         extra=request_info
     )
 
-def log_alert_orphan_id_found_in_saving_chief(alert_id: str, request_info: dict, detail: str = ""):
-    logger.warning(
-        f"alert_orphan_id_found_in_saving_chief, alert_id={alert_id}, detail={detail}",
-        extra=request_info
-    )
-
 def log_alert_no_chief_to_notify(alert_id: str, request_info: dict, detail: str = ""):
     logger.warning(
         f"alert_no_chief_to_notify, alert_id={alert_id}, detail={detail}",
@@ -63,12 +57,6 @@ def log_alert_error_searching_nearby_users(alert_id: str, request_info: dict, de
 def log_alert_error_saving_nearby_users(alert_id: str, request_info: dict, detail: str):
     logger.error(
         f"alert_error_saving_nearby_users, alert_id={alert_id}, detail={detail}",
-        extra=request_info
-    )
-
-def log_alert_orphan_id_found_in_checking_nearby_users(alert_id: str, request_info: dict, detail: str = ""):
-    logger.warning(
-        f"alert_orphan_id_found_in_checking_nearby_users, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
