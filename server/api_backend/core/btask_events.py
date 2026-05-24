@@ -12,39 +12,39 @@ def log_alert_error_searching_closest_chiefs(alert_id: str, request_info: dict, 
         extra=request_info
     )
 
-def log_alert_error_checking_chiefs(alert_id: str, request_info: dict, detail: str):
+def log_alert_error_checking_closest_chiefs(alert_id: str, request_info: dict, detail: str):
     logger.error(
-        f"alert_error_checking_chiefs, alert_id={alert_id}, detail={detail}",
+        f"alert_error_checking_closest_chiefs, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
-def log_alert_error_saving_chief(alert_id: str, request_info: dict, detail: str):
-    logger.error(
-        f"alert_error_saving_chief, alert_id={alert_id}, detail={detail}",
-        extra=request_info
-    )
-
-def log_alert_orphan_id_found_in_checking_chiefs(alert_id: str, request_info: dict, detail: str = ""):
+def log_alert_orphan_ids_found_in_checking_closest_chiefs(alert_id: str, request_info: dict, detail: str = ""):
     logger.warning(
-        f"alert_orphan_id_found_in_checking_chiefs, alert_id={alert_id}, detail={detail}",
+        f"alert_orphan_ids_found_in_checking_closest_chiefs, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
-def log_alert_no_chief_to_notify(alert_id: str, request_info: dict, detail: str = ""):
-    logger.warning(
-        f"alert_no_chief_to_notify, alert_id={alert_id}, detail={detail}",
-        extra=request_info
-    )
-
-def log_alert_error_notifying_chief(alert_id: str, request_info: dict, detail: str = ""):
+def log_alert_error_saving_closest_chief(alert_id: str, request_info: dict, detail: str):
     logger.error(
-        f"alert_error_notifying_chief, alert_id={alert_id}, detail={detail}",
+        f"alert_error_saving_closest_chief, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
-def log_alert_notify_chief(alert_id: str, request_info: dict, detail: str = ""):
+def log_alert_no_closest_chief_to_notify(alert_id: str, request_info: dict, detail: str = ""):
+    logger.warning(
+        f"alert_no_closest_chief_to_notify, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_notifying_closest_chief(alert_id: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"alert_error_notifying_closest_chief, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_notify_closest_chief(alert_id: str, request_info: dict, detail: str = ""):
     logger.info(
-        f"alert_notify_chief, alert_id={alert_id}, detail={detail}",
+        f"alert_notify_closest_chief, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
@@ -54,15 +54,21 @@ def log_alert_error_searching_nearby_users(alert_id: str, request_info: dict, de
         extra=request_info
     )
 
-def log_alert_error_saving_nearby_users(alert_id: str, request_info: dict, detail: str):
+def log_alert_error_checking_nearby_users(alert_id: str, request_info: dict, detail: str):
     logger.error(
-        f"alert_error_saving_nearby_users, alert_id={alert_id}, detail={detail}",
+        f"alert_error_checking_nearby_users, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
-def log_alert_orphan_ids_found_in_saving_nearby_users(alert_id: str, request_info: dict, detail: str = ""):
+def log_alert_orphan_ids_found_in_checking_nearby_users(alert_id: str, request_info: dict, detail: str = ""):
     logger.warning(
-        f"alert_orphan_ids_found_in_saving_nearby_users, alert_id={alert_id}, detail={detail}",
+        f"alert_orphan_ids_found_in_checking_nearby_users, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_saving_nearby_users(alert_id: str, request_info: dict, detail: str):
+    logger.error(
+        f"alert_error_saving_nearby_users, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
