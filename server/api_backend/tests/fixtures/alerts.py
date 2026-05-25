@@ -109,13 +109,47 @@ def setup_fake_functions(mocker):
     }
 
 @pytest.fixture(autouse=True)
-def setup_data_and_teardown(db_session, redis_session):
+def setup_users_data_and_teardown(db_session, redis_session):
     create_test_users(db_session)
     # Assign GPS location data to users in Redis
     asyncio.run(assign_redis_data_to_users(db_session, redis_session))
     yield
     # Teardown: flush Redis and delete users from the database
     asyncio.run(redis_session.flushall())
-    db_session.exec(delete(Alert))
     db_session.exec(delete(User))
     db_session.commit()
+
+@pytest.fixture(name="test_alert")
+def create_test_alert(db_session):
+    user = User(
+        firstname="Alert",
+        surname="Creator",
+        email="alert.creator@example.com",
+        password_hash="hashed_password",
+        is_active=True,
+        role=UserRole.citizen.value,
+        language=UserLanguage.en.value
+    )
+    db_session.add(user)
+    db_session.refresh(user)
+    alert = Alert(
+        type=AlertType.local.value,
+        description="Test alert description",
+        user_id=user.id,
+        latitude=DENVER_LAT,
+        longitude=DENVER_LON,
+        radius=1
+    )
+    db_session.add(alert)
+    db_session.commit()
+    db_session.refresh(alert)
+    return alert
+
+@pytest.fixture(name="test_request_info")
+def create_test_request_info():
+    return {
+        "client_ip": "0.0.0.0",
+        "request_id": "request_id_123",
+        "user_agent": "test_user_agent",
+        "user_id": "test_user_id"
+    }
