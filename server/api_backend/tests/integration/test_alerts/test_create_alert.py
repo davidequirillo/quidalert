@@ -11,7 +11,7 @@ from core.exceptions import (
 )
 from models.general import User, Alert, AlertType, AlertedUser
 from services.security import now_tz_naive
-from tests.fixtures.alerts import setup_data_and_teardown, setup_fake_functions
+from tests.fixtures.alerts import setup_users_data_and_teardown, setup_fake_functions
 
 def test_create_alert_not_authorized_missing_token(client):
     data = {

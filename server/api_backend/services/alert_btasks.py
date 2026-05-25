@@ -429,8 +429,8 @@ def notify_nearby_users(alert, user_ids, fcm_tokens, message: str, request_info,
             for index, res in enumerate(response.responses):
                 if not res.success:
                     if res.exception.code == 'messaging/registration-token-not-registered':
-                        tokens_to_delete_by_ids.append(chunk_user_ids[i+index])
-                        tokens_to_delete.append(chunk_tokens[i+index])
+                        tokens_to_delete_by_ids.append(chunk_user_ids[index])
+                        tokens_to_delete.append(chunk_tokens[index])
             if tokens_to_delete_by_ids:
                 tokens_to_delete_by_uuids = []
                 for uid in tokens_to_delete_by_ids:
