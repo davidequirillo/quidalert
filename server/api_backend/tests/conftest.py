@@ -237,6 +237,7 @@ def existing_superuser(db_session):
     )
     db_session.add(superuser)
     db_session.commit()
+    db_session.refresh(superuser)
     return superuser
 
 @pytest.fixture(name="whitelist_entry")
@@ -244,4 +245,5 @@ def existing_whitelist_entry(db_session):
     entry = WhiteListEntry(email="whitelisted@example.com", created_by="admin@example.com")
     db_session.add(entry)
     db_session.commit()
+    db_session.refresh(entry)
     return entry
