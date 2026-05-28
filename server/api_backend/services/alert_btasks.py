@@ -393,13 +393,13 @@ def save_nearby_users_in_db_and_get_fcm_tokens(alert, users, request_info, db_en
 def get_sender_fcm_token(alert, sender, request_info, db_engine):
     fcm_token = None
     with Session(db_engine) as db_session:
-        statement = select(RefreshToken.fcm_token).where(
+        statement = select(RefreshToken).where(
             RefreshToken.user_id == sender.id).where(
-                RefreshToken.fcm_token != None)
+                RefreshToken.fcm_token is not None)
         try:
             row = db_session.exec(statement).first()
             if row:
-                fcm_token = row[0]
+                fcm_token = row.fcm_token
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     return fcm_token

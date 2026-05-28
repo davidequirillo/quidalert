@@ -120,11 +120,12 @@ def setup_users_data_and_teardown(db_session, redis_session):
     db_session.commit()
 
 @pytest.fixture(name="test_alert")
-def create_test_alert(db_session, not_logged_test_user):
+def create_test_alert(db_session, test_baseuser):
+    user: User = test_baseuser["user"]
     alert = Alert(
         type=AlertType.local.value,
         description="Test alert description",
-        user_id=not_logged_test_user.id,
+        user_id=user.id,
         latitude=DENVER_LAT,
         longitude=DENVER_LON,
         radius=1
