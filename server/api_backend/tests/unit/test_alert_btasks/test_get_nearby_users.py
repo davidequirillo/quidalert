@@ -83,19 +83,31 @@ async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, te
         distance = haversine(alert_coords, user_location, unit=Unit.KILOMETERS)
         assert distance > test_alert.radius
     # Now we call the function to get the closest chiefs and nearby users
-    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_session)
+    redis_engine = redis_session # Redis session is a fake Redis engine in test mode
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     # We assert that the closest chiefs are all chiefs
     # We remember that the closest chiefs are all chiefs (at maximum the first 100, in our example 7 chiefs), 
     # ordered by distance, even those outside the alert radius
     expected_closest_chief_ids = set([f"chief_{i}" for i in range(4)] + [f"chief_{i}" for i in range(4, 7)])
     for chief in closest_chiefs:
         assert chief["user_id"] in expected_closest_chief_ids
+        assert chief["distance_km"] is not None
+        location = chief["location"]
+        assert location["latitude"] < test_alert.latitude + 1.0
+        assert location["latitude"] > test_alert.latitude - 1.0
+        assert location["longitude"] < test_alert.longitude + 1.0
+        assert location["longitude"] > test_alert.longitude - 1.0
     assert len(closest_chiefs) == len(expected_closest_chief_ids)
     # Nearby users are only users inside the alert radius
     expected_nearby_user_ids = set([f"user_{i}" for i in range(7, 12)])
     for user in nearby_users:
         assert user["user_id"] in expected_nearby_user_ids
         assert user["distance_km"] <= test_alert.radius
+        location = user["location"]
+        assert location["latitude"] < test_alert.latitude + 0.0015
+        assert location["latitude"] > test_alert.latitude - 0.0015
+        assert location["longitude"] < test_alert.longitude + 0.0015
+        assert location["longitude"] > test_alert.longitude - 0.0015
     assert len(nearby_users) == len(expected_nearby_user_ids)
     # We also check that the closest chiefs are ordered by distance
     closest_chiefs_sorted_by_distance = sorted(closest_chiefs, key=lambda x: x["distance_km"])
@@ -105,7 +117,7 @@ async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, te
     assert nearby_users == nearby_users_sorted_by_distance
     # Now we check that the function returns an empty list of nearby users if the alert radius is very small
     test_alert.radius = 0.00001  # very small radius
-    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_session)
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     # Nearby users empty for a very small alert radius, obviously
     assert len(nearby_users) == 0
     # But closest chiefs are still returned, because they are not related to the alert radius
@@ -114,7 +126,7 @@ async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, te
     # if the alert type is "managed" (created only by a chief, so the closest chief will be the alert creator)
     test_alert.type = AlertType.managed.value
     test_alert.radius = 1.0  # we set a normal radius, to check that nearby users are still returned
-    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_session)
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     assert len(closest_chiefs) == 0
     # Nearby users are still returned, because they are not related to the alert type
     expected_nearby_user_ids = set([f"user_{i}" for i in range(7, 12)])
@@ -186,19 +198,31 @@ async def test_get_closest_chiefs_and_nearby_users_exclude_alert_user_id(db_sess
     assert distance <= test_alert.radius
     # Now we call the function to get the closest chiefs and nearby users
     # We check that the function excludes the alert user id from the closest chiefs and from the nearby users, even if it is within the alert radius
-    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_session)
+    redis_engine = redis_session # Redis session is a fake Redis engine in test mode
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     for user in nearby_users:
         assert user["user_id"] != str(test_alert.user_id)
         assert user["distance_km"] <= test_alert.radius
+        location = user["location"]
+        assert location["latitude"] < test_alert.latitude + 0.001
+        assert location["latitude"] > test_alert.latitude - 0.001
+        assert location["longitude"] < test_alert.longitude + 0.001
+        assert location["longitude"] > test_alert.longitude - 0.001
     assert len(nearby_users) == 4  # only the other 4 nearby users
     for chief in closest_chiefs:
         assert chief["user_id"] != str(test_alert.user_id)
         assert chief["distance_km"] <= test_alert.radius
+        location = chief["location"]
+        assert location["latitude"] < test_alert.latitude + 0.0005
+        assert location["latitude"] > test_alert.latitude - 0.0005
+        assert location["longitude"] < test_alert.longitude + 0.0005
+        assert location["longitude"] > test_alert.longitude - 0.0005
     assert len(closest_chiefs) == 3  # only the other 3 chiefs
 
 async def test_get_closest_chiefs_and_nearby_users_no_redis_data(redis_session, test_alert, test_request_info):
     # We check that the function returns empty lists if there is no data in Redis
-    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_session)
+    redis_engine = redis_session # Redis session is a fake Redis engine in test mode
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     assert len(closest_chiefs) == 0
     assert len(nearby_users) == 0
 
@@ -228,14 +252,21 @@ async def test_get_closest_chiefs_and_nearby_users_many_records(redis_session, t
     distance = haversine(alert_coords, user_location, unit=Unit.KILOMETERS)
     assert distance <= test_alert.radius
     # Now we call the function to get the closest chiefs and nearby users
-    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_session)
+    redis_engine = redis_session # Redis session is a fake Redis engine in test mode
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     # We check that the function returns only the chiefs and users within the alert radius, even if there are many records in Redis
     for chief in closest_chiefs:
         assert chief["distance_km"] <= test_alert.radius
+        location = chief["location"]
+        assert round(location["latitude"], 4) == round(chief_location[0], 4)
+        assert round(location["longitude"], 4) == round(chief_location[1], 4)
     # We check that the function returns at most 100 closest chiefs (the maximum allowed), even if there are more than 100 chiefs in Redis
     assert len(closest_chiefs) == 100 
     for user in nearby_users:
         assert user["distance_km"] <= test_alert.radius
+        location = user["location"]
+        assert round(location["latitude"], 4) == round(user_location[0], 4)
+        assert round(location["longitude"], 4) == round(user_location[1], 4)
     # We check that the function returns 1000 nearby users (the maximum allowed), even if there are more than 1000 nearby users in Redis
     assert len(nearby_users) == 1000
     # We also check that the closest chiefs are ordered by distance

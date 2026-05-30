@@ -8,12 +8,11 @@ import pytest
 from scripts.seed_redis_data import (
     DENVER_LAT, 
     DENVER_LON,
-    GPS_PROBABILITY,
     get_random_coords
 )
 from sqlmodel import delete, select
 from models.general import (
-    User, UserRole, UserLanguage,
+    User, UserRole, RefreshToken, UserLanguage,
     Alert, AlertType
 )
 from services.security import now_tz_naive, now_tz_aware
@@ -23,7 +22,8 @@ from core.dbmgr import (
     get_redis_location_last_updates_key,
 )
 
-RADIUS = 5  # Radius in kilometers for random location generation around Denver
+GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
+RADIUS_KM = 5  # Radius in kilometers for random location generation around Denver
 
 def create_test_users(db_session):
     roles = [r.value for r in UserRole]
@@ -42,8 +42,8 @@ def create_test_users(db_session):
     )
     db_session.add(superuser)
     db_session.commit()
-    # Create 100 normal users with random roles
-    for i in range(100):
+    # Create 200 normal users with random roles
+    for i in range(200):
         user = User(
             email=f"user{i}@example.com",
             password_hash="hashed_password",
@@ -65,12 +65,23 @@ def create_test_users(db_session):
             firstname=f"ChiefFirstname{i}",
             surname=f"ChiefSurname{i}",
             is_active=True,
+            is_chief=True,
             role=UserRole.citizen.value,
             language=UserLanguage.en.value,
             authorized_by=superuser.email,
             authorized_at=now_tz_naive()
         )
         db_session.add(chief)
+    db_session.commit()
+    users = db_session.exec(select(User)).all()
+    # For each user, we assign a test FCM token
+    for user in users:
+        refresh_token = RefreshToken(
+            user_id=user.id,
+            raw_hash="hashed_token_code",
+            fcm_token=f"fcm_token_for_user_{user.id}"
+        )
+        db_session.add(refresh_token)
     db_session.commit()
 
 async def assign_redis_data_to_users(db_session, redis_session):
@@ -81,7 +92,7 @@ async def assign_redis_data_to_users(db_session, redis_session):
         if (random.random() < GPS_PROBABILITY) or (
             user.is_chief and (at_least_one_chief_has_gps == False)
         ):
-            lat, lon = get_random_coords(DENVER_LAT, DENVER_LON, RADIUS)
+            lat, lon = get_random_coords(DENVER_LAT, DENVER_LON, RADIUS_KM)
             user_id_str = str(user.id)
             chief_locations_key = get_redis_chief_locations_key(user_id_str)
             user_locations_key = get_redis_user_locations_key(user_id_str)
@@ -116,6 +127,7 @@ def setup_users_data_and_teardown(db_session, redis_session):
     yield
     # Teardown: flush Redis and delete users from the database
     asyncio.run(redis_session.flushall())
+    db_session.exec(delete(RefreshToken))
     db_session.exec(delete(User))
     db_session.commit()
 
