@@ -25,6 +25,16 @@ from core.dbmgr import (
 GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
 RADIUS_KM = 5  # Radius in kilometers for random location generation around Denver
 
+def print_alert_coordinates_and_nearby_users(alert, user, closest_chiefs, nearby_users):
+    print()
+    print(f"Test alert ID: {alert.id}")
+    print(f"Alert sender: ID {alert.user_id} email {user.email}")
+    print(f"Alert coordinates: ({alert.latitude}, {alert.longitude})")
+    for chief in closest_chiefs:
+        print(f"Closest chief: {chief['user_id']} at distance {chief['distance_km']} km")
+    for nearby_user in nearby_users:
+        print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+
 def create_test_users(db_session):
     roles = [r.value for r in UserRole]
     languages = [l.value for l in UserLanguage]
@@ -42,8 +52,8 @@ def create_test_users(db_session):
     )
     db_session.add(superuser)
     db_session.commit()
-    # Create 200 normal users with random roles
-    for i in range(200):
+    # Create 300 normal users with random roles
+    for i in range(300):
         user = User(
             email=f"user{i}@example.com",
             password_hash="hashed_password",

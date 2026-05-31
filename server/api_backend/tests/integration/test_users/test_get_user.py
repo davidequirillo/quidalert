@@ -120,6 +120,9 @@ def test_get_user_success(client, db_session, test_admin):
     assert response_user["language"] == testuser.language
     assert "password_hash" not in response_user
     assert "password" not in response_user
+    assert "activation_code" not in response_user
+    assert "reset_code_hash" not in response_user
+    assert "login_code_hash" not in response_user
     assert isinstance(response_alerts, list)
     assert len(response_alerts) == 0
 
