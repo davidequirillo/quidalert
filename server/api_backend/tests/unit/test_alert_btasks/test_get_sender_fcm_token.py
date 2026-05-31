@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from sqlmodel import select
-from models.general import User, Alert, RefreshToken
+from models.general import User, RefreshToken
 from services.alert_btasks import get_sender_fcm_token
 from tests.fixtures.alerts import (
     create_test_alert, 

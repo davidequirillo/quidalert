@@ -57,6 +57,9 @@ def test_get_users_by_email_success(client, db_session, test_officer):
     assert user_data["email"] == "testuser5@example.com"
     assert "password" not in user_data
     assert "password_hash" not in user_data
+    assert "activation_code" not in user_data
+    assert "reset_code_hash" not in user_data
+    assert "login_code_hash" not in user_data
 
 def test_get_users_by_email_not_found(client, test_admin):
     user: User = test_admin['user']

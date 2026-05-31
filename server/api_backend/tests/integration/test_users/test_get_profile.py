@@ -36,3 +36,6 @@ def test_get_profile_successful(client, test_baseuser):
     assert data["language"] == user.language
     assert "password" not in data
     assert "password_hash" not in data
+    assert "activation_code" not in data
+    assert "reset_code_hash" not in data
+    assert "login_code_hash" not in data

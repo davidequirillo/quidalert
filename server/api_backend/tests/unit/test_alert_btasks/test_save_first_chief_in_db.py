@@ -5,7 +5,7 @@
 from sqlmodel import select, delete
 from models.general import (
     string_as_uuid,
-    User, Alert, RefreshToken, AlertedUser
+    User, RefreshToken, AlertedUser
 )
 from services.alert_btasks import (
     get_closest_chiefs_and_nearby_users,
@@ -14,7 +14,8 @@ from services.alert_btasks import (
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown,
     create_test_alert,
-    create_test_request_info
+    create_test_request_info,
+    print_alert_coordinates_and_nearby_users
 )
 
 async def test_save_first_chief_in_db_success(db_session, redis_session, test_alert, test_request_info):
@@ -35,14 +36,7 @@ async def test_save_first_chief_in_db_success(db_session, redis_session, test_al
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print()
-    print(f"Test alert ID: {test_alert.id}")
-    print(f"Alert sender: ID {test_alert.user_id} email {user.email}")
-    print(f"Alert coordinates: ({test_alert.latitude}, {test_alert.longitude})")
-    for chief in closest_chiefs:
-        print(f"Closest chief: {chief['user_id']} at distance {chief['distance_km']} km")
-    for nearby_user in nearby_users:
-        print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     closest_chiefs_num = len(closest_chiefs)
     first_chief, first_chief_fcm_token = save_first_chief_in_db_and_get_fcm_token(test_alert, closest_chiefs, test_request_info, db_engine)
     if closest_chiefs_num > 0:
@@ -88,6 +82,7 @@ async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
+    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
        print("No closest chiefs in Redis for this test. Please retry it")
        return
@@ -101,6 +96,68 @@ async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db
         # The chief_id of the alerted user should be the same as the id of the second closest chief 
         # ...because the first closest chief has a wrong id, 
         # so the function should skip it and save the second closest chief as "first chief with FCM token"
+        assert first_chief["user_id"] == closest_chiefs[1]["user_id"]
+        # Here we should have exactly one alerted user in the database, and it should be the closest chief
+        # Note: in this test we are saving only the first chief and not all nearby users
+        statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
+        alerted_users = db_session.exec(statement).all()
+        assert len(alerted_users) == 1
+        assert alerted_users[0].user_id == string_as_uuid(closest_chiefs[1]["user_id"])
+        assert alerted_users[0].alert_id == test_alert.id
+        assert alerted_users[0].vote == 0  # default value
+        assert alerted_users[0].closing_vote == 0  # default value
+        assert alerted_users[0].is_manager == True # The first chief is the alert manager
+        refresh_token = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alerted_users[0].user_id)).first()
+        assert refresh_token is not None
+        assert refresh_token.fcm_token == first_chief_fcm_token
+    else:
+        print("Not enough closest chiefs in Redis for this test. Please retry it")
+        assert first_chief_fcm_token is None
+        assert first_chief is None
+        return
+    
+async def test_save_first_chief_in_db_orphan_is_no_longer_a_chief_in_db(db_session, redis_session, test_alert, test_request_info):
+    assert test_alert is not None
+    assert test_alert.id is not None
+    # Now we select a user from the database (see tests/fixtures/alerts.py)
+    statement = select(User).where(User.email == "user15@example.com")
+    user = db_session.exec(statement).first()
+    assert user is not None
+    assert user.id is not None
+    # We assign the user id to the alert (to simulate a real alert created by a specific user) and save it in the database
+    test_alert.user_id = user.id
+    db_session.add(test_alert)
+    db_session.commit()
+    db_session.refresh(test_alert)
+    db_engine = db_session.get_bind()
+    # Redis session is a fake Redis engine for testing mode
+    redis_engine = redis_session
+    # We get closest chiefs and nearby users from Redis
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
+    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    if not closest_chiefs:
+        print("No closest chiefs in Redis for this test. Please retry it")
+        return
+    first_chief_is_not_a_chief = closest_chiefs[0]
+    # We change "is_chief" flag to simulate the case where the first closest chief is no longer a chief in the database
+    # The first closest chief, in other words is an orphan chief in Redis, 
+    # because in the database counterpart he is no longer a chief, so the function should skip it and save the second closest chief as "first chief with FCM token"
+    first_chief_is_not_a_chief_user_id = string_as_uuid(first_chief_is_not_a_chief["user_id"])
+    statement = select(User).where(User.id == first_chief_is_not_a_chief_user_id)
+    chief_user = db_session.exec(statement).first()
+    assert chief_user is not None
+    assert chief_user.is_chief == True # Before the change it was a chief in database
+    chief_user.is_chief = False # But now, is no longer a chief in database
+    db_session.add(chief_user)
+    db_session.commit()
+    closest_chiefs_num = len(closest_chiefs)
+    first_chief, first_chief_fcm_token = save_first_chief_in_db_and_get_fcm_token(test_alert, closest_chiefs, test_request_info, db_engine)
+    if closest_chiefs_num > 1: # We need at least 2 closest chiefs in Redis for this test, because the first closest chief is no longer a chief in the database and cannot be taken as "first chief with FCM token"
+        assert first_chief_fcm_token is not None
+        assert first_chief is not None
+        # The chief_id of the alerted user should be the same as the id of the second closest chief 
+        # ...because the first closest chief is no longer a chief in database), 
+        # so the function should skip it and save the second closest chief as the first chief with FCM token
         assert first_chief["user_id"] == closest_chiefs[1]["user_id"]
         # Here we should have exactly one alerted user in the database, and it should be the closest chief
         # Note: in this test we are saving only the first chief and not all nearby users
@@ -139,14 +196,7 @@ async def test_save_first_chief_in_db_found_orphan_with_no_fcm_token(db_session,
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print()
-    print(f"Test alert ID: {test_alert.id}")
-    print(f"Alert sender: ID {test_alert.user_id} email {user.email}")
-    print(f"Alert coordinates: ({test_alert.latitude}, {test_alert.longitude})")
-    for chief in closest_chiefs:
-        print(f"Closest chief: {chief['user_id']} at distance {chief['distance_km']} km")
-    for nearby_user in nearby_users:
-        print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
         print("No closest chiefs in Redis for this test. Please retry it")
         return
@@ -205,14 +255,7 @@ async def test_save_first_chief_in_db_3_orphan_chiefs_deleted_from_db(db_session
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print()
-    print(f"Test alert ID: {test_alert.id}")
-    print(f"Alert sender: ID {test_alert.user_id} email {user.email}")
-    print(f"Alert coordinates: ({test_alert.latitude}, {test_alert.longitude})")
-    for chief in closest_chiefs:
-        print(f"Closest chief: {chief['user_id']} at distance {chief['distance_km']} km")
-    for nearby_user in nearby_users:
-        print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if (not closest_chiefs) or (len(closest_chiefs) < 4):
         print("Not enough closest chiefs in Redis for this test. Please retry it")
         return
@@ -274,14 +317,7 @@ async def test_save_first_chief_in_db_all_orphan_chiefs_deleted_from_db(db_sessi
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print()
-    print(f"Test alert ID: {test_alert.id}")
-    print(f"Alert sender: ID {test_alert.user_id} email {user.email}")
-    print(f"Alert coordinates: ({test_alert.latitude}, {test_alert.longitude})")
-    for chief in closest_chiefs:
-        print(f"Closest chief: {chief['user_id']} at distance {chief['distance_km']} km")
-    for nearby_user in nearby_users:
-        print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
         print("No closest chiefs in Redis for this test. Please retry it")
         return
