@@ -182,7 +182,9 @@ def create_logged_test_user(user_type, db_session: Session):
         raw_hash=raw_str_hash,
         ip_address=None,
         device_info=None,
-        updated_at=now
+        fcm_token="fake-fcm-token-for-user-" + str(test_user.id),
+        fcm_token_updated_at=now,
+        updated_at=now,
     )
     db_session.add(refresh_token)
     db_session.commit()

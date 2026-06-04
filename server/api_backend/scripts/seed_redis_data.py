@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta
 import asyncio
+import math
 import random
 from sqlmodel import Session, select
 from core.dbmgr import (
@@ -31,8 +32,18 @@ db_engine = get_engine()
 redis_handle = get_redis_handle()
 
 def get_random_coords(lat, lon, max_km):
-    delta_lat = (random.uniform(-max_km, max_km)) / 111
-    delta_lon = (random.uniform(-max_km, max_km)) / (111 * 0.77)
+    # We convert the maximum distance from kilometers to degrees (for latitude it's approximately 111.32 km per degree)
+    max_radius_degrees = max_km / 111.32
+    # We generate a random angle and a random radius (with a distribution that ensures uniformity in the area)
+    angle = random.uniform(0, 2 * math.pi)
+    # The square root ensures uniform distribution over the area
+    radius = math.sqrt(random.uniform(0, 1)) * max_radius_degrees
+    # Calculate the deltas in degrees
+    delta_lat = radius * math.cos(angle)
+    # For longitude, we need to divide by the cosine of the latitude
+    # (meridians converge as we approach the poles)
+    lat_in_radians = math.radians(lat)
+    delta_lon = (radius * math.sin(angle)) / math.cos(lat_in_radians)
     return lat + delta_lat, lon + delta_lon
 
 def get_users_from_db(db_session):

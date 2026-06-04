@@ -31,8 +31,7 @@ def test_register_device_user_not_authorized(client, db_session, test_baseuser):
     statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
     result = db_session.exec(statement).first()
     assert result is not None
-    assert result.fcm_token == None
-    assert result.fcm_token_updated_at == None
+    assert (result.fcm_token is None) or (result.fcm_token != "test_fcm_token")
 
 def test_register_device_access_token_expired(client, test_baseuser):
     user: User = test_baseuser['user']
