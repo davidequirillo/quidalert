@@ -110,9 +110,9 @@ def create_alert(alert_in: AlertIn,
         return {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
     # For managed alerts, we need to search for nearby users and notify them
     # For local alerts, we need to search for nearby chiefs and users and notify them
-    # so... we must go on
-    alert_copy = alert.model_copy()
-    curr_user_copy = current_user.model_copy()
+    # so... we must go on with the search and notification process, but we do it in background to avoid making the current user wait for it
+    alert_copy = Alert.model_validate(alert)
+    curr_user_copy = User.model_validate(current_user)
     req_info = get_request_info(str(current_user.id))
     background_tasks.add_task(
         task_alert_search_and_notify, 

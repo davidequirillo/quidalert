@@ -39,23 +39,27 @@ from core.dbmgr import (
 alert_notification_templates = {
     "en": {
         "alert_prefix": "{name} has created a new alert:",
-        "no_chief_available_with_nearby_users": "No chief is available, but there are other users nearby who have been notified. Contact emergency services by phone if the situation is serious.",
+        "no_chief_available_but_nearby_users": "No chief is available, but there are other users nearby who have been notified. Contact emergency services by phone if the situation is serious.",
         "no_chief_available_no_nearby_users": "No chief is available and there are no other users nearby to notify. Contact emergency services by phone if the situation is serious.",
         "chief_and_nearby_users_notified": "The closest chief and nearby users have been notified about the new alert.",
-        "chief_notified": "The closest chief has been notified about the new alert.",
+        "only_chief_notified": "The closest chief has been notified about the new alert, but there are no nearby users to notify.",
         "nearby_users_notified": "Nearby users have been notified about the new alert.",
         "no_nearby_users_available": "There are no nearby users to notify about the new alert."
     },
     "it": {
         "alert_prefix": "{name} ha creato una nuova allerta:",
-        "no_chief_available_with_nearby_users": "Nessun capo è disponibile, ma ci sono altri utenti nelle vicinanze che sono stati notificati. Contatta telefonicamente i soccorsi se la situazione è grave.",
+        "no_chief_available_but_nearby_users": "Nessun capo è disponibile, ma ci sono altri utenti nelle vicinanze che sono stati notificati. Contatta telefonicamente i soccorsi se la situazione è grave.",
         "no_chief_available_no_nearby_users": "Nessun capo è disponibile e non ci sono altri utenti nelle vicinanze da notificare. Contatta telefonicamente i soccorsi se la situazione è grave.",
         "chief_and_nearby_users_notified": "Il capo più vicino e gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
-        "chief_notified": "Il capo più vicino è stato notificato riguardo alla nuova allerta.",
+        "only_chief_notified": "Il capo più vicino è stato notificato riguardo alla nuova allerta, ma non ci sono utenti nelle vicinanze da notificare.",
         "nearby_users_notified": "Gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
         "no_nearby_users_available": "Non ci sono utenti nelle vicinanze da notificare riguardo alla nuova allerta."
     }
 }
+
+# We search for chiefs within a very large radius, 
+# to be sure to find at least one closest chief (because a chief must be alerted, even if he is outside the alert radius)
+GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 10000
 
 # Notify chief and nearby users about the new alert
 def task_alert_search_and_notify(
@@ -139,14 +143,14 @@ def task_alert_search_and_notify(
         if alert.type == AlertType.local.value:
             if not chief_can_be_notified:
                 if nearby_users_can_be_notified:
-                    msg_for_sender = alert_notification_templates[user.language]["no_chief_available_with_nearby_users"]
+                    msg_for_sender = alert_notification_templates[user.language]["no_chief_available_but_nearby_users"]
                 else:
                     msg_for_sender = alert_notification_templates[user.language]["no_chief_available_no_nearby_users"]
             else:
                 if nearby_users_can_be_notified:
                     msg_for_sender = alert_notification_templates[user.language]["chief_and_nearby_users_notified"]
                 else:
-                    msg_for_sender = alert_notification_templates[user.language]["chief_notified"]
+                    msg_for_sender = alert_notification_templates[user.language]["only_chief_notified"]
         else:
             if nearby_users_can_be_notified:
                 msg_for_sender = alert_notification_templates[user.language]["nearby_users_notified"]
@@ -192,7 +196,7 @@ async def get_closest_chiefs(alert, request_info, redis_client):
                 name=key,
                 longitude=alert.longitude,
                 latitude=alert.latitude,
-                radius=10000, # very large radius, to be sure to find a closest chief
+                radius=GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM, # very large radius, to be sure to find a closest chief
                 unit="km",
                 sort="asc",
                 count=100, # we search for the closest 100 chiefs
@@ -208,7 +212,7 @@ async def get_closest_chiefs(alert, request_info, redis_client):
             if results:
                 all_candidates.extend(results)
         if not all_candidates:
-            raise Exception("No chiefs found within 10,000 km radius")
+            raise Exception(f"No chiefs found within {GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM} km radius")
         # 4. Sorting
         all_candidates.sort(key=lambda x: x[1]) # x[1] is the distance
         # 5. Filtering: we keep only the closest 100 chiefs (in case there are more than 100 chiefs in total across all shards)
@@ -397,9 +401,9 @@ def get_sender_fcm_token(alert, sender, request_info, db_engine):
             RefreshToken.user_id == sender.id).where(
                 RefreshToken.fcm_token is not None)
         try:
-            row = db_session.exec(statement).first()
-            if row:
-                fcm_token = row.fcm_token
+            rtoken = db_session.exec(statement).first()
+            if rtoken:
+                fcm_token = rtoken.fcm_token
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     return fcm_token

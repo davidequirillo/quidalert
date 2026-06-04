@@ -18,7 +18,10 @@ def test_get_sender_fcm_token_is_none(db_session, test_alert, test_request_info)
     refresh_token = db_session.exec(statement).first()
     # The alert user is logged and has a refresh token
     assert refresh_token is not None
-    # But the default is that the refresh token has no FCM token (fcm_token is null), initially
+    # We simulate the case where the user has no FCM token in the database (fcm token null)
+    refresh_token.fcm_token = None
+    db_session.add(refresh_token)
+    db_session.commit()
     assert refresh_token.fcm_token is None
     db_engine = db_session.get_bind()
     assert db_engine is not None

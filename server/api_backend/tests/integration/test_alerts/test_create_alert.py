@@ -3,15 +3,28 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import datetime, timedelta
+from unittest.mock import ANY
 from fastapi import status
 from sqlmodel import select
 from core.exceptions import (
     token_not_valid_exception,
     forbidden_exception
 )
-from models.general import User, Alert, AlertType, AlertedUser
+from models.general import RefreshToken, User, Alert, AlertType, AlertedUser
 from services.security import now_tz_naive
-from tests.fixtures.alerts import setup_users_data_and_teardown, setup_fake_functions
+from tests.fixtures.alerts import (
+    setup_users_data_and_teardown,
+    setup_fake_functions,
+    RADIUS_KM,
+)
+from scripts.seed_redis_data import (
+    DENVER_LAT, 
+    DENVER_LON
+)
+from services.alert_btasks import (
+    GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM,
+    alert_notification_templates
+)
 
 def test_create_alert_not_authorized_missing_token(client):
     data = {
@@ -219,6 +232,8 @@ def test_create_alert_type_general_called_by_chief(client, db_session, test_chie
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
+    # The response for general alerts is different, because we don't search for nearby users or chiefs to notify.
+    # No background tasks are triggered for this type of alert, because it's a general alert that doesn't have a specific location
     assert response.json() == {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
     # We check that the alert is actually created in the database
     alert = db_session.exec(select(Alert).where(Alert.description == description)).first()
@@ -251,6 +266,9 @@ def test_create_alert_type_empty_called_by_chief(client, db_session, test_chief)
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
+    # The response for empty alerts is different, because we don't search for nearby users or the chiefs to notify.
+    # No background tasks are triggered for this type of alert, because it's an empty alert that doesn't alert nearby users, 
+    # but we add the current user (chief) to the alerted users list in the database as alert manager. It will be useful.
     assert response.json() == {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
     # We check that the alert is actually created in the database
     alert = db_session.exec(select(Alert).where(Alert.description == description)).first()
@@ -264,7 +282,7 @@ def test_create_alert_type_empty_called_by_chief(client, db_session, test_chief)
     assert alert.longitude == data["longitude"]
     assert alert.radius == 1.0 # initially set to the default
     # Nearby users are not inserted (because it's an empty alert)
-    # But the alert user (the sender, the chief) is added as "manager"
+    # But the alert user (the sender, the chief) is added as "manager". It will be useful.
     # We verity it
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -307,14 +325,17 @@ def test_create_alert_similar_local_exists(client, db_session, test_baseuser):
     assert response.json()["similarity"] >= 50
     # Now we try with a different description, but still similar (similarity >= 50)
     data = {
-        "description": "My test alert very similar", # similar description (similarity should be 100)
+        "description": "Test alert very similar", # similar description (similarity should be 100)
         "latitude": 40.005, # close to the existing alert (less than 1 km away)
         "longitude": -105.005 # close to the existing alert (less than 1 km away)
     }
     response = client.post(
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
-    
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"] == "Similar alert already exists in the area"
+    assert response.json()["similarity"] >= 50
+
 def test_create_alert_similar_general_exists(client, db_session, test_chief):
     access_token = test_chief['access_token']
     user = test_chief['user']
@@ -378,3 +399,171 @@ def test_create_alert_similar_managed_exists(client, db_session, test_chief):
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"] == "Similar alert already exists in the area"
     assert response.json()["similarity"] >= 50
+
+def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session, test_baseuser, setup_fake_functions):
+    access_token = test_baseuser['access_token']
+    user: User = test_baseuser['user']
+    # We assert that test_baseuser has fcm token not null
+    assert user.id is not None
+    assert user.is_chief == False
+    statement = select(RefreshToken).where(
+         RefreshToken.user_id == user.id).where(
+             RefreshToken.fcm_token is not None)
+    rtoken = db_session.exec(statement).first()
+    assert rtoken is not None
+    assert rtoken.fcm_token is not None # see conftest.py, where we set a fcm token for the logged user
+    # We create an alert in a location where there are no closest chiefs and no nearby users
+    description = "Test local alert with no closest chiefs or nearby users"
+    # Nearby users are searched within the alert radius
+    # Closest chiefs are searched within a very big radius (GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS)
+    # If we want to be sure to not find nearby users or closest chiefs, 
+    # we can set the alert coordinates very far from Denver
+    radius_for_closest_chiefs_in_degrees = GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM / 111
+    data = {
+        "description": description,
+        "latitude": DENVER_LAT - radius_for_closest_chiefs_in_degrees - 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver
+        "longitude": DENVER_LON + radius_for_closest_chiefs_in_degrees + 10 # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver 
+    }
+    response = client.post(
+        "/api/alert", json=data,
+        headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"].startswith("Alert created, searching for")
+    # We check that the alert is actually created in the database (1 alert should be present in this test)
+    alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
+    assert len(alerts) == 1
+    alert = alerts[0]
+    assert alert is not None
+    assert alert.id is not None
+    assert alert.user_id == user.id
+    assert alert.type == AlertType.local.value
+    assert alert.description == description
+    assert alert.latitude == data["latitude"]
+    assert alert.longitude == data["longitude"]
+    assert alert.radius == 1.0 # set to the default radius
+    assert alert.is_closed == False
+    # No nearby users or chiefs should be found, so, no alerted users
+    alerted_users = db_session.exec(select(AlertedUser).where(
+        AlertedUser.alert_id == alert.id)).all()
+    assert len(alerted_users) == 0
+    # The sender is notified with a specific message, from alert notification templates
+    language = user.language if user.language in alert_notification_templates else "en"
+    message = alert_notification_templates[language]["no_chief_available_no_nearby_users"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+        ANY, str(user.id), ANY, message, ANY, ANY)
+    # No chief is notified, because no chief is found
+    setup_fake_functions["mock_notify_chief"].assert_not_called()
+    # No nearby user is notified, because no nearby user is found
+    setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
+
+def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_session, test_baseuser, setup_fake_functions):
+    access_token = test_baseuser['access_token']
+    user: User = test_baseuser['user']
+    # We create an alert in a location where there are closest chiefs but no nearby users
+    description = "Test local alert with closest chiefs but no nearby users"
+    # Nearby users are searched within the alert radius
+    # To simulate the absence of nearby users, we can set the alert coordinates in a location where there are no nearby users registered
+    # The test users have been generated with random coordinates around Denver, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py). 
+    # So, if we set the alert coordinates far from Denver (more than RADIUS_KM km away), we can be sure to not find nearby users.
+    radius_for_nearby_users_in_degrees = RADIUS_KM / 111
+    data = {
+        "description": description,
+        "latitude": DENVER_LAT - (2 * radius_for_nearby_users_in_degrees) - 1, # more than RADIUS_KM km away from Denver, so that no nearby user is found
+        "longitude": DENVER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from Denver, so that no nearby user is found
+    }
+    response = client.post(
+        "/api/alert", json=data,
+        headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"].startswith("Alert created, searching for")
+    # We check that the alert is actually created in the database (1 alert should be present in this test)
+    alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
+    assert len(alerts) == 1
+    alert = alerts[0]
+    assert alert is not None
+    assert alert.id is not None
+    assert alert.user_id == user.id
+    assert alert.type == AlertType.local.value
+    assert alert.description == description
+    assert alert.latitude == data["latitude"]
+    assert alert.longitude == data["longitude"]
+    assert alert.radius == 1.0 # set to the default radius
+    assert alert.is_closed == False
+    # The first chief should be found (the alert manager), from the list of closest chiefs
+    alerted_users = db_session.exec(select(AlertedUser).where(
+        AlertedUser.alert_id == alert.id)).all()
+    assert len(alerted_users) == 1
+    assert alerted_users[0].is_manager == True
+    # The sender is notified with a specific message, from alert notification templates
+    language = user.language if user.language in alert_notification_templates else "en"
+    message = alert_notification_templates[language]["only_chief_notified"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+        ANY, str(user.id), ANY, message, ANY, ANY)
+    # The chief is notified, because a chief is found
+    setup_fake_functions["mock_notify_chief"].assert_called_once_with(
+        ANY, str(alerted_users[0].user_id), ANY, ANY, ANY, ANY)
+    # No nearby user is notified, because no nearby user is found
+    setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
+
+def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_session, test_chief, setup_fake_functions):
+    access_token = test_chief['access_token']
+    user: User = test_chief['user']
+    # We simulate the absence of closest chiefs
+    # To obtain this result, we can delete (or demote) all chiefs from the database (except the current user, who can be a chief, or not, it doesn't matter)
+    chiefs = db_session.exec(select(User).where(User.is_chief == True)).all()
+    for chief in chiefs:
+        if chief.id != user.id:
+            chief.is_chief = False
+            db_session.add(chief)
+    db_session.commit()
+    description = "Test local alert with no closest chiefs but nearby users"
+    # Nearby users are searched within the alert radius
+    # The test users have been generated with random coordinates around Denver, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
+    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (DENVER_LAT, DENVER_LON, RADIUS_KM)
+    # The caller is a chief, so there is no problem in setting the radius to RADIUS_KM, which is greater than the default radius of 1 km, because chiefs can create alerts with a radius greater than the default.
+    # Note: the alert is normal (local), not managed.
+    data = {
+        "description": description,
+        "latitude": DENVER_LAT, 
+        "longitude": DENVER_LON,
+        "radius": RADIUS_KM
+    }
+    response = client.post(
+        "/api/alert", json=data,
+        headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["message"].startswith("Alert created, searching for")
+    # We check that the alert is actually created in the database (1 alert should be present in this test)
+    alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
+    assert len(alerts) == 1
+    alert = alerts[0]
+    assert alert is not None
+    assert alert.id is not None
+    assert alert.user_id == user.id
+    assert alert.type == AlertType.local.value
+    assert alert.description == description
+    assert alert.latitude == data["latitude"]
+    assert alert.longitude == data["longitude"]
+    assert alert.radius == data["radius"]
+    assert alert.is_closed == False
+    # Nearby users should be found, but no chief should be found, so, the nearby users are alerted but no chief is alerted
+    alerted_users = db_session.exec(select(AlertedUser).where(
+        AlertedUser.alert_id == alert.id)).all()
+    assert len(alerted_users) > 0
+    for alerted_user in alerted_users:
+        # We have no alert manager (no chief)
+        assert alerted_user.is_manager == False
+    language = user.language if user.language in alert_notification_templates else "en"
+    # The sender is notified with a specific message, from alert notification templates
+    message = alert_notification_templates[language]["no_chief_available_but_nearby_users"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+        ANY, str(user.id), ANY, message, ANY, ANY)
+    # No chief is notified, because no chief is found
+    setup_fake_functions["mock_notify_chief"].assert_not_called()
+    # Nearby users are notified, because nearby users are found
+    setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
+    args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
+    notified_user_ids = args[1] # the second argument is the list of notified user ids
+    print("Number of notified user ids:", len(notified_user_ids))
+    for alerted_user in alerted_users:
+        assert str(alerted_user.user_id) in notified_user_ids
