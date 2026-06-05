@@ -4,7 +4,6 @@
 
 from datetime import timedelta
 from fastapi import status
-from models.general import GpsCoordinatesSchema, GpsTokenData
 from core.exceptions import token_expired_exception, token_not_valid_exception
 from services.security import (
     create_geoposition_token, GEOPOSITION_TOKEN_TTL_MINUTES,

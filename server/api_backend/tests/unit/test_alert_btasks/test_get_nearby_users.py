@@ -19,8 +19,8 @@ from services.alert_btasks import (
     get_closest_chiefs_and_nearby_users
 )
 from tests.fixtures.alerts import (
-    create_test_alert, 
-    create_test_request_info
+    create_test_alert, # required (fixture test_alert)
+    create_test_request_info # required (fixture test_request_info)
 )
 
 async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, test_request_info):
