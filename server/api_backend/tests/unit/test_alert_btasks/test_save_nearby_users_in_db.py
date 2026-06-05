@@ -12,9 +12,9 @@ from services.alert_btasks import (
     save_nearby_users_in_db_and_get_fcm_tokens
 )
 from tests.fixtures.alerts import (
-    setup_users_data_and_teardown,
-    create_test_alert,
-    create_test_request_info,
+    setup_users_data_and_teardown, # required (fixture automatically used)
+    create_test_alert, # required (fixture test_alert)
+    create_test_request_info, # required (fixture test_request_info)
     print_alert_coordinates_and_nearby_users
 )
 
@@ -236,8 +236,6 @@ def test_save_nearby_users_in_db_no_nearby_users(db_session, redis_session, test
     db_session.commit()
     db_session.refresh(test_alert)
     db_engine = db_session.get_bind()
-    # Redis session is a fake Redis engine for testing mode
-    redis_engine = redis_session
     # We simulate the case with no nearby users in Redis
     nearby_users = []
     nearby_users_num = len(nearby_users)

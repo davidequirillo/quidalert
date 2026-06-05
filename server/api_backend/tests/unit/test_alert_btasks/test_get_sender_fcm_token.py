@@ -6,8 +6,8 @@ from sqlmodel import select
 from models.general import User, RefreshToken
 from services.alert_btasks import get_sender_fcm_token
 from tests.fixtures.alerts import (
-    create_test_alert, 
-    create_test_request_info
+    create_test_alert, # required (fixture test_alert)
+    create_test_request_info # required (fixture test_request_info)
 )
 
 def test_get_sender_fcm_token_is_none(db_session, test_alert, test_request_info):

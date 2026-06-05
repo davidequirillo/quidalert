@@ -12,9 +12,9 @@ from services.alert_btasks import (
     save_first_chief_in_db_and_get_fcm_token
 )
 from tests.fixtures.alerts import (
-    setup_users_data_and_teardown,
-    create_test_alert,
-    create_test_request_info,
+    setup_users_data_and_teardown, # required (fixture automatically used)
+    create_test_alert, # required (fixture test_alert)
+    create_test_request_info, # required (fixture test_request_info)
     print_alert_coordinates_and_nearby_users
 )
 
