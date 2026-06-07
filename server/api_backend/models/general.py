@@ -183,6 +183,7 @@ class UserOutSmall(BaseModel):
     is_reliable: bool
     is_blocked: bool
     reliability_score: int
+    phone: Optional[str] = None
 
 class UsersOutPaginated(BaseModel):
     users: List[UserOutSmall]
@@ -380,7 +381,7 @@ class Alert(AlertOut, table=True):
 
 class UserOutWithAlerts(BaseModel):
     user: UserOut
-    alerts: List[Alert]
+    alerts: List[AlertOut]
 
 class AlertedUser(SQLModel, table=True):
     __tablename__: str = "alerted_users"
@@ -427,3 +428,32 @@ class GpsCoordinatesSchema(BaseModel):
         if not (-180 <= v <= 180):
             raise ValueError("Longitude must be between -180 and 180")
         return v
+
+class Message(SQLModel, table=True):
+    __tablename__: str = "messages"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    alert_id: int = Field(
+        foreign_key="alerts.id", 
+        ondelete="CASCADE",
+        nullable=False,
+        index=True
+    )
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id", 
+        ondelete="CASCADE",
+        nullable=False
+    )
+    content: str = Field(nullable=False, min_length=1, max_length=512)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+
+class AlertOutWithInfo(BaseModel):
+    alert: AlertOut
+    sender: Optional[UserOutSmall] = None # the chief (alert manager) can view all sender info
+    sender_firstname: str
+    sender_surname: str
+    sender_reliability_score: int
+    alerted_users: Optional[List[UserOutSmall]] = None # the chief (alert manager) can view all alerted users info
+    alerted_users_number: int
+    alerted_users_positive_votes: int
+    alerted_users_negative_votes: int
+    messages: List[Message] = []

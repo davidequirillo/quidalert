@@ -84,12 +84,6 @@ def log_alert_error_notifying_nearby_users(alert_id: str, request_info: dict, de
         extra=request_info
     )
 
-def log_alert_warning_notifying_nearby_users(alert_id: str, request_info: dict, detail: str = ""):
-    logger.warning(
-        f"alert_warning_notifying_nearby_users, alert_id={alert_id}, detail={detail}",
-        extra=request_info
-    )
-
 def log_alert_notify_nearby_users(alert_id: str, request_info: dict, detail: str = ""):
     logger.info(
         f"alert_notify_nearby_users, alert_id={alert_id}, detail={detail}",

@@ -58,6 +58,13 @@ class NetworkException implements Exception {
   String toString() => 'NetworkException: $message';
 }
 
+class NotFoundException implements Exception {
+  final String message;
+  NotFoundException([this.message = 'Not found']);
+  @override
+  String toString() => 'NotFoundException: $message';
+}
+
 class AuthClient extends ChangeNotifier {
   static String msgTokenExpired = 'Token expired';
   static String msgTokenNotValid = 'Token not valid';
@@ -436,32 +443,57 @@ class AuthClient extends ChangeNotifier {
       } else {
         resp = await sendJsonRequest(method, url, headers: merged, body: body);
       }
+      String respContentTypeKey = '';
       String respMessage = '';
-      String respMessageKey = '';
       debugPrintC('$m (auth), response headers: ${resp.headers}');
       if (resp.headers.containsKey('Content-Type')) {
-        respMessageKey = 'Content-Type';
+        respContentTypeKey = 'Content-Type';
       } else if (resp.headers.containsKey('content-type')) {
-        respMessageKey = 'content-type';
+        respContentTypeKey = 'content-type';
+      } else {
+        debugPrintC('$m (auth), response does not contain Content-Type header');
       }
-      if (respMessageKey.isNotEmpty &&
-          resp.headers[respMessageKey]?.contains('application/json') == true) {
-        final jsonResp = jsonDecode(resp.body);
-        if (jsonResp is Map<String, dynamic>) {
-          respMessage = jsonResp['detail'] ?? '';
+      if (respContentTypeKey.isNotEmpty) {
+        if (resp.headers[respContentTypeKey]!.contains('application/json')) {
+          final jsonResp = jsonDecode(resp.body);
+          if (jsonResp is Map<String, dynamic>) {
+            debugPrintC(
+              '$m (auth), response is a JSON map, keys: ${jsonResp.keys}',
+            );
+            final respDetail = jsonResp['detail'] ?? '';
+            if (respDetail is String) {
+              respMessage = respDetail;
+              debugPrintC(
+                '$m (auth), key "detail" value is a string: $respDetail',
+              );
+            } else if (respDetail is List) {
+              debugPrintC(
+                '$m (auth), key "detail" value is a list: $respDetail',
+              );
+            } else {
+              debugPrintC(
+                '$m (auth), key "detail" value is unknown type: $respDetail',
+              );
+            }
+          } else {
+            debugPrintC('$m (auth), response JSON is not a map');
+          }
         }
       }
       bool isNotAuthorized = (resp.statusCode == 401);
       final bool isExpired =
           (resp.statusCode == 401) && (respMessage == msgTokenExpired);
       bool isForbidden = (resp.statusCode == 403);
+      bool isNotFound = (resp.statusCode == 404);
       if ((!isExpired) && (isNotAuthorized)) {
-        throw InvalidTokenException('$m (auth), access token not valid');
+        throw InvalidTokenException('Access token not valid');
       } else if (isForbidden) {
-        throw ForbiddenRequestException('$m (auth), forbidden request');
+        throw ForbiddenRequestException('Forbidden request');
+      } else if (isNotFound) {
+        throw NotFoundException('Not found');
       } else if ((!isExpired) &&
           (resp.statusCode < 200 || resp.statusCode >= 300)) {
-        throw BadRequestException('$m (auth), bad request');
+        throw BadRequestException('Bad request');
       }
       debugPrintC('$m (auth), access token: $accessToken');
       if (isExpired) {
@@ -493,14 +525,15 @@ class AuthClient extends ChangeNotifier {
         }
         bool isNotAuthorized = (resp.statusCode == 401);
         bool isForbidden = (resp.statusCode == 403);
+        bool isNotFound = (resp.statusCode == 404);
         if (isNotAuthorized) {
-          throw InvalidTokenException(
-            '$m (retry auth), access token not valid',
-          );
+          throw InvalidTokenException('Access token not valid');
         } else if (isForbidden) {
-          throw ForbiddenRequestException('$m (retry auth), forbidden request');
+          throw ForbiddenRequestException('Forbidden request');
+        } else if (isNotFound) {
+          throw NotFoundException('Not found');
         } else if (resp.statusCode < 200 || resp.statusCode >= 300) {
-          throw BadRequestException('$m (retry auth), bad request');
+          throw BadRequestException('Bad request');
         }
       }
       debugPrintC("$m (response), HTTP ${resp.statusCode}");
@@ -511,6 +544,8 @@ class AuthClient extends ChangeNotifier {
       throw GenericNotAuthorizedException();
     } on ForbiddenRequestException catch (_) {
       rethrow;
+    } on NotFoundException catch (_) {
+      rethrow;
     } on BadRequestException catch (_) {
       debugPrintC("$m (auth), bad request exception");
       rethrow;
@@ -518,7 +553,7 @@ class AuthClient extends ChangeNotifier {
       rethrow;
     } catch (e) {
       debugPrintC('$m (auth), unexpected error: $e');
-      throw Exception("$m (auth), unexpected error: $e");
+      throw Exception("Unexpected error: $e");
     }
   }
 

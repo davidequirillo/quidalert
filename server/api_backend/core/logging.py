@@ -49,6 +49,9 @@ def get_periodics_logger():
 def get_api_logger():
     return logging.getLogger("api")
 
+def get_common_logger():
+    return logging.getLogger("common")
+
 sql_logger = logging.getLogger('sqlalchemy.engine')
 sql_logger.propagate = False # to avoid duplicates log records
 sql_logger.setLevel(logging.INFO)
