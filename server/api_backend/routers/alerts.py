@@ -3,7 +3,11 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
+from fastapi import (
+    APIRouter, Depends, 
+    HTTPException, 
+    Request, BackgroundTasks)
+from fastapi import status as http_status
 from dependencies import (get_current_user, 
             get_db_session, get_redis_session, 
             get_geoposition_token_data,
@@ -19,13 +23,14 @@ from core.dbmgr import (
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key)
 from models.general import (
-    Alert, AlertType, AlertIn, 
+    Alert, AlertType, AlertIn, AlertOut,
     GpsCoordinatesSchema, GpsTokenData, User,
     AlertedUser)
 from services.security import (
     now_tz_naive, now_tz_aware)
 from services.alert_btasks import (
-    task_alert_search_and_notify, task_alert_cleanup)
+    task_alert_search_and_notify
+)
 
 router = APIRouter(
     tags=["Alerts"]
@@ -124,6 +129,17 @@ def create_alert(alert_in: AlertIn,
         )
     return {"message": "Alert created, searching for nearby users and chiefs to notify"}
 
+@router.get("/api/alert/{alert_id}", response_model=AlertOut)
+def get_alert(alert_id: int,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+    if alert is None:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Alert not found")
+    # At the moment, all users can see all alerts
+    # But we might want to restrict an alert visibility to the alerted users (the chief, and nearby users)
+    return alert
+
 @router.post("/api/update-gps-position")
 async def update_gps_position(
     gps_data: GpsCoordinatesSchema,
@@ -160,7 +176,6 @@ async def update_gps_position(
 @router.post("/api/alert-close")
 def close_alert(alert_id: int,
             request: Request,
-            background_tasks: BackgroundTasks,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_chief):
@@ -172,15 +187,4 @@ def close_alert(alert_id: int,
     db_session.add(alert)
     db_session.commit()
     db_session.refresh(alert)
-    alert_copy = alert.model_copy()
-    curr_user_copy = current_user.model_copy()
-    req_info = get_request_info(str(current_user.id))
-    background_tasks.add_task(
-        task_alert_cleanup, 
-        alert_copy, 
-        curr_user_copy, 
-        request_info=req_info,
-        db_engine=request.app.state.db_engine,
-        redis_handle=request.app.state.redis_handle
-        )
     return {"message": "Alert closed"}

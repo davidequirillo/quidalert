@@ -10,13 +10,13 @@ Per poter usare questa applicazione, devi fare le seguenti cose:
 
 - A questo punto si può effettuare la registrazione del proprio account, usando questa app.
 
-- Infine, effettuare il Login.
+- Infine, effettuare il Login (l'app chiederà l'accettazione delle notifiche e il permesso di rilevamento della locazione GPS in "consenti sempre")
 
 ## Accesso alla posizione
 
 Per inviare una richiesta di aiuto (un'allerta), l'app accederà alla tua posizione GPS istantaneamente. 
 
-Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle vicinanze, l'app ha bisogno di aggiornare la tua posizione approssimativamente ogni 30 minuti, anche quando l'applicazione è chiusa. Questo processo in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout). 
+Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle vicinanze, l'app ha bisogno di aggiornare la tua posizione in background approssimativamente ogni 30 minuti, anche quando l'applicazione è chiusa, pertanto, l'autorizzazione alla posizione GPS deve essere impostata su "consenti sempre" (non su "consenti solo quando l'app è aperta"). Questo processo in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout). 
 
 Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento, garantendo così il massimo risparmio della batteria e del traffico dati.
 

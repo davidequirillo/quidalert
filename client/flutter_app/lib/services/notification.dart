@@ -146,7 +146,7 @@ class NotificationProvider extends ChangeNotifier {
           action: SnackBarAction(
             label: "View",
             onPressed: () {
-              _handleNavigation(message.data['route']);
+              _handleNavigation(message.data);
             },
           ),
         ),
@@ -164,7 +164,7 @@ class NotificationProvider extends ChangeNotifier {
         );
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleNavigation(message.data['route']);
+        _handleNavigation(message.data);
       });
     });
   }
@@ -181,16 +181,55 @@ class NotificationProvider extends ChangeNotifier {
         );
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleNavigation(initialMessage.data['route']);
+        _handleNavigation(initialMessage.data);
       });
     }
   }
 
-  void _handleNavigation(String route) {
+  void _handleNavigation(Map<String, dynamic> messageData) {
+    if (!messageData.containsKey('type') || messageData['type'] == null) {
+      if (kDebugMode) {
+        debugPrint(
+          'Notification: message data does not contain a "type" field. Ignoring.',
+        );
+      }
+      return;
+    }
+    switch (messageData['type']) {
+      case 'new_alert':
+        _navigateToAlertDetails(messageData);
+        break;
+      case 'alert_update':
+        _navigateToAlertDetails(messageData);
+        break;
+      default:
+        if (kDebugMode) {
+          debugPrint(
+            'Notification: unrecognized message type "${messageData['type']}". Ignoring.',
+          );
+        }
+    }
+  }
+
+  void _navigateToAlertDetails(Map<String, dynamic> messageData) {
+    if (!messageData.containsKey('alert_id') ||
+        messageData['alert_id'] == null) {
+      if (kDebugMode) {
+        debugPrint(
+          'Notification: ${messageData["type"]} message does not contain an "alert_id" field.',
+        );
+      }
+      return;
+    }
+    String alertId = messageData['alert_id'];
     AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/home',
       (route) => false,
     );
-    AppKeys.navigatorKey.currentState?.pushNamed(route);
+    AppKeys.navigatorKey.currentState?.pushNamed('/alerts/recents');
+    AppKeys.navigatorKey.currentState?.pushNamed(
+      '/alerts/view-alert-details',
+      arguments: alertId,
+    );
   }
 }

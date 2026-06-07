@@ -5,3 +5,5 @@
 - Ricordarsi di fare il test della posizione GPS, per essere sicuri che funziona correttamente.
 
 - Si consiglia di completare il proprio profilo, inserendo alcune informazioni che possono essere utili.
+
+- Al primo avvio o login, l'app chiederà il permesso di ricevere notifiche e il permesso di rilevamento della propria propria posizione gps in background (modalità necessaria: "consenti sempre")

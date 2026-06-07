@@ -57,6 +57,7 @@ class UserSmall {
   final String type;
   final String role;
   final String status;
+  final String phone;
 
   UserSmall({
     required this.id,
@@ -68,6 +69,7 @@ class UserSmall {
     required this.type,
     required this.role,
     required this.status,
+    required this.phone,
   });
 
   factory UserSmall.fromJson(Map<String, dynamic> json) {
@@ -81,6 +83,7 @@ class UserSmall {
     final DateTime? authAt = json['authorized_at'] != null
         ? DateTime.parse(json['authorized_at'])
         : null;
+    final String phone = json['phone'] ?? '';
     final bool isAdmin = json['is_admin'] ?? false;
     final bool isOfficer = json['is_officer'] ?? false;
     final bool isChief = json['is_chief'] ?? false;
@@ -113,6 +116,7 @@ class UserSmall {
       type: t,
       role: role,
       status: st,
+      phone: phone,
     );
   }
 }
@@ -279,24 +283,19 @@ class User {
 
 class Alert {
   final String id;
-  final String userId;
   final String description;
-  final int severity;
   final String status;
   final DateTime? createdAt;
 
   Alert({
     required this.id,
-    required this.userId,
     required this.description,
-    required this.severity,
     required this.status,
     required this.createdAt,
   });
 
   factory Alert.fromJson(Map<String, dynamic> json) {
-    final String id = json['id'] ?? '';
-    final String userId = json['user_id'] ?? '';
+    final String id = json['id'].toString();
     final bool isClosed = json['is_closed'] ?? false;
     String status;
     if (isClosed) {
@@ -307,13 +306,10 @@ class Alert {
     final DateTime? createdAt = json['created_at'] != null
         ? DateTime.parse(json['created_at'])
         : null;
-    final int severity = json['severity'] ?? 0;
     final String description = json['description'] ?? '';
     return Alert(
       id: id,
-      userId: userId,
       description: description,
-      severity: severity,
       status: status,
       createdAt: createdAt,
     );

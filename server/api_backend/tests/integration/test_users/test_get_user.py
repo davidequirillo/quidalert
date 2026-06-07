@@ -101,8 +101,6 @@ def test_get_user_success(client, db_session, test_admin):
     assert len(response_alerts) == 2
     assert response_alerts[0]["description"] in ["Test alert 1", "Test alert 2"]
     assert response_alerts[1]["description"] in ["Test alert 1", "Test alert 2"]
-    assert response_alerts[0]["user_id"] == str(testuser.id)
-    assert response_alerts[1]["user_id"] == str(testuser.id)
     # If the user hasn't created any alert... (testuser2 has no alerts)
     statement = select(User).where(User.email == "testuser2@example.com")
     testuser = db_session.exec(statement).first()

@@ -10,13 +10,13 @@ To use this application, you must do the following steps:
 
 - Then, you can do the account registration, using this app.
 
-- Finally, you can do Login.
+- Finally, you can do Login (the app will ask the acceptance of notifications and background gps location in "always allow")
 
 ## Grant location access 
 
 To send a help (alert) request, the app will access your GPS location, instantly. 
 
-To receive alerts from others nearby, the app needs to update your position approximately every 30 minutes, even when the app is closed. This background process will start automatically once you have successfully logged in, and will be immediately stopped if you decide to logout, to disconnect from the server. 
+To receive alerts from others nearby, the app needs to update your position in background approximately every 30 minutes, even when the app is closed, so gps location permission must be set to "always allow" (not "only allow when the app is open"). This background process will start automatically once you have successfully logged in, and will be immediately stopped if you decide to logout, to disconnect from the server. 
 
 Note: to maximize battery efficiency, the system only sends updates when a significant change in location is detected.
 

@@ -85,7 +85,7 @@ class LocationClient extends ChangeNotifier {
   }
 
   // Used for foreground location tracking (e.g., when user is filling an alert form)
-  Future<void> fetchLocation({bool forceUpdate = false}) async {
+  Future<Map<String, double>?> fetchLocation({bool forceUpdate = false}) async {
     _isFetching = true;
     notifyListeners();
     double accuracy = LocationClient.accuracy;
@@ -148,7 +148,7 @@ class LocationClient extends ChangeNotifier {
           debugPrintC(
             "Minimum movement or time not passed: not updating position and address",
           );
-          return;
+          return currentPosition;
         }
       }
       _currentPosition = returnedPosition;
@@ -158,7 +158,7 @@ class LocationClient extends ChangeNotifier {
         debugPrintC("Address is <empty> for the current position");
         throw LocationClientAddressNotFoundException();
       }
-      return;
+      return currentPosition;
     } on LocationClientPermissionDeniedException catch (_) {
       _currentPosition = null;
       _currentAddress = null;

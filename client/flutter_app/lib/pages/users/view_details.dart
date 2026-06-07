@@ -36,12 +36,9 @@ class UserDetailsBody extends StatelessWidget {
   Future<List<dynamic>> getUserDetails(BuildContext context, String id) async {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest("get", '/user/$id');
-    if (response.statusCode == 404) {
-      throw Exception("User not found");
-    }
     final Map<String, dynamic> respobj = json.decode(response.body);
     if (respobj["user"] == null || respobj["user"].isEmpty) {
-      throw Exception("User not found");
+      throw NotFoundException();
     }
     final user = User.fromJson(respobj['user']);
     List<dynamic> alertsObj = respobj['alerts'];
@@ -72,7 +69,7 @@ class UserDetailsBody extends StatelessWidget {
           if (snapshot.error.toString().startsWith("BadRequest")) {
             return Text(loc.errorBadRequest);
           }
-          if (snapshot.error.toString().contains("User not found")) {
+          if (snapshot.error.toString().startsWith("NotFound")) {
             return Center(child: Text(loc.errorNoEntryFound));
           }
           return Text(loc.errorNetwork);

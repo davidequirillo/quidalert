@@ -126,11 +126,11 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       }
       final double lat = pos['lat']!;
       final double long = pos['long']!;
-      fields = {
+      fields.addAll({
         "latitude": lat,
         "longitude": long,
         "address": locationClient.currentAddress ?? "",
-      };
+      });
     }
     if (mounted) {
       showLoadingDialog(context, loc.labelWaitPlease);
@@ -229,7 +229,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         if (error == false) {
           if (mounted) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              goToHomePage(context);
+              Navigator.pop(context);
               Navigator.pushNamed(context, "/alerts/recents");
             });
           }
