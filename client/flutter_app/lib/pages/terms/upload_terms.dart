@@ -63,6 +63,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
 
   Future<void> _uploadToServer() async {
     String? retMessage;
+    bool loginRequired = false;
     Color retColor = Colors.blue;
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
@@ -80,9 +81,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
       retColor = Colors.red;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
       retColor = Colors.red;
@@ -97,6 +96,9 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
       retColor = Colors.red;
     } finally {
       if (mounted) {
+        setState(() {
+          _pickedFile = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(retMessage!),
@@ -104,9 +106,11 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
             duration: const Duration(seconds: 4),
           ),
         );
-        setState(() {
-          _pickedFile = null;
-        });
+      }
+      if (loginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
       }
     }
   }

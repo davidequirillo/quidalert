@@ -3,7 +3,8 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import asyncio
-from sqlmodel import Session, select, insert, update
+from fastapi.concurrency import run_in_threadpool
+from sqlmodel import Session, select, insert
 from fakeredis.aioredis import FakeRedis
 from models.general import (
     string_as_uuid,
@@ -14,6 +15,8 @@ from services.network import (
     notify_many_clients
 )
 from core.btask_events import (
+    log_alert_search_closest_chiefs_done,
+    log_alert_search_nearby_users_done,
     log_alert_error_searching_closest_chiefs,
     log_alert_error_checking_closest_chiefs,
     log_alert_orphan_ids_found_in_checking_closest_chiefs,
@@ -64,7 +67,7 @@ alert_notification_templates = {
 GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 10000
 
 # Notify chief and nearby users about the new alert
-def task_alert_search_and_notify(
+async def task_alert_search_and_notify(
             alert: Alert, user: User, request_info: dict,
             db_engine, redis_handle):    
     if (alert.id is None) or (alert.is_closed):
@@ -72,38 +75,27 @@ def task_alert_search_and_notify(
     nearby_users_can_be_notified = False
     chief_can_be_notified = False
     sender_can_be_notified = False # sender: the user who created the alert
-    closest_chiefs, nearby_users = asyncio.run(
-        get_closest_chiefs_and_nearby_users(
-            alert, request_info, redis_handle)
-        )
-    sender_fcm_token = get_sender_fcm_token(alert, user, request_info, db_engine)
+    closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(alert, request_info, redis_handle)
+    sender_fcm_token = await run_in_threadpool(
+        get_sender_fcm_token, 
+        alert, user, request_info, db_engine)
     # For local alerts, we keep the first closest chief as alert manager and save him to database
     # For non-local alerts, the chief alert manager is the user who created the alert (he is a chief)
     if (alert.type == AlertType.local.value):
-        chief, chief_fcm_token = save_first_chief_in_db_and_get_fcm_token(alert, closest_chiefs, request_info, db_engine)
+        chief, chief_fcm_token = await run_in_threadpool(
+            save_first_chief_in_db, 
+            alert, closest_chiefs, request_info, db_engine)
     else:
-        chief, chief_fcm_token = {"user_id": str(user.id)}, sender_fcm_token
-        try:
-            alert_manager = AlertedUser(
-                alert_id=alert.id,
-                user_id=user.id,
-                is_manager=True,
-                vote=0,
-                closing_vote=0
-            )
-            with Session(db_engine) as db_session:
-                db_session.add(alert_manager)
-                db_session.commit()
-        except:
-            chief = None
-            chief_fcm_token = None
-            log_alert_error_saving_closest_chief(str(alert.id), request_info, detail="Error saving chief (alert manager) in database")
-            return
+        chief, chief_fcm_token = await run_in_threadpool(
+            save_sender_as_manager_in_db, 
+            alert, user, sender_fcm_token, request_info, db_engine)
     # To avoid duplicates or errors, we check if nearby users contains the chief (alert manager), and we delete him from nearby users list
     if chief:
         nearby_users = [u for u in nearby_users if u["user_id"] != chief["user_id"]]
     # We save nearby users in database as "alerted users" and we get their fcm tokens
-    nearby_users_to_fcm_tokens = save_nearby_users_in_db_and_get_fcm_tokens(alert, nearby_users, request_info, db_engine)
+    nearby_users_to_fcm_tokens = await run_in_threadpool(
+        save_nearby_users_in_db, 
+        alert, nearby_users, request_info, db_engine)
     if sender_fcm_token:
         sender_can_be_notified = True
     else:
@@ -125,7 +117,10 @@ def task_alert_search_and_notify(
         if chief and chief_can_be_notified:
             try:
                 chief_id = chief["user_id"]
-                notify_chief(alert, chief_id, chief_fcm_token, message, request_info, db_engine)
+                await run_in_threadpool(
+                    notify_chief, 
+                    alert, chief_id, chief_fcm_token, 
+                    message, request_info, db_engine)
                 log_alert_notify_closest_chief(str(alert.id), request_info, detail=f"Closest chief {chief_id} notified successfully")
             except Exception as e:
                 chief_can_be_notified = False
@@ -134,7 +129,10 @@ def task_alert_search_and_notify(
             try:
                 user_ids = list(nearby_users_to_fcm_tokens.keys())
                 fcm_tokens = list(nearby_users_to_fcm_tokens.values())
-                notification_count = notify_nearby_users(alert, user_ids, fcm_tokens, message, request_info, db_engine)
+                notification_count = await run_in_threadpool(
+                    notify_nearby_users, 
+                    alert, user_ids, fcm_tokens, 
+                    message, request_info, db_engine)
                 if notification_count <= 0:
                     nearby_users_can_be_notified = False
                 log_alert_notify_nearby_users(str(alert.id), request_info, detail=f"{notification_count} nearby users notified successfully, total nearby users: {len(user_ids)}")
@@ -159,7 +157,10 @@ def task_alert_search_and_notify(
             else:
                 msg_for_sender = alert_notification_templates[user.language]["no_nearby_users_available"]
         try:
-            notify_sender(alert, str(user.id), sender_fcm_token, msg_for_sender, request_info, db_engine) # notify the user who created the alert
+            await run_in_threadpool(
+                notify_sender, 
+                alert, str(user.id), sender_fcm_token, 
+                msg_for_sender, request_info, db_engine) # notify the user who created the alert
             log_alert_notify_sender(str(alert.id), request_info, detail=f"Sender {user.id} notified successfully")
         except Exception as e:
             log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
@@ -230,6 +231,7 @@ async def get_closest_chiefs(alert, request_info, redis_client):
                         "longitude": coords[0]
                     }
                 })
+        log_alert_search_closest_chiefs_done(str(alert.id), request_info, detail=f"{len(closest_chiefs)} closest chiefs found and sorted successfully")
         return closest_chiefs
     except Exception as e:
         log_alert_error_searching_closest_chiefs(str(alert.id), request_info, detail=str(e))
@@ -280,12 +282,13 @@ async def get_nearby_users(alert, request_info, redis_client):
                         "longitude": coords[0]
                     }
                 })
+        log_alert_search_nearby_users_done(str(alert.id), request_info, detail=f"{len(nearby_users)} nearby users found and sorted successfully")
         return nearby_users
     except Exception as e:
         log_alert_error_searching_nearby_users(str(alert.id), request_info, detail=str(e))
         return []
 
-def save_first_chief_in_db_and_get_fcm_token(alert, closest_chiefs, request_info, db_engine):
+def save_first_chief_in_db(alert, closest_chiefs, request_info, db_engine):
     if not closest_chiefs:
         return None, None
     chief = None
@@ -340,7 +343,26 @@ def save_first_chief_in_db_and_get_fcm_token(alert, closest_chiefs, request_info
             fcm_token = None
     return chief, fcm_token
 
-def save_nearby_users_in_db_and_get_fcm_tokens(alert, users, request_info, db_engine):
+def save_sender_as_manager_in_db(alert, sender, sender_fcm_token, request_info, db_engine):
+    chief, fcm_token = {"user_id": str(sender.id)}, sender_fcm_token
+    try:
+        alert_manager = AlertedUser(
+            alert_id=alert.id,
+            user_id=sender.id,
+            is_manager=True,
+            vote=0,
+            closing_vote=0
+        )
+        with Session(db_engine) as db_session:
+            db_session.add(alert_manager)
+            db_session.commit()
+    except:
+        chief = None
+        fcm_token = None
+        log_alert_error_saving_closest_chief(str(alert.id), request_info, detail="Error saving chief (alert manager) in database")
+    return chief, fcm_token
+
+def save_nearby_users_in_db(alert, users, request_info, db_engine):
     if not users:
         return {}
     ids_as_uuid = []

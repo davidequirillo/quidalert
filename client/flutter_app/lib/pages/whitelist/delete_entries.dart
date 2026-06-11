@@ -92,6 +92,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
+    bool loginRequired = false;
     if (!_formDelByEmailKey.currentState!.validate()) {
       return;
     }
@@ -117,9 +118,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -144,6 +143,11 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
           },
         );
       }
+      if (loginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
     }
     return;
   }
@@ -161,6 +165,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
+    bool loginRequired = false;
     try {
       final response = await authClient.doProtectedApiRequest(
         "delete",
@@ -173,9 +178,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -203,6 +206,11 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
             return SimpleAlertDialog(title: retTitle, content: retMessage);
           },
         );
+      }
+      if (loginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
       }
     }
   }

@@ -125,6 +125,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
 
   Future<void> _loadPage() async {
     String? retMessage;
+    bool loginRequired = false;
     final loc = AppLocalizations.of(context)!;
     if (_isLoadingPage || !_hasMore) return;
     setState(() {
@@ -141,9 +142,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
       });
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
     } on BadRequestException catch (_) {
@@ -153,6 +152,11 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
     } catch (e) {
       retMessage = e.toString();
     } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingPage = false;
+        });
+      }
       if (retMessage != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -161,9 +165,11 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
           ),
         );
       }
-      setState(() {
-        _isLoadingPage = false;
-      });
+      if (loginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
     }
   }
 

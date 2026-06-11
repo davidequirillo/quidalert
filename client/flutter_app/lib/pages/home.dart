@@ -44,6 +44,9 @@ class _HomeBodyState extends State<HomeBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint(
+        "HomeBody initState: syncing FCM token and starting background location tracking...",
+      );
       _syncFcmToken();
       _startBackgroundLocationTracking();
     });
@@ -80,17 +83,24 @@ class _HomeBodyState extends State<HomeBody> {
     final notifProvider = context.read<NotificationProvider>();
     final authClient = context.read<AuthClient>();
     notifProvider.setAuthClient(authClient);
+    await notifProvider.getFcmToken();
     if (notifProvider.fcmToken == null || notifProvider.fcmToken!.isEmpty) {
       debugPrint(
         "FCM token is null or empty, skipping registration for push notifications.",
       );
       return;
     }
-    await authClient.registerFcmTokenForPushNotifications(
-      notifProvider.fcmToken,
-      context: context,
-      localizations: AppLocalizations.of(context)!,
-    );
+    if (mounted) {
+      await authClient.syncFcmTokenWithBackendinForeground(
+        notifProvider.fcmToken!,
+        context: context,
+        localizations: AppLocalizations.of(context)!,
+      );
+    } else {
+      await authClient.syncFcmTokenWithBackendinBackground(
+        notifProvider.fcmToken!,
+      );
+    }
   }
 
   Future<void> _startBackgroundLocationTracking() async {
@@ -113,9 +123,7 @@ class _HomeBodyState extends State<HomeBody> {
         }
         if (snapshot.hasError) {
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              goToLoginPage(context);
-            });
+            goToLoginPagePostFrameCallback(context);
             return Text(loc.errorSessionNotValidOrExpired);
           }
           if (snapshot.error.toString().startsWith("BadRequest")) {

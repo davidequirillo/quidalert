@@ -81,6 +81,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
+    bool loginRequired = false;
     List<String> emailsToAdd = [];
     if (!_formKey.currentState!.validate()) {
       return;
@@ -111,9 +112,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -138,6 +137,11 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
           },
         );
       }
+      if (loginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
     }
     return;
   }
@@ -147,6 +151,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
+    bool loginRequired = false;
     List<String> emailsToAdd = [];
     if (_pickedFile != null) {
       await Future.delayed(const Duration(seconds: 2));
@@ -194,9 +199,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -220,6 +223,11 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
             return SimpleAlertDialog(title: retTitle, content: retMessage);
           },
         );
+      }
+      if (loginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
       }
     }
   }

@@ -58,6 +58,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
 
   Future<void> submit() async {
     bool error = false;
+    bool loginRequired = false;
     String retMessage = "";
     String retTitle = "";
     final args = ModalRoute.of(context)!.settings.arguments;
@@ -93,9 +94,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
@@ -112,16 +111,20 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
           builder: (_) =>
               SimpleAlertDialog(title: retTitle, content: retMessage),
         );
-        if (error == false) {
-          if (mounted) {
-            Navigator.pop(context);
-            Navigator.pop(context);
-            Navigator.pushNamed(
-              context,
-              "/accounts/users/search-results",
-              arguments: args,
-            );
-          }
+      }
+      if (error == false) {
+        if (mounted) {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          Navigator.pushNamed(
+            context,
+            "/accounts/users/search-results",
+            arguments: args,
+          );
+        }
+      } else if (loginRequired == true) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
         }
       }
     }

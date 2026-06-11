@@ -9,7 +9,7 @@ from models.general import (
 )
 from services.alert_btasks import (
     get_closest_chiefs_and_nearby_users,
-    save_nearby_users_in_db_and_get_fcm_tokens
+    save_nearby_users_in_db
 )
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically used)
@@ -38,7 +38,7 @@ async def test_save_nearby_users_in_db_success(db_session, redis_session, test_a
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     nearby_users_num = len(nearby_users)
-    fcm_tokens_map = save_nearby_users_in_db_and_get_fcm_tokens(test_alert, nearby_users, test_request_info, db_engine)
+    fcm_tokens_map = save_nearby_users_in_db(test_alert, nearby_users, test_request_info, db_engine)
     if nearby_users_num == 0:
         print("No nearby users in Redis for this test. Please retry it") 
         assert len(fcm_tokens_map) == 0
@@ -87,7 +87,7 @@ async def test_save_nearby_users_in_db_some_having_wrong_id(db_session, redis_se
     nearby_users.append({"user_id": "wrong_id_1", "distance_km": 1.0})
     nearby_users.append({"user_id": "wrong_id_2", "distance_km": 2.0})
     nearby_users_num = len(nearby_users)
-    fcm_tokens_map = save_nearby_users_in_db_and_get_fcm_tokens(test_alert, nearby_users, test_request_info, db_engine)
+    fcm_tokens_map = save_nearby_users_in_db(test_alert, nearby_users, test_request_info, db_engine)
     if nearby_users_num == 2:
         print("No nearby users in Redis for this test (only the 2 with wrong ids). Please retry it") 
         assert len(fcm_tokens_map) == 0
@@ -150,7 +150,7 @@ async def test_save_nearby_users_some_orphans_with_null_fcm_tokens(db_session, r
             db_session.add(refresh_token)
     db_session.commit()
     # We check that the function save as alerted users only nearby users with valid FCM tokens in the database, and ignores the ones with null FCM tokens (the "orphans")
-    fcm_tokens_map = save_nearby_users_in_db_and_get_fcm_tokens(test_alert, nearby_users, test_request_info, db_engine)
+    fcm_tokens_map = save_nearby_users_in_db(test_alert, nearby_users, test_request_info, db_engine)
     assert len(fcm_tokens_map) == (nearby_users_num - 2)
     # Here we should have exactly n-2 alerted_users (n=nearby_users_num) in the database, because the 2 with null FCM tokens should be ignored
     statement = (select(AlertedUser, RefreshToken.fcm_token)
@@ -205,7 +205,7 @@ async def test_save_nearby_users_some_orphans_deleted_in_db(db_session, redis_se
     db_session.exec(statement)
     db_session.commit()
     # We check that the function save as alerted users only nearby users existing in the database, and ignores the "orphans"
-    fcm_tokens_map = save_nearby_users_in_db_and_get_fcm_tokens(test_alert, nearby_users, test_request_info, db_engine)
+    fcm_tokens_map = save_nearby_users_in_db(test_alert, nearby_users, test_request_info, db_engine)
     assert len(fcm_tokens_map) == (nearby_users_num - 3)
     # Here we should have exactly n-3 alerted_users (n=nearby_users_num) in the database, because the 3 "orphans" should be ignored
     statement = (select(AlertedUser, RefreshToken.fcm_token)    
@@ -240,7 +240,7 @@ def test_save_nearby_users_in_db_no_nearby_users(db_session, redis_session, test
     nearby_users = []
     nearby_users_num = len(nearby_users)
     assert nearby_users_num == 0
-    fcm_tokens_map = save_nearby_users_in_db_and_get_fcm_tokens(test_alert, nearby_users, test_request_info, db_engine)
+    fcm_tokens_map = save_nearby_users_in_db(test_alert, nearby_users, test_request_info, db_engine)
     assert len(fcm_tokens_map) == 0
     # Here we should have 0 alerted_users in the database, because there are no nearby users
     statement = (select(AlertedUser, RefreshToken.fcm_token)
