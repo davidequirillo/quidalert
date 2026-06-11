@@ -59,9 +59,15 @@ class CAppDrawer extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     bool termsAccepted = shared.termsAccepted;
     bool isLoggedIn = authClient.isLoggedIn();
+    if (!isLoggedIn) {
+      notifProvider.setAuthClient(null);
+    }
     bool isAdmin = authClient.isAdmin();
     bool isOfficer = authClient.isOfficer();
-
+    bool isChief = authClient.isChief();
+    debugPrint(
+      'Building CAppDrawer: isLoggedIn: $isLoggedIn, termsAccepted: $termsAccepted, isAdmin: $isAdmin, isOfficer: $isOfficer, isChief: $isChief',
+    );
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,

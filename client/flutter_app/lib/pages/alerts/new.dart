@@ -183,6 +183,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     String retTitle = "";
     String retMessage = "";
     bool error = false;
+    bool loginRequired = false;
     try {
       final response = await authClient.doProtectedApiRequest(
         'POST',
@@ -207,9 +208,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
@@ -226,13 +225,17 @@ class _NewAlertBodyState extends State<NewAlertBody> {
           builder: (_) =>
               SimpleAlertDialog(title: retTitle, content: retMessage),
         );
-        if (error == false) {
-          if (mounted) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, "/alerts/recents");
-            });
-          }
+      }
+      if (error == false) {
+        if (mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.pop(context);
+            Navigator.pushNamed(context, "/alerts/recents");
+          });
+        }
+      } else if (loginRequired == true) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
         }
       }
     }

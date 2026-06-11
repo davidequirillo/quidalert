@@ -76,7 +76,7 @@ class AuthClient extends ChangeNotifier {
   String? gpsToken;
   bool initDone = false;
   Map<String, dynamic> userInfo = {};
-  DateTime? lastFcmTokenRegistrationAt;
+  String? lastFcmToken;
 
   AuthClient({FlutterSecureStorage? storage})
     : _secureStorage = storage ?? FlutterSecureStorage(),
@@ -85,7 +85,7 @@ class AuthClient extends ChangeNotifier {
     accessToken = null;
     loginToken = null;
     gpsToken = null;
-    lastFcmTokenRegistrationAt = null;
+    lastFcmToken = null;
     _init();
   }
 
@@ -106,7 +106,6 @@ class AuthClient extends ChangeNotifier {
     }
     await loadLoginToken();
     await checkLoginTokenValidity();
-    lastFcmTokenRegistrationAt = null;
     initDone = true;
     debugPrintC('AuthClient initialization completed');
     notifyListeners();
@@ -190,49 +189,44 @@ class AuthClient extends ChangeNotifier {
       return;
     }
     if (_isTokenExpired(refreshToken!)) {
-      debugPrintC('Try refresh tokens: local check, refresh_token expired)');
+      debugPrintC('Try refresh tokens: local check, refresh_token expired');
       await setAuthTokens(null, null, null);
       throw ExpiredTokenException();
     }
     final uri = Uri.parse('$baseUrl/auth/refresh');
-    try {
-      final resp = await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({'refresh_token': refreshToken}),
-      );
-      final jsonResp = jsonDecode(resp.body);
-      final String respMessage = jsonResp['detail'] ?? '';
-      if (resp.statusCode < 200 || resp.statusCode >= 300) {
-        if (resp.statusCode == 401 && respMessage == msgTokenExpired) {
-          await setAuthTokens(null, null, null);
-          debugPrintC('Try refresh tokens, refresh_token expired');
-          throw ExpiredTokenException();
-        } else if (resp.statusCode == 401 && respMessage == msgTokenNotValid) {
-          await setAuthTokens(null, null, null);
-          debugPrintC('Try refresh tokens, refresh_token not valid');
-          throw InvalidTokenException();
-        } else if (resp.statusCode == 401) {
-          await setAuthTokens(null, null, null);
-          debugPrintC('Try refresh tokens, refresh_token wrong or null');
-          throw InvalidTokenException();
-        } else {
-          debugPrintC(
-            "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
-          );
-          throw BadRequestException();
-        }
+    final resp = await http.post(
+      uri,
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({'refresh_token': refreshToken}),
+    );
+    final jsonResp = jsonDecode(resp.body);
+    final String respMessage = jsonResp['detail'] ?? '';
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      if (resp.statusCode == 401 && respMessage == msgTokenExpired) {
+        debugPrintC('Try refresh tokens, refresh_token expired');
+        await setAuthTokens(null, null, null);
+        throw ExpiredTokenException();
+      } else if (resp.statusCode == 401 && respMessage == msgTokenNotValid) {
+        debugPrintC('Try refresh tokens, refresh_token not valid');
+        await setAuthTokens(null, null, null);
+        throw InvalidTokenException();
+      } else if (resp.statusCode == 401) {
+        debugPrintC('Try refresh tokens, refresh_token wrong or null');
+        await setAuthTokens(null, null, null);
+        throw InvalidTokenException();
+      } else {
+        debugPrintC(
+          "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
+        );
+        throw BadRequestException();
       }
-      debugPrintC('Try refresh tokens, tokens refreshed successfully');
-      String? rToken = jsonResp['refresh_token'];
-      String? aToken = jsonResp['access_token'];
-      String? gToken = jsonResp['gps_token'];
-      await setAuthTokens(rToken, aToken, gToken);
-      debugPrintC('The refresh token is: $refreshToken');
-    } catch (e) {
-      debugPrintC('Try refresh tokens, network error: $e');
-      throw NetworkException();
     }
+    debugPrintC('Try refresh tokens, tokens refreshed successfully');
+    String? rToken = jsonResp['refresh_token'];
+    String? aToken = jsonResp['access_token'];
+    String? gToken = jsonResp['gps_token'];
+    debugPrintC('The refresh token is: $refreshToken');
+    await setAuthTokens(rToken, aToken, gToken);
   }
 
   Future<void> setAuthTokens(String? rtok, String? atok, String? gtok) async {
@@ -310,7 +304,7 @@ class AuthClient extends ChangeNotifier {
     String? atoken = data['access_token'];
     String? gtoken = data['gps_token'];
     String? ltoken = data['login_token'];
-    lastFcmTokenRegistrationAt = null;
+    lastFcmToken = null;
     debugPrintC('Login successful');
     await setAuthTokens(rtoken, atoken, gtoken);
     if ((ltoken != null) && (ltoken != "")) {
@@ -336,7 +330,7 @@ class AuthClient extends ChangeNotifier {
       return resp;
     }
     await setAuthTokens(null, null, null);
-    lastFcmTokenRegistrationAt = null;
+    lastFcmToken = null;
     setUserInfo({});
     return resp;
   }
@@ -418,6 +412,7 @@ class AuthClient extends ChangeNotifier {
     Map<String, String>? headers,
     dynamic body = const {},
     String? file,
+    bool retrying = false,
   }) async {
     final m = method.toUpperCase();
     late http.Response resp;
@@ -497,43 +492,26 @@ class AuthClient extends ChangeNotifier {
       }
       debugPrintC('$m (auth), access token: $accessToken');
       if (isExpired) {
-        await refreshTokens();
-        final newMerged = {..._authHeaders(), if (headers != null) ...headers};
-        debugPrintC('$m (retry auth), access token: $accessToken');
-        if (file != null) {
-          if ((body is Map<String, String>)) {
-            await sendMultipartFileUploadRequest(
-              url,
-              headers: newMerged,
-              fields: body,
-              file: file,
-            );
-          } else {
-            resp = await sendRawFileUploadRequest(
-              url,
-              headers: newMerged,
-              file: file,
-            );
-          }
-        } else {
-          resp = await sendJsonRequest(
-            method,
-            url,
-            headers: newMerged,
-            body: body,
+        if (retrying) {
+          debugPrintC('$m (auth), token expired even after refresh, giving up');
+          throw ExpiredTokenException(
+            'Access token expired even after refresh',
           );
-        }
-        bool isNotAuthorized = (resp.statusCode == 401);
-        bool isForbidden = (resp.statusCode == 403);
-        bool isNotFound = (resp.statusCode == 404);
-        if (isNotAuthorized) {
-          throw InvalidTokenException('Access token not valid');
-        } else if (isForbidden) {
-          throw ForbiddenRequestException('Forbidden request');
-        } else if (isNotFound) {
-          throw NotFoundException('Not found');
-        } else if (resp.statusCode < 200 || resp.statusCode >= 300) {
-          throw BadRequestException('Bad request');
+        } else {
+          debugPrintC(
+            '$m (retry auth), access token expired, refreshing tokens',
+          );
+          await refreshTokens();
+          debugPrintC('$m (retry auth), access token: $accessToken');
+          debugPrintC('$m (retry auth), retrying original request');
+          return await doProtectedApiRequest(
+            method,
+            relPath,
+            headers: headers,
+            body: body,
+            file: file,
+            retrying: true,
+          );
         }
       }
       debugPrintC("$m (response), HTTP ${resp.statusCode}");
@@ -550,6 +528,8 @@ class AuthClient extends ChangeNotifier {
       debugPrintC("$m (auth), bad request exception");
       rethrow;
     } on NetworkException catch (_) {
+      rethrow;
+    } on GenericNotAuthorizedException catch (_) {
       rethrow;
     } catch (e) {
       debugPrintC('$m (auth), unexpected error: $e');
@@ -576,8 +556,8 @@ class AuthClient extends ChangeNotifier {
   // This method is called by the home page (profile page),
   // to send fcm token to backend when user logs in successfully,
   // to register the device for push notifications.
-  Future<void> registerFcmTokenForPushNotifications(
-    String? fcmToken, {
+  Future<void> syncFcmTokenWithBackendinForeground(
+    String fcmToken, {
     required BuildContext context,
     required AppLocalizations localizations,
   }) async {
@@ -587,15 +567,7 @@ class AuthClient extends ChangeNotifier {
       'Registering device for push notifications with token: $fcmToken',
     );
     try {
-      if ((fcmToken == null) || (fcmToken.isEmpty)) {
-        debugPrintC(
-          'FCM token is null or empty, cannot register for push notifications',
-        );
-        throw BadRequestException('FCM token is empty');
-      }
-      if (lastFcmTokenRegistrationAt != null &&
-          DateTime.now().difference(lastFcmTokenRegistrationAt!) <
-              const Duration(hours: 24)) {
+      if (lastFcmToken != null && lastFcmToken == fcmToken) {
         debugPrintC('FCM token was registered recently, skipping registration');
         alreadyRegistered = true;
         return;
@@ -605,7 +577,7 @@ class AuthClient extends ChangeNotifier {
         '/register-device',
         body: {'fcm_token': fcmToken},
       );
-      lastFcmTokenRegistrationAt = DateTime.now();
+      lastFcmToken = fcmToken;
       debugPrintC('Ok, device registered for push notifications');
     } on GenericNotAuthorizedException catch (_) {
       debugPrintC('Not authorized');
@@ -642,15 +614,16 @@ class AuthClient extends ChangeNotifier {
   }
 
   // This method is automatically called by NotificationProvider listener, when FCM token is refreshed, to keep our backend updated with the latest token.
-  Future<void> syncFcmTokenWithBackend(String? fcmToken) async {
+  Future<void> syncFcmTokenWithBackendinBackground(String fcmToken) async {
     try {
       await doProtectedApiRequest(
         "post",
         '/register-device',
         body: {'fcm_token': fcmToken},
       );
-      lastFcmTokenRegistrationAt = DateTime.now();
+      lastFcmToken = fcmToken;
       debugPrintC('FCM token synced with backend successfully');
+      return;
     } catch (e) {
       debugPrintC('Error syncing FCM token with backend: $e');
     }

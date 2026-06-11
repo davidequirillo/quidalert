@@ -119,6 +119,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
     String retTitle = "";
     String retMessage = "";
     bool error = false;
+    bool loginRequired = false;
     try {
       final response = await authClient.doProtectedApiRequest(
         'PUT',
@@ -140,9 +141,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
-      if (mounted) {
-        goToLoginPagePostFrameCallback(context);
-      }
+      loginRequired = true;
     } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
@@ -159,10 +158,14 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
           builder: (_) =>
               SimpleAlertDialog(title: retTitle, content: retMessage),
         );
-        if (error == false) {
-          if (mounted) {
-            goToHomePagePostFrameCallback(context);
-          }
+      }
+      if (error == false) {
+        if (mounted) {
+          goToHomePagePostFrameCallback(context);
+        }
+      } else if (loginRequired == true) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
         }
       }
     }

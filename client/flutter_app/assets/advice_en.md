@@ -6,4 +6,6 @@
 
 - Remember to complete your profile info, adding some extra useful info.
 
-- At first launch or login, the app will ask for permission to receive notifications and permission to track your GPS location in the background (mode required: "always allow")
+- At first launch or login, the app will ask for permission to receive notifications and permission to track your GPS location in the background (tracking mode required: "always allow")
+
+- To stop the background position tracking process and to not receive any notification anymore, you don't need to uninstall the app, but a "logout" is sufficient. However, doing so, you will no longer be able to receive or send any alerts, until a next eventual "login".
