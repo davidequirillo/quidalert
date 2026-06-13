@@ -3,7 +3,6 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from fastapi import status
-from sqlmodel import select
 from models.general import WhiteListEntry
 from core.exceptions import forbidden_exception, token_not_valid_exception
 

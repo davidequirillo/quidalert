@@ -23,7 +23,7 @@ from services.security import (
     create_login_token,
     generate_random_token,
     get_token_hash,
-    activation_expiry, now_tz_naive)
+    activation_expiry, now_tz_naive, ensure_tz_aware)
 from core.settings import settings
 import logging
 
@@ -170,6 +170,7 @@ def create_logged_test_user(user_type, db_session: Session):
         "authorized_at": now_tz_naive(),
     })
     now = now_tz_naive()
+    now_tz = ensure_tz_aware(now)
     test_user.last_login_done_at = now
     test_user.last_refresh_at = now
     db_session.add(test_user)
@@ -192,7 +193,7 @@ def create_logged_test_user(user_type, db_session: Session):
     atoken = create_access_token(str(test_user.id))
     rtoken = create_refresh_token(
         str(test_user.id), str(refresh_token.id), 
-        raw_random_str, issued_at=now)
+        raw_random_str, issued_at=now_tz)
     gps_token = create_geoposition_token(
         str(test_user.id), test_user.is_chief, test_user.role)
     login_token = create_login_token(str(test_user.id))

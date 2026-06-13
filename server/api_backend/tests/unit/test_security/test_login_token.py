@@ -7,6 +7,8 @@ from models.general import User
 from services.security import (
     TokenExpiredException,
     now_tz_naive,
+    now_tz_aware,
+    ensure_tz_aware,
     LOGIN_TOKEN_TTL_MINUTES,
     decode_token,
     create_login_token)
@@ -19,11 +21,11 @@ def test_create_login_token_successful():
     sub = decoded["sub"]
     assert sub == "id123"
     exp = decoded["exp"]
-    assert exp >= int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES - 1)).timestamp()) # allow some leeway for timing
-    assert exp <= int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES + 1)).timestamp())
+    assert exp >= int((now_tz_aware() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES - 1)).timestamp()) # allow some leeway for timing
+    assert exp <= int((now_tz_aware() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES + 1)).timestamp())
     iat = decoded["iat"]
-    assert iat <= int(now_tz_naive().timestamp())
-    assert iat >= int((now_tz_naive() - timedelta(minutes=1)).timestamp())  # issued in the past, allow some leeway
+    assert iat <= int(now_tz_aware().timestamp())
+    assert iat >= int((now_tz_aware() - timedelta(minutes=1)).timestamp())  # issued in the past, allow some leeway
     assert decoded["type"] == "login"
 
 def test_create_login_token_with_custom_exp():
@@ -32,27 +34,27 @@ def test_create_login_token_with_custom_exp():
     token = create_login_token(subject="id123", expires_delta=custom_exp_delta)
     decoded = decode_token(token)
     exp = decoded["exp"]
-    assert exp >= int((now_tz_naive() + custom_exp_delta - timedelta(minutes=1)).timestamp()) # allow some leeway for timing
-    assert exp <= int((now_tz_naive() + custom_exp_delta + timedelta(minutes=1)).timestamp())
+    assert exp >= int((now_tz_aware() + custom_exp_delta - timedelta(minutes=1)).timestamp()) # allow some leeway for timing
+    assert exp <= int((now_tz_aware() + custom_exp_delta + timedelta(minutes=1)).timestamp())
     assert decoded["type"] == "login"
 
 def test_create_login_token_with_custom_iat():
     # Create a valid login token for testing with custom issued_at
-    token = create_login_token(subject="id123", issued_at=now_tz_naive()-timedelta(minutes=5))
+    token = create_login_token(subject="id123", issued_at=now_tz_aware()-timedelta(minutes=5))
     decoded = decode_token(token)
     sub = decoded["sub"]
     assert sub == "id123"
     exp = decoded["exp"]
-    assert exp >= int((now_tz_naive() - timedelta(minutes=5) + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES-1)).timestamp()) # allow some leeway for timing
-    assert exp <= int((now_tz_naive() - timedelta(minutes=5) + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES+1)).timestamp())
+    assert exp >= int((now_tz_aware() - timedelta(minutes=5) + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES-1)).timestamp()) # allow some leeway for timing
+    assert exp <= int((now_tz_aware() - timedelta(minutes=5) + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES+1)).timestamp())
     iat = decoded["iat"]
-    assert iat <= int((now_tz_naive() - timedelta(minutes=5)).timestamp())
-    assert iat >= int((now_tz_naive() - timedelta(minutes=6)).timestamp()) # issued in the past, allow some leeway
+    assert iat <= int((now_tz_aware() - timedelta(minutes=5)).timestamp())
+    assert iat >= int((now_tz_aware() - timedelta(minutes=6)).timestamp()) # issued in the past, allow some leeway
     assert decoded["type"] == "login"
 
 def test_create_login_token_expired():
     # Create a login token that is already expired
-    token = create_login_token(subject="id123", issued_at=now_tz_naive() - timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES + 10))
+    token = create_login_token(subject="id123", issued_at=now_tz_aware() - timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES + 10))
     try:
         decode_token(token)
         assert False, "Expected decode_token to raise an exception for an expired token"
@@ -61,7 +63,7 @@ def test_create_login_token_expired():
 
 def test_create_login_token_with_iat_in_the_future():
     # Create a login token with an "iat" in the future
-    token = create_login_token(subject="id123", issued_at=now_tz_naive() + timedelta(minutes=10))
+    token = create_login_token(subject="id123", issued_at=now_tz_aware() + timedelta(minutes=10))
     try:
         decode_token(token)
         assert False, "Expected decode_token to raise an exception for an invalid 'iat' claim"
@@ -136,11 +138,11 @@ def test_check_login_iat_too_old(test_baseuser):
     token_data = decode_token(token)
     # Set iat to a time before the user's last password reset, which should invalidate the token
     user.last_reset_done_at = now_tz_naive() - timedelta(minutes=7)
-    token_data['iat'] = int((user.last_reset_done_at - timedelta(minutes=1)).timestamp())
+    token_data['iat'] = int((ensure_tz_aware(user.last_reset_done_at) - timedelta(minutes=1)).timestamp())
     result = check_login_token(token_data, user)
     assert result == False
     # Set iat to a time before the user's last successful 2fa
     user.last_2fa_success_at = now_tz_naive() - timedelta(minutes=10)
-    token_data['iat'] = int((user.last_2fa_success_at - timedelta(minutes=1)).timestamp())
+    token_data['iat'] = int((ensure_tz_aware(user.last_2fa_success_at) - timedelta(minutes=1)).timestamp())
     result = check_login_token(token_data, user)
     assert result == False

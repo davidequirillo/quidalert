@@ -3,7 +3,6 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import timedelta
-import pytest
 from sqlmodel import select
 from models.general import User
 from core.settings import settings

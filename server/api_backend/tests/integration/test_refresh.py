@@ -15,7 +15,7 @@ from models.general import (
     USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
 )
 from services.security import (
-    now_tz_naive,
+    now_tz_naive, now_tz_aware,
     create_refresh_token,
     decode_token
 )
@@ -43,7 +43,7 @@ def test_refresh_expired_token(client, test_baseuser):
     token_sub = refresh_token_decoded.get("sub")
     # Create an expired refresh token 
     exp = timedelta(seconds=-1)
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     rtoken_expired = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, expires_delta=exp, issued_at=iat)
     payload = {"refresh_token": rtoken_expired}
     response = client.post("/api/auth/refresh", json=payload)
@@ -78,7 +78,7 @@ def test_refresh_with_a_cloned_valid_token(client, test_baseuser):
     token_raw = token_decoded.get("raw")
     token_sub = token_decoded.get("sub")
     # Create a new refresh token with the same jti, raw_code, subject, and with a valid issued at time to simulate a cloned token
-    new_refresh_token = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, issued_at=now_tz_naive())
+    new_refresh_token = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, issued_at=now_tz_aware())
     payload = {"refresh_token": new_refresh_token}
     response = client.post("/api/auth/refresh", json=payload)
     assert response.status_code == status.HTTP_200_OK
@@ -106,10 +106,10 @@ def test_refresh_reuse_old_token(client, db_session, test_baseuser, frozen_now):
     user: User = test_baseuser['user']
     refresh_token = test_baseuser['refresh_token']
     payload = {"refresh_token": refresh_token}
-    old_timestamp = now_tz_naive()
+    old_timestamp_naive = now_tz_naive()
     # We go ahead with time (simulate a delay)
     frozen_now.tick(delta=timedelta(seconds=5))
-    new_timestamp = now_tz_naive()
+    new_timestamp_naive = now_tz_naive()
     # First refresh to get a new token
     response1 = client.post("/api/auth/refresh", json=payload)
     assert response1.status_code == status.HTTP_200_OK
@@ -136,13 +136,13 @@ def test_refresh_reuse_old_token(client, db_session, test_baseuser, frozen_now):
     statement = select(RefreshToken).where(RefreshToken.id == jti_as_uuid)
     db_rtoken: RefreshToken = db_session.exec(statement).first()
     assert db_rtoken is not None
-    assert db_rtoken.updated_at > old_timestamp
-    assert db_rtoken.updated_at >= new_timestamp
-    assert db_rtoken.updated_at < new_timestamp + timedelta(minutes=1) # We check that the updated_at time has been updated to a recent time (within the next minute) to ensure that the token has been refreshed in the database
+    assert db_rtoken.updated_at > old_timestamp_naive
+    assert db_rtoken.updated_at >= new_timestamp_naive
+    assert db_rtoken.updated_at < new_timestamp_naive + timedelta(minutes=1) # We check that the updated_at time has been updated to a recent time (within the next minute) to ensure that the token has been refreshed in the database
     assert user.last_refresh_at is not None
-    assert user.last_refresh_at > old_timestamp
-    assert user.last_refresh_at >= new_timestamp
-    assert user.last_refresh_at < new_timestamp + timedelta(minutes=1) # We check that the last_refresh_at time has been updated to a recent time (within the next minute) to ensure that the user's last refresh time has been updated in the database
+    assert user.last_refresh_at > old_timestamp_naive
+    assert user.last_refresh_at >= new_timestamp_naive
+    assert user.last_refresh_at < new_timestamp_naive + timedelta(minutes=1) # We check that the last_refresh_at time has been updated to a recent time (within the next minute) to ensure that the user's last refresh time has been updated in the database
     # Attempt to reuse the old refresh token
     payload = {"refresh_token": refresh_token}
     # Use the old refresh token to get another new token

@@ -9,6 +9,8 @@ from services.security import (
     TokenExpiredException,
     TokenNotValidException,
     now_tz_naive,
+    now_tz_aware,
+    ensure_tz_aware,
     from_datetime_to_timestamp,
     REFRESH_TOKEN_TTL_MINUTES,
     decode_token,
@@ -29,10 +31,10 @@ def test_create_refresh_token_successful():
     assert decoded['type'] == "refresh"
     exp = decoded['exp']
     iat = decoded['iat']
-    assert exp >= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES - 1)) # allow some leeway for timing
-    assert exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES + 1))
-    assert iat <= from_datetime_to_timestamp(now_tz_naive())
-    assert iat >= from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=1)) # issued in the past, allow some leeway
+    assert exp >= from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES - 1)) # allow some leeway for timing
+    assert exp <= from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES + 1))
+    assert iat <= from_datetime_to_timestamp(now_tz_aware())
+    assert iat >= from_datetime_to_timestamp(now_tz_aware() - timedelta(minutes=1)) # issued in the past, allow some leeway
 
 def test_create_refresh_token_with_custom_exp():
     user_id = "id123"
@@ -42,24 +44,24 @@ def test_create_refresh_token_with_custom_exp():
     token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, expires_delta=custom_exp_delta)
     decoded = decode_token(token)
     exp = decoded['exp']
-    assert exp >= from_datetime_to_timestamp(now_tz_naive() + custom_exp_delta - timedelta(minutes=1)) # allow some leeway for timing
-    assert exp <= from_datetime_to_timestamp(now_tz_naive() + custom_exp_delta + timedelta(minutes=1))
+    assert exp >= from_datetime_to_timestamp(now_tz_aware() + custom_exp_delta - timedelta(minutes=1)) # allow some leeway for timing
+    assert exp <= from_datetime_to_timestamp(now_tz_aware() + custom_exp_delta + timedelta(minutes=1))
     assert decoded['type'] == "refresh"
 
 def test_create_refresh_token_with_custom_iat():
     user_id = "id123"
     token_id = "tokenid123"
     raw_code = generate_random_token()
-    token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, issued_at=now_tz_naive()-timedelta(minutes=5))
+    token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, issued_at=now_tz_aware()-timedelta(minutes=5))
     decoded = decode_token(token)
     sub = decoded["sub"]
     assert sub == user_id
     exp = decoded["exp"]
-    assert exp >= from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=5) + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES-1)) # allow some leeway for timing
-    assert exp <= from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=5) + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES+1))
+    assert exp >= from_datetime_to_timestamp(now_tz_aware() - timedelta(minutes=5) + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES-1)) # allow some leeway for timing
+    assert exp <= from_datetime_to_timestamp(now_tz_aware() - timedelta(minutes=5) + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES+1))
     iat = decoded["iat"]
-    assert iat <= from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=5))
-    assert iat >= from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=6)) # issued in the past, allow some leeway
+    assert iat <= from_datetime_to_timestamp(now_tz_aware() - timedelta(minutes=5))
+    assert iat >= from_datetime_to_timestamp(now_tz_aware() - timedelta(minutes=6)) # issued in the past, allow some leeway
     assert decoded["type"] == "refresh"
 
 def test_create_refresh_token_expired():
@@ -67,7 +69,7 @@ def test_create_refresh_token_expired():
     user_id = "id123"
     token_id = "tokenid123"
     raw_code = generate_random_token()
-    token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, issued_at=now_tz_naive() - timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES + 10))
+    token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, issued_at=now_tz_aware() - timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES + 10))
     try:
         decode_token(token)
         assert False, "Expected decode_token to raise an exception for an expired token"
@@ -79,7 +81,7 @@ def test_create_refresh_token_with_iat_in_the_future():
     user_id = "id123"
     token_id = "tokenid123"
     raw_code = generate_random_token()
-    token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, issued_at=now_tz_naive() + timedelta(minutes=10))
+    token = create_refresh_token(subject=user_id, token_id=token_id, raw_code=raw_code, issued_at=now_tz_aware() + timedelta(minutes=10))
     try:
         decode_token(token)
         assert False, "Expected decode_token to raise an exception for an invalid 'iat' claim"
@@ -114,8 +116,8 @@ def test_check_refresh_token_data_is_none(db_session):
 
 def test_check_refresh_token_data_missing_sub(db_session):
     # Create token data with missing "sub" field
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
-    iat = from_datetime_to_timestamp(now_tz_naive())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
     token_data = {
         # "sub" is missing
         "jti": "tokenid123",
@@ -132,8 +134,8 @@ def test_check_refresh_token_data_missing_sub(db_session):
 
 def test_check_refresh_token_data_missing_jti(db_session):
     # Create token data with missing "jti" field
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
-    iat = from_datetime_to_timestamp(now_tz_naive())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
     token_data = {
         "sub": "id123",
         # "jti" is missing
@@ -150,8 +152,8 @@ def test_check_refresh_token_data_missing_jti(db_session):
 
 def test_check_refresh_token_data_missing_type(db_session):
     # Create token data with missing "type" field
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
-    iat = from_datetime_to_timestamp(now_tz_naive())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
     token_data = {
         "sub": "id123",
         "jti": "tokenid123",
@@ -168,8 +170,8 @@ def test_check_refresh_token_data_missing_type(db_session):
 
 def test_check_refresh_token_data_wrong_type(db_session):
     # Create token data with wrong "type" field
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
-    iat = from_datetime_to_timestamp(now_tz_naive())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
     token_data = {
         "sub": "id123",
         "jti": "tokenid123",
@@ -186,8 +188,8 @@ def test_check_refresh_token_data_wrong_type(db_session):
 
 def test_check_refresh_token_data_missing_raw(db_session):
     # Create token data with missing fields
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
-    iat = from_datetime_to_timestamp(now_tz_naive())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
     token_data = {
         "sub": "id123",
         "jti": "tokenid123",
@@ -204,7 +206,7 @@ def test_check_refresh_token_data_missing_raw(db_session):
 
 def test_check_refresh_token_missing_iat(db_session):
     # Create token data with missing "iat" field
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     token_data = {
         "sub": "id123",
         "jti": "tokenid123",
@@ -221,7 +223,7 @@ def test_check_refresh_token_missing_iat(db_session):
 
 def test_check_refresh_token_missing_exp(db_session):
     # Create token data with missing "exp" field
-    iat = from_datetime_to_timestamp(now_tz_naive())
+    iat = from_datetime_to_timestamp(now_tz_aware())
     token_data = {
         "sub": "id123",
         "jti": "tokenid123",
@@ -244,8 +246,8 @@ def test_check_refresh_token_user_not_found_in_db(db_session, test_baseuser):
     token_id = token_decoded['jti']
     token_raw = token_decoded['raw']
     user_id = str(user.id)
-    iat = from_datetime_to_timestamp(now_tz_naive())
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     token_data = {
         "sub": user_id[:-1] + ("9" if user_id[-1] != "9" else "8"),  # modify user_id to make it not found
         "jti": token_id,
@@ -271,8 +273,8 @@ def test_check_refresh_token_iat_too_old(db_session, test_baseuser):
     # simulate a password reset done 20 minutes ago
     user.last_reset_done_at = now_tz_naive() - timedelta(minutes=20)
      # issued 10 minutes before the last reset, which is too old
-    iat = from_datetime_to_timestamp(user.last_reset_done_at - timedelta(minutes=10))
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(ensure_tz_aware(user.last_reset_done_at) - timedelta(minutes=10))
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     token_data = {
         "sub": user_id,
         "jti": token_id,
@@ -295,8 +297,8 @@ def test_check_refresh_token_jti_not_found_in_db(db_session, test_baseuser):
     token_id = token_decoded['jti']
     token_raw = token_decoded['raw']
     user_id = str(user.id)
-    iat = from_datetime_to_timestamp(now_tz_naive())
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     token_data = {
         "sub": user_id,
         "jti": token_id[:-1] + ("9" if token_id[-1] != "9" else "8"),  # modify jti to make it not found
@@ -319,8 +321,8 @@ def test_check_refresh_token_is_revoked(db_session, test_baseuser):
     token_id = token_decoded['jti']
     token_raw = token_decoded['raw']
     user_id = str(user.id)
-    iat = from_datetime_to_timestamp(now_tz_naive())
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     # Mark the refresh token as revoked in the database
     token_in_db = db_session.exec(select(RefreshToken).where(RefreshToken.id == string_as_uuid(token_id))).first()
     token_in_db.is_revoked = True
@@ -348,8 +350,8 @@ def test_check_refresh_token_raw_code_does_not_match_hash_in_db(db_session, test
     token_id = token_decoded['jti']
     token_raw = token_decoded['raw']
     user_id = str(user.id)
-    iat = from_datetime_to_timestamp(now_tz_naive())
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     # Modify the raw code so that it does not match the hash in the database
     modified_raw_code = token_raw[:-1] + ("9" if token_raw[-1] != "9" else "8")
     token_data = {
@@ -374,8 +376,8 @@ def test_check_refresh_token_all_fields_valid(db_session, test_baseuser):
     token_id = token_decoded['jti']
     token_raw = token_decoded['raw']
     user_id = str(user.id)
-    iat = from_datetime_to_timestamp(now_tz_naive())
-    exp = from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     token_data = {
         "sub": user_id,
         "jti": token_id,

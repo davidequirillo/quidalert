@@ -12,8 +12,8 @@ from core.exceptions import token_not_valid_exception, token_expired_exception
 from services.security import (
     create_access_token,
     ACCESS_TOKEN_TTL_MINUTES,
-    JWT_ALGORITHM,
-    now_tz_naive)
+    JWT_ALGORITHM, 
+    now_tz_aware)
 
 def test_get_current_user_success(db_session, test_baseuser):
     user: User = test_baseuser['user']
@@ -46,7 +46,7 @@ def test_get_current_user_expired_token(db_session, test_baseuser):
 def test_get_current_user_invalid_iat(db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Create a token with an "iat" in the future
-    token = create_access_token(subject=str(user.id), issued_at=now_tz_naive() + timedelta(minutes=10))
+    token = create_access_token(subject=str(user.id), issued_at=now_tz_aware() + timedelta(minutes=10))
     try:
         get_current_user(access_token=token, db_session=db_session)
     except HTTPException as e:
@@ -59,8 +59,8 @@ def test_get_current_user_missing_user_id(db_session, test_baseuser):
     user: User = test_baseuser['user']
     assert user.id is not None, "Test setup error: the test user should have a valid ID"
     # Create a token without the "sub" claim
-    iat = now_tz_naive()
-    exp = now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
+    iat = now_tz_aware()
+    exp = now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
     token_type = "access"
     payload = {
         "iat": iat,
@@ -80,7 +80,7 @@ def test_get_current_user_missing_iat(db_session, test_baseuser):
     user: User = test_baseuser['user']
     assert user.id is not None, "Test setup error: the test user should have a valid ID"
     # Create a token without the "iat" claim
-    exp = now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
+    exp = now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
     token_type = "access"
     payload = {
         "sub": str(user.id),
@@ -98,7 +98,7 @@ def test_get_current_user_missing_iat(db_session, test_baseuser):
 
 def test_get_current_user_missing_exp(db_session, test_baseuser):
     user: User = test_baseuser['user']
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     token_type = "access"
     payload = {
         "sub": str(user.id),
@@ -118,8 +118,8 @@ def test_get_current_user_missing_type(db_session, test_baseuser):
     user: User = test_baseuser['user']
     assert user.id is not None, "Test setup error: the test user should have a valid ID"
     # Create a token without the "type" claim
-    iat = now_tz_naive()
-    exp = now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
+    iat = now_tz_aware()
+    exp = now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
     payload = {
         "sub": str(user.id),
         "iat": iat,
@@ -152,8 +152,8 @@ def test_get_current_user_invalid_type_claim(db_session, test_baseuser):
     user: User = test_baseuser['user']
     assert user.id is not None, "Test setup error: the test user should have a valid ID"
     # Create a token with an invalid "type" claim
-    iat = now_tz_naive()
-    exp = now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
+    iat = now_tz_aware()
+    exp = now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES)
     token_type = "invalid-type"
     payload = {
         "sub": str(user.id),
@@ -175,8 +175,8 @@ def test_get_current_user_valid_token(db_session, test_baseuser):
     assert user.id is not None, "Test setup error: the test user should have a valid ID"
     payload = {
         "sub": str(user.id),
-        "iat": now_tz_naive(),
-        "exp": now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES),
+        "iat": now_tz_aware(),
+        "exp": now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES),
         "type": "access"
     }
     token = jwt.encode(payload, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)

@@ -43,12 +43,12 @@ class _HomeBodyState extends State<HomeBody> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       debugPrint(
         "HomeBody initState: syncing FCM token and starting background location tracking...",
       );
-      _syncFcmToken();
-      _startBackgroundLocationTracking();
+      await _syncFcmToken();
+      await _startBackgroundLocationTracking();
     });
   }
 
