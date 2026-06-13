@@ -13,7 +13,7 @@ from services.security import (
     create_geoposition_token,
     GEOPOSITION_TOKEN_TTL_MINUTES,
     JWT_ALGORITHM,
-    now_tz_naive)
+    now_tz_aware)
 
 def test_get_gps_token_data_successful(test_baseuser):
     user: User = test_baseuser['user']
@@ -69,7 +69,7 @@ def test_get_gps_token_data_iat_in_the_future(test_baseuser):
         user_id=user_id, 
         user_is_chief=user_is_chief, 
         user_role=user_role,
-        issued_at=now_tz_naive() + timedelta(minutes=10))
+        issued_at=now_tz_aware() + timedelta(minutes=10))
     try:
         get_geoposition_token_data(token)
         assert False, "Expected HTTPException for a token with 'iat' in the future"
@@ -94,7 +94,7 @@ def test_create_gps_token_data_type_missing(test_baseuser):
     user_id = str(user.id)
     user_is_chief = user.is_chief
     user_role = user.role
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES)
     payload = {
         "sub": user_id,
@@ -118,7 +118,7 @@ def test_get_gps_token_data_type_invalid(test_baseuser):
     user_id = str(user.id)
     user_is_chief = user.is_chief
     user_role = user.role
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES)
     payload = {
         "sub": user_id,
@@ -141,7 +141,7 @@ def test_get_gps_token_data_missing_user_id(test_baseuser):
     # Create a GPS token with the "sub" claim missing
     user_is_chief = user.is_chief
     user_role = user.role
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES)
     payload = {
         # "sub" is intentionally missing
@@ -164,7 +164,7 @@ def test_get_gps_token_data_user_id_empty(test_baseuser):
     # Create a GPS token with an empty "sub" claim
     user_is_chief = user.is_chief
     user_role = user.role
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES)
     payload = {
         "sub": "",  # empty user_id
@@ -187,7 +187,7 @@ def test_get_gps_token_data_missing_user_is_chief(test_baseuser):
     # Create a GPS token with the "user_is_chief" claim missing
     user_id = str(user.id)
     user_role = user.role
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES)
     payload = {
         "sub": user_id,
@@ -210,7 +210,7 @@ def test_get_gps_token_data_missing_user_role(test_baseuser):
     # Create a GPS token with the "user_role" claim missing
     user_id = str(user.id)
     user_is_chief = user.is_chief
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES)
     payload = {
         "sub": user_id,

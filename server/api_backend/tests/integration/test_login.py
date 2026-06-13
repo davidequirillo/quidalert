@@ -13,7 +13,7 @@ from models.general import (
 from services.security import (
     get_password_hash, 
     otp_hmac, otp_expiry, OTP_CODE_TTL_MINUTES,
-    now_tz_naive, 
+    now_tz_naive, now_tz_aware,
     from_timestamp_to_datetime_tz_naive,
     from_datetime_to_timestamp,
     MAIL_COOLDOWN_SECONDS,
@@ -425,16 +425,16 @@ def test_login_2fa_successful_and_login_token_works(client, db_session, not_logg
     assert login_token_exp is not None
     assert login_token_iat is not None
     # The issued at time should be in the past, but not too much in the past (e.g. not more than 1 minute ago)
-    assert login_token_iat <= int(now_tz_naive().timestamp())
-    assert login_token_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    assert login_token_iat <= int(now_tz_aware().timestamp())
+    assert login_token_iat > int((now_tz_aware() - timedelta(minutes=1)).timestamp())
     iat_dt = from_timestamp_to_datetime_tz_naive(login_token_iat)
     # The issued at time should be after the last password reset time, otherwise the token should be invalid
     assert iat_dt >= user.last_reset_done_at
     # The issued at time should be after the last successful 2FA time
     assert iat_dt >= user.last_2fa_success_at
     # The token should not be expired (expiration more or less at timedelta of LOGIN_TOKEN_TTL_MINUTES)
-    assert login_token_exp > int((now_tz_naive() + timedelta(minutes=(LOGIN_TOKEN_TTL_MINUTES-1))).timestamp())
-    assert login_token_exp <= int((now_tz_naive() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES)).timestamp())
+    assert login_token_exp > int((now_tz_aware() + timedelta(minutes=(LOGIN_TOKEN_TTL_MINUTES-1))).timestamp())
+    assert login_token_exp <= int((now_tz_aware() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES)).timestamp())
     # Now we try to login again with the login token, without providing the 2FA code, and it should work
     payload = {"email": user.email, "password": valid_password, "login_token": login_token}
     response = client.post("/api/auth/login", json=payload)
@@ -551,12 +551,12 @@ def test_login_refresh_token_saved_in_db(client, db_session, not_logged_test_use
     rtoken_jti = refresh_token_data.get("jti")
     assert rtoken_sub == str(user.id)
     assert rtoken_type == "refresh"
-    assert rtoken_iat <= int(now_tz_naive().timestamp())
-    assert rtoken_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    assert rtoken_iat <= int(now_tz_aware().timestamp())
+    assert rtoken_iat > int((now_tz_aware() - timedelta(minutes=1)).timestamp())
     iat_dt = from_timestamp_to_datetime_tz_naive(rtoken_iat)
     assert iat_dt >= user.last_reset_done_at
-    assert rtoken_exp > int((now_tz_naive() + timedelta(minutes=(REFRESH_TOKEN_TTL_MINUTES-1))).timestamp())
-    assert rtoken_exp <= int((now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES)).timestamp())
+    assert rtoken_exp > int((now_tz_aware() + timedelta(minutes=(REFRESH_TOKEN_TTL_MINUTES-1))).timestamp())
+    assert rtoken_exp <= int((now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES)).timestamp())
     # Now we check if the refresh token is in the database, is unique, and has a valid raw hash
     statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
     results = db_session.exec(statement).all()
@@ -637,13 +637,13 @@ def test_login_returned_access_token_is_ok(client, db_session, not_logged_test_u
     atoken_iat = access_token_data.get("iat")
     assert atoken_sub == str(user.id)
     assert atoken_type == "access"
-    assert atoken_iat <= int(now_tz_naive().timestamp())
-    assert atoken_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    assert atoken_iat <= int(now_tz_aware().timestamp())
+    assert atoken_iat > int((now_tz_aware() - timedelta(minutes=1)).timestamp())
     iat_dt = from_timestamp_to_datetime_tz_naive(atoken_iat)
     assert iat_dt >= user.last_login_done_at
     assert iat_dt >= user.last_refresh_at
-    assert atoken_exp > from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=(ACCESS_TOKEN_TTL_MINUTES-1)))
-    assert atoken_exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
+    assert atoken_exp > from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=(ACCESS_TOKEN_TTL_MINUTES-1)))
+    assert atoken_exp <= from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
     # Now we can use the access token to access a protected route (e.g. /api/users/me) to verify that it works
     headers = {"Authorization": f"Bearer {access_token}"}
     protected_response = client.get("/api/user/profile", headers=headers)
@@ -680,13 +680,13 @@ def test_login_returned_gps_token_is_ok(client, db_session, not_logged_test_user
     assert gt_token_type == "gps-update"
     assert gt_is_chief == (1 if user.is_chief else 0)
     assert gt_role == user.role
-    assert gt_iat <= int(now_tz_naive().timestamp())
-    assert gt_iat > int((now_tz_naive() - timedelta(minutes=1)).timestamp())
+    assert gt_iat <= int(now_tz_aware().timestamp())
+    assert gt_iat > int((now_tz_aware() - timedelta(minutes=1)).timestamp())
     iat_dt = from_timestamp_to_datetime_tz_naive(gt_iat)
     assert iat_dt >= user.last_login_done_at
     assert iat_dt >= user.last_refresh_at
-    assert gt_exp > from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=(GEOPOSITION_TOKEN_TTL_MINUTES-1)))
-    assert gt_exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
+    assert gt_exp > from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=(GEOPOSITION_TOKEN_TTL_MINUTES-1)))
+    assert gt_exp <= from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
 
 def test_login_returned_refresh_token_is_ok(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
@@ -715,11 +715,11 @@ def test_login_returned_refresh_token_is_ok(client, db_session, not_logged_test_
     rtoken_jti = decoded_refresh_token.get("jti")
     assert rtoken_sub == str(user.id)
     assert rtoken_type == "refresh"
-    assert rtoken_iat <= from_datetime_to_timestamp(now_tz_naive())
-    assert rtoken_iat > from_datetime_to_timestamp(now_tz_naive() - timedelta(minutes=1))
+    assert rtoken_iat <= from_datetime_to_timestamp(now_tz_aware())
+    assert rtoken_iat > from_datetime_to_timestamp(now_tz_aware() - timedelta(minutes=1))
     assert rtoken_iat >= from_datetime_to_timestamp(user.last_reset_done_at)
-    assert rtoken_exp > from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=(REFRESH_TOKEN_TTL_MINUTES-1)))
-    assert rtoken_exp <= from_datetime_to_timestamp(now_tz_naive() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    assert rtoken_exp > from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=(REFRESH_TOKEN_TTL_MINUTES-1)))
+    assert rtoken_exp <= from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     assert rtoken_iat >= from_datetime_to_timestamp(user.last_login_done_at)
     assert rtoken_iat >= from_datetime_to_timestamp(user.last_refresh_at)
     assert rtoken_jti is not None

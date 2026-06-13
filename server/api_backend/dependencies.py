@@ -36,25 +36,31 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
     try:
         token_data = decode_token(access_token)
     except TokenExpiredException:
+        print(f"Access token expired: {access_token}")
         raise token_expired_exception()
     except TokenNotValidException:
+        print(f"Access token not valid 1: {access_token}")
         raise token_not_valid_exception()
     except:
+        print(f"Access token not valid 2: {access_token}")
         raise token_not_valid_exception()
     user_id = token_data.get("sub")
     token_iat = token_data.get("iat")
     token_exp = token_data.get("exp")
     token_type = token_data.get("type")
     if (not user_id) or (not token_iat) or (not token_exp) or \
-        (not token_type) or (token_type != "access"): 
+        (not token_type) or (token_type != "access"):
+            print(f"Access token not valid 3: {access_token}") 
             raise token_not_valid_exception()
     try:
         user_id_as_uuid = string_as_uuid(user_id)
     except ValueError:
+        print(f"Access token not valid 4: {access_token}")
         raise token_not_valid_exception()
     statement = select(User).where(User.id == user_id_as_uuid)
     user = db_session.exec(statement).first()
     if user is None:
+        print(f"Access token not valid 5: {access_token}")
         raise token_not_valid_exception()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)   
     if token_iat_dt < user.last_reset_done_at: 

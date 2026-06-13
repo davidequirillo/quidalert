@@ -188,11 +188,6 @@ class AuthClient extends ChangeNotifier {
       gpsToken = null;
       return;
     }
-    if (_isTokenExpired(refreshToken!)) {
-      debugPrintC('Try refresh tokens: local check, refresh_token expired');
-      await setAuthTokens(null, null, null);
-      throw ExpiredTokenException();
-    }
     final uri = Uri.parse('$baseUrl/auth/refresh');
     final resp = await http.post(
       uri,
@@ -263,9 +258,7 @@ class AuthClient extends ChangeNotifier {
   }
 
   bool isLoggedIn() {
-    return (refreshToken != null) &&
-        (!_isTokenExpired(refreshToken!)) &&
-        (accessToken != null);
+    return (refreshToken != null) && (accessToken != null);
   }
 
   Map<String, String> _authHeaders() =>

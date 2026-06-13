@@ -9,9 +9,9 @@ from core.exceptions import (
     token_expired_exception, 
     token_not_valid_exception
 )
-from models.general import User, RefreshToken, string_as_uuid
+from models.general import User, RefreshToken
 from services.security import (
-    now_tz_naive,
+    now_tz_aware,
     create_refresh_token,
     decode_token
 )
@@ -42,7 +42,7 @@ def test_revoke_expired_token(client, db_session, test_baseuser):
     token_sub = refresh_token_decoded.get("sub")
     # Create an expired refresh token 
     exp = timedelta(seconds=-1)
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     rtoken_expired = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, expires_delta=exp, issued_at=iat)
     payload = {"refresh_token": rtoken_expired}
     response = client.post("/api/auth/revoke", json=payload)

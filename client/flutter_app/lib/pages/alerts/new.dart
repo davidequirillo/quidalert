@@ -230,7 +230,6 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         if (mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.pop(context);
-            Navigator.pushNamed(context, "/alerts/recents");
           });
         }
       } else if (loginRequired == true) {

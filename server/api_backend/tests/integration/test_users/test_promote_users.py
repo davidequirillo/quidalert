@@ -619,9 +619,9 @@ async def test_promote_users_modify_type_called_by_admin(client, db_session, red
     chief_demoted_score = await redis_session.zscore(chief_demotion_key, str(testuser1.id))
     assert chief_demoted_score is not None
     # we check the timestamp of the chief demotion, it should be recent
-    now_timestamp = ensure_tz_aware(now_tz_naive()).timestamp()
-    assert now_timestamp >= chief_demoted_score
-    assert chief_demoted_score >= now_timestamp - 60 # The chief demotion should have been applied within the last minute
+    now_timestamp_tz = ensure_tz_aware(now_tz_naive()).timestamp()
+    assert now_timestamp_tz >= chief_demoted_score
+    assert chief_demoted_score >= now_timestamp_tz - 60 # The chief demotion should have been applied within the last minute
     # The chief location should be removed from Redis when the user is demoted from chief
     positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
     assert all(p is None for p in positions)
@@ -1190,9 +1190,9 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     chief_demoted_score = await redis_session.zscore(chief_demotion_key, str(testuser1.id))
     assert chief_demoted_score is not None
     # we check the timestamp of the chief demotion, it should be recent
-    now_timestamp = ensure_tz_aware(now_tz_naive()).timestamp()
-    assert now_timestamp >= chief_demoted_score
-    assert chief_demoted_score >= now_timestamp - 60 # The chief demotion should have been applied within the last minute
+    now_timestamp_tz = ensure_tz_aware(now_tz_naive()).timestamp()
+    assert now_timestamp_tz >= chief_demoted_score
+    assert chief_demoted_score >= now_timestamp_tz - 60 # The chief demotion should have been applied within the last minute
     # The chief location should be removed from Redis when the user is demoted from chief
     positions = await redis_session.geopos(chief_location_key, str(testuser1.id))
     assert all(p is None for p in positions)
@@ -1273,7 +1273,7 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     assert chief1_demoted_score is not None
     assert chief2_demoted_score is not None
     # we check the timestamp of the chief demotion, it should be recent
-    now_timestamp = int(now_tz_naive().timestamp())
+    now_timestamp = int(ensure_tz_aware(now_tz_naive()).timestamp())
     assert abs(chief1_demoted_score - now_timestamp) < 60
     assert abs(chief2_demoted_score - now_timestamp) < 60
     # The chief location should be removed from Redis when the user is demoted from chief

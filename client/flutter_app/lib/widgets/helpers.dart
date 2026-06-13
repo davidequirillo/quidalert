@@ -34,6 +34,7 @@ class GotoIfAlertDialog extends StatelessWidget {
         TextButton(
           onPressed: () {
             if (condition) {
+              Navigator.of(context).pop();
               Navigator.pushReplacementNamed(context, route);
             } else {
               Navigator.of(context).pop();

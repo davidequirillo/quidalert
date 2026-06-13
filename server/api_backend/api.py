@@ -31,7 +31,7 @@ from models.general import (string_as_uuid,
 from services.security import (
     LOGIN_LOCK_HOURS, get_password_hash, check_password_against_hash, generate_random_token, get_token_hash, 
     generate_activation_token, activation_expiry, 
-    now_tz_naive, from_timestamp_to_datetime_tz_naive, 
+    now_tz_naive, ensure_tz_aware, from_timestamp_to_datetime_tz_naive, 
     generate_otp_code, otp_expiry, otp_hmac, otp_verify,
     RESET_LOCK_HOURS, MAIL_COOLDOWN_SECONDS,
     create_access_token, create_geoposition_token, create_refresh_token, decode_token, MAX_ACTIVE_REFRESH_TOKENS,
@@ -227,6 +227,7 @@ def refresh_auth_tokens(
     except:
         raise token_not_valid_exception()
     now = now_tz_naive()
+    now_tz = ensure_tz_aware(now)
     new_raw_secret = generate_random_token()
     new_raw_secret_hash = get_token_hash(new_raw_secret)
     rtoken.raw_hash = new_raw_secret_hash
@@ -246,7 +247,7 @@ def refresh_auth_tokens(
         str(user.id), user.is_chief, user.role)
     new_refresh_token = create_refresh_token(
         str(user.id), str(rtoken.id), 
-        new_raw_secret, issued_at=now)
+        new_raw_secret, issued_at=now_tz)
     return {
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
@@ -287,6 +288,7 @@ def login(data: LoginSchema,
             background_tasks: BackgroundTasks,
             db_session: Session = Depends(get_db_session)):
     now = now_tz_naive()
+    now_tz = ensure_tz_aware(now)
     new_login_token = None
     q = select(User).where(User.email == data.email)
     user = db_session.exec(q).first()
@@ -397,7 +399,7 @@ def login(data: LoginSchema,
         str(user.id), user.is_chief, user.role)
     rtoken = create_refresh_token(
         str(user.id), str(refresh_token.id), 
-        raw_random_str, issued_at=now)
+        raw_random_str, issued_at=now_tz)
     security_events.log_login_successful(str(user.id))
     if can_send:
         background_tasks.add_task(send_login_successful_mail, user.email, user.language)
@@ -415,6 +417,7 @@ def register_device_for_push_notifications(
     q = select(RefreshToken).where(RefreshToken.user_id == current_user.id)
     results = db_session.exec(q).all()
     if not results:
+        print(f"User {current_user.id} has no active refresh token to register FCM token for push notifications")
         raise token_not_valid_exception()
     rtoken = results[0] # at the moment we keep only one active refresh token per user (one device)
     rtoken.fcm_token = fcm_token

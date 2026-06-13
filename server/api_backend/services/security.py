@@ -105,7 +105,7 @@ def otp_hmac(code: str) -> str:
 def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
-ACCESS_TOKEN_TTL_MINUTES = 60
+ACCESS_TOKEN_TTL_MINUTES = 60 # 60 minutes
 GEOPOSITION_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
 REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180  # 180 days
 LOGIN_TOKEN_TTL_MINUTES = 60 * 24 * 240  # 240 days
@@ -113,7 +113,7 @@ MAX_ACTIVE_REFRESH_TOKENS = 1 # IMPORTANT: at the moment we allow only one activ
 JWT_ALGORITHM = "HS256"
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
-    now = issued_at or now_tz_naive()
+    now = issued_at or now_tz_aware()
     expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
@@ -125,7 +125,7 @@ def create_access_token(subject: str, expires_delta: Optional[timedelta] = None,
     return token
 
 def create_geoposition_token(user_id, user_is_chief, user_role, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
-    now = issued_at or now_tz_naive()
+    now = issued_at or now_tz_aware()
     expire = now + (expires_delta or timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES))
     data = {
         "sub": user_id,
@@ -140,7 +140,7 @@ def create_geoposition_token(user_id, user_is_chief, user_role, expires_delta: O
 
 def create_refresh_token(subject: str, token_id: str, raw_code: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
     if issued_at is None:
-        issued_at = now_tz_naive()
+        issued_at = now_tz_aware()
     expire = issued_at + (expires_delta or timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
@@ -154,7 +154,7 @@ def create_refresh_token(subject: str, token_id: str, raw_code: str, expires_del
     return token
 
 def create_login_token(subject: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):
-    now = issued_at or now_tz_naive()
+    now = issued_at or now_tz_aware()
     expire = now + (expires_delta or timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES))
     data = {
         "sub": subject,
@@ -179,8 +179,11 @@ def decode_token(token):
     except jwt.ExpiredSignatureError:
         raise TokenExpiredException()
     except jwt.InvalidSignatureError:
+        print(f"Access token not valid (invalid signature): {token}")
         raise TokenNotValidException()
     except jwt.InvalidTokenError:
+        print(f"Access token not valid (invalid token): {token}")
         raise TokenNotValidException()
     except:
+        print(f"Access token not valid (unknown error): {token}")
         raise TokenNotValidException()

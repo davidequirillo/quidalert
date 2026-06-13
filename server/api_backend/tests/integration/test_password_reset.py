@@ -2,13 +2,11 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import pytest
 from datetime import timedelta
 from fastapi import status
 from models.general import User
-from core.settings import settings
 from services.security import (
-    now_tz_naive, 
+    now_tz_naive,
     RESET_LOCK_HOURS, 
     otp_hmac, otp_expiry, OTP_CODE_TTL_MINUTES, 
     MAIL_COOLDOWN_SECONDS,

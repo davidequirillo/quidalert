@@ -8,14 +8,14 @@ from core.settings import settings
 from services.security import (
     TokenExpiredException,
     TokenNotValidException,
-    now_tz_naive,
+    now_tz_aware,
     decode_token, 
     JWT_ALGORITHM)
 
 def test_decode_token_successful():
     # Create a valid token for testing using jwt directly to have full control over the payload
     user_id = "user123"
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=60)
     token_type = "token_test"
     payload = {
@@ -30,15 +30,15 @@ def test_decode_token_successful():
     assert decoded_payload["type"] == token_type
     assert decoded_payload["iat"] == int(iat.timestamp())
     assert decoded_payload["exp"] == int(exp.timestamp())
-    assert decoded_payload["exp"] >= int((now_tz_naive() + timedelta(minutes=59)).timestamp()) # allow some leeway for timing
-    assert decoded_payload["exp"] <= int((now_tz_naive() + timedelta(minutes=61)).timestamp())
-    assert decoded_payload["iat"] <= int(now_tz_naive().timestamp())
-    assert decoded_payload["iat"] >= int((now_tz_naive() - timedelta(minutes=1)).timestamp()) # allow some leeway for timing
+    assert decoded_payload["exp"] >= int((now_tz_aware() + timedelta(minutes=59)).timestamp()) # allow some leeway for timing
+    assert decoded_payload["exp"] <= int((now_tz_aware() + timedelta(minutes=61)).timestamp())
+    assert decoded_payload["iat"] <= int(now_tz_aware().timestamp())
+    assert decoded_payload["iat"] >= int((now_tz_aware() - timedelta(minutes=1)).timestamp()) # allow some leeway for timing
 
 def test_decode_token_expired():
     # Create an expired token for testing using jwt directly to have full control over the payload
     user_id = "user123"
-    iat = now_tz_naive() - timedelta(minutes=61)  # issued 61 minutes ago
+    iat = now_tz_aware() - timedelta(minutes=61)  # issued 61 minutes ago
     exp = iat + timedelta(minutes=60)  # expired 1 minute ago
     token_type = "token_test"
     payload = {
@@ -57,7 +57,7 @@ def test_decode_token_expired():
 def test_decode_token_issued_at_in_future():
     # Create a token with issued at in the future for testing using jwt directly to have full control over the payload
     user_id = "user123"
-    iat = now_tz_naive() + timedelta(minutes=10)  # issued 10 minutes in the future
+    iat = now_tz_aware() + timedelta(minutes=10)  # issued 10 minutes in the future
     exp = iat + timedelta(minutes=60)  # expires 70 minutes in the future
     token_type = "token_test"
     payload = {
@@ -76,7 +76,7 @@ def test_decode_token_issued_at_in_future():
 def test_decode_token_invalid_signature():
     # Create a token with an invalid signature
     user_id = "user123"
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=60)
     token_type = "token_test"
     payload = {
@@ -106,7 +106,7 @@ def test_decode_token_malformed_token():
 def test_decode_altered_token():
     # Create a valid token for testing using jwt directly to have full control over the payload
     user_id = "user123"
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=60)
     token_type = "token_test"
     payload = {
@@ -143,7 +143,7 @@ def test_decode_altered_token():
 def test_decode_altered_payload():
     # Create a valid token for testing using jwt directly to have full control over the payload
     user_id = "user123"
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=60)
     token_type = "token_test"
     payload = {
@@ -168,7 +168,7 @@ def test_decode_altered_payload():
 def test_decode_token_with_wrong_algorithm():
     # Create a token using a different algorithm (e.g. HS384 instead of HS256)
     user_id = "user123"
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=60)
     token_type = "token_test"
     payload = {
@@ -188,7 +188,7 @@ def test_decode_token_with_wrong_algorithm():
 def test_decode_token_different_payload_different_signature():
     # Create a valid token for testing using jwt directly to have full control over the payload
     user_id = "user123"
-    iat = now_tz_naive()
+    iat = now_tz_aware()
     exp = iat + timedelta(minutes=60)
     token_type = "token_test"
     payload = {
