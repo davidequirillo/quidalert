@@ -79,8 +79,8 @@ class TermsBody extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: () async {
-                        await shared.setTermsAcceptedAndSave();
+                      onPressed: () {
+                        shared.setTermsAcceptedAndSave();
                         if (context.mounted) {
                           Navigator.pushReplacementNamed(context, '/login');
                         }
