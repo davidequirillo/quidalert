@@ -84,6 +84,7 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.login),
               title: Text('Login'),
               onTap: () {
+                Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/login');
               },
             ),
@@ -95,7 +96,12 @@ class CAppDrawer extends StatelessWidget {
                 await BackgroundLocationService.stopTracking();
                 // we don't register anymore to the backend for notifications
                 notifProvider.setAuthClient(null);
-                await authClient.logout();
+                try {
+                  await authClient.logout();
+                  debugPrint("Logout successful");
+                } catch (e) {
+                  debugPrint("Error during logout: $e");
+                }
                 if (!context.mounted) return;
                 Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/login');
@@ -109,6 +115,7 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.info),
               title: Text("Info"),
               onTap: () {
+                Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/info');
               },
             ),
@@ -117,6 +124,7 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.home),
               title: Text("Home"),
               onTap: () {
+                Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/home');
               },
             ),
@@ -125,6 +133,7 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.home),
               title: Text("Accounts"),
               onTap: () {
+                Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/accounts');
               },
             ),
@@ -133,6 +142,7 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.settings),
               title: Text(loc.menuSettings),
               onTap: () {
+                Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/settings');
               },
             ),
@@ -141,6 +151,7 @@ class CAppDrawer extends StatelessWidget {
               leading: Icon(Icons.description),
               title: Text(loc.menuTerms),
               onTap: () {
+                Navigator.of(context).pop();
                 Navigator.pushReplacementNamed(context, '/terms');
               },
             ),

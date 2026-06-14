@@ -87,12 +87,7 @@ class _UsersSearchByCSVBodyState extends State<UsersSearchByCSVBody> {
         _pickedFile = null; // reset picked file
       });
       if (mounted) {
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return SimpleAlertDialog(title: retTitle!, content: retMessage!);
-          },
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (mounted) {
         Navigator.pop(context); // close loading dialog

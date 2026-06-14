@@ -136,12 +136,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         setState(() {
           _emailController.text = ''; // reset email input
         });
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return SimpleAlertDialog(title: retTitle, content: retMessage);
-          },
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (loginRequired) {
         if (mounted) {
@@ -200,12 +195,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
             _confirmation2Controller.text = "";
           }
         });
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return SimpleAlertDialog(title: retTitle, content: retMessage);
-          },
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (loginRequired) {
         if (mounted) {

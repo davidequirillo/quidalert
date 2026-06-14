@@ -62,12 +62,10 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     final description = _description.text.trim();
     final customCoords = _customCoordinates.text.trim();
     final bool result =
-        await showDialog<bool>(
-          context: context,
-          builder: (_) => TwoWayAlertDialog(
-            title: loc.labelSubmittingAlert,
-            content: loc.labelAreYouSure,
-          ),
+        await showTwoWayAlertDialog(
+          context,
+          loc.labelSubmittingAlert,
+          loc.labelAreYouSure,
         ) ??
         false;
     setState(() => alertRequestConfirmed = result);
@@ -114,12 +112,10 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       final Map<String, double>? pos = locationClient.currentPosition;
       if (pos == null) {
         if (mounted) {
-          await showDialog(
-            context: context,
-            builder: (context) => SimpleAlertDialog(
-              title: loc.errorError,
-              content: loc.errorPositionNotAvailable,
-            ),
+          await showSimpleAlertDialog(
+            context,
+            loc.errorError,
+            loc.errorPositionNotAvailable,
           );
         }
         setState(() => alertRequestConfirmed = false);
@@ -170,11 +166,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     } finally {
       if ((retMessage.isNotEmpty) && (mounted)) {
         fetchLocationError = true;
-        await showDialog(
-          context: context,
-          builder: (context) =>
-              SimpleAlertDialog(title: retTitle, content: retMessage),
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
     }
   }
@@ -225,11 +217,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         debugPrintC(
           "Alert creation result: error=$error, loginRequired=$loginRequired",
         );
-        await showDialog(
-          context: context,
-          builder: (_) =>
-              SimpleAlertDialog(title: retTitle, content: retMessage),
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (error == false) {
         if (mounted) {

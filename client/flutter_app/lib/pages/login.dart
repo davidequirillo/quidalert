@@ -111,14 +111,12 @@ class _LoginBodyState extends State<LoginBody> {
       endMessage = loc.successLogin;
     }
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (_) => GotoIfAlertDialog(
-        title: endTitle,
-        content: endMessage,
-        condition: (loginError == null),
-        route: "/home",
-      ),
+    await showGotoIfAlertDialog(
+      context,
+      endTitle,
+      endMessage,
+      (loginError == null),
+      "/home",
     );
   }
 

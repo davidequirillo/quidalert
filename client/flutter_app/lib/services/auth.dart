@@ -606,7 +606,9 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
-  // This method is automatically called by NotificationProvider listener, when FCM token is refreshed, to keep our backend updated with the latest token.
+  // This method is automatically called by NotificationProvider listener, when FCM token is refreshed,
+  // to keep our backend updated with the latest fcm token.
+  // so it can send push notifications to the client device
   Future<void> syncFcmTokenWithBackendinBackground(String fcmToken) async {
     try {
       await doProtectedApiRequest(

@@ -122,14 +122,12 @@ class _RegisterBodyState extends State<RegisterBody> {
       endMessage = loc.successRegistration;
     }
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (_) => GotoIfAlertDialog(
-        title: endTitle,
-        content: endMessage,
-        condition: (registerError == null),
-        route: (isLoggedIn) ? "/home" : "/login",
-      ),
+    await showGotoIfAlertDialog(
+      context,
+      endTitle,
+      endMessage,
+      (registerError == null),
+      (isLoggedIn) ? "/home" : "/login",
     );
   }
 

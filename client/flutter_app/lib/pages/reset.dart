@@ -113,14 +113,12 @@ class _ResetBodyState extends State<ResetBody> {
       endMessage = loc.successResetRequest;
     }
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (_) => GotoIfAlertDialog(
-        title: endTitle,
-        content: endMessage,
-        condition: (requestError != null),
-        route: "/login",
-      ),
+    await showGotoIfAlertDialog(
+      context,
+      endTitle,
+      endMessage,
+      (requestError == null),
+      "/login",
     );
     setState(() {
       resetRequestIsSent = true;
@@ -167,14 +165,12 @@ class _ResetBodyState extends State<ResetBody> {
       endMessage = loc.successPasswordChanged;
     }
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (_) => GotoIfAlertDialog(
-        title: endTitle,
-        content: endMessage,
-        condition: (resetError == null),
-        route: "/login",
-      ),
+    await showGotoIfAlertDialog(
+      context,
+      endTitle,
+      endMessage,
+      (resetError == null),
+      "/login",
     );
   }
 

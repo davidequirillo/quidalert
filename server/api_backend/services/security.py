@@ -107,7 +107,7 @@ def otp_verify(code: str, stored_hmac_hex: str) -> bool:
 
 ACCESS_TOKEN_TTL_MINUTES = 60 # 60 minutes
 GEOPOSITION_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
-REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180  # 180 days
+REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
 LOGIN_TOKEN_TTL_MINUTES = 60 * 24 * 240  # 240 days
 MAX_ACTIVE_REFRESH_TOKENS = 1 # IMPORTANT: at the moment we allow only one active refresh token per user (one device)
 JWT_ALGORITHM = "HS256"
@@ -179,11 +179,8 @@ def decode_token(token):
     except jwt.ExpiredSignatureError:
         raise TokenExpiredException()
     except jwt.InvalidSignatureError:
-        print(f"Access token not valid (invalid signature): {token}")
         raise TokenNotValidException()
     except jwt.InvalidTokenError:
-        print(f"Access token not valid (invalid token): {token}")
         raise TokenNotValidException()
     except:
-        print(f"Access token not valid (unknown error): {token}")
         raise TokenNotValidException()

@@ -106,11 +106,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       error = true;
     } finally {
       if (mounted) {
-        await showDialog(
-          context: context,
-          builder: (_) =>
-              SimpleAlertDialog(title: retTitle, content: retMessage),
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (error == false) {
         if (mounted) {

@@ -98,14 +98,12 @@ class _TwoFABodyState extends State<TwoFABody> {
       endMessage = loc.successLogin;
     }
     if (!mounted) return;
-    await showDialog(
-      context: context,
-      builder: (_) => GotoIfAlertDialog(
-        title: endTitle,
-        content: endMessage,
-        condition: (error == null),
-        route: "/home",
-      ),
+    await showGotoIfAlertDialog(
+      context,
+      endTitle,
+      endMessage,
+      (error == null),
+      "/home",
     );
   }
 

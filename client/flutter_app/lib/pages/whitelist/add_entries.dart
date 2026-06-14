@@ -130,12 +130,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         setState(() {
           _emailController.text = ''; // reset email input
         });
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return SimpleAlertDialog(title: retTitle, content: retMessage);
-          },
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (loginRequired) {
         if (mounted) {
@@ -217,12 +212,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         setState(() {
           _pickedFile = null; // reset picked file
         });
-        await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return SimpleAlertDialog(title: retTitle, content: retMessage);
-          },
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (loginRequired) {
         if (mounted) {
