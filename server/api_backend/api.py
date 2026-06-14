@@ -417,7 +417,6 @@ def register_device_for_push_notifications(
     q = select(RefreshToken).where(RefreshToken.user_id == current_user.id)
     results = db_session.exec(q).all()
     if not results:
-        print(f"User {current_user.id} has no active refresh token to register FCM token for push notifications")
         raise token_not_valid_exception()
     rtoken = results[0] # at the moment we keep only one active refresh token per user (one device)
     rtoken.fcm_token = fcm_token

@@ -70,11 +70,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
       retTitle = loc.errorError;
     } finally {
       if ((retMessage.isNotEmpty) && (mounted)) {
-        await showDialog(
-          context: context,
-          builder: (context) =>
-              SimpleAlertDialog(title: retTitle, content: retMessage),
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
     }
   }

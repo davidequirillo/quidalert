@@ -9,25 +9,18 @@
 import 'package:flutter/material.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 
-// USEFUL WIDGETS
+// USEFUL DIALOGS
 
-class GotoIfAlertDialog extends StatelessWidget {
-  final String title;
-  final String content;
-  final bool condition;
-  final String route;
-
-  const GotoIfAlertDialog({
-    super.key,
-    required this.title,
-    required this.content,
-    required this.condition,
-    required this.route,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
+Future<void> showGotoIfAlertDialog(
+  BuildContext context,
+  String title,
+  String content,
+  bool condition,
+  String route,
+) async {
+  return await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
       title: Text(title),
       content: SingleChildScrollView(child: Text(content)),
       actions: [
@@ -43,23 +36,18 @@ class GotoIfAlertDialog extends StatelessWidget {
           child: const Text("OK"),
         ),
       ],
-    );
-  }
+    ),
+  );
 }
 
-class SimpleAlertDialog extends StatelessWidget {
-  final String title;
-  final String content;
-
-  const SimpleAlertDialog({
-    super.key,
-    required this.title,
-    required this.content,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
+Future<void> showSimpleAlertDialog(
+  BuildContext context,
+  String title,
+  String content,
+) async {
+  return await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
       title: Text(title),
       content: SingleChildScrollView(child: Text(content)),
       actions: [
@@ -70,23 +58,18 @@ class SimpleAlertDialog extends StatelessWidget {
           child: const Text("OK"),
         ),
       ],
-    );
-  }
+    ),
+  );
 }
 
-class TwoWayAlertDialog extends StatelessWidget {
-  final String title;
-  final String content;
-
-  const TwoWayAlertDialog({
-    super.key,
-    required this.title,
-    required this.content,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
+Future<bool?> showTwoWayAlertDialog(
+  BuildContext context,
+  String title,
+  String content,
+) async {
+  return await showDialog<bool?>(
+    context: context,
+    builder: (context) => AlertDialog(
       title: Text(title),
       content: SingleChildScrollView(child: Text(content)),
       actions: [
@@ -103,11 +86,27 @@ class TwoWayAlertDialog extends StatelessWidget {
           child: Text(AppLocalizations.of(context)!.buttonCancel),
         ),
       ],
-    );
-  }
+    ),
+  );
 }
 
-// USEFUL FUNCTIONS
+Future<void> showLoadingDialog(BuildContext context, String message) async {
+  return await showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      content: Row(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(width: 20),
+          Expanded(child: Text(message)),
+        ],
+      ),
+    ),
+  );
+}
+
+// NAVIGATION HELPERS
 
 void goToLoginPage(BuildContext context) {
   Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
@@ -128,6 +127,8 @@ void goToHomePagePostFrameCallback(BuildContext context) {
     Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   });
 }
+
+// USEFUL WIDGETS
 
 Widget buildSectionLink(BuildContext context, String text, String routeName) {
   return Card(
@@ -158,21 +159,7 @@ Widget buildSectionTitle(String title) {
   );
 }
 
-void showLoadingDialog(BuildContext context, String message) {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      content: Row(
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(width: 20),
-          Expanded(child: Text(message)),
-        ],
-      ),
-    ),
-  );
-}
+// DEBUGGING HELPERS
 
 void debugPrintAncestors(BuildContext context) {
   context.visitAncestorElements((element) {

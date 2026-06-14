@@ -153,11 +153,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       error = true;
     } finally {
       if (mounted) {
-        await showDialog(
-          context: context,
-          builder: (_) =>
-              SimpleAlertDialog(title: retTitle, content: retMessage),
-        );
+        await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (error == false) {
         if (mounted) {

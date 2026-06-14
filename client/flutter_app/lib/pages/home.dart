@@ -62,7 +62,9 @@ class _HomeBodyState extends State<HomeBody> {
     final authClient = context.read<AuthClient>();
     try {
       await authClient.refreshTokens();
+      debugPrint("Home page: tokens refreshed successfully.");
     } catch (e) {
+      debugPrint("Home page: error refreshing tokens: $e");
       // Ignore errors here, they will be handled in fetchProfile
     }
     setState(() {
@@ -122,6 +124,7 @@ class _HomeBodyState extends State<HomeBody> {
           return CircularProgressIndicator();
         }
         if (snapshot.hasError) {
+          debugPrint("Home page: error fetching profile: ${snapshot.error}");
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             goToLoginPagePostFrameCallback(context);
             return Text(loc.errorSessionNotValidOrExpired);
