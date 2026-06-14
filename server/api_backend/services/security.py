@@ -105,9 +105,9 @@ def otp_hmac(code: str) -> str:
 def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
-ACCESS_TOKEN_TTL_MINUTES = 60 # 60 minutes
+ACCESS_TOKEN_TTL_MINUTES = 1 # 60 minutes
 GEOPOSITION_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
-REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180  # 180 days
+REFRESH_TOKEN_TTL_MINUTES = 3  # 180 days
 LOGIN_TOKEN_TTL_MINUTES = 60 * 24 * 240  # 240 days
 MAX_ACTIVE_REFRESH_TOKENS = 1 # IMPORTANT: at the moment we allow only one active refresh token per user (one device)
 JWT_ALGORITHM = "HS256"
@@ -174,7 +174,7 @@ class TokenNotValidException(Exception):
 def decode_token(token):
     try:
         data = jwt.decode(token, settings.jwt_secret_key, 
-        algorithms=[JWT_ALGORITHM])
+        algorithms=[JWT_ALGORITHM], leeway=5) # add some tolerance to avoid edge cases of "iat" and "exp" being just expired
         return data
     except jwt.ExpiredSignatureError:
         raise TokenExpiredException()

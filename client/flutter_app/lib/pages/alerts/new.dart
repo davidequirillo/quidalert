@@ -14,6 +14,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 
@@ -136,6 +137,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       showLoadingDialog(context, loc.labelWaitPlease);
       _sendAlert(fields).whenComplete(() {
         if (mounted) {
+          debugPrintC("Alert creation process completed, pop 'loading dialog'");
           Navigator.pop(context);
         }
       });
@@ -220,6 +222,9 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       error = true;
     } finally {
       if (mounted) {
+        debugPrintC(
+          "Alert creation result: error=$error, loginRequired=$loginRequired",
+        );
         await showDialog(
           context: context,
           builder: (_) =>
@@ -229,6 +234,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       if (error == false) {
         if (mounted) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            debugPrintC("Alert created successfully, pop 'New Alert' page");
             Navigator.pop(context);
           });
         }
