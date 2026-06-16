@@ -101,7 +101,7 @@ def create_alert(alert_in: AlertIn,
     if (alert.type == AlertType.general.value):
         # No need to search for chiefs or users to notify for this type of alert
         # No need to add the current user (chief) to the alerted users for this type of alert
-        return {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
+        return {"message": f"{alert.type.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     if (alert.type == AlertType.empty.value):
         # No need to search for chiefs or users to notify for this type of alert
         # But we add the current user (chief) to the alerted users list in the database as alert manager. It will be useful.
@@ -112,7 +112,7 @@ def create_alert(alert_in: AlertIn,
         )
         db_session.add(alerted_user)
         db_session.commit()
-        return {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
+        return {"message": f"{alert.type.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     # For managed alerts, we need to search for nearby users and notify them
     # For local alerts, we need to search for nearby chiefs and users and notify them
     # so... we must go on with the search and notification process, but we do it in background to avoid making the current user wait for it
@@ -127,7 +127,10 @@ def create_alert(alert_in: AlertIn,
         db_engine=request.app.state.db_engine,
         redis_handle=request.app.state.redis_handle
         )
-    return {"message": "Alert created, searching for nearby users and chiefs to notify"}
+    if alert.type == AlertType.managed.value:
+        return {"message": f"{alert.type.capitalize()} alert created, searching for nearby users to notify"}
+    else:
+        return {"message": f"{alert.type.capitalize()} alert created, searching for nearby users and chiefs to notify"}
 
 @router.get("/api/alert/{alert_id}", response_model=AlertOut)
 def get_alert(alert_id: int,

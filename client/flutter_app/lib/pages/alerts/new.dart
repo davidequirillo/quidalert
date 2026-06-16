@@ -44,11 +44,12 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   final _description = TextEditingController();
   final _customCoordinates = TextEditingController();
   String _selectedType = AlertType.local.name;
-  bool alertRequestConfirmed = false;
+  bool alertRequestInProgress = false;
   bool fetchLocationError = false;
 
   @override
   void dispose() {
+    debugPrintC("Disposing NewAlert widget state");
     _description.dispose();
     _customCoordinates.dispose();
     super.dispose();
@@ -68,7 +69,6 @@ class _NewAlertBodyState extends State<NewAlertBody> {
           loc.labelAreYouSure,
         ) ??
         false;
-    setState(() => alertRequestConfirmed = result);
     if (result == false) {
       return;
     }
@@ -92,21 +92,17 @@ class _NewAlertBodyState extends State<NewAlertBody> {
             fields["latitude"] = latitude;
             fields["longitude"] = longitude;
           } else {
-            setState(() => alertRequestConfirmed = false);
             return;
           }
         } else {
-          setState(() => alertRequestConfirmed = false);
           return;
         }
       } else {
-        setState(() => alertRequestConfirmed = false);
         return;
       }
     } else {
       await _fetchLocation();
       if (fetchLocationError == true) {
-        setState(() => alertRequestConfirmed = false);
         return;
       }
       final Map<String, double>? pos = locationClient.currentPosition;
@@ -118,7 +114,6 @@ class _NewAlertBodyState extends State<NewAlertBody> {
             loc.errorPositionNotAvailable,
           );
         }
-        setState(() => alertRequestConfirmed = false);
         return;
       }
       final double lat = pos['lat']!;
@@ -129,15 +124,10 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         "address": locationClient.currentAddress ?? "",
       });
     }
-    if (mounted) {
-      showLoadingDialog(context, loc.labelWaitPlease);
-      _sendAlert(fields).whenComplete(() {
-        if (mounted) {
-          debugPrintC("Alert creation process completed, pop 'loading dialog'");
-          Navigator.pop(context);
-        }
-      });
-    }
+    debugPrintC("Submitting alert with fields: $fields");
+    _sendAlert(fields).whenComplete(() {
+      debugPrintC("Alert submission completed");
+    });
   }
 
   Future<void> _fetchLocation() async {
@@ -177,7 +167,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     String retTitle = "";
     String retMessage = "";
     bool error = false;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     try {
       final response = await authClient.doProtectedApiRequest(
         'POST',
@@ -187,8 +177,18 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       final respObj = json.decode(response.body);
       retTitle = loc.successGeneric;
       retMessage = respObj['message'] ?? "Alert created successfully";
-      if (retMessage.contains("Similar alert already exists")) {
+      if (retMessage.contains("Local alert created")) {
+        retMessage = loc.successAlertCreatedLocal;
+      } else if (retMessage.contains("Managed alert created")) {
+        retMessage = loc.successAlertCreatedManaged;
+      } else if (retMessage.contains("Empty alert created")) {
+        retMessage = loc.successAlertCreatedEmpty;
+      } else if (retMessage.contains("General alert created")) {
+        retMessage = loc.successAlertCreatedGeneral;
+      } else if (retMessage.contains("Similar alert already exists")) {
         retMessage = loc.errorAlertSimilarInZone;
+      } else {
+        retMessage = loc.successAlertCreated;
       }
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorGeneric;
@@ -202,7 +202,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
-      loginRequired = true;
+      newLoginRequired = true;
     } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
@@ -215,7 +215,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     } finally {
       if (mounted) {
         debugPrintC(
-          "Alert creation result: error=$error, loginRequired=$loginRequired",
+          "Alert creation result: error=$error, newLoginRequired=$newLoginRequired",
         );
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
@@ -226,7 +226,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
             Navigator.pop(context);
           });
         }
-      } else if (loginRequired == true) {
+      } else if (newLoginRequired == true) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }
@@ -237,7 +237,6 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final locationClient = context.watch<LocationClient>();
     final authClient = context.read<AuthClient>();
     return SafeArea(
       top: false,
@@ -319,8 +318,13 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton(
-                      onPressed: () {
-                        submit();
+                      onPressed: () async {
+                        if (alertRequestInProgress) {
+                          return; // Prevent multiple submissions
+                        }
+                        setState(() => alertRequestInProgress = true);
+                        await submit();
+                        setState(() => alertRequestInProgress = false);
                       },
                       child: Text("OK"),
                     ),
@@ -332,7 +336,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                if (alertRequestConfirmed && locationClient.isFetching) ...[
+                if (alertRequestInProgress) ...[
                   Text(loc.labelWaitPlease),
                   const SizedBox(height: 5),
                   const CircularProgressIndicator(),

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/services/auth.dart';
@@ -63,9 +64,13 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
 
   void submitMany() {
     final loc = AppLocalizations.of(context)!;
+    debugPrintC(
+      "Showing waiting dialog and submitting entries from file: ${_pickedFile?.name}",
+    );
     showLoadingDialog(context, loc.labelWaitPlease);
     addEntries().whenComplete(() {
       if (mounted) {
+        debugPrintC("Entries addition process completed, pop 'loading dialog'");
         Navigator.pop(context);
       }
     });

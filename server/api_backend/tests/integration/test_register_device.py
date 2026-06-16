@@ -14,7 +14,8 @@ from models.general import User, RefreshToken
 from services.security import (
     create_access_token,
     decode_token,
-    ACCESS_TOKEN_TTL_MINUTES
+    ACCESS_TOKEN_TTL_MINUTES,
+    TOKEN_DECODE_LEEWAY_SECONDS,
 )
 
 def test_register_device_user_not_authorized(client, db_session, test_baseuser):
@@ -40,7 +41,7 @@ def test_register_device_access_token_expired(client, test_baseuser):
     decoded_access_token = decode_token(access_token)
     token_sub = decoded_access_token.get("sub")
     # Create an expired access token
-    expired_access_token = create_access_token(subject=token_sub, expires_delta=timedelta(seconds=-1))
+    expired_access_token = create_access_token(subject=token_sub, expires_delta=timedelta(seconds=-TOKEN_DECODE_LEEWAY_SECONDS - 1))
     headers = {"Authorization": f"Bearer {expired_access_token}"}
     payload = {"fcm_token": "test_fcm_token"}
     response = client.post("/api/register-device", json=payload, headers=headers)
