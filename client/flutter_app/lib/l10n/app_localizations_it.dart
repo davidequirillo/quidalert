@@ -456,6 +456,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuWhiteList => 'White list per registrazione';
 
   @override
+  String get successAlertCreated => 'Allerta creata con successo';
+
+  @override
+  String get successAlertCreatedLocal => 'Allerta creata con successo. Sto cercando gli utenti vicini e il capo';
+
+  @override
+  String get successAlertCreatedManaged => 'Allerta \'managed\' creata. Sto cercando gli utenti vicini alla zona target';
+
+  @override
+  String get successAlertCreatedEmpty => 'Allerta vuota creata. Al momento non cerchiamo utenti da allertare';
+
+  @override
+  String get successAlertCreatedGeneral => 'Allerta generale creata. Essa è visibile a tutti';
+
+  @override
   String get successDeviceRegisteredForPushNotifications => 'Dispositivo registrato per le notifiche push';
 
   @override

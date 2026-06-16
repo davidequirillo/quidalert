@@ -105,6 +105,7 @@ def otp_hmac(code: str) -> str:
 def otp_verify(code: str, stored_hmac_hex: str) -> bool:
     return hmac.compare_digest(otp_hmac(code), stored_hmac_hex)
 
+TOKEN_DECODE_LEEWAY_SECONDS = 5 # add some tolerance to avoid edge cases of "iat" and "exp" being just expired
 ACCESS_TOKEN_TTL_MINUTES = 60 # 60 minutes
 GEOPOSITION_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
 REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
@@ -174,7 +175,7 @@ class TokenNotValidException(Exception):
 def decode_token(token):
     try:
         data = jwt.decode(token, settings.jwt_secret_key, 
-        algorithms=[JWT_ALGORITHM], leeway=5) # add some tolerance to avoid edge cases of "iat" and "exp" being just expired
+        algorithms=[JWT_ALGORITHM], leeway=TOKEN_DECODE_LEEWAY_SECONDS) # add some tolerance to avoid edge cases of "iat" and "exp" being just expired
         return data
     except jwt.ExpiredSignatureError:
         raise TokenExpiredException()

@@ -13,7 +13,8 @@ from models.general import User, RefreshToken
 from services.security import (
     now_tz_aware,
     create_refresh_token,
-    decode_token
+    decode_token,
+    TOKEN_DECODE_LEEWAY_SECONDS,
 )
 
 def test_revoke_successful(client, db_session, test_baseuser):
@@ -41,7 +42,7 @@ def test_revoke_expired_token(client, db_session, test_baseuser):
     token_raw = refresh_token_decoded.get("raw")
     token_sub = refresh_token_decoded.get("sub")
     # Create an expired refresh token 
-    exp = timedelta(seconds=-1)
+    exp = timedelta(seconds=-TOKEN_DECODE_LEEWAY_SECONDS - 1) # Set expiration time in the past to simulate an expired token
     iat = now_tz_aware()
     rtoken_expired = create_refresh_token(subject=token_sub, token_id=token_jti, raw_code=token_raw, expires_delta=exp, issued_at=iat)
     payload = {"refresh_token": rtoken_expired}

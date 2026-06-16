@@ -989,6 +989,36 @@ abstract class AppLocalizations {
   /// **'Registration white list'**
   String get menuWhiteList;
 
+  /// No description provided for @successAlertCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert created successfully'**
+  String get successAlertCreated;
+
+  /// No description provided for @successAlertCreatedLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert created successfully. Searching for nearby users and the chief'**
+  String get successAlertCreatedLocal;
+
+  /// No description provided for @successAlertCreatedManaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed alert created. Searching for users near the target zone'**
+  String get successAlertCreatedManaged;
+
+  /// No description provided for @successAlertCreatedEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty alert created. No need to search for any users to alert at the moment'**
+  String get successAlertCreatedEmpty;
+
+  /// No description provided for @successAlertCreatedGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General alert created. It\'s visible to all'**
+  String get successAlertCreatedGeneral;
+
   /// No description provided for @successDeviceRegisteredForPushNotifications.
   ///
   /// In en, this message translates to:

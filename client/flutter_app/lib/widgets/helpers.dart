@@ -94,13 +94,16 @@ Future<void> showLoadingDialog(BuildContext context, String message) async {
   return await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      content: Row(
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(width: 20),
-          Expanded(child: Text(message)),
-        ],
+    builder: (context) => PopScope(
+      canPop: false,
+      child: AlertDialog(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Expanded(child: Text(message)),
+          ],
+        ),
       ),
     ),
   );
