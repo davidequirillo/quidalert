@@ -127,6 +127,7 @@ async def lifespan(app: FastAPI):
         init_logging_and_others()
     if not is_testing:
         await init_engines(app)
+    print("App mode: " + settings.app_mode)
     yield
     if not is_testing:
         await shutdown_engines(app)

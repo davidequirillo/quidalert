@@ -234,7 +234,7 @@ def test_create_alert_type_general_called_by_chief(client, db_session, test_chie
     assert response.status_code == status.HTTP_200_OK
     # The response for general alerts is different, because we don't search for nearby users or chiefs to notify.
     # No background tasks are triggered for this type of alert, because it's a general alert that doesn't have a specific location
-    assert response.json() == {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
+    assert response.json() == {"message": f"{AlertType.general.value.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     # We check that the alert is actually created in the database
     alert = db_session.exec(select(Alert).where(Alert.description == description)).first()
     assert alert is not None
@@ -269,7 +269,7 @@ def test_create_alert_type_empty_called_by_chief(client, db_session, test_chief)
     # The response for empty alerts is different, because we don't search for nearby users or the chiefs to notify.
     # No background tasks are triggered for this type of alert, because it's an empty alert that doesn't alert nearby users, 
     # but we add the current user (chief) to the alerted users list in the database as alert manager. It will be useful.
-    assert response.json() == {"message": "Alert created, no need to search for nearby users or chiefs to notify"}
+    assert response.json() == {"message": f"{AlertType.empty.value.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     # We check that the alert is actually created in the database
     alert = db_session.exec(select(Alert).where(Alert.description == description)).first()
     assert alert is not None
@@ -368,7 +368,7 @@ def test_create_alert_similar_general_exists(client, db_session, test_chief):
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"] == "Similar alert already exists"
+    assert response.json()["message"] == "Similar general alert already exists"
     assert response.json()["similarity"] >= 90
 
 def test_create_alert_similar_managed_exists(client, db_session, test_chief):
@@ -428,7 +428,7 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database (1 alert should be present in this test)
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 1
@@ -475,7 +475,7 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 1
@@ -532,7 +532,7 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 1
@@ -587,7 +587,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 1
@@ -638,7 +638,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database (2 alerts should be present in this test)
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 2
@@ -680,7 +680,7 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.managed.value.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 1
@@ -736,7 +736,7 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
         "/api/alert", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["message"].startswith("Alert created, searching for")
+    assert response.json()["message"].startswith(f"{AlertType.managed.capitalize()} alert created, searching for")
     # We check that the alert is actually created in the database
     alerts = db_session.exec(select(Alert).where(Alert.user_id == user.id)).all()
     assert len(alerts) == 1
