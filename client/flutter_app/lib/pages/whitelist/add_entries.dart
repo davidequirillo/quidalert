@@ -86,7 +86,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     List<String> emailsToAdd = [];
     if (!_formKey.currentState!.validate()) {
       return;
@@ -117,7 +117,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      loginRequired = true;
+      newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -137,7 +137,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         });
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
-      if (loginRequired) {
+      if (newLoginRequired) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }
@@ -151,7 +151,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     List<String> emailsToAdd = [];
     if (_pickedFile != null) {
       await Future.delayed(const Duration(seconds: 2));
@@ -199,7 +199,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      loginRequired = true;
+      newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -219,7 +219,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         });
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
-      if (loginRequired) {
+      if (newLoginRequired) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }

@@ -58,7 +58,12 @@ class StartupPageBodyState extends State<StartupPageBody> {
     } else {
       debugPrint("Adding post frame callback...");
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (termsAccepted == false) {
+        if (notifProvider.initialMessage != null) {
+          debugPrint(
+            "StartupPage: app opened from a notification, navigating to the correct route...",
+          );
+          notifProvider.handleNavigation(notifProvider.initialMessage!.data);
+        } else if (termsAccepted == false) {
           Navigator.pushReplacementNamed(context, '/info');
         } else if (!isLoggedIn) {
           Navigator.pushReplacementNamed(context, '/login');

@@ -11,6 +11,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/app_keys.dart';
 
@@ -19,6 +20,7 @@ class NotificationProvider extends ChangeNotifier {
   StreamSubscription<String>? _tokenStream;
   StreamSubscription<RemoteMessage>? _onMessageStream;
   StreamSubscription<RemoteMessage>? _onMessageOpenedAppStream;
+  RemoteMessage? _initialMessage;
   String? fcmToken;
   bool initDone = false;
   AuthClient? _authClient;
@@ -26,16 +28,14 @@ class NotificationProvider extends ChangeNotifier {
   NotificationProvider() : super() {
     fcmToken = null;
     if (!kIsWeb && !Platform.isWindows) {
-      debugPrint(
+      debugPrintC(
         'Push notifications are supported on this platform. Initializing...',
       );
       _init();
     } else {
-      if (kDebugMode) {
-        debugPrint(
-          'Push notifications are not supported on this platform. Skipping initialization... Done',
-        );
-      }
+      debugPrintC(
+        'Push notifications are not supported on this platform. Skipping initialization... Done',
+      );
       initDone = true;
       notifyListeners();
     }
@@ -59,27 +59,19 @@ class NotificationProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     _messaging = FirebaseMessaging.instance;
-    if (kDebugMode) {
-      debugPrint('NotificationProvider initialization started');
-    }
+    debugPrintC('NotificationProvider initialization started');
     NotificationSettings settings = await _messaging!.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      if (kDebugMode) {
-        debugPrint('Push notification permission granted');
-      }
+      debugPrintC('Push notification permission granted');
     } else if (settings.authorizationStatus ==
         AuthorizationStatus.provisional) {
-      if (kDebugMode) {
-        debugPrint('Push notification permission granted provisionally');
-      }
+      debugPrintC('Push notification permission granted provisionally');
     } else {
-      if (kDebugMode) {
-        debugPrint('Push notification permission denied');
-      }
+      debugPrintC('Push notification permission denied');
     }
     final bool isAllowed =
         settings.authorizationStatus == AuthorizationStatus.authorized ||
@@ -87,12 +79,12 @@ class NotificationProvider extends ChangeNotifier {
     if (isAllowed) {
       await getFcmToken();
       try {
-        await _setupFirebaseTokenListener(); // Listen for fcm token refresh events
-        await _setupFirebaseMessageForegroundListener(); // Listend for messages when the app is in foreground
-        await _setupFirebaseMessageBackgroundListener(); // Listend for essages when the app is in background, but not closed
+        _setupFirebaseTokenListener(); // Listen for fcm token refresh events
+        _setupFirebaseMessageForegroundListener(); // Listend for messages when the app is in foreground
+        _setupFirebaseMessageBackgroundListener(); // Listend for essages when the app is in background, but not closed
         await _setupFirebaseMessageTerminatedListener(); // Listen for messages when the app is terminated
       } catch (e) {
-        debugPrint('Error setting up Firebase listeners: $e');
+        debugPrintC('Error setting up Firebase listeners: $e');
         _tokenStream?.cancel();
         _onMessageStream?.cancel();
         _onMessageOpenedAppStream?.cancel();
@@ -102,148 +94,128 @@ class NotificationProvider extends ChangeNotifier {
       }
     }
     initDone = true;
-    if (kDebugMode) {
-      debugPrint('NotificationProvider initialization completed');
-    }
+    debugPrintC('NotificationProvider initialization completed');
     notifyListeners();
   }
 
   Future<void> getFcmToken() async {
     if (_messaging == null) {
       fcmToken = null;
-      debugPrint('FirebaseMessaging instance is null, cannot get FCM token');
+      debugPrintC('FirebaseMessaging instance is null, cannot get FCM token');
       return;
     }
     try {
       String? newToken = await _messaging!.getToken();
       if (newToken != null) {
         fcmToken = newToken;
-        if (kDebugMode) {
-          debugPrint('FCM token obtained: $newToken');
-        }
+        debugPrintC('FCM token obtained: $newToken');
       } else {
-        if (kDebugMode) {
-          debugPrint('Failed to get FCM token');
-        }
+        debugPrintC('Failed to get FCM token');
       }
     } catch (e) {
-      debugPrint('Error getting FCM token: $e');
+      debugPrintC('Error getting FCM token: $e');
       fcmToken = null;
     }
   }
 
-  Future<void> _setupFirebaseTokenListener() async {
+  void _setupFirebaseTokenListener() {
     _tokenStream?.cancel();
     _tokenStream = _messaging!.onTokenRefresh.listen(
       (newToken) async {
-        if (kDebugMode) {
-          debugPrint('FCM token obtained: $newToken');
-        }
+        debugPrintC('FCM token obtained: $newToken');
         fcmToken = newToken;
         if (_authClient != null) {
           await _authClient!.syncFcmTokenWithBackendinBackground(newToken);
         }
       },
       onError: (error) {
-        if (kDebugMode) {
-          debugPrint('Error in onTokenRefresh stream: $error');
-        }
+        debugPrintC('Error in onTokenRefresh stream: $error');
         // We could use FirebaseCrashlytics to report this error
       },
     );
   }
 
-  Future<void> _setupFirebaseMessageForegroundListener() async {
+  void _setupFirebaseMessageForegroundListener() {
     _onMessageStream?.cancel();
     _onMessageStream = FirebaseMessaging.onMessage.listen(
       (RemoteMessage message) {
-        if (kDebugMode) {
-          debugPrint(
-            'Notification: received a message while in the foreground: ${message.messageId}',
-          );
-        }
+        debugPrintC(
+          'Notification: received a message while in the foreground: ${message.messageId}',
+        );
         AppKeys.snackbarKey.currentState?.showSnackBar(
           SnackBar(
             content: Text(message.data['type']),
             action: SnackBarAction(
               label: "View",
               onPressed: () {
-                _handleNavigation(message.data);
+                handleNavigation(message.data);
               },
             ),
           ),
         );
       },
       onError: (error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint('Error in onMessage stream: $error');
-        }
+        debugPrintC('Error in onMessage stream: $error');
         // We could use FirebaseCrashlytics to report this error
       },
     );
   }
 
-  Future<void> _setupFirebaseMessageBackgroundListener() async {
+  void _setupFirebaseMessageBackgroundListener() {
     _onMessageOpenedAppStream?.cancel();
     // It will trigger if the app is in background, but not terminated
     _onMessageOpenedAppStream = FirebaseMessaging.onMessageOpenedApp.listen(
-      (RemoteMessage message) async {
-        await Future.delayed(Duration(milliseconds: 1000));
-        if (kDebugMode) {
-          debugPrint(
-            'Notification: app opened from background by tapping on a notification: ${message.messageId}',
-          );
-        }
+      (RemoteMessage message) {
+        debugPrintC(
+          'Notification: app opened from background by tapping on a notification: ${message.messageId}',
+        );
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          _handleNavigation(message.data);
+          handleNavigation(message.data);
         });
       },
       onError: (error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint('Error in onMessageOpenedApp stream: $error');
-        }
+        debugPrintC('Error in onMessageOpenedApp stream: $error');
         // We could use FirebaseCrashlytics to report this error
       },
     );
   }
+
+  RemoteMessage? get initialMessage => _initialMessage;
 
   Future<void> _setupFirebaseMessageTerminatedListener() async {
     // It will only trigger if the app is completely terminated and opened by tapping on a notification
     if (_messaging == null) {
-      if (kDebugMode) {
-        debugPrint(
-          'FirebaseMessaging instance is null, cannot check for initial message.',
-        );
-      }
+      debugPrintC(
+        'FirebaseMessaging instance is null, cannot check for initial message.',
+      );
       return;
     }
-    RemoteMessage? initialMessage = await _messaging!.getInitialMessage();
-    if (initialMessage != null) {
+    try {
+      debugPrintC(
+        'Checking for initial message (app opened from terminated state)...',
+      );
+      _initialMessage = await _messaging!.getInitialMessage();
+    } catch (e) {
+      debugPrintC('Error checking for initial message: $e');
+      _initialMessage = null;
+    }
+    if (_initialMessage != null) {
       await Future.delayed(Duration(milliseconds: 1000));
-      if (kDebugMode) {
-        debugPrint(
-          'Notification: app opened from terminated state by tapping on a notification: ${initialMessage.messageId}',
-        );
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleNavigation(initialMessage.data);
-      });
+      debugPrintC(
+        'Notification: app opened from terminated state by tapping on a notification: ${_initialMessage!.messageId}',
+      );
     } else {
-      if (kDebugMode) {
-        debugPrint(
-          'Notification: no initial message found when checking for app launch from terminated state.',
-        );
-      }
+      debugPrintC(
+        'Notification: no initial message found when checking for app launch from terminated state.',
+      );
     }
   }
 
-  void _handleNavigation(Map<String, dynamic> messageData) {
+  void handleNavigation(Map<String, dynamic> messageData) {
     if (!messageData.containsKey('type') || messageData['type'] == null) {
-      if (kDebugMode) {
-        debugPrint(
-          'Notification: message data does not contain a "type" field. Ignoring.',
-        );
-      }
+      debugPrintC(
+        'Notification: message data does not contain a "type" field. Ignoring.',
+      );
       return;
     }
     switch (messageData['type']) {
@@ -254,24 +226,23 @@ class NotificationProvider extends ChangeNotifier {
         _navigateToAlertDetails(messageData);
         break;
       default:
-        if (kDebugMode) {
-          debugPrint(
-            'Notification: unrecognized message type "${messageData['type']}". Ignoring.',
-          );
-        }
+        debugPrintC(
+          'Notification: unrecognized message type "${messageData['type']}". Ignoring.',
+        );
     }
   }
 
   void _navigateToAlertDetails(Map<String, dynamic> messageData) {
     if (!messageData.containsKey('alert_id') ||
         messageData['alert_id'] == null) {
-      if (kDebugMode) {
-        debugPrint(
-          'Notification: ${messageData["type"]} message does not contain an "alert_id" field.',
-        );
-      }
+      debugPrintC(
+        'Notification: ${messageData["type"]} message does not contain an "alert_id" field.',
+      );
       return;
     }
+    debugPrintC(
+      'Notification: navigating to alert details for alert_id: ${messageData["alert_id"]}',
+    );
     String alertId = messageData['alert_id'];
     AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/home',

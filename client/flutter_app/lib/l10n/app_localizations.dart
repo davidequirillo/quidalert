@@ -185,6 +185,12 @@ abstract class AppLocalizations {
   /// **'A similar alert already exists in this zone'**
   String get errorAlertSimilarInZone;
 
+  /// No description provided for @errorAlertSimilarInGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'A similar general alert already exists'**
+  String get errorAlertSimilarInGeneral;
+
   /// No description provided for @errorBadRequest.
   ///
   /// In en, this message translates to:
@@ -730,6 +736,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Local'**
   String get labelLocal;
+
+  /// No description provided for @labelManagedF.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed'**
+  String get labelManagedF;
 
   /// No description provided for @labelNewAlert.
   ///
