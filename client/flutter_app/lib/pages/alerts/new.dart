@@ -185,6 +185,8 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         retMessage = loc.successAlertCreatedEmpty;
       } else if (retMessage.contains("General alert created")) {
         retMessage = loc.successAlertCreatedGeneral;
+      } else if (retMessage.contains("Similar general alert already exists")) {
+        retMessage = loc.errorAlertSimilarInGeneral;
       } else if (retMessage.contains("Similar alert already exists")) {
         retMessage = loc.errorAlertSimilarInZone;
       } else {
@@ -261,7 +263,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                       ),
                       ButtonSegment(
                         value: AlertType.managed.name,
-                        label: Text("Custom"),
+                        label: Text(loc.labelManagedF),
                         icon: Icon(Icons.manage_accounts),
                       ),
                       ButtonSegment(

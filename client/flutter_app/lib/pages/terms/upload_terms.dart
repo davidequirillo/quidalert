@@ -63,7 +63,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
 
   Future<void> _uploadToServer() async {
     String? retMessage;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     Color retColor = Colors.blue;
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
@@ -81,7 +81,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
       retColor = Colors.red;
-      loginRequired = true;
+      newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
       retColor = Colors.red;
@@ -107,7 +107,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
           ),
         );
       }
-      if (loginRequired) {
+      if (newLoginRequired) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }

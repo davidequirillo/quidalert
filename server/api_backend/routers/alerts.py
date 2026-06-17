@@ -73,7 +73,7 @@ def create_alert(alert_in: AlertIn,
             d2 = rec_alert.description.lower().strip()
             similarity = fuzz.token_set_ratio(d1, d2)
             if similarity >= 90: # similarity threshold (90 means 90%)
-                return {"message": "Similar alert already exists", "similarity": similarity}
+                return {"message": "Similar general alert already exists", "similarity": similarity}
         if (alert_in.type != AlertType.general.value) and (rec_alert.type != AlertType.general.value):
             dist = haversine((alert_in.latitude, alert_in.longitude), (rec_alert.latitude, rec_alert.longitude), unit=Unit.KILOMETERS)
             if dist < rec_alert.radius:

@@ -58,7 +58,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
 
   Future<void> submit() async {
     bool error = false;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     String retMessage = "";
     String retTitle = "";
     final args = ModalRoute.of(context)!.settings.arguments;
@@ -94,7 +94,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
-      loginRequired = true;
+      newLoginRequired = true;
     } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
@@ -118,7 +118,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
             arguments: args,
           );
         }
-      } else if (loginRequired == true) {
+      } else if (newLoginRequired == true) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }

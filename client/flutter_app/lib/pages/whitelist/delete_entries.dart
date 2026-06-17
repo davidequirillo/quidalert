@@ -92,7 +92,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     if (!_formDelByEmailKey.currentState!.validate()) {
       return;
     }
@@ -118,7 +118,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      loginRequired = true;
+      newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -138,7 +138,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         });
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
-      if (loginRequired) {
+      if (newLoginRequired) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }
@@ -160,7 +160,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     try {
       final response = await authClient.doProtectedApiRequest(
         "delete",
@@ -173,7 +173,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
-      loginRequired = true;
+      newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
@@ -197,7 +197,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         });
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
-      if (loginRequired) {
+      if (newLoginRequired) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }

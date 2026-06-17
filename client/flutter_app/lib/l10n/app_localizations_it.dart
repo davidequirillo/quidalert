@@ -54,6 +54,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorAlertSimilarInZone => 'Un\'allerta simile esiste già in questa zona';
 
   @override
+  String get errorAlertSimilarInGeneral => 'Un\'allerta generale simile esiste già';
+
+  @override
   String get errorBadRequest => 'Richiesta non accettata';
 
   @override
@@ -325,6 +328,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelLocal => 'Locale';
+
+  @override
+  String get labelManagedF => 'Gestita';
 
   @override
   String get labelNewAlert => 'Nuova allerta';

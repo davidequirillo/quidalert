@@ -2,6 +2,7 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import time
 import asyncio
 from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, select, insert
@@ -35,6 +36,7 @@ from core.btask_events import (
     log_alert_error_notifying_sender,
     log_alert_notify_sender
 )
+from core.settings import settings
 
 from core.dbmgr import (
     cluster, redis, RedisHandleTypeError,
@@ -109,6 +111,8 @@ async def task_alert_search_and_notify(
         nearby_users_can_be_notified = True
     else:
         log_alert_no_nearby_users_to_notify(str(alert.id), request_info)
+    if settings.app_mode == "development":
+        time.sleep(10) # to simulate a long processing time, for manual testing purposes, to be removed in production
     if (chief_can_be_notified) or (nearby_users_can_be_notified):
         description = alert.description if (len(alert.description) <= 100) else (alert.description[:100] + "...")
         message_prefix = alert_notification_templates[user.language]["alert_prefix"].format(

@@ -108,7 +108,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
 
   Future<void> _loadPage() async {
     String? retMessage;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     final loc = AppLocalizations.of(context)!;
     if (_isLoadingPage || !_hasMore) return;
     setState(() {
@@ -125,7 +125,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
       });
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
-      loginRequired = true;
+      newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
     } on BadRequestException catch (_) {
@@ -148,7 +148,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
           ),
         );
       }
-      if (loginRequired) {
+      if (newLoginRequired) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }

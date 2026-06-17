@@ -119,7 +119,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
     String retTitle = "";
     String retMessage = "";
     bool error = false;
-    bool loginRequired = false;
+    bool newLoginRequired = false;
     try {
       final response = await authClient.doProtectedApiRequest(
         'PUT',
@@ -141,7 +141,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
-      loginRequired = true;
+      newLoginRequired = true;
     } on NetworkException catch (_) {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorNetwork;
@@ -159,7 +159,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
         if (mounted) {
           goToHomePagePostFrameCallback(context);
         }
-      } else if (loginRequired == true) {
+      } else if (newLoginRequired == true) {
         if (mounted) {
           goToLoginPagePostFrameCallback(context);
         }
