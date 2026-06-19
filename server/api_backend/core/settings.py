@@ -56,8 +56,9 @@ class Settings(BaseSettings):
     s3_bucket_name: str = config.S3_BUCKET_NAME
     s3_access_key: str = "" # from environment, critical for security
     s3_secret_key: str = "" # same as above
+    # Firebase conf
     firebase_keys_path: str = "" # from environment, critical for security
-
+    firebase_pool_size: int = config.FIREBASE_POOL_SIZE
     # Initialized after loading the settings, not from environment 
     db_engine_echo: bool = False
     db_url: str = ""

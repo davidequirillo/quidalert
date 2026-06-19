@@ -116,10 +116,10 @@ def notify_many_clients(
         request_info, db_engine):
     success_count = 0
     failure_count = 0
-    # Firebase allows sending notifications to a maximum of 500 tokens at a time
-    for i in range(0, len(fcm_tokens), 500):
-        chunk_tokens = fcm_tokens[i:i+500]
-        chunk_user_ids = user_ids[i:i+500]
+    chunk_size = 500  # Firebase allows sending notifications to a maximum of 500 tokens at a time
+    for i in range(0, len(fcm_tokens), chunk_size):
+        chunk_tokens = fcm_tokens[i:i+chunk_size]
+        chunk_user_ids = user_ids[i:i+chunk_size]
         push_msg = firebase_messaging.MulticastMessage(
             notification=firebase_messaging.Notification(
                 title=msg_title,
