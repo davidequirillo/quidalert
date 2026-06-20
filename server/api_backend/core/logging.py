@@ -56,6 +56,10 @@ sql_logger = logging.getLogger('sqlalchemy.engine')
 sql_logger.propagate = False # to avoid duplicates log records
 sql_logger.setLevel(logging.INFO)
 
+urllib3_logger = logging.getLogger('urllib3.connectionpool')
+urllib3_logger.propagate = False # to avoid duplicates log records
+urllib3_logger.setLevel(logging.ERROR)
+
 def get_client_ip() -> str | None:
     try:
         return client_ip_ctx.get()

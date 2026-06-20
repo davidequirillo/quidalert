@@ -80,11 +80,7 @@ async def init_engines(app: FastAPI):
     fbase_path = settings.firebase_keys_path
     firebase_cred = firebase_admin.credentials.Certificate(fbase_path)
     if not firebase_admin._apps:
-        firebase_admin.initialize_app(firebase_cred, options={
-            'http_options': {
-                'max_pools_size': settings.firebase_pool_size  # default is 10
-            }
-        })
+        firebase_admin.initialize_app(firebase_cred)
         print("Firebase Admin SDK initialized")
     else:
         print("Firebase Admin SDK already initialized")

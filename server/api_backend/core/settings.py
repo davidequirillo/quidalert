@@ -9,7 +9,7 @@ import config
 
 class Settings(BaseSettings):
     # App conf
-    app_mode: str = "production"
+    app_mode: str = "production" # you can change it to "development" in the ".env" file, not here, because this is the default value, and it will be overridden by the ".env" file or by environment variables in the system or in the container
     send_emails: bool = True
     host: str = "localhost" # backend host
     port: int = 8080 # backend port
@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     # Firebase conf
     firebase_keys_path: str = "" # from environment, critical for security
     firebase_pool_size: int = config.FIREBASE_POOL_SIZE
+    firebase_project_id: str = "" # from environment, critical for security
     # Initialized after loading the settings, not from environment 
     db_engine_echo: bool = False
     db_url: str = ""

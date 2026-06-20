@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import smtplib
+import asyncio
 from email.message import EmailMessage
 from firebase_admin import messaging as firebase_messaging
 from sqlmodel import Session, select, update
@@ -20,6 +21,7 @@ from core.common_events import (
     log_notify_single_client_success,
     log_notify_many_clients_unregistered_warning,
     log_notify_many_clients_info,
+    log_notify_many_clients_error
 )
 
 def send_mail_message(data):
@@ -110,13 +112,13 @@ def notify_single_client(
         log_notify_single_client_error(request_info, detail=f"Error notifying single client: {e}")
         raise(e)
 
-def notify_many_clients(
+async def notify_many_clients(
         user_ids, fcm_tokens, 
         msg_title: str, msg_body: str, msg_data: dict, 
         request_info, db_engine):
     success_count = 0
     failure_count = 0
-    chunk_size = 500  # Firebase allows sending notifications to a maximum of 500 tokens at a time
+    chunk_size = 100  # Note: chunk size can 500 at max, but we use smaller chunks with async pauses
     for i in range(0, len(fcm_tokens), chunk_size):
         chunk_tokens = fcm_tokens[i:i+chunk_size]
         chunk_user_ids = user_ids[i:i+chunk_size]
@@ -128,34 +130,39 @@ def notify_many_clients(
             data=msg_data,
             tokens=chunk_tokens
         )
-        response = firebase_messaging.send_each_for_multicast(push_msg)
-        if response.failure_count > 0:
-            tokens_to_delete_by_ids = []
-            tokens_to_delete = []
-            for index, res in enumerate(response.responses):
-                if not res.success:
-                    if res.exception.code == 'messaging/registration-token-not-registered':
-                        tokens_to_delete_by_ids.append(chunk_user_ids[index])
-                        tokens_to_delete.append(chunk_tokens[index])
-            if tokens_to_delete_by_ids:
-                log_notify_many_clients_unregistered_warning(request_info, detail=f"FCM token unregistered for user_ids {tokens_to_delete_by_ids}, deleting wrong fcm tokens")
-                tokens_to_delete_by_uuids = []
-                for uid in tokens_to_delete_by_ids:
-                    try:
-                        tokens_to_delete_by_uuids.append(string_as_uuid(uid))
-                    except Exception as e:
-                        log_notify_many_clients_unregistered_warning(request_info, detail=f"Error converting user_id string to UUID: {e}")
-                with Session(db_engine) as db_session:
-                # We clean unregistered FCM tokens (by ids in...) from database
-                    statement = update(RefreshToken).where(
-                        RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
-                        ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
-                        ).values(
-                            fcm_token=None, fcm_token_updated_at=None)
-                    db_session.exec(statement)
-                    db_session.commit()
-                log_notify_many_clients_unregistered_warning(request_info, detail=f"Invalid FCM tokens deleted from db: {tokens_to_delete}")
-        success_count += response.success_count
-        failure_count += response.failure_count
+        try:
+            response = firebase_messaging.send_each_for_multicast(push_msg)
+            if response.failure_count > 0:
+                tokens_to_delete_by_ids = []
+                tokens_to_delete = []
+                for index, res in enumerate(response.responses):
+                    if not res.success:
+                        if str(res.exception) == 'NotRegistered':
+                            tokens_to_delete_by_ids.append(chunk_user_ids[index])
+                            tokens_to_delete.append(chunk_tokens[index])
+                if tokens_to_delete_by_ids:
+                    log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: FCM token unregistered for user_ids {tokens_to_delete_by_ids}, deleting wrong fcm tokens...")
+                    tokens_to_delete_by_uuids = []
+                    for uid in tokens_to_delete_by_ids:
+                        try:
+                            tokens_to_delete_by_uuids.append(string_as_uuid(uid))
+                        except Exception as e:
+                            log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: Error converting user_id string to UUID: {e}")
+                    with Session(db_engine) as db_session:
+                    # We clean unregistered FCM tokens (by ids in...) from database
+                        statement = update(RefreshToken).where(
+                            RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
+                            ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
+                            ).values(
+                                fcm_token=None, fcm_token_updated_at=None)
+                        db_session.exec(statement)
+                        db_session.commit()
+                    log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: {len(tokens_to_delete)} wrong fcm tokens deleted from database")
+            success_count += response.success_count
+            failure_count += response.failure_count
+            await asyncio.sleep(0.3) # to avoid hitting FCM rate limits
+        except Exception as e:
+            log_notify_many_clients_error(request_info, detail=f"Chunk {i // chunk_size + 1}: error notifying clients: {e}")
+            failure_count += len(chunk_tokens)
     log_notify_many_clients_info(request_info, detail=f"{success_count} success, {failure_count} failures")
     return success_count

@@ -32,7 +32,7 @@ SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
 
 # Firebase configuration
-FIREBASE_POOL_SIZE = 50 # the maximum number of concurrent connections to Firebase, default is 10
+FIREBASE_POOL_SIZE = 10 # the maximum number of concurrent connections to Firebase, default is 10
 
 # S3 conf (for file uploads storage)
 S3_ENDPOINT="http://localhost:9000"
@@ -52,3 +52,4 @@ S3_BUCKET_NAME="quidalert-uploads"
 # DB_USER, DB_PASSWORD
 # REDIS_USER, REDIS_PASSWORD
 # FIREBASE_KEYS_PATH
+# FIREBASE_PROJECT_ID

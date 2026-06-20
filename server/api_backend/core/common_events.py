@@ -35,3 +35,9 @@ def log_notify_many_clients_info(request_info: dict, detail: str = ""):
         f"notify_many_clients_info, detail={detail}",
         extra=request_info
     )
+
+def log_notify_many_clients_error(request_info: dict, detail: str = ""):
+    logger.error(
+        f"notify_many_clients_error, detail={detail}",
+        extra=request_info
+    )
