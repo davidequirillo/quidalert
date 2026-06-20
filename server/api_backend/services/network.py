@@ -118,7 +118,8 @@ async def notify_many_clients(
         request_info, db_engine):
     success_count = 0
     failure_count = 0
-    chunk_size = 100  # Note: chunk size can 500 at max, but we use smaller chunks with async pauses
+    # Note: chunk size can 500 at max, but we use smaller chunks with async pauses to avoid hitting FCM rate limits
+    chunk_size = 10 if settings.app_mode == 'development' else 100
     for i in range(0, len(fcm_tokens), chunk_size):
         chunk_tokens = fcm_tokens[i:i+chunk_size]
         chunk_user_ids = user_ids[i:i+chunk_size]
@@ -160,7 +161,7 @@ async def notify_many_clients(
                     log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: {len(tokens_to_delete)} wrong fcm tokens deleted from database")
             success_count += response.success_count
             failure_count += response.failure_count
-            await asyncio.sleep(0.3) # to avoid hitting FCM rate limits
+            await asyncio.sleep(0.5) # to avoid hitting FCM rate limits
         except Exception as e:
             log_notify_many_clients_error(request_info, detail=f"Chunk {i // chunk_size + 1}: error notifying clients: {e}")
             failure_count += len(chunk_tokens)
