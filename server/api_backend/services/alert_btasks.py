@@ -133,8 +133,7 @@ async def task_alert_search_and_notify(
             try:
                 user_ids = list(nearby_users_to_fcm_tokens.keys())
                 fcm_tokens = list(nearby_users_to_fcm_tokens.values())
-                notification_count = await run_in_threadpool(
-                    notify_nearby_users, 
+                notification_count = await notify_nearby_users(
                     alert, user_ids, fcm_tokens, 
                     message, request_info, db_engine)
                 if notification_count <= 0:
