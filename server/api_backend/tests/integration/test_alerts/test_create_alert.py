@@ -146,25 +146,6 @@ def test_create_alert_by_a_user_with_zero_reliability_score(client, db_session, 
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
 
-def test_create_alert_by_a_blocked_user(client, db_session, test_baseuser):
-    user = test_baseuser['user']
-    access_token = test_baseuser['access_token']
-    # We set the user as blocked
-    user.is_blocked = True
-    db_session.add(user)
-    db_session.commit()
-    # The coordinates are valid, but the user is blocked
-    data = {
-        "description": "Test alert",
-        "latitude": 40.0,
-        "longitude": -105.0
-    }
-    response = client.post(
-        "/api/alert", json=data,
-        headers={"Authorization": f"Bearer {access_token}"})
-    assert response.status_code == forbidden_exception().status_code
-    assert response.json()["detail"] == forbidden_exception().detail
-
 def test_create_alert_special_type_called_by_user(client, test_baseuser):
     # This test checks that a user cannot create a special alert (general, empty, managed)
     # Special alerts can be created only by chiefs

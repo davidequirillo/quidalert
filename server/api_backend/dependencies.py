@@ -56,6 +56,8 @@ def get_current_user(access_token: str = Depends(oauth2_scheme),
     user = db_session.exec(statement).first()
     if user is None:
         raise token_not_valid_exception()
+    if (user.is_blocked) and (not user.is_superuser):
+        raise token_not_valid_exception()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)   
     if token_iat_dt < user.last_reset_done_at: 
         raise token_expired_exception()

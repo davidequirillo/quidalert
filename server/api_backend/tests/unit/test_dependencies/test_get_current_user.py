@@ -197,6 +197,31 @@ def test_get_current_user_nonexistent_user(db_session, test_baseuser):
     except Exception as e:
         assert False, f"Unexpected exception type: {type(e)}"
 
+def test_get_current_user_blocked_user(db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    user.is_blocked = True
+    db_session.add(user)
+    db_session.commit()
+    token = create_access_token(subject=str(user.id))
+    try:
+        get_current_user(access_token=token, db_session=db_session)
+    except HTTPException as e:
+        assert e.status_code == token_not_valid_exception().status_code
+        assert e.detail == token_not_valid_exception().detail
+    except Exception as e:
+        assert False, f"Unexpected exception type: {type(e)}"
+
+def test_get_current_user_blocked_user_but_superuser(db_session, test_superuser):
+    user: User = test_superuser['user']
+    user.is_blocked = True
+    db_session.add(user)
+    db_session.commit()
+    token = create_access_token(subject=str(user.id))
+    result = get_current_user(access_token=token, db_session=db_session)
+    assert type(result) == User
+    assert result.id == user.id
+    assert result.is_blocked == False  # The superuser should be unblocked by the function
+
 def test_get_current_user_token_issued_before_last_reset(db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Simulate a token issued before the last reset

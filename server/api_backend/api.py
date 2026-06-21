@@ -167,6 +167,8 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
     user = db_session.exec(statement).first()
     if user is None:
         raise TokenNotValidException()
+    if (user.is_blocked) and (not user.is_superuser):
+        raise TokenNotValidException()
     token_iat_dt = from_timestamp_to_datetime_tz_naive(token_iat)
     if token_iat_dt < user.last_reset_done_at:
         raise TokenExpiredException()

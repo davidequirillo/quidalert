@@ -366,6 +366,11 @@ def test_promote_users_modify_status(client, db_session, test_admin):
         assert blocked_user.updated_by == user.email
         assert blocked_user.updated_at is not None
         assert blocked_user.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
+    # But now we revert the test_admin user to unblocked status, so that the other tests can run without problems
+    user.is_blocked = False
+    user.is_reliable = True
+    db_session.add(user)
+    db_session.commit()
     # Now we try to declare as "unreliable" only 1 user with specific email
     params = {"email": "testuser1@example.com"}
     data = {

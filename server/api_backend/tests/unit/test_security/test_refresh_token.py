@@ -392,3 +392,58 @@ def test_check_refresh_token_all_fields_valid(db_session, test_baseuser):
     assert db_rtoken.raw_hash is not None
     assert str(db_rtoken.user_id) == user_id
     assert check_token_against_hash(token_raw, db_rtoken.raw_hash) == True
+
+def test_check_refresh_token_user_is_blocked(db_session, test_baseuser):
+    # Create token data for a refresh token whose user is blocked
+    user: User = test_baseuser['user']
+    token: RefreshToken = test_baseuser['refresh_token']
+    token_decoded = decode_token(token)
+    token_id = token_decoded['jti']
+    token_raw = token_decoded['raw']
+    user_id = str(user.id)
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    # Mark the user as blocked in the database
+    user.is_blocked = True
+    db_session.add(user)
+    db_session.commit()
+    token_data = {
+        "sub": user_id,
+        "jti": token_id,
+        "raw": token_raw,
+        "type": "refresh",
+        "iat": iat,
+        "exp": exp
+    }
+    try:
+        check_refresh_token(token_data=token_data, db_session=db_session)
+        assert False, "Expected check_refresh_token to raise an exception when the user is blocked"
+    except TokenNotValidException:
+        assert True  # expected outcome
+
+def test_check_refresh_token_user_is_blocked_but_superuser(db_session, test_superuser):
+    # Create token data for a refresh token whose user is blocked but is a superuser
+    user: User = test_superuser['user']
+    token: RefreshToken = test_superuser['refresh_token']
+    token_decoded = decode_token(token)
+    token_id = token_decoded['jti']
+    token_raw = token_decoded['raw']
+    user_id = str(user.id)
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    # Mark the user as blocked in the database, but keep them as superuser
+    user.is_blocked = True
+    db_session.add(user)
+    db_session.commit()
+    token_data = {
+        "sub": user_id,
+        "jti": token_id,
+        "raw": token_raw,
+        "type": "refresh",
+        "iat": iat,
+        "exp": exp
+    }
+    # The check_refresh_token should succeed because the user is a superuser
+    db_user, db_rtoken = check_refresh_token(token_data=token_data, db_session=db_session)
+    assert str(db_user.id) == user_id
+    assert str(db_rtoken.id) == token_id

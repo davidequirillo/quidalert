@@ -87,7 +87,7 @@ async def cleanup_expired_locations(redis_client):
         log_cleanup_expired_locations_error(detail=str(e))
         return total_deleted
 
-async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client, batch_size=5000):
+async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client, batch_size=1000):
     deleted_in_shard = 0
     last_upd_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
     uloc_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
@@ -111,7 +111,7 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client,
             pipe.zrem(last_upd_key, *expired_user_ids)
             await pipe.execute()
         deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.05) # we add a small sleep between each batch to avoid overwhelming the Redis server
+        await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
 
 async def do_demotions_cleanup(redis_handle):
@@ -162,7 +162,7 @@ async def cleanup_expired_demotions(redis_client):
         log_cleanup_expired_demotions_error(detail=str(e))
         return total_deleted
 
-async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client, batch_size=5000):
+async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client, batch_size=1000):
     deleted_in_shard = 0
     demotions_key = REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
     log_cleanup_chief_demotions_shard(detail=f"Cleaning chief demotions for shard {shard_index}")
@@ -184,5 +184,5 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client,
             pipe.zrem(demotions_key, *expired_user_ids)
             await pipe.execute()
         deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.05) # we add a small sleep between each batch to avoid overwhelming the Redis server
+        await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
