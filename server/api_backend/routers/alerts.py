@@ -43,8 +43,7 @@ def create_alert(alert_in: AlertIn,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_reliable) or \
-        (current_user.reliability_score <= 0) or \
-            (current_user.is_blocked):
+        (current_user.reliability_score <= 0):
         raise forbidden_exception()
     # Only chiefs can create special type of alerts (managed, general, empty)
     if (alert_in.type != AlertType.local.value):

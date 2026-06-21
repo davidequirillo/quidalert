@@ -132,7 +132,7 @@ async def notify_many_clients(
             tokens=chunk_tokens
         )
         try:
-            response = firebase_messaging.send_each_for_multicast(push_msg)
+            response = await asyncio.to_thread(firebase_messaging.send_each_for_multicast, push_msg)
             if response.failure_count > 0:
                 tokens_to_delete_by_ids = []
                 tokens_to_delete = []
@@ -161,7 +161,7 @@ async def notify_many_clients(
                     log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: {len(tokens_to_delete)} wrong fcm tokens deleted from database")
             success_count += response.success_count
             failure_count += response.failure_count
-            await asyncio.sleep(0.5) # to avoid hitting FCM rate limits
+            await asyncio.sleep(0.5) # in seconds, to avoid hitting FCM rate limits
         except Exception as e:
             log_notify_many_clients_error(request_info, detail=f"Chunk {i // chunk_size + 1}: error notifying clients: {e}")
             failure_count += len(chunk_tokens)

@@ -365,7 +365,7 @@ class AlertIn(SQLModel, table=False):
     
 class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
-    severity: int = Field(default=10, ge=0, le=10, nullable=False)
+    severity: int = Field(default=10, ge=0, le=10, nullable=False) # not used at the moment, but we can use it in the future to indicate the severity of the alert (0 = low, 10 = high)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
@@ -448,10 +448,10 @@ class Message(SQLModel, table=True):
 
 class AlertOutWithInfo(BaseModel):
     alert: AlertOut
-    sender: Optional[UserOutSmall] = None # the chief (alert manager) can view all sender info
     sender_firstname: str
     sender_surname: str
     sender_reliability_score: int
+    sender: Optional[UserOutSmall] = None # the chief (alert manager) can view all sender info
     alerted_users: Optional[List[UserOutSmall]] = None # the chief (alert manager) can view all alerted users info
     alerted_users_number: int
     alerted_users_positive_votes: int
