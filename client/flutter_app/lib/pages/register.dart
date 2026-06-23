@@ -61,7 +61,7 @@ class _RegisterBodyState extends State<RegisterBody> {
 
   Future<void> submit() async {
     final locale = Localizations.localeOf(context);
-    final languageCode = locale.languageCode;
+    final languageCode = locale.languageCode.toLowerCase();
     if (!_formKey.currentState!.validate()) return;
     final fname = _firstnameController.text.trim();
     final sname = _surnameController.text.trim();

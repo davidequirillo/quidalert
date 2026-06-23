@@ -381,6 +381,8 @@ def login(data: LoginSchema,
         device_info=data.device_model,
         updated_at=now
     )
+    if data.language:
+        user.language = data.language
     user.last_login_done_at = now
     user.last_refresh_at = now
     # If user has reliability score <= 0, we check if we can reset it based on the last score update time and the TTL defined for negative scores

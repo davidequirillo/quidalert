@@ -244,6 +244,7 @@ class LoginSchema(BaseModel):
     login_code: Optional[str] = Field(default=None, min_length=6, max_length=6) # 2FA code
     login_token: Optional[str] = Field(default=None) # jwt token to skip 2FA
     device_model: Optional[str] = Field(default=None, min_length=0, max_length=256)
+    language: Optional[str] = Field(default=None, min_length=2, max_length=8)
 
     @field_validator("login_code")
     @classmethod
@@ -253,6 +254,15 @@ class LoginSchema(BaseModel):
         if not re.fullmatch(r"\d{6}", value):
             raise ValueError(f"Code must be a 6-digit number")
         return value
+    
+    @field_validator("language")
+    @classmethod
+    def validate_language(cls, s):
+        if (s is None):
+            return s
+        if not s in [UserLanguage.en.value, UserLanguage.it.value]:
+            raise ValueError("Wrong language")
+        return s
 
 class RefreshTokenWrapper(BaseModel):
     refresh_token: str
@@ -367,14 +377,16 @@ class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
     severity: int = Field(default=10, ge=0, le=10, nullable=False) # not used at the moment, but we can use it in the future to indicate the severity of the alert (0 = low, 10 = high)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+    is_pending: bool = Field(default=True, nullable=False) # "pending" means that the alert has been created but it's in processing phase (background task is running to spread the alert to nearby users)
+    spread_count: int = Field(default=0, ge=0, le=3, nullable=False) # number of times the alert can spread to nearby users (adding new users to the alerted users list), max 3 spreads (initial alert + 3 spreads = max 4 "generations" of alerted users)
     is_closed: bool = Field(default=False, nullable=False)
 
 class Alert(AlertOut, table=True):
     __tablename__: str = "alerts"
-    user_id: uuid.UUID = Field(
+    user_id: Optional[uuid.UUID] = Field(
         foreign_key="users.id",
         ondelete="CASCADE", 
-        nullable=False, 
+        nullable=False,
         index=True)
 
     __table_args__ = (Index("idx_alerts_created_at_lat_long", "created_at", "latitude", "longitude"),)
@@ -454,6 +466,3 @@ class AlertOutWithInfo(BaseModel):
     sender: Optional[UserOutSmall] = None # the chief (alert manager) can view all sender info
     alerted_users: Optional[List[UserOutSmall]] = None # the chief (alert manager) can view all alerted users info
     alerted_users_number: int
-    alerted_users_positive_votes: int
-    alerted_users_negative_votes: int
-    messages: List[Message] = []

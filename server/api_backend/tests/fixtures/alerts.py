@@ -13,7 +13,7 @@ from scripts.seed_redis_data import (
 from sqlmodel import delete, select
 from models.general import (
     User, UserRole, RefreshToken, UserLanguage,
-    Alert, AlertType
+    Alert, AlertType, AlertedUser
 )
 from services.security import now_tz_naive, now_tz_aware
 from core.dbmgr import (
@@ -129,12 +129,12 @@ def setup_fake_functions(mocker):
         "mock_notify_nearby_users": notify_nearby_users_mocked
     }
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, name="test_alert_users_data")
 def setup_users_data_and_teardown(db_session, redis_session):
     create_test_users(db_session)
     # Assign GPS location data to users in Redis
     asyncio.run(assign_redis_data_to_users(db_session, redis_session))
-    yield
+    yield {"users_created": True}
     # Teardown: flush Redis and delete users from the database
     asyncio.run(redis_session.flushall())
     db_session.exec(delete(RefreshToken))
@@ -165,3 +165,126 @@ def create_test_request_info():
         "user_agent": "test_user_agent",
         "user_id": "test_user_id"
     }
+
+@pytest.fixture(autouse=True)
+def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseuser, test_chief, test_officer):
+    # See setup_users_data_and_teardown fixture in this module for user creation, because we need users to create alerts
+    assert test_alert_users_data.get("users_created") == True, "Users data fixture did not create users as expected"
+    user: User = test_baseuser["user"]
+    chief: User = test_chief["user"]
+    officer: User = test_officer["user"]
+    # Create 10 local alerts for a "strange" user (not the test baseuser, not the test chief)
+    # We can use the test officer as a "strange" user, 
+    # but anyone else could be used, for example another standart user created by the setup_users_data_and_teardown fixture
+    strange_user = officer
+    for i in range(0, 10):
+        alert = Alert(
+            type=AlertType.local.value,
+            description=f"Strange user alert {i}",
+            user_id=strange_user.id,  # Use the ID of the strange user
+            latitude=DENVER_LAT,
+            longitude=DENVER_LON,
+            radius=1
+        )
+        db_session.add(alert)
+    # Create some local alert for the base user
+    for i in range(10, 13):
+        alert = Alert(
+            type=AlertType.local.value,
+            description=f"Test alert {i}",
+            user_id=user.id,
+            latitude=DENVER_LAT,
+            longitude=DENVER_LON,
+            radius=1
+        )
+        db_session.add(alert)
+    # Create some local alert for the chief user
+    for i in range(13, 16):
+        alert = Alert(
+            type=AlertType.local.value,
+            description=f"Chief alert {i}",
+            user_id=chief.id,
+            latitude=DENVER_LAT,
+            longitude=DENVER_LON,
+            radius=1
+        )
+        db_session.add(alert)
+    # Now we create some general alerts
+    for i in range(16, 19):
+        alert = Alert(
+            type=AlertType.general.value,
+            description=f"General alert {i}",
+            user_id=chief.id,
+            latitude=0.0,
+            longitude=0.0,
+            radius=1,
+            is_pending=False # general alerts are not pending, because we don't have to perform background tasks for this type of alert
+        )
+        db_session.add(alert)
+    # Now we create some empty alerts
+    for i in range(19, 22):
+        alert = Alert(
+            type=AlertType.empty.value,
+            description=f"Empty alert {i}",
+            user_id=chief.id,
+            latitude=DENVER_LAT,
+            longitude=DENVER_LON,
+            radius=1,
+            is_pending=False # empty alerts are not pending, because we don't have to perform background tasks for this type of alert
+        )
+        db_session.add(alert)
+    # Now we create some managed alerts
+    for i in range(22, 25):
+        alert = Alert(
+            type=AlertType.managed.value,
+            description=f"Managed alert {i}",
+            user_id=chief.id,
+            latitude=DENVER_LAT,
+            longitude=DENVER_LON,
+            radius=random.uniform(2,5)
+        )
+        db_session.add(alert)
+    # User candidates (to be alerted users) are not chiefs and must not include the test baseuser, the test chief, or the test "strange" user
+    user_candidates_stmt = select(User).where(User.is_chief == False, User.id != user.id, User.id != chief.id, User.id != strange_user.id)
+    user_candidates = db_session.exec(user_candidates_stmt).all()
+    if len(user_candidates) == 0:
+        raise Exception("No user candidates found to create alerted users for the test alerts, please check the setup_users_data_and_teardown fixture and ensure that it is imported in the test file")
+    # Now we create some alerted users for the alerts created, fetching them from user candidates
+    for alert in db_session.exec(select(Alert)).all():
+        if (alert.type == AlertType.general.value):
+            continue # generale alerts have no alerted users
+        if (alert.type == AlertType.empty.value):
+            continue # empty alerts have no alerted users
+        for i in range(0, 10):
+            user_candidate = user_candidates[i % len(user_candidates)]
+            alerted_user = AlertedUser(
+                alert_id=alert.id,
+                user_id=user_candidate.id
+            )
+            db_session.add(alerted_user)
+    # Now we create some alerted users for the alerts created, using the test baseuser and test chief as alerted users for some alerts
+    # We will add the test baseuser as an alerted user for the first 3 alerts, and the test chief as an alerted user for the next 3 alerts
+    # Note: the alerts are not created by the test baseuser or test chief (are created by the "strange" user), so they can be alerted users for these alerts
+    statement = select(Alert).where(Alert.user_id != user.id, Alert.user_id != chief.id)
+    for i, alert in enumerate(db_session.exec(statement).all()):
+        if (alert.type == AlertType.general.value):
+            continue # generale alerts have no alerted users
+        if (alert.type == AlertType.empty.value):
+            continue # empty alerts have no alerted users
+        if i < 3:
+            alerted_user = AlertedUser(
+                alert_id=alert.id,
+                user_id=user.id
+            )
+            db_session.add(alerted_user)
+        elif i < 6:
+            alerted_user = AlertedUser(
+                alert_id=alert.id,
+                user_id=chief.id
+            )
+            db_session.add(alerted_user) 
+    db_session.commit()
+    yield {"alerts_created": True}
+    db_session.exec(delete(AlertedUser))
+    db_session.exec(delete(Alert))
+    db_session.commit()

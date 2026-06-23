@@ -2,13 +2,6 @@
   "version": "2.0.0",
   "tasks": [
   {
-    "label": "Client: Flutter run (Windows)",
-    "type": "shell",
-    "command": "flutter run -d windows",
-    "options": { "cwd": "${workspaceFolder}/client/flutter_app" },
-    "problemMatcher": []
-  },
-  {
     "label": "Client: Flutter run (Android)",
     "type": "shell",
     "command": "flutter run -d emulator-5554",
@@ -16,7 +9,14 @@
     "problemMatcher": []
   },
   {
-    "label": "Client: Flutter run (Web)",
+    "label": "Client: Flutter run (Windows), not supported",
+    "type": "shell",
+    "command": "flutter run -d windows",
+    "options": { "cwd": "${workspaceFolder}/client/flutter_app" },
+    "problemMatcher": []
+  },
+  {
+    "label": "Client: Flutter run (Web), not supported",
     "type": "shell",
     "command": "flutter run -d chrome",
     "options": { "cwd": "${workspaceFolder}/client/flutter_app" },

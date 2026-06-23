@@ -12,7 +12,7 @@ from dependencies import (get_current_user,
             get_db_session, get_redis_session, 
             get_geoposition_token_data,
         )
-from sqlmodel import Session, select
+from sqlmodel import Session, desc, select, union_all
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from core.exceptions import forbidden_exception
@@ -22,9 +22,9 @@ from core.dbmgr import (
     get_redis_user_locations_key, 
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key)
-from models.general import (
+from models.general import (string_as_uuid,
     Alert, AlertType, AlertIn, AlertOut,
-    GpsCoordinatesSchema, GpsTokenData, User,
+    GpsCoordinatesSchema, GpsTokenData, RefreshToken, User,
     AlertedUser)
 from services.security import (
     now_tz_naive, now_tz_aware)
@@ -42,13 +42,13 @@ def create_alert(alert_in: AlertIn,
             background_tasks: BackgroundTasks,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_reliable) or \
-        (current_user.reliability_score <= 0):
-        raise forbidden_exception()
     # Only chiefs can create special type of alerts (managed, general, empty)
     if (alert_in.type != AlertType.local.value):
         if not current_user.is_chief:
             raise forbidden_exception("Only chiefs can create special alerts")
+    else:
+        if (not current_user.is_reliable) or (current_user.reliability_score <= 0):
+            raise forbidden_exception()
     if (alert_in.radius > 1):
         if not current_user.is_chief:
             raise forbidden_exception("Only chiefs can create alerts with radius greater than 1")
@@ -84,14 +84,16 @@ def create_alert(alert_in: AlertIn,
     alert = Alert(
         type=alert_in.type,
         description = alert_in.description,
-        latitude=alert_in.latitude,
-        longitude=alert_in.longitude,
+        latitude=alert_in.latitude if (alert_in.type != AlertType.general.value) else 0.0,
+        longitude=alert_in.longitude if (alert_in.type != AlertType.general.value) else 0.0,
         address = alert_in.address,
         radius = alert_in.radius,
         user_id = current_user.id,
+        is_pending = True if (alert_in.type != AlertType.general.value) and (alert_in.type != AlertType.empty.value) else False # general and empty alerts are not pending, because we don't have to perform background tasks for this type of alert
     )
-    rel_score = current_user.reliability_score 
-    alert.radius = min(max(rel_score, 0), 100) / 100 * alert.radius
+    if (alert.type == AlertType.local.value):
+        rel_score = current_user.reliability_score 
+        alert.radius = min(max(rel_score, 0), 100) / 100 * alert.radius
     db_session.add(alert)
     db_session.commit()
     db_session.refresh(alert)
@@ -99,18 +101,9 @@ def create_alert(alert_in: AlertIn,
         raise HTTPException(status_code=500, detail="Unknown error creating alert")
     if (alert.type == AlertType.general.value):
         # No need to search for chiefs or users to notify for this type of alert
-        # No need to add the current user (chief) to the alerted users for this type of alert
         return {"message": f"{alert.type.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     if (alert.type == AlertType.empty.value):
         # No need to search for chiefs or users to notify for this type of alert
-        # But we add the current user (chief) to the alerted users list in the database as alert manager. It will be useful.
-        alerted_user = AlertedUser(
-            alert_id=alert.id,
-            user_id=current_user.id,
-            is_manager=True
-        )
-        db_session.add(alerted_user)
-        db_session.commit()
         return {"message": f"{alert.type.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     # For managed alerts, we need to search for nearby users and notify them
     # For local alerts, we need to search for nearby chiefs and users and notify them
@@ -131,6 +124,27 @@ def create_alert(alert_in: AlertIn,
     else:
         return {"message": f"{alert.type.capitalize()} alert created, searching for nearby users and chiefs to notify"}
 
+@router.get("/api/recent-alerts", response_model=list[AlertOut])
+def get_recent_alerts(current_user: User = Depends(get_current_user),
+        db_session: Session = Depends(get_db_session)):
+    now = now_tz_naive()
+    alerts_by_me_stmt = (select(Alert)
+        .where(Alert.user_id == current_user.id, Alert.type != AlertType.general.value)
+        .where(Alert.created_at > (now - timedelta(days=365))))
+    alerts_to_me_stmt = (select(Alert).join(AlertedUser, Alert.id == AlertedUser.alert_id) # type: ignore
+        .where(AlertedUser.user_id == current_user.id)
+        .where(Alert.created_at > (now - timedelta(days=365))))
+    # For general alerts, why use created_at, latitude, and longitude? Because we benefit from the composite index on (created_at, latitude, longitude) to speed up the query. 
+    # Latitude and longitude are not relevant for general alerts, but we use them to speed up the query
+    alerts_general_stmt = (select(Alert)
+        .where(Alert.created_at > (now - timedelta(days=365)))
+        .where(Alert.latitude > -0.01, Alert.latitude < 0.01, Alert.longitude > -0.01, Alert.longitude < 0.01)
+        .where(Alert.type == AlertType.general.value))
+    statement = union_all(alerts_by_me_stmt, alerts_to_me_stmt, alerts_general_stmt)
+    statement = statement.order_by(desc(Alert.created_at))
+    alerts = db_session.exec(statement).all() # type: ignore
+    return alerts
+
 @router.get("/api/alert/{alert_id}", response_model=AlertOut)
 def get_alert(alert_id: int,
             current_user: User = Depends(get_current_user), 
@@ -141,6 +155,22 @@ def get_alert(alert_id: int,
     # At the moment, all users can see all alerts
     # But we might want to restrict an alert visibility to the alerted users (the chief, and nearby users)
     return alert
+
+@router.post("/api/alert-close")
+def close_alert(alert_id: int,
+            request: Request,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_chief):
+        raise forbidden_exception()
+    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+    if alert is None:
+        return {"message": "Alert not found"}
+    alert.is_closed = True
+    db_session.add(alert)
+    db_session.commit()
+    db_session.refresh(alert)
+    return {"message": "Alert closed"}
 
 @router.post("/api/update-gps-position")
 async def update_gps_position(
@@ -174,19 +204,3 @@ async def update_gps_position(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
     return {"status": "success", "message": "GPS position updated"}
-
-@router.post("/api/alert-close")
-def close_alert(alert_id: int,
-            request: Request,
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_chief):
-        raise forbidden_exception()
-    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
-    if alert is None:
-        return {"message": "Alert not found"}
-    alert.is_closed = True
-    db_session.add(alert)
-    db_session.commit()
-    db_session.refresh(alert)
-    return {"message": "Alert closed"}

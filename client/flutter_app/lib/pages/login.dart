@@ -54,13 +54,20 @@ class _LoginBodyState extends State<LoginBody> {
 
   Future<void> _doLogin(String email, String password, {String? code}) async {
     final loc = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final languageCode = locale.languageCode.toLowerCase();
     final authClient = context.read<AuthClient>();
     String? loginError;
     String endMessage;
     String endTitle;
     final http.Response response;
     try {
-      response = await authClient.login(email, password, loginCode: code);
+      response = await authClient.login(
+        email,
+        password,
+        loginCode: code,
+        language: languageCode,
+      );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         if (response.statusCode == 422) {
           loginError = 'Invalid credentials';

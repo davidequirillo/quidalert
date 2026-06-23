@@ -1,22 +1,22 @@
 {
   "version": "0.2.0",
-  "configurations": [
+  "configurations": [  
   {
-    "name": "Debug Client (Flutter - Windows)",
-    "type": "dart",
-    "request": "launch",
-    "cwd": "${workspaceFolder}/client/flutter_app",
-    "deviceId": "windows"
-  },  
-  {
-    "name": "Debug Client (Flutter - Android)",
+    "name": "Debug client (Flutter - Android)",
     "type": "dart",
     "request": "launch",
     "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "emulator-5554"
   },
   {
-    "name": "Debug Client (Flutter - Web)",
+    "name": "Debug client (Flutter - Windows), not supported",
+    "type": "dart",
+    "request": "launch",
+    "cwd": "${workspaceFolder}/client/flutter_app",
+    "deviceId": "windows"
+  },
+  {
+    "name": "Debug client (Flutter - Web), not supported",
     "type": "dart",
     "request": "launch",
     "cwd": "${workspaceFolder}/client/flutter_app",
