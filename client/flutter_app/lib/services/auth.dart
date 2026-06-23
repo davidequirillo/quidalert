@@ -268,6 +268,7 @@ class AuthClient extends ChangeNotifier {
     String email,
     String password, {
     String? loginCode,
+    String? language,
   }) async {
     const relPath = "/auth/login";
     final uri = Uri.parse('$baseUrl$relPath');
@@ -277,6 +278,9 @@ class AuthClient extends ChangeNotifier {
     }
     if (loginToken != null) {
       fields['login_token'] = loginToken!;
+    }
+    if (language != null) {
+      fields['language'] = language;
     }
     final resp = await http.post(
       uri,

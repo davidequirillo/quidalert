@@ -68,8 +68,8 @@ async def upload_terms(file: UploadFile = File(...),
     except UnicodeDecodeError:
         raise bad_file_upload_exception()
     safe_text = html.escape(text_content)
-    lang = language
-    if (lang != UserLanguage.en.value and lang != UserLanguage.it.value):
+    lang: str = language
+    if (lang != UserLanguage.en.value) and (lang != UserLanguage.it.value):
         lang = UserLanguage.en.value
     fname = f"terms_{lang}.md"
     try:

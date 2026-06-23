@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import AlertIn, AlertType
+from models.general import AlertIn, AlertOut, AlertType, string_as_uuid
 
 def test_create_alert_empty_data():
     # It fails because a non empty description is required
@@ -190,3 +190,39 @@ def test_create_alert_with_address_too_long():
     }
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)
+
+def test_create_alert_out_with_defaults():
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+    }
+    alert = AlertOut.model_validate(data)
+    assert alert.description == data["description"]
+    assert alert.latitude == data["latitude"]
+    assert alert.longitude == data["longitude"]
+    assert alert.address is None
+    assert alert.radius == 1.0
+    assert alert.type == AlertType.local.value
+    assert alert.spread_count == 0
+    assert alert.is_closed == False
+    assert alert.is_pending == True
+
+def test_create_alert_out_with_wrong_spread_count():
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "spread_count": -1 # invalid spread count
+    }
+    with pytest.raises(ValueError):
+        AlertOut.model_validate(data)
+    # Another example
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "spread_count": 10 # it's too large
+    }
+    with pytest.raises(ValueError):
+        AlertOut.model_validate(data)

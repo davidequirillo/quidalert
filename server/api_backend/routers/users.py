@@ -225,7 +225,7 @@ async def promote_users(
                 statement = statement.values(is_reliable=False, is_blocked=False)
             elif promotion_schema.status == UserStatus.blocked.value:
                 statement = statement.values(is_blocked=True, is_reliable=False)
-        if promotion_schema.notes is not None:
+        if promotion_schema.notes:
             statement = statement.values(notes = promotion_schema.notes)
         if promotion_schema.authorizer:
             auth_user = db_session.exec(

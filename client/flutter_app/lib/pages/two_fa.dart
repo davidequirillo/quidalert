@@ -55,6 +55,8 @@ class _TwoFABodyState extends State<TwoFABody> {
 
   Future<void> _complete2FA(String email, String password, String code) async {
     final loc = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context);
+    final languageCode = locale.languageCode.toLowerCase();
     final authClient = context.read<AuthClient>();
     String? error;
     String endMessage;
@@ -62,9 +64,14 @@ class _TwoFABodyState extends State<TwoFABody> {
     final http.Response response;
     try {
       debugPrintC(
-        "Submitting 2FA code... (email: $email, password: ${'*' * password.length}, login_code: $code)",
+        "Submitting 2FA code... (email: $email, password: ${'*' * password.length}, login_code: $code, language: $languageCode)",
       );
-      response = await authClient.login(email, password, loginCode: code);
+      response = await authClient.login(
+        email,
+        password,
+        loginCode: code,
+        language: languageCode,
+      );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         debugPrintC('2FA failed, response body: ${response.body}');
         error = jsonDecode(response.body)['detail'];

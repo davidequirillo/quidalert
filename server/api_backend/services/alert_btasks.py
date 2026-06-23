@@ -81,16 +81,21 @@ async def task_alert_search_and_notify(
     sender_fcm_token = await run_in_threadpool(
         get_sender_fcm_token, 
         alert, user, request_info, db_engine)
-    # For local alerts, we keep the first closest chief as alert manager and save him to database
-    # For non-local alerts, the chief alert manager is the user who created the alert (he is a chief)
+    # For local alerts, we keep the first closest chief as alert manager and save him to database (table alerted_users)
+    # For non-local alerts, the user who created the alert is the alert manager, so we don't need to search for a chief or save him to database as alert manager
     if (alert.type == AlertType.local.value):
         chief, chief_fcm_token = await run_in_threadpool(
             save_first_chief_in_db, 
             alert, closest_chiefs, request_info, db_engine)
     else:
-        chief, chief_fcm_token = await run_in_threadpool(
-            save_sender_as_manager_in_db, 
-            alert, user, sender_fcm_token, request_info, db_engine)
+        chief, chief_fcm_token = {
+            "user_id": user.id,
+            "distance_km": 0.0,
+            "location": {
+                "latitude": alert.latitude,
+                "longitude": alert.longitude
+            }
+        }, sender_fcm_token
     # To avoid duplicates or errors, we check if nearby users contains the chief (alert manager), and we delete him from nearby users list
     if chief:
         nearby_users = [u for u in nearby_users if u["user_id"] != chief["user_id"]]
@@ -98,6 +103,12 @@ async def task_alert_search_and_notify(
     nearby_users_to_fcm_tokens = await run_in_threadpool(
         save_nearby_users_in_db, 
         alert, nearby_users, request_info, db_engine)
+    # We set the alert as not pending anymore, because we have already searched for chiefs and nearby users, and we have saved them in database
+    # Note: we don't pass the "alert" object to the function, because it is a copy of the original alert object coming from api endpoint, 
+    # so, we need to retrieve the original alert object from database, to update its is_pending field (see function "set_alert_as_not_pending_anymore")
+    await run_in_threadpool(
+        set_alert_as_not_pending_anymore, 
+        alert.id, request_info, db_engine)
     if sender_fcm_token:
         sender_can_be_notified = True
     else:
@@ -346,24 +357,18 @@ def save_first_chief_in_db(alert, closest_chiefs, request_info, db_engine):
             fcm_token = None
     return chief, fcm_token
 
-def save_sender_as_manager_in_db(alert, sender, sender_fcm_token, request_info, db_engine):
-    chief, fcm_token = {"user_id": str(sender.id)}, sender_fcm_token
-    try:
-        alert_manager = AlertedUser(
-            alert_id=alert.id,
-            user_id=sender.id,
-            is_manager=True,
-            vote=0,
-            closing_vote=0
-        )
-        with Session(db_engine) as db_session:
-            db_session.add(alert_manager)
-            db_session.commit()
-    except:
-        chief = None
-        fcm_token = None
-        log_alert_error_saving_closest_chief(str(alert.id), request_info, detail="Error saving chief (alert manager) in database")
-    return chief, fcm_token
+def set_alert_as_not_pending_anymore(alert_id, request_info, db_engine):
+    with Session(db_engine) as db_session:
+        try: 
+            statement = select(Alert).where(Alert.id == alert_id) 
+            alert = db_session.exec(statement).first()
+            if alert:
+                alert.is_pending = False
+                db_session.add(alert)
+                db_session.commit()
+        except Exception as e:
+            log_alert_error_saving_nearby_users(str(alert_id), request_info, detail=f"Error setting alert pending status to False: {e}")
+    return
 
 def save_nearby_users_in_db(alert, users, request_info, db_engine):
     if not users:

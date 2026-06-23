@@ -4,6 +4,7 @@
 
 import smtplib
 import asyncio
+from fastapi.concurrency import run_in_threadpool
 from email.message import EmailMessage
 from firebase_admin import messaging as firebase_messaging
 from sqlmodel import Session, select, update
@@ -132,7 +133,7 @@ async def notify_many_clients(
             tokens=chunk_tokens
         )
         try:
-            response = await asyncio.to_thread(firebase_messaging.send_each_for_multicast, push_msg)
+            response = await run_in_threadpool(firebase_messaging.send_each_for_multicast, push_msg)
             if response.failure_count > 0:
                 tokens_to_delete_by_ids = []
                 tokens_to_delete = []

@@ -224,8 +224,14 @@ def test_create_alert_type_general_called_by_chief(client, db_session, test_chie
     assert alert.address is None
     assert alert.description == description
     assert alert.type == AlertType.general.value
-    assert alert.latitude == 0.0 # not considered for general alerts
-    assert alert.longitude == 0.0 # not considered for general alerts
+    # For general alerts, pending status is set to False immediately, 
+    # because we don't have to perform background tasks for this type of alert
+    assert alert.is_pending == False
+    assert alert.is_closed == False
+    assert alert.latitude < 0.01 # not considered for general alerts
+    assert alert.latitude > -0.01 # not considered for general alerts
+    assert alert.longitude < 0.01 # not considered for general alerts
+    assert alert.longitude > -0.01 # not considered for general alerts
     assert alert.radius == 1.0 # not considered for general alerts
     # No alerted users are created
     alerted_users = db_session.exec(select(AlertedUser).where(
@@ -262,17 +268,15 @@ def test_create_alert_type_empty_called_by_chief(client, db_session, test_chief)
     assert alert.latitude == data["latitude"]
     assert alert.longitude == data["longitude"]
     assert alert.radius == 1.0 # initially set to the default
+    # For empty alerts, pending status is set to False immediately, 
+    # because we don't have to perform background tasks for this type of alert
+    assert alert.is_pending == False
+    assert alert.is_closed == False
     # Nearby users are not inserted (because it's an empty alert)
-    # But the alert creator (the sender, the chief) is added as "alert manager". It will be useful.
-    # We verify it
+    # No alert manager is inserted in alerted_users table (the alert sender is the "alert manager")
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
-    assert len(alerted_users) == 1
-    assert alerted_users[0].is_manager == True
-    assert alerted_users[0].user_id == user.id
-    assert alerted_users[0].alert_id == alert.id
-    assert alerted_users[0].vote == 0
-    assert alerted_users[0].closing_vote == 0
+    assert len(alerted_users) == 0
 
 def test_create_alert_similar_local_exists(client, db_session, test_baseuser):
     access_token = test_baseuser['access_token']
@@ -423,6 +427,8 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     assert alert.longitude == data["longitude"]
     assert alert.radius == 1.0 # set to the default radius
     assert alert.is_closed == False
+    # After the background task, the alert is no longer in pending status 
+    assert alert.is_pending == False
     # No nearby users or chiefs should be found, so, no alerted users
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -470,6 +476,8 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     assert alert.longitude == data["longitude"]
     assert alert.radius == 1.0 # set to the default radius
     assert alert.is_closed == False
+    # After the background task, the alert is no longer in pending status
+    assert alert.is_pending == False
     # The first chief should be found (the alert manager), from the list of closest chiefs
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -582,6 +590,8 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     assert alert.longitude == data["longitude"]
     assert alert.radius == data["radius"]
     assert alert.is_closed == False
+    # After the background task, the alert is no longer in pending status
+    assert alert.is_pending == False
     # The first chief should be found (the alert manager), from the list of closest chiefs, and nearby users should be found
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -675,19 +685,13 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     assert alert.longitude == data["longitude"]
     assert alert.radius == 1.0 # set to the default radius
     assert alert.is_closed == False
+    # After the background task, the alert is no longer in pending status
+    assert alert.is_pending == False
     # No nearby users should be found, 
-    # so, no alerted users (except the sender, who is added as alert manager)
+    # so, no alerted users and no alert manager is saved (because it's a managed alert, the alert sender is a chief and he is the "alert manager")
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
-    assert len(alerted_users) == 1
-    assert alerted_users[0].is_manager == True
-    assert alerted_users[0].user_id == user.id
-    assert alerted_users[0].alert_id == alert.id
-    assert alerted_users[0].vote == 0
-    assert alerted_users[0].closing_vote == 0
-    # In this case the alert creator (alert sender, a chief) is also the alert manager, 
-    # because the alert type is "managed"
-    assert alerted_users[0].user_id == alert.user_id
+    assert len(alerted_users) == 0
     # Now we check the notifications
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
@@ -731,15 +735,17 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
     assert alert.longitude == data["longitude"]
     assert alert.radius == data["radius"]
     assert alert.is_closed == False
-    # Nearby users should be found, and the closest chief is the sender (because the alert type is "managed")
+    # After the background task, the alert is no longer in pending status
+    assert alert.is_pending == False
+    # Nearby users should be found, and the closest chief is the alert sender (because the alert type is "managed")
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
     assert len(alerted_users) > 0
-    # Alerted users contain an alert manager (the sender, because it's a managed alert), and nearby users
+    # The alert is managed, so there is no need to save the alert manager, because the alert sender is the "alert manager"
+    # In other words, the sender is the alert manager, so there are not alerted manager in the alerted_users table
     alerted_managers = [u for u in alerted_users if u.is_manager]
     alerted_nearby_users = [u for u in alerted_users if not u.is_manager]
-    assert len(alerted_managers) == 1 # the sender is the alert manager
-    assert alerted_managers[0].user_id == alert.user_id
+    assert len(alerted_managers) == 0
     assert len(alerted_nearby_users) == len(alerted_users) - len(alerted_managers)
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
