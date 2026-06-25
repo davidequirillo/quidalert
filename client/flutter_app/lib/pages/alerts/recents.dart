@@ -7,8 +7,15 @@
 // plugin by Transistor Software. See the LICENSE file for full details.
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:convert';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
+import 'package:quidalert_flutter/models/general.dart';
+import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
 
 class RecentAlertsPage extends StatelessWidget {
   const RecentAlertsPage({super.key});
@@ -19,7 +26,101 @@ class RecentAlertsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelRecentAlerts, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: Center(child: Text(loc.labelRecentAlerts)),
+      body: const RecentAlertsBody(),
+    );
+  }
+}
+
+class RecentAlertsBody extends StatelessWidget {
+  const RecentAlertsBody({super.key});
+
+  Future<List<Alert>> _getRecentAlerts(BuildContext context) async {
+    final authClient = context.read<AuthClient>();
+    final response = await authClient.doProtectedApiRequest(
+      "get",
+      '/recent-alerts',
+    );
+    final List<dynamic>? respObj = json.decode(response.body);
+    if (respObj == null) {
+      throw NotFoundException();
+    }
+    final alerts = respObj.map((e) => Alert.fromJson(e)).toList();
+    return alerts;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    return FutureBuilder<List<Alert>>(
+      future: _getRecentAlerts(context),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          debugPrint("Error fetching recent alerts: ${snapshot.error}");
+          final exceptionName = snapshot.error.runtimeType.toString();
+          final locAttribute = "exception$exceptionName".replaceAll(
+            "Exception",
+            "",
+          );
+          final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+          if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
+            goToLoginPagePostFrameCallback(context);
+          }
+          return Center(child: Text(errorMessage));
+        }
+        if (snapshot.hasData) {
+          final alerts = snapshot.data!;
+          return Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: SafeArea(top: false, child: alertList(context, alerts)),
+            ),
+          );
+        }
+        return Center(child: Text(loc.errorGeneric));
+      },
+    );
+  }
+
+  Widget alertList(BuildContext context, List<Alert> alerts) {
+    final loc = AppLocalizations.of(context)!;
+    if (alerts.isEmpty) {
+      return Center(child: Text(loc.labelNoEntryFound));
+    }
+    return ListView.separated(
+      shrinkWrap: true,
+      itemCount: alerts.length,
+      separatorBuilder: (context, index) => Divider(),
+      itemBuilder: (context, index) {
+        final alert = alerts[index];
+        final alertTypeKey =
+            'alertType${alert.type[0].toUpperCase()}${alert.type.substring(1)}';
+        final alertStatusKey =
+            'alertStatus${alert.status[0].toUpperCase()}${alert.status.substring(1)}';
+        return ListTile(
+          title: Text(
+            alert.description.substring(
+                  0,
+                  alert.description.length > 50 ? 50 : alert.description.length,
+                ) +
+                (alert.description.length > 50 ? "..." : ""),
+          ),
+          subtitle: Text(
+            "${loc.labelType}: ${loc.getString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getString(alertStatusKey)}",
+          ),
+          trailing: Text(datetimeAsStringWithoutMicroseconds(alert.createdAt!)),
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              '/alerts/view-alert-details',
+              arguments: alert.id,
+            );
+          },
+        );
+      },
     );
   }
 }
