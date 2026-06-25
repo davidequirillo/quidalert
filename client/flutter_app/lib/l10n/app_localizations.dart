@@ -95,6 +95,48 @@ abstract class AppLocalizations {
     Locale('it')
   ];
 
+  /// No description provided for @alertTypeGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get alertTypeGeneral;
+
+  /// No description provided for @alertTypeLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get alertTypeLocal;
+
+  /// No description provided for @alertTypeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get alertTypeEmpty;
+
+  /// No description provided for @alertTypeManaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed'**
+  String get alertTypeManaged;
+
+  /// No description provided for @alertStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get alertStatusOpen;
+
+  /// No description provided for @alertStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get alertStatusClosed;
+
+  /// No description provided for @alertStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get alertStatusPending;
+
   /// No description provided for @buttonAccept.
   ///
   /// In en, this message translates to:
@@ -166,6 +208,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get buttonSearch;
+
+  /// No description provided for @exceptionBadRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Bad request'**
+  String get exceptionBadRequest;
+
+  /// No description provided for @exceptionForbiddenRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions not valid'**
+  String get exceptionForbiddenRequest;
+
+  /// No description provided for @exceptionGenericNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized, retry login'**
+  String get exceptionGenericNotAuthorized;
+
+  /// No description provided for @exceptionNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error'**
+  String get exceptionNetwork;
+
+  /// No description provided for @exceptionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource not found'**
+  String get exceptionNotFound;
 
   /// No description provided for @errorAccountBlocked.
   ///

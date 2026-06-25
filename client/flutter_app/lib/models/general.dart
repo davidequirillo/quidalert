@@ -283,12 +283,14 @@ class User {
 
 class Alert {
   final String id;
+  final String type;
   final String description;
   final String status;
   final DateTime? createdAt;
 
   Alert({
     required this.id,
+    required this.type,
     required this.description,
     required this.status,
     required this.createdAt,
@@ -306,9 +308,11 @@ class Alert {
     final DateTime? createdAt = json['created_at'] != null
         ? DateTime.parse(json['created_at'])
         : null;
+    final String type = json['type'] ?? '';
     final String description = json['description'] ?? '';
     return Alert(
       id: id,
+      type: type,
       description: description,
       status: status,
       createdAt: createdAt,

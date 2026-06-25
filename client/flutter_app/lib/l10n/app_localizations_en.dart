@@ -9,6 +9,27 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get alertTypeGeneral => 'General';
+
+  @override
+  String get alertTypeLocal => 'Local';
+
+  @override
+  String get alertTypeEmpty => 'Empty';
+
+  @override
+  String get alertTypeManaged => 'Managed';
+
+  @override
+  String get alertStatusOpen => 'Open';
+
+  @override
+  String get alertStatusClosed => 'Closed';
+
+  @override
+  String get alertStatusPending => 'Pending';
+
+  @override
   String get buttonAccept => 'Accept';
 
   @override
@@ -43,6 +64,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get buttonSearch => 'Search';
+
+  @override
+  String get exceptionBadRequest => 'Bad request';
+
+  @override
+  String get exceptionForbiddenRequest => 'Permissions not valid';
+
+  @override
+  String get exceptionGenericNotAuthorized => 'Not authorized, retry login';
+
+  @override
+  String get exceptionNetwork => 'Network error';
+
+  @override
+  String get exceptionNotFound => 'Resource not found';
 
   @override
   String get errorAccountBlocked => 'Account blocked';
