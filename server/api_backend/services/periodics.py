@@ -4,7 +4,12 @@
 
 import asyncio
 from datetime import timedelta
+from sqlmodel import select
 from fakeredis.aioredis import FakeRedis
+from models.general import (
+    User, UserLanguage, UserRole,
+    Alert
+)
 from services.security import (
     now_tz_aware,
     GEOPOSITION_TOKEN_TTL_MINUTES)
@@ -34,10 +39,17 @@ from core.dbmgr import (
 
 LOCATIONS_TTL_HOURS = 48
 
-# expiration threshold: same as geoposition token TTL, 
+# Chief demotion expiration threshold: same as geoposition token TTL, 
 # since the demotion is linked to the geoposition update and should last as long as the token validity
 # note: we add a small grace period of 5 minutes to avoid edge cases of demotions being removed just before the token expires
 CHIEF_DEMOTIONS_TTL_MINUTES = GEOPOSITION_TOKEN_TTL_MINUTES + 5
+
+# Expiration threshold for alerts: 18 months
+ALERT_TTL_DAYS = 30 * 18 # approximately 18 months
+
+# User pending deletion thresholds: 30 days (1 month) for deactivation, 2 years for complete deletion from the database
+USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS = 30
+USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS = 30 * 24 # 2 years approximately
 
 async def do_locations_cleanup(redis_handle):
     if isinstance(redis_handle, cluster.RedisCluster):
@@ -186,3 +198,80 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client,
         deleted_in_shard += len(expired_user_ids)
         await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
+
+def do_accounts_cleanup(db_session):
+    """
+    This function is called periodically to clean up accounts that have been pending deletion for too long.
+    It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
+    If the period is less than 30 days, nothing happens, and the user can re-login if he changes his mind and wants to keep the account active.
+    If the period is 30 days or more, the user is not destroyed from the database, but is deactivated, and his personal data is removed completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
+    If the period is longer than 2 years, the user is destroyed completely from the database.
+    """
+    now = now_tz_aware()
+    deactivation_threshold = timedelta(days=USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS)
+    destruction_threshold = timedelta(days=USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS)
+    # Query users who are pending deletion and have exceeded the threshold
+    users_to_delete = db_session.exec(select(User).where(
+        User.pending_delete_since != None)).all()
+    deleted_count = 0
+    deactivated_count = 0
+    for user in users_to_delete:
+        pending_duration = now - user.pending_delete_since
+        if pending_duration > destruction_threshold:
+            destroy_account(user, db_session)
+            deleted_count += 1
+        elif pending_duration > deactivation_threshold:
+            deactivate_account(user, db_session)
+            deactivated_count += 1 
+    db_session.commit()
+    return deleted_count
+
+def deactivate_account(user, db_session):
+    user.is_active = False
+    # Remove personal data (except email)
+    user.firstname = "Unknown firstname"
+    user.surname = "Unknown surname"
+    user.street = "Unknown street"
+    user.city = "Unknown city"
+    user.province = "Unknown province"
+    user.zipcode = "00000"
+    user.country = "Unknown country"
+    user.phone = "0000000000"
+    user.is_superuser = False
+    user.is_admin = False
+    user.is_officer = False
+    user.is_chief = False
+    user.language = UserLanguage.en.value
+    user.role = UserRole.citizen.value
+    user.is_reliable = True
+    user.is_blocked = False
+    user.reliability_score = 100
+    user.last_reliability_score_at = None
+    user.last_login_done_at = None
+    db_session.add(user)
+
+def destroy_account(user, db_session):
+    # To implement: remove all related data (alerts, messages, etc.) before deleting the user
+    # delete the user from the database
+    pass
+
+def do_alerts_cleanup(db_session):
+    """
+    This function is called periodically to clean up old alerts.
+    """
+    now = now_tz_aware()
+    # Query alerts that are pending and have exceeded the threshold
+    alerts_to_delete = db_session.exec(select(Alert).where(
+        Alert.created_at < (now - timedelta(days=ALERT_TTL_DAYS))
+    )).all()
+    deleted_count = 0
+    for alert in alerts_to_delete:
+        destroy_alert(alert, db_session)
+        deleted_count += 1
+    db_session.commit()
+    return deleted_count
+
+def destroy_alert(alert, db_session):
+    # To implement: remove all related data (messages, etc.) before deleting the alert
+    # delete the alert from the database
+    pass

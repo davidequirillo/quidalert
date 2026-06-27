@@ -50,6 +50,10 @@ class UserBase(SQLModel, table=False):
     email: EmailStr = Field(index=True, nullable=False, unique=True, min_length=3, max_length=128)
     language: str = Field(default=UserLanguage.en.value, nullable=False)
 
+    __table_args__ = (
+        Index("idx_users_surname_firstname", "surname", "firstname"),
+    )
+
     @field_validator("language")
     @classmethod
     def validate_language(cls, s):
@@ -117,7 +121,7 @@ class UserOut(UserBase, table=False):
     is_admin: bool = Field(default=False, nullable=False)
     is_officer: bool = Field(default=False, nullable=False)
     is_chief: bool = Field(default=False, nullable=False)
-    role: str = Field(default=UserRole.citizen.value, nullable=False)
+    role: str = Field(default=UserRole.citizen.value, nullable=False, min_length=1, max_length=32)
     is_reliable: bool = Field(default=True, nullable=False)
     # At the moment, we don't think about overflow issues with the reliability score:
     # it's quite hard to reach very high values or very low values, and in case we can easily change the type to a bigger integer
@@ -126,6 +130,7 @@ class UserOut(UserBase, table=False):
     is_blocked: bool = Field(default=False, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
+    pending_delete_since: Optional[datetime] = Field(default=None)
     reset_expires_at: Optional[datetime] = Field(default=None)
     reset_attempts: int = Field(default=0, nullable=False)
     reset_locked_until: Optional[datetime] = Field(default=None)
@@ -159,7 +164,42 @@ class UserOut(UserBase, table=False):
     notes: Optional[str] = Field(default=None, min_length=0, max_length=256, nullable=True)
     
     __table_args__ = (
-        Index("ix_users_authorized_by_id", "authorized_by", "id"),
+        Index(
+            "idx_users_is_admin_partial",
+            "is_admin",
+            postgresql_where="is_admin IS TRUE",
+        ),
+        Index(
+            "idx_users_is_officer_partial",
+            "is_officer",
+            postgresql_where="is_officer IS TRUE",
+        ),
+        Index(
+            "idx_users_is_chief_partial",
+            "is_chief",
+            postgresql_where="is_chief IS TRUE",
+        ),
+        Index(
+            "idx_users_is_reliable_partial",
+            "is_reliable",
+            postgresql_where="is_reliable IS FALSE",
+        ),
+        Index(
+            "idx_users_is_blocked_partial",
+            "is_blocked",
+            postgresql_where="is_blocked IS TRUE",
+        ),
+        Index(
+            "idx_users_role_partial",
+            "role",
+            postgresql_where="role <> 'citizen'",
+        ),
+        Index(
+            "idx_users_pending_delete_since_partial",
+            "pending_delete_since",
+            postgresql_where="pending_delete_since IS NOT NULL",
+        ),
+        Index("idx_users_authorized_by_id", "authorized_by", "id"),
     )
     
     @field_validator("role")
@@ -278,7 +318,7 @@ class WhiteListEntry(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
 
     __table_args__ = (
-        Index("ix_whitelist_entries_created_by_id", "created_by", "id"),
+        Index("idx_whitelist_entries_created_by_id", "created_by", "id"),
     )
 
 class EmailListDict(BaseModel):
