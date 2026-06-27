@@ -1,8 +1,8 @@
-"""initial migration: users table, whitelist table, alerts table, etc.
+"""initial migration: users table, whitelist table, alerts, etc.
 
-Revision ID: c50935a3a081
+Revision ID: 96a500e36e62
 Revises: 
-Create Date: 2026-03-23 20:33:47.232917
+Create Date: 2026-06-27 19:26:11.442435
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'c50935a3a081'
+revision: str = '96a500e36e62'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,12 +32,14 @@ def upgrade() -> None:
     sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('is_officer', sa.Boolean(), nullable=False),
     sa.Column('is_chief', sa.Boolean(), nullable=False),
-    sa.Column('role', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=False),
     sa.Column('is_reliable', sa.Boolean(), nullable=False),
     sa.Column('reliability_score', sa.Integer(), nullable=False),
+    sa.Column('last_reliability_score_at', sa.DateTime(), nullable=True),
     sa.Column('is_blocked', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('activation_expires_at', sa.DateTime(), nullable=True),
+    sa.Column('pending_delete_since', sa.DateTime(), nullable=True),
     sa.Column('reset_expires_at', sa.DateTime(), nullable=True),
     sa.Column('reset_attempts', sa.Integer(), nullable=False),
     sa.Column('reset_locked_until', sa.DateTime(), nullable=True),
@@ -49,6 +51,7 @@ def upgrade() -> None:
     sa.Column('login_locked_until', sa.DateTime(), nullable=True),
     sa.Column('last_login_mail_code_at', sa.DateTime(), nullable=True),
     sa.Column('last_login_done_at', sa.DateTime(), nullable=True),
+    sa.Column('last_2fa_success_at', sa.DateTime(), nullable=True),
     sa.Column('last_login_mail_confirmation_at', sa.DateTime(), nullable=True),
     sa.Column('last_refresh_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -70,7 +73,14 @@ def upgrade() -> None:
     sa.Column('login_code_hash', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_users_authorized_by_id', 'users', ['authorized_by', 'id'], unique=False)
+    op.create_index('idx_users_authorized_by_id', 'users', ['authorized_by', 'id'], unique=False)
+    op.create_index('idx_users_is_admin_partial', 'users', ['is_admin'], unique=False, postgresql_where='is_admin IS TRUE')
+    op.create_index('idx_users_is_blocked_partial', 'users', ['is_blocked'], unique=False, postgresql_where='is_blocked IS TRUE')
+    op.create_index('idx_users_is_chief_partial', 'users', ['is_chief'], unique=False, postgresql_where='is_chief IS TRUE')
+    op.create_index('idx_users_is_officer_partial', 'users', ['is_officer'], unique=False, postgresql_where='is_officer IS TRUE')
+    op.create_index('idx_users_is_reliable_partial', 'users', ['is_reliable'], unique=False, postgresql_where='is_reliable IS FALSE')
+    op.create_index('idx_users_pending_delete_since_partial', 'users', ['pending_delete_since'], unique=False, postgresql_where='pending_delete_since IS NOT NULL')
+    op.create_index('idx_users_role_partial', 'users', ['role'], unique=False, postgresql_where="role <> 'citizen'")
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_table('whitelist_entries',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -79,17 +89,20 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_whitelist_entries_created_by_id', 'whitelist_entries', ['created_by', 'id'], unique=False)
+    op.create_index('idx_whitelist_entries_created_by_id', 'whitelist_entries', ['created_by', 'id'], unique=False)
     op.create_index(op.f('ix_whitelist_entries_email'), 'whitelist_entries', ['email'], unique=True)
     op.create_table('alerts',
-    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=False),
+    sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+    sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=512), nullable=False),
     sa.Column('latitude', sa.Float(), nullable=False),
     sa.Column('longitude', sa.Float(), nullable=False),
+    sa.Column('radius', sa.Float(), nullable=False),
     sa.Column('address', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('radius', sa.Float(), nullable=False),
     sa.Column('severity', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('is_pending', sa.Boolean(), nullable=False),
+    sa.Column('spread_count', sa.Integer(), nullable=False),
     sa.Column('is_closed', sa.Boolean(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -115,6 +128,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('alert_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('is_manager', sa.Boolean(), nullable=False),
     sa.Column('vote', sa.Integer(), nullable=False),
     sa.Column('closing_vote', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['alert_id'], ['alerts.id'], ondelete='CASCADE'),
@@ -123,12 +137,25 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_alerted_users_alert_id'), 'alerted_users', ['alert_id'], unique=False)
     op.create_index(op.f('ix_alerted_users_user_id'), 'alerted_users', ['user_id'], unique=False)
+    op.create_table('messages',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('alert_id', sa.Integer(), nullable=False),
+    sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('content', sqlmodel.sql.sqltypes.AutoString(length=512), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.ForeignKeyConstraint(['alert_id'], ['alerts.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_messages_alert_id'), 'messages', ['alert_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_messages_alert_id'), table_name='messages')
+    op.drop_table('messages')
     op.drop_index(op.f('ix_alerted_users_user_id'), table_name='alerted_users')
     op.drop_index(op.f('ix_alerted_users_alert_id'), table_name='alerted_users')
     op.drop_table('alerted_users')
@@ -138,9 +165,16 @@ def downgrade() -> None:
     op.drop_index('idx_alerts_created_at_lat_long', table_name='alerts')
     op.drop_table('alerts')
     op.drop_index(op.f('ix_whitelist_entries_email'), table_name='whitelist_entries')
-    op.drop_index('ix_whitelist_entries_created_by_id', table_name='whitelist_entries')
+    op.drop_index('idx_whitelist_entries_created_by_id', table_name='whitelist_entries')
     op.drop_table('whitelist_entries')
     op.drop_index(op.f('ix_users_email'), table_name='users')
-    op.drop_index('ix_users_authorized_by_id', table_name='users')
+    op.drop_index('idx_users_role_partial', table_name='users', postgresql_where="role <> 'citizen'")
+    op.drop_index('idx_users_pending_delete_since_partial', table_name='users', postgresql_where='pending_delete_since IS NOT NULL')
+    op.drop_index('idx_users_is_reliable_partial', table_name='users', postgresql_where='is_reliable IS FALSE')
+    op.drop_index('idx_users_is_officer_partial', table_name='users', postgresql_where='is_officer IS TRUE')
+    op.drop_index('idx_users_is_chief_partial', table_name='users', postgresql_where='is_chief IS TRUE')
+    op.drop_index('idx_users_is_blocked_partial', table_name='users', postgresql_where='is_blocked IS TRUE')
+    op.drop_index('idx_users_is_admin_partial', table_name='users', postgresql_where='is_admin IS TRUE')
+    op.drop_index('idx_users_authorized_by_id', table_name='users')
     op.drop_table('users')
     # ### end Alembic commands ###

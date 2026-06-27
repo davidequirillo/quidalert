@@ -43,7 +43,10 @@ from services.network import (
     send_activation_mail, send_reset_code_mail, send_reset_successful_mail,
     send_login_successful_mail, send_login_code_mail
     )
-from services.periodics import do_locations_cleanup, do_demotions_cleanup
+from services.periodics import (
+    do_locations_cleanup, do_demotions_cleanup,
+    do_alerts_cleanup, do_accounts_cleanup
+    )
 from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
@@ -97,6 +100,18 @@ async def init_engines(app: FastAPI):
         trigger=CronTrigger(hour=17, minute=15), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_demotions_job_v1",
+    )
+    app.state.scheduler.add_job(
+        do_alerts_cleanup,
+        trigger=CronTrigger(hour=15, minute=15), # UTC time
+        args=[app.state.db_engine],
+        id="cleanup_old_alerts_job_v1",
+    )
+    app.state.scheduler.add_job(
+        do_accounts_cleanup,
+        trigger=CronTrigger(hour=13, minute=15), # UTC time
+        args=[app.state.db_engine],
+        id="cleanup_dismissed_accounts_job_v1",
     )
     print("Starting periodic tasks scheduler...")
     app.state.scheduler.start()
@@ -165,7 +180,7 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
         raise TokenNotValidException()
     statement = select(User).where(User.id == user_id_as_uuid)
     user = db_session.exec(statement).first()
-    if user is None:
+    if (user is None) or (not user.is_active):
         raise TokenNotValidException()
     if (user.is_blocked) and (not user.is_superuser):
         raise TokenNotValidException()
@@ -242,6 +257,8 @@ def refresh_auth_tokens(
         if (user.last_reliability_score_at is None) or (user.last_reliability_score_at < (now - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS))):
             user.reliability_score = USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
             user.last_reliability_score_at = now
+    if user.pending_delete_since is not None:
+        user.pending_delete_since = None # no more in pending delete status after an eventual dismissal, because the user has changed idea (he has refreshed the auth tokens, so he wants to keep the account active)
     db_session.add(user)
     db_session.add(rtoken)
     db_session.commit()
@@ -285,6 +302,30 @@ def revoke_token(
     db_session.add(rtoken)
     db_session.commit()    
     return {"message": "Logout successful"}
+
+@app.post("/api/dismiss-account")
+def dismiss_account(
+    current_user: User = Depends(get_current_user),
+    db_session: Session = Depends(get_db_session)
+):
+    if (current_user.is_superuser) or (current_user.is_admin):
+        raise forbidden_exception() # superuser and admins cannot dismiss their accounts, because they are needed for the system to work
+    if (current_user.is_officer):
+        raise forbidden_exception() # officers cannot dismiss their accounts, because they are needed for the system to work
+    now = now_tz_naive()
+    current_user.pending_delete_since = now
+    db_session.add(current_user)
+    # We revoke the user refresh token (forcing logout)
+    statement = select(RefreshToken).where(RefreshToken.user_id == current_user.id)
+    rtoken = db_session.exec(statement).first()
+    if rtoken:
+        rtoken.is_revoked = True
+        rtoken.fcm_token = None
+        rtoken.fcm_token_updated_at = None
+        rtoken.updated_at = now
+        db_session.add(rtoken)
+    db_session.commit()
+    return {"message": "Account dismissal successful"}
 
 @app.post("/api/auth/login")
 def login(data: LoginSchema,
@@ -381,6 +422,8 @@ def login(data: LoginSchema,
         device_info=data.device_model,
         updated_at=now
     )
+    if user.pending_delete_since is not None:
+        user.pending_delete_since = None # no more in pending delete status after an eventual dismissal, because the user has changed idea (he has logged in, so he wants to keep the account active)
     if data.language:
         user.language = data.language
     user.last_login_done_at = now
@@ -489,6 +532,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         is_active=False,
         activation_code=act_token,
         activation_expires_at=act_expires_at,
+        pending_delete_since=now, # we set this field to now, so that the user can be deleted if not activated and too much time passes
         authorized_by=auth_by,
         authorized_at=auth_at
     )
@@ -531,6 +575,7 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
         title=i18n.langmap[user.language]["act_done_title"]
         message=i18n.langmap[user.language]["act_done"]
         user.is_active = True
+        user.pending_delete_since = None # no more in pending delete status, because now the user is active
         db_session.add(user)
         db_session.commit()
     return templates.TemplateResponse(
