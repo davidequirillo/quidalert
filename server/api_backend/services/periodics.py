@@ -4,11 +4,11 @@
 
 import asyncio
 from datetime import timedelta
-from sqlmodel import select
+from sqlmodel import select, update
 from fakeredis.aioredis import FakeRedis
 from models.general import (
     User, UserLanguage, UserRole,
-    Alert
+    Alert, Message
 )
 from services.security import (
     now_tz_aware,
@@ -234,9 +234,11 @@ def deactivate_account(user, db_session):
     user.street = "Unknown street"
     user.city = "Unknown city"
     user.province = "Unknown province"
-    user.zipcode = "00000"
+    user.postal_code = "00000"
     user.country = "Unknown country"
     user.phone = "0000000000"
+    user.birthdate = None
+    user.notes = None
     user.is_superuser = False
     user.is_admin = False
     user.is_officer = False
@@ -249,6 +251,9 @@ def deactivate_account(user, db_session):
     user.last_reliability_score_at = None
     user.last_login_done_at = None
     db_session.add(user)
+    # Now we reset all alert messages
+    db_session.exec(update(Message).where(Message.user_id == user.id).values(content="This message has been removed due to account deactivation."))
+    db_session.commit()
 
 def destroy_account(user, db_session):
     # To implement: remove all related data (alerts, messages, etc.) before deleting the user

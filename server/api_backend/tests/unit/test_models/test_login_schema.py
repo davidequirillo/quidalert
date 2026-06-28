@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import LoginSchema
+from models.general import LoginSchema, UserLanguage
 
 def test_login_schema_success():
     data = {
@@ -13,6 +13,7 @@ def test_login_schema_success():
     request = LoginSchema.model_validate(data)
     assert request.email == data["email"]
     assert request.password == data["password"]
+    assert request.language == UserLanguage.en.value  # Default language should be English if not provided
 
 def test_login_schema_empty_credentials():
     data = {
@@ -123,3 +124,21 @@ def test_login_schema_device_model_valid():
     }
     request = LoginSchema.model_validate(data)
     assert request.device_model == data["device_model"]
+
+def test_login_schema_wrong_language():
+    data = {
+        "email": "testuser@example.com",
+        "password": "Password12345?",
+        "language": "invalid_language"
+    }
+    with pytest.raises(ValueError):
+        LoginSchema.model_validate(data)
+
+def test_login_schema_valid_language():
+    data = {
+        "email": "testuser@example.com",
+        "password": "Password12345?",
+        "language": UserLanguage.it.value  # Valid language
+    }
+    request = LoginSchema.model_validate(data)
+    assert request.language == data["language"]
