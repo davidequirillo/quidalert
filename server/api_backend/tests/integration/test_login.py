@@ -8,7 +8,8 @@ from sqlmodel import select
 from models.general import (
     User, RefreshToken,
     USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS,
-    USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+    USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE,
+    UserLanguage
 )
 from services.security import (
     get_password_hash, 
@@ -774,3 +775,40 @@ def test_login_with_reliability_score_in_cooldown(client, db_session, not_logged
     # It should be unchanged, so it should still be the old timestamp, which is 10 minutes ago
     assert user.last_reliability_score_at < now_tz_naive() - timedelta(minutes=5)
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=15)
+
+def test_login_with_language_preference(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # We set the language preference to English
+    user.language = UserLanguage.en.value # Default language is English
+    db_session.commit() # Ensure the updated password hash and language preference are saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    # We set the language to Italian in the login request
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token, "language": "it"}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The language preference should be updated to Italian
+    assert user.language == UserLanguage.it.value
+
+def test_login_with_language_preference_invalid(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # We set the language preference to English
+    user.language = UserLanguage.en.value # Default language is English
+    db_session.commit() # Ensure the updated password hash and language preference are saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    # We set an invalid language in the login request
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token, "language": "invalid"}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

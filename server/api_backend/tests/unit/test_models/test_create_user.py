@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import UserIn, User, UserLanguage
+from models.general import UserIn, User, UserLanguage, UserRole
 
 ## Test UserIn model
 def test_create_user_success():
@@ -145,3 +145,21 @@ def test_create_user_check_default_timestamp_fields():
     user = User.model_validate(data)
     assert user.created_at is not None
     assert user.last_reset_done_at is not None
+    assert user.pending_delete_since is None
+
+def test_create_user_check_default_boolean_fields():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password_hash": "hashed_password"
+    }
+    user = User.model_validate(data)
+    assert user.is_active is True
+    assert user.is_superuser is False
+    assert user.is_admin is False
+    assert user.is_officer is False
+    assert user.is_chief is False
+    assert user.role == UserRole.citizen.value
+    assert user.is_reliable is True
+    assert user.is_blocked is False

@@ -28,20 +28,24 @@ def seed_superuser_if_db_is_empty():
     with Session(db_engine) as session:
         first_user = session.exec(select(User)).first()
         if first_user:
-            print("Superuser already exists. Skipping superuser seeding.")
+            print("Superuser already exists because the database is not empty. Skipping superuser seeding.")
             return
         print("Creating superuser...")
         superuser = User.model_validate({
             "firstname": "Admin",
-            "lastname": "User",
+            "surname": "User",
             "email": "superuser@example.com",
-            "language": "en",
-            "hashed_password": get_password_hash(settings.admin_pass),
+            "language": UserLanguage.en.value,
+            "password_hash": get_password_hash(settings.admin_pass),
             "is_superuser": True,
             "is_admin": True,
+            "is_officer": False,
+            "is_chief": False,
+            "role": UserRole.citizen.value,
             "is_active": True,
             "activation_code": "fake-superuser-activation-code",
             "activation_code_expires_at": activation_expiry(),
+            "pending_delete_since": None,
             "authorized_by": None,
             "authorized_at": None
         })
@@ -124,6 +128,7 @@ def seed_users():
                         "is_active": True,
                         "activation_code": f"fake-{user_type}-activation-code-{i}",
                         "activation_code_expires_at": activation_expiry(),
+                        "pending_delete_since": None,
                         "authorized_by": authorized_by,
                         "authorized_at": authorized_at
                     })

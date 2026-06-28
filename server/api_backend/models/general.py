@@ -51,7 +51,7 @@ class UserBase(SQLModel, table=False):
     language: str = Field(default=UserLanguage.en.value, nullable=False)
 
     __table_args__ = (
-        Index("idx_users_surname_firstname", "surname", "firstname"),
+        Index("ixc_users_surname_firstname", "surname", "firstname"),
     )
 
     @field_validator("language")
@@ -165,41 +165,41 @@ class UserOut(UserBase, table=False):
     
     __table_args__ = (
         Index(
-            "idx_users_is_admin_partial",
+            "ixp_users_is_admin_partial",
             "is_admin",
             postgresql_where="is_admin IS TRUE",
         ),
         Index(
-            "idx_users_is_officer_partial",
+            "ixp_users_is_officer_partial",
             "is_officer",
             postgresql_where="is_officer IS TRUE",
         ),
         Index(
-            "idx_users_is_chief_partial",
+            "ixp_users_is_chief_partial",
             "is_chief",
             postgresql_where="is_chief IS TRUE",
         ),
         Index(
-            "idx_users_is_reliable_partial",
+            "ixp_users_is_reliable_partial",
             "is_reliable",
             postgresql_where="is_reliable IS FALSE",
         ),
         Index(
-            "idx_users_is_blocked_partial",
+            "ixp_users_is_blocked_partial",
             "is_blocked",
             postgresql_where="is_blocked IS TRUE",
         ),
         Index(
-            "idx_users_role_partial",
+            "ixp_users_role_partial",
             "role",
             postgresql_where="role <> 'citizen'",
         ),
         Index(
-            "idx_users_pending_delete_since_partial",
+            "ixp_users_pending_delete_since_partial",
             "pending_delete_since",
             postgresql_where="pending_delete_since IS NOT NULL",
         ),
-        Index("idx_users_authorized_by_id", "authorized_by", "id"),
+        Index("ixc_users_authorized_by_id", "authorized_by", "id"),
     )
     
     @field_validator("role")
@@ -318,7 +318,7 @@ class WhiteListEntry(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
 
     __table_args__ = (
-        Index("idx_whitelist_entries_created_by_id", "created_by", "id"),
+        Index("ixc_whitelist_entries_created_by_id", "created_by", "id"),
     )
 
 class EmailListDict(BaseModel):
@@ -429,7 +429,7 @@ class Alert(AlertOut, table=True):
         nullable=False,
         index=True)
 
-    __table_args__ = (Index("idx_alerts_created_at_lat_long", "created_at", "latitude", "longitude"),)
+    __table_args__ = (Index("ixc_alerts_created_at_lat_long", "created_at", "latitude", "longitude"),)
 
 class UserOutWithAlerts(BaseModel):
     user: UserOut
@@ -493,7 +493,8 @@ class Message(SQLModel, table=True):
     user_id: uuid.UUID = Field(
         foreign_key="users.id", 
         ondelete="CASCADE",
-        nullable=False
+        nullable=False,
+        index=True
     )
     content: str = Field(nullable=False, min_length=1, max_length=512)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
