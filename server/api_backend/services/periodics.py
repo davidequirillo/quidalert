@@ -4,7 +4,7 @@
 
 import asyncio
 from datetime import timedelta
-from sqlmodel import select, update
+from sqlmodel import Session, select, update, delete
 from fakeredis.aioredis import FakeRedis
 from models.general import (
     User, UserLanguage, UserRole,
@@ -23,7 +23,13 @@ from core.periodic_events import (
     log_cleanup_expired_locations_shard,
     log_cleanup_expired_demotions_completed,
     log_cleanup_expired_locations_in_cooldown,
-    log_cleanup_expired_demotions_in_cooldown
+    log_cleanup_expired_demotions_in_cooldown,
+    log_cleanup_dismissed_users_started,
+    log_cleanup_dismissed_users_error,
+    log_cleanup_dismissed_users_completed,
+    log_cleanup_old_alerts_started,
+    log_cleanup_old_alerts_error,
+    log_cleanup_old_alerts_completed
     )
 from core.dbmgr import (
     redis, cluster, RedisHandleTypeError,
@@ -199,34 +205,58 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client,
         await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
 
-def do_accounts_cleanup(db_session):
+def do_users_cleanup(db_engine):
     """
     This function is called periodically to clean up accounts that have been pending deletion for too long.
     It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
     If the period is less than 30 days, nothing happens, and the user can re-login if he changes his mind and wants to keep the account active.
-    If the period is 30 days or more, the user is not destroyed from the database, but is deactivated, and his personal data is removed completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
-    If the period is longer than 2 years, the user is destroyed completely from the database.
+    If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is removed completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
+    If the period is longer than 2 years, the user is destroyed completely from the database with all his related data (alerts, messages, etc.)
     """
     now = now_tz_aware()
-    deactivation_threshold = timedelta(days=USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS)
-    destruction_threshold = timedelta(days=USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS)
-    # Query users who are pending deletion and have exceeded the threshold
-    users_to_delete = db_session.exec(select(User).where(
-        User.pending_delete_since != None)).all()
-    deleted_count = 0
-    deactivated_count = 0
-    for user in users_to_delete:
-        pending_duration = now - user.pending_delete_since
-        if pending_duration > destruction_threshold:
-            destroy_account(user, db_session)
-            deleted_count += 1
-        elif pending_duration > deactivation_threshold:
-            deactivate_account(user, db_session)
-            deactivated_count += 1 
-    db_session.commit()
-    return deleted_count
+    deactivation_timedelta = timedelta(days=USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS)
+    destruction_timedelta = timedelta(days=USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS)
+    log_cleanup_dismissed_users_started()
+    with Session(db_engine) as db_session:
+        try:
+            users_to_deact_stmt = (select(User)
+                .where(User.pending_delete_since != None)
+                .where(User.pending_delete_since < now - deactivation_timedelta) # type: ignore
+                .where(User.is_active == True))
+            users_to_destroy_stmt = (select(User.id)
+                .where(User.pending_delete_since != None)
+                .where(User.pending_delete_since < now - destruction_timedelta)) # type: ignore
+            users_to_deact = db_session.exec(users_to_deact_stmt).all()
+            users_to_destroy_ids = db_session.exec(users_to_destroy_stmt).all()
+        except Exception as e:
+            log_cleanup_dismissed_users_error(detail=str(e))
+            return 0, 0
+        deleted_count = 0
+        deactivated_count = 0
+        # We deactivate users in a loop, because we need to anonymize their personal data and update related alerts and messages
+        for user in users_to_deact:
+            with db_session.begin_nested():
+                try: 
+                    deactivate_user(user, db_session)
+                    db_session.flush() # flush the changes to the database before committing
+                    deactivated_count += 1
+                except Exception as e:
+                    log_cleanup_dismissed_users_error(detail=f"Error deactivating user {user.id}: {str(e)}")
+        db_session.commit()
+        # We delete users in bulk, leaving to the dbms the responsibility of handling foreign key constraints and cascading deletions defined (see models/general.py)
+        if users_to_destroy_ids:
+            try:
+                delete_stmt = delete(User).where(User.id.in_(users_to_destroy_ids)) # type: ignore
+                db_session.exec(delete_stmt)
+                deleted_count = len(users_to_destroy_ids)
+                db_session.commit()
+            except Exception as e:
+                log_cleanup_dismissed_users_error(detail=str(e))
+                db_session.rollback()
+    log_cleanup_dismissed_users_completed(detail=f"Cleanup completed: {deleted_count} users destroyed, {deactivated_count} users deactivated")
+    return deleted_count, deactivated_count
 
-def deactivate_account(user, db_session):
+def deactivate_user(user, db_session):
     user.is_active = False
     # Remove personal data (except email)
     user.firstname = "Unknown firstname"
@@ -251,32 +281,27 @@ def deactivate_account(user, db_session):
     user.last_reliability_score_at = None
     user.last_login_done_at = None
     db_session.add(user)
-    # Now we reset all alert messages
-    db_session.exec(update(Message).where(Message.user_id == user.id).values(content="This message has been removed due to account deactivation."))
-    db_session.commit()
+    # Now we anonymize all alert messages related to this user
+    anonymous_msg = "This message has been removed due to account deactivation."
+    db_session.exec(update(Message).where(Message.user_id == user.id).values(content=anonymous_msg))
+    # We also reset all alert descriptions related to this user
+    anonymous_desc = "This alert description has been removed due to account deactivation."
+    db_session.exec(update(Alert).where(Alert.user_id == user.id).values(description=anonymous_desc))
 
-def destroy_account(user, db_session):
-    # To implement: remove all related data (alerts, messages, etc.) before deleting the user
-    # delete the user from the database
-    pass
-
-def do_alerts_cleanup(db_session):
+def do_alerts_cleanup(db_engine):
     """
     This function is called periodically to clean up old alerts.
     """
     now = now_tz_aware()
-    # Query alerts that are pending and have exceeded the threshold
-    alerts_to_delete = db_session.exec(select(Alert).where(
-        Alert.created_at < (now - timedelta(days=ALERT_TTL_DAYS))
-    )).all()
-    deleted_count = 0
-    for alert in alerts_to_delete:
-        destroy_alert(alert, db_session)
-        deleted_count += 1
-    db_session.commit()
+    log_cleanup_old_alerts_started(detail=f"Starting cleanup of alerts older than {ALERT_TTL_DAYS} days")
+    with Session(db_engine) as db_session:
+        try:
+            # We delete alerts in bulk, leaving to the dbms the responsibility of handling foreign key constraints and cascading deletions defined (see models/general.py)
+            statement = delete(Alert).where(Alert.created_at < (now - timedelta(days=ALERT_TTL_DAYS))) # type: ignore
+            deleted_count = db_session.exec(statement).rowcount
+            db_session.commit()
+        except Exception as e:
+            log_cleanup_old_alerts_error(detail=str(e))
+            return 0
+    log_cleanup_old_alerts_completed(detail=f"Cleanup completed: {deleted_count} alerts destroyed")
     return deleted_count
-
-def destroy_alert(alert, db_session):
-    # To implement: remove all related data (messages, etc.) before deleting the alert
-    # delete the alert from the database
-    pass

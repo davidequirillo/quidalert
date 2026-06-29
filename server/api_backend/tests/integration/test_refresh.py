@@ -169,6 +169,28 @@ def test_refresh_token_user_not_found(client, test_baseuser):
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
+def test_refresh_token_user_not_active(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    # Set the user to inactive
+    user.is_active = False
+    db_session.commit() # Ensure the updated active status is saved to the database
+    payload = {"refresh_token": refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == token_not_valid_exception().status_code
+    assert response.json()["detail"] == token_not_valid_exception().detail
+
+def test_refresh_token_user_is_active(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    assert user.is_active == True
+    payload = {"refresh_token": refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
+    assert "refresh_token" in response.json()
+    assert "gps_token" in response.json()
+
 def test_refresh_token_user_with_expired_reliability_score(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
@@ -206,3 +228,18 @@ def test_refresh_token_with_reliability_score_in_cooldown(client, db_session, te
     assert user.last_reliability_score_at is not None
     assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS - 2)
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS)
+
+def test_refresh_token_with_pending_delete_status(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    # Set the pending_delete_since to a recent past time to simulate a user that is pending deletion
+    user.pending_delete_since = now_tz_naive() - timedelta(days=1)
+    db_session.commit() # Ensure the updated pending_delete_since is saved to the database
+    payload = {"refresh_token": refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated pending_delete_since
+    # After refresh, the pending_delete_since should be cleared 
+    # because the user has refreshed his token (to continue using his account)
+    # so he is no longer considered pending deletion
+    assert user.pending_delete_since is None

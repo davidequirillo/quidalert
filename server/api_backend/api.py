@@ -45,7 +45,7 @@ from services.network import (
     )
 from services.periodics import (
     do_locations_cleanup, do_demotions_cleanup,
-    do_alerts_cleanup, do_accounts_cleanup
+    do_alerts_cleanup, do_users_cleanup
     )
 from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
@@ -108,10 +108,10 @@ async def init_engines(app: FastAPI):
         id="cleanup_old_alerts_job_v1",
     )
     app.state.scheduler.add_job(
-        do_accounts_cleanup,
+        do_users_cleanup,
         trigger=CronTrigger(hour=13, minute=15), # UTC time
         args=[app.state.db_engine],
-        id="cleanup_dismissed_accounts_job_v1",
+        id="cleanup_dismissed_users_job_v1",
     )
     print("Starting periodic tasks scheduler...")
     app.state.scheduler.start()

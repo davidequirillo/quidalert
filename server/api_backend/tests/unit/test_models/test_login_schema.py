@@ -13,7 +13,7 @@ def test_login_schema_success():
     request = LoginSchema.model_validate(data)
     assert request.email == data["email"]
     assert request.password == data["password"]
-    assert request.language == UserLanguage.en.value  # Default language should be English if not provided
+    assert request.language is None  # The login request language should be None if not provided
 
 def test_login_schema_empty_credentials():
     data = {
@@ -106,13 +106,20 @@ def test_login_schema_login_token_valid():
     }
     request = LoginSchema.model_validate(data)
     assert request.login_token == data["login_token"]
+    assert request.device_model is None  # The device_model should be None if not provided
+    assert request.language is None  # The language should be None if not provided
 
 def test_login_schema_device_model_invalid_length():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
-        "device_model": "d" * 257  # Invalid length (should be 0-256)
+        "device_model": "d" * 257  # Invalid length (should be 1-256)
     }
+    with pytest.raises(ValueError):
+        LoginSchema.model_validate(data)
+    # Another invalid length (we try "" which is 0 characters)
+    data["device_model"] = ""
+    # Not valid since the minimum length is 1 (if device_model is provided)
     with pytest.raises(ValueError):
         LoginSchema.model_validate(data)
 
@@ -120,7 +127,7 @@ def test_login_schema_device_model_valid():
     data = {
         "email": "testuser@example.com",
         "password": "PasswordSimpleButValid",
-        "device_model": "d" * 256  # Valid length (should be 0-256)
+        "device_model": "d" * 256  # Valid length (should be 1-256)
     }
     request = LoginSchema.model_validate(data)
     assert request.device_model == data["device_model"]

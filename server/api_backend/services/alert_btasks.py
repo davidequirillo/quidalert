@@ -431,7 +431,7 @@ def get_sender_fcm_token(alert, sender, request_info, db_engine):
     with Session(db_engine) as db_session:
         statement = select(RefreshToken).where(
             RefreshToken.user_id == sender.id).where(
-                RefreshToken.fcm_token is not None)
+                RefreshToken.fcm_token != None)
         try:
             rtoken = db_session.exec(statement).first()
             if rtoken:
