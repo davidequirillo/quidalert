@@ -262,6 +262,34 @@ def test_check_refresh_token_user_not_found_in_db(db_session, test_baseuser):
     except TokenNotValidException:
         assert True  # expected outcome
 
+def test_check_refresh_token_user_not_active(db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    # Set user as not active
+    user.is_active = False
+    db_session.commit()
+    db_session.refresh(user)
+    token: RefreshToken = test_baseuser['refresh_token']
+    # Create token data for a refresh token in the database
+    token_decoded = decode_token(token)
+    token_id = token_decoded['jti']
+    token_raw = token_decoded['raw']
+    user_id = str(user.id)
+    iat = from_datetime_to_timestamp(now_tz_aware())
+    exp = from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=REFRESH_TOKEN_TTL_MINUTES))
+    token_data = {
+        "sub": user_id,
+        "jti": token_id,
+        "raw": token_raw,
+        "type": "refresh",
+        "iat": iat,
+        "exp": exp
+    }
+    try:
+        check_refresh_token(token_data=token_data, db_session=db_session)
+        assert False, "Expected check_refresh_token to raise an exception for a user not active"
+    except TokenNotValidException: # if the user is not active, we consider the token as not valid
+        assert True  # expected outcome
+
 def test_check_refresh_token_iat_too_old(db_session, test_baseuser):
     # Create token data with "iat" too old
     user: User = test_baseuser['user']

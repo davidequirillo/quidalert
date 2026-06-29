@@ -55,3 +55,33 @@ def log_cleanup_expired_demotions_completed(detail: str = ""):
     logger.info(
         f"cleanup_expired_demotions_completed, detail={detail}"
     )
+
+def log_cleanup_dismissed_users_error(detail: str = ""):
+    logger.info(
+        f"cleanup_dismissed_users_error, detail={detail}"
+    )
+
+def log_cleanup_dismissed_users_started(detail: str = ""):
+    logger.info(
+        f"cleanup_dismissed_users_started, detail={detail}"
+    )
+
+def log_cleanup_dismissed_users_completed(detail: str = ""):
+    logger.info(
+        f"cleanup_dismissed_users_completed, detail={detail}"
+    )
+
+def log_cleanup_old_alerts_error(detail: str = ""):
+    logger.info(
+        f"cleanup_old_alerts_error, detail={detail}"
+    )
+
+def log_cleanup_old_alerts_started(detail: str = ""):
+    logger.info(
+        f"cleanup_old_alerts_started, detail={detail}"
+    )
+
+def log_cleanup_old_alerts_completed(detail: str = ""):
+    logger.info(
+        f"cleanup_old_alerts_completed, detail={detail}"
+    )

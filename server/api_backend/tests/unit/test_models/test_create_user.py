@@ -155,7 +155,7 @@ def test_create_user_check_default_boolean_fields():
         "password_hash": "hashed_password"
     }
     user = User.model_validate(data)
-    assert user.is_active is True
+    assert user.is_active is False # The default value for is_active should be False
     assert user.is_superuser is False
     assert user.is_admin is False
     assert user.is_officer is False

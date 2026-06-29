@@ -811,4 +811,28 @@ def test_login_with_language_preference_invalid(client, db_session, not_logged_t
     # We set an invalid language in the login request
     payload = {"email": user.email, "password": valid_password, "login_token": login_token, "language": "invalid"}
     response = client.post("/api/auth/login", json=payload)
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    # The language preference should remain unchanged
+    db_session.refresh(user)
+    assert user.language == UserLanguage.en.value
+
+def test_login_with_pending_delete_status(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # We set the user as pending deletion from yesterday (or recently)
+    user.pending_delete_since = now_tz_naive() - timedelta(days=1)
+    db_session.commit() # Ensure the updated password hash and pending deletion status are saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The pending_delete_since should be cleared after successful login, because the user has logged in and is active again
+    # It means: the user has confirmed that they want to keep their account, so the pending deletion is canceled
+    assert user.pending_delete_since is None

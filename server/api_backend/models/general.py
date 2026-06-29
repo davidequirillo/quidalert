@@ -267,7 +267,11 @@ class RefreshToken(SQLModel, table=True):
         primary_key=True,
         nullable=False
     )
-    user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False, index=True)
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id",
+        ondelete="CASCADE",
+        nullable=False, 
+        index=True)
     raw_hash: str = Field(nullable=False) # a random token hash    
     ip_address: Optional[str] = Field(default=None)
     device_info: Optional[str] = Field(default=None)
@@ -283,7 +287,7 @@ class LoginSchema(BaseModel):
     password: str
     login_code: Optional[str] = Field(default=None, min_length=6, max_length=6) # 2FA code
     login_token: Optional[str] = Field(default=None) # jwt token to skip 2FA
-    device_model: Optional[str] = Field(default=None, min_length=0, max_length=256)
+    device_model: Optional[str] = Field(default=None, min_length=1, max_length=256)
     language: Optional[str] = Field(default=None, min_length=2, max_length=8)
 
     @field_validator("login_code")

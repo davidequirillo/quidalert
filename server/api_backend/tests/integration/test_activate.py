@@ -117,6 +117,8 @@ def test_activate_successful(client, db_session, superuser_in_db, whitelist_entr
     # We check that the user is now active
     db_session.refresh(user)
     assert user.is_active == True
+    # The pending_delete_since should be cleared after activation
+    assert user.pending_delete_since is None
 
 def test_activate_already_active(client, db_session, superuser_in_db, whitelist_entry):
     assert superuser_in_db.id is not None
@@ -145,6 +147,8 @@ def test_activate_already_active(client, db_session, superuser_in_db, whitelist_
     response = client.get("/api/activate", params=activation_payload)
     assert response.status_code == status.HTTP_200_OK
     assert "already active" in response.content.decode()
+    # The pending_delete_since should remain cleared for an already active user
+    assert user.pending_delete_since is None
 
 def test_activate_code_missing_in_db(client, db_session, superuser_in_db, whitelist_entry):
     assert superuser_in_db.id is not None

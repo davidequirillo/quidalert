@@ -4,7 +4,7 @@
 
 from datetime import timedelta
 from sqlmodel import select
-from models.general import User
+from models.general import User, UserLanguage
 from core.settings import settings
 from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
 
@@ -172,7 +172,8 @@ def test_register_in_whitelist(client, db_session, superuser_in_db, whitelist_en
         "firstname": "John",
         "surname": "Doe",
         "email": "whitelisted@example.com",
-        "password": "MyValidPassword123!"
+        "password": "MyValidPassword123!",
+        "language": UserLanguage.it.value
     }     
     payload["email"] = whitelist_entry.email
     response = client.post("/api/register", json=payload)
@@ -191,6 +192,12 @@ def test_register_in_whitelist(client, db_session, superuser_in_db, whitelist_en
     assert results[0].activation_expires_at is not None
     assert results[0].activation_expires_at > now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS - 1)
     assert results[0].activation_expires_at <= now_tz_naive() + timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS)
+    # Check that the language is set correctly to Italian as specified in the payload
+    assert results[0].language == UserLanguage.it.value
+    # Check that the pending_delete_since is set correctly (it should be set to now)
+    assert results[0].pending_delete_since is not None
+    assert results[0].pending_delete_since > now_tz_naive() - timedelta(seconds=5) # the pending_delete_since should be set to now, with a small margin of error
+    assert results[0].pending_delete_since < now_tz_naive() + timedelta(seconds=5) # the pending_delete_since should be set to now, with a small margin of error
 
 def test_register_in_whitelist_with_email_uppercase(client, db_session, superuser_in_db, whitelist_entry):
     # Check the database to ensure the superuser already exists
@@ -215,6 +222,9 @@ def test_register_in_whitelist_with_email_uppercase(client, db_session, superuse
     results = db_session.exec(statement).all()
     assert len(results) == 1
     assert results[0].email == whitelist_entry.email # it should be lowercase
+    assert results[0].firstname == payload["firstname"]
+    assert results[0].surname == payload["surname"]
+    assert results[0].language == UserLanguage.en.value # default language should be English if not specified in the payload
 
 def test_register_duplicate_user(client, db_session, superuser_in_db, whitelist_entry):
     # Check the database to ensure the superuser already exists
