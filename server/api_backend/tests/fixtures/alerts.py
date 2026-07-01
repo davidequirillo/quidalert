@@ -47,7 +47,7 @@ def create_test_users(db_session):
         is_active=True,
         is_superuser=True,
         is_admin=True,
-        role=UserRole.citizen.value,
+        role=None,
         language=UserLanguage.en.value
     )
     db_session.add(superuser)
@@ -76,7 +76,7 @@ def create_test_users(db_session):
             surname=f"ChiefSurname{i}",
             is_active=True,
             is_chief=True,
-            role=UserRole.citizen.value,
+            role=None,
             language=UserLanguage.en.value,
             authorized_by=superuser.email,
             authorized_at=now_tz_naive()

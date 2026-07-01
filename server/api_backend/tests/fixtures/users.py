@@ -18,7 +18,7 @@ def setup_and_teardown(db_session):
         is_active=True,
         is_superuser=True,
         is_admin=True,
-        role=UserRole.citizen.value,
+        role=None,
         language=UserLanguage.en.value
     )
     db_session.add(superuser)
@@ -32,7 +32,7 @@ def setup_and_teardown(db_session):
             surname=f"User{i}",
             is_active=True,
             is_admin=True,
-            role=UserRole.citizen.value,
+            role=UserRole.volunteer.value, # Note: it can be any role, or None
             authorized_by=superuser.email,
             authorized_at=now_tz_naive(),
             language=UserLanguage.en.value
@@ -48,7 +48,7 @@ def setup_and_teardown(db_session):
             surname=f"User{i}",
             is_active=True,
             is_officer=True,
-            role=UserRole.citizen.value,
+            role=UserRole.volunteer.value, # Note: it can be any role, or None
             authorized_by=f"admin{i%2 + 1}@example.com", # Alternate authorization between the 2 admins
             authorized_at=now_tz_naive(),
             language=UserLanguage.en.value
@@ -64,16 +64,16 @@ def setup_and_teardown(db_session):
             surname=f"User{i}",
             is_active=True,
             is_chief=True,
-            role=UserRole.citizen.value,
+            role=UserRole.usar.value, # Note: it can be any role, or None
             authorized_by=f"admin{i%2 + 1}@example.com", # Alternate authorization between the 2 admins
             authorized_at=now_tz_naive(),
             language=UserLanguage.en.value
         )
         db_session.add(chief_user)
     db_session.commit()
-    roles = [r.value for r in UserRole]
+    roles = [None] + [r.value for r in UserRole]
     roles_len = len(roles)
-    # Create many users with random roles
+    # Create many base users with random roles
     for i in range(1, 23):
         random_role_index = i % roles_len
         test_user = User(

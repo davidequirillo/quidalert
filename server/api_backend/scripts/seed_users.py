@@ -41,7 +41,7 @@ def seed_superuser_if_db_is_empty():
             "is_admin": True,
             "is_officer": False,
             "is_chief": False,
-            "role": UserRole.citizen.value,
+            "role": None,
             "is_active": True,
             "activation_code": "fake-superuser-activation-code",
             "activation_code_expires_at": activation_expiry(),
@@ -103,17 +103,17 @@ def seed_users():
         try:
             for category, user_type, cardinality in zip(user_categories, user_types, user_cardinalities):
                 for i in range(1, cardinality+1):
-                    email = f"{user_type}{i}@example.com",
+                    email = f"{user_type}{i}@example.com"
                     whitelist_entry = session.exec(select(WhiteListEntry).where(WhiteListEntry.email == email)).first()
                     if not whitelist_entry:
                         print(f"Skipping {email} as it is not in the whitelist.")
                         continue                    
                     authorized_by = whitelist_entry.created_by
                     authorized_at = whitelist_entry.created_at
-                    if (user_type == "baseuser") and (i < int(cardinality / 10)):
+                    if (user_type == "baseuser") and (i <= int(cardinality / 10)):
                         role = fake.random.choice(user_roles)
                     else:
-                        role = UserRole.citizen.value
+                        role = None
                     user = User.model_validate({
                         "firstname": fake.first_name(),
                         "surname": fake.last_name(),

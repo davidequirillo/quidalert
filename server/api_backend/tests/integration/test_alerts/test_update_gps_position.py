@@ -76,7 +76,7 @@ def test_update_gps_position_invalid_coordinates(client, test_baseuser):
     # We create a valid GPS token for testing
     user = test_baseuser['user']
     assert user.is_chief is not None
-    assert user.role is not None
+    assert user.role is None # the default role is None (means a base role, a "citizen")
     gps_token = test_baseuser['gps_token']
     # We don't provide coordinates
     response = client.post('/api/update-gps-position', json={

@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import AlertIn, AlertOut, AlertType, string_as_uuid
+from models.general import AlertIn, AlertOut, AlertType
 
 def test_create_alert_empty_data():
     # It fails because a non empty description is required

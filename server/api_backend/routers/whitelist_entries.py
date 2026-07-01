@@ -4,9 +4,11 @@
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, delete, desc
-from core.exceptions import forbidden_exception
+from core.exceptions import forbidden_exception, invalid_request_exception
 from models.general import User, WhiteListEntry, EmailListDict
 from dependencies import get_db_session, get_current_user
+
+EMAIL_LIST_MAX_LENGTH_FOR_ADD = 100000
 
 router = APIRouter(
     tags=["Whitelist entries"]
@@ -53,11 +55,13 @@ def add_whitelist_entries(
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()
+        raise forbidden_exception()    
     failed_emails = []
     added_count = 0
     existing_count = 0
     skipped_count = 0
+    if len(dict.emails) > EMAIL_LIST_MAX_LENGTH_FOR_ADD:
+        raise invalid_request_exception(detail=f"Email list too long. Maximum allowed length is {EMAIL_LIST_MAX_LENGTH_FOR_ADD}")
     for e in dict.emails:
         try:
             if (e is None) or (e.strip() == ""):
@@ -127,7 +131,7 @@ def delete_whitelist_entries(
     elif mode == "all":
         if not current_user.is_admin: # officers cannot delete all entries
             raise forbidden_exception()
-        statement = delete(WhiteListEntry).where(True) # type: ignore
+        statement = delete(WhiteListEntry)
         result = db_session.exec(statement)
         deleted_count = result.rowcount
         total_count = deleted_count

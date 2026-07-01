@@ -210,7 +210,7 @@ def do_users_cleanup(db_engine):
     This function is called periodically to clean up accounts that have been pending deletion for too long.
     It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
     If the period is less than 30 days, nothing happens, and the user can re-login if he changes his mind and wants to keep the account active.
-    If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is removed completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
+    If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is wiped completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
     If the period is longer than 2 years, the user is destroyed completely from the database with all his related data (alerts, messages, etc.)
     """
     now = now_tz_aware()
@@ -274,7 +274,7 @@ def deactivate_user(user, db_session):
     user.is_officer = False
     user.is_chief = False
     user.language = UserLanguage.en.value
-    user.role = UserRole.citizen.value
+    user.role = None
     user.is_reliable = True
     user.is_blocked = False
     user.reliability_score = 100

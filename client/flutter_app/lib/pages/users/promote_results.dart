@@ -43,9 +43,9 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
   final _scrollController = ScrollController();
   final TextEditingController _authorizerController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-  UserType? selectedType;
-  UserRole? selectedRole;
-  UserStatus? selectedStatus;
+  UserTypeExtended? selectedType;
+  UserRoleExtended? selectedRole;
+  UserStatusExtended? selectedStatus;
   bool _activateNotes = false;
 
   @override
@@ -218,15 +218,15 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
                 ),
                 const SizedBox(height: 20),
                 if (authClient.isAdmin())
-                  DropdownButtonFormField<UserType>(
+                  DropdownButtonFormField<UserTypeExtended>(
                     decoration: InputDecoration(
                       labelText: loc.labelType,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.category),
                     ),
                     initialValue: null,
-                    items: UserType.values.map((UserType type) {
-                      return DropdownMenuItem<UserType>(
+                    items: UserTypeExtended.values.map((UserTypeExtended type) {
+                      return DropdownMenuItem<UserTypeExtended>(
                         value: type,
                         child: Text(
                           type.name[0].toUpperCase() + type.name.substring(1),
@@ -238,15 +238,15 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
                     },
                   ),
                 const SizedBox(height: 20),
-                DropdownButtonFormField<UserRole>(
+                DropdownButtonFormField<UserRoleExtended>(
                   decoration: InputDecoration(
                     labelText: loc.labelRole,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
                   initialValue: null,
-                  items: UserRole.values.map((UserRole role) {
-                    return DropdownMenuItem<UserRole>(
+                  items: UserRoleExtended.values.map((UserRoleExtended role) {
+                    return DropdownMenuItem<UserRoleExtended>(
                       value: role,
                       child: Text(
                         role.name[0].toUpperCase() + role.name.substring(1),
@@ -258,15 +258,17 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
                   },
                 ),
                 const SizedBox(height: 20),
-                DropdownButtonFormField<UserStatus>(
+                DropdownButtonFormField<UserStatusExtended>(
                   decoration: InputDecoration(
                     labelText: loc.labelStatus,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
                   initialValue: null,
-                  items: UserStatus.values.map((UserStatus status) {
-                    return DropdownMenuItem<UserStatus>(
+                  items: UserStatusExtended.values.map((
+                    UserStatusExtended status,
+                  ) {
+                    return DropdownMenuItem<UserStatusExtended>(
                       value: status,
                       child: Text(
                         status.name[0].toUpperCase() + status.name.substring(1),

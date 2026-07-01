@@ -5,7 +5,11 @@
 from fastapi import status
 from sqlmodel import select
 from models.general import WhiteListEntry, User
-from core.exceptions import forbidden_exception, token_not_valid_exception
+from core.exceptions import (
+    forbidden_exception, token_not_valid_exception,
+    invalid_request_exception
+)
+from routers.whitelist_entries import EMAIL_LIST_MAX_LENGTH_FOR_ADD
 
 def test_add_whitelist_entries_no_data(client, test_admin):
     headers = {
@@ -29,22 +33,6 @@ def test_add_whitelist_entries_invalid_data(client, test_admin):
     }
     response = client.post("/api/whitelist-entries", json=data, headers=headers)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-
-def test_add_whitelist_entries_empty_emails_list(client, db_session, test_admin):
-    headers = {
-        "Authorization": f"Bearer {test_admin['access_token']}"
-    }
-    data = {
-        "emails": []
-    }
-    response = client.post("/api/whitelist-entries", json=data, headers=headers)
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data["total_count"] == 0
-    assert response_data["added_count"] == 0
-    statement = select(WhiteListEntry)
-    results = db_session.exec(statement).all()
-    assert len(results) == 0
 
 def test_add_whitelist_entries_not_authorized_token_missing(client):
     # Access token missing
@@ -92,6 +80,33 @@ def test_add_whitelist_entries_forbidden_chief(client, test_chief):
     response = client.post("/api/whitelist-entries", json=data, headers=headers)
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
+
+def test_add_whitelist_entries_too_many_input_emails(client, test_admin):
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    data = {
+        "emails": [f"test{i}@example.com" for i in range(EMAIL_LIST_MAX_LENGTH_FOR_ADD + 1)]
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == invalid_request_exception().status_code
+    assert "Email list too long" in response.json()["detail"]
+
+def test_add_whitelist_entries_empty_emails_list(client, db_session, test_admin):
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    data = {
+        "emails": []
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["total_count"] == 0
+    assert response_data["added_count"] == 0
+    statement = select(WhiteListEntry)
+    results = db_session.exec(statement).all()
+    assert len(results) == 0
 
 def test_add_whitelist_entries_success(client, db_session, test_admin):
     headers = {

@@ -84,8 +84,8 @@ def create_alert(alert_in: AlertIn,
     alert = Alert(
         type=alert_in.type,
         description = alert_in.description,
-        latitude=alert_in.latitude if (alert_in.type != AlertType.general.value) else 0.0,
-        longitude=alert_in.longitude if (alert_in.type != AlertType.general.value) else 0.0,
+        latitude=alert_in.latitude,
+        longitude=alert_in.longitude,
         address = alert_in.address,
         radius = alert_in.radius,
         user_id = current_user.id,
@@ -134,12 +134,9 @@ def get_recent_alerts(current_user: User = Depends(get_current_user),
     alerts_to_me_stmt = (select(Alert).join(AlertedUser, Alert.id == AlertedUser.alert_id) # type: ignore
         .where(AlertedUser.user_id == current_user.id)
         .where(Alert.created_at > (now - timedelta(days=365))))
-    # For general alerts, why use created_at, latitude, and longitude? Because we benefit from the composite index on (created_at, latitude, longitude) to speed up the query. 
-    # Latitude and longitude are not relevant for general alerts, but we use them to speed up the query
     alerts_general_stmt = (select(Alert)
-        .where(Alert.created_at > (now - timedelta(days=365)))
-        .where(Alert.latitude > -0.01, Alert.latitude < 0.01, Alert.longitude > -0.01, Alert.longitude < 0.01)
-        .where(Alert.type == AlertType.general.value))
+        .where(Alert.type == AlertType.general.value)
+        .where(Alert.created_at > (now - timedelta(days=365))))
     statement = union_all(alerts_by_me_stmt, alerts_to_me_stmt, alerts_general_stmt)
     statement = statement.order_by(desc(Alert.created_at))
     alerts = db_session.exec(statement).all() # type: ignore

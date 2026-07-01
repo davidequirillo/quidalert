@@ -160,6 +160,32 @@ def test_create_user_check_default_boolean_fields():
     assert user.is_admin is False
     assert user.is_officer is False
     assert user.is_chief is False
-    assert user.role == UserRole.citizen.value
+    assert user.role is None # The default value for role should be None
     assert user.is_reliable is True
     assert user.is_blocked is False
+
+def test_create_user_with_custom_role():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password_hash": "hashed_password",
+        "role": UserRole.military.value
+    }
+    user = User.model_validate(data)
+    assert user.firstname == data["firstname"]
+    assert user.surname == data["surname"]
+    assert user.email == data["email"]
+    assert user.role == UserRole.military.value
+
+def test_create_user_with_invalid_role():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password_hash": "hashed_password",
+        "role": "invalid_role"
+    }
+    with pytest.raises(ValueError):
+        User.model_validate(data)
+        assert True
