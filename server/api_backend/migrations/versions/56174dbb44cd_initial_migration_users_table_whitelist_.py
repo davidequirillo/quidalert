@@ -1,8 +1,8 @@
-"""initial migration: users table, whitelist table, alerts, etc.
+"""initial migration: users table, whitelist table, alerts table, etc.
 
-Revision ID: fac9a5ff1fe9
+Revision ID: 56174dbb44cd
 Revises: 
-Create Date: 2026-06-28 23:18:46.119512
+Create Date: 2026-07-01 14:18:29.064872
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'fac9a5ff1fe9'
+revision: str = '56174dbb44cd'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -32,7 +32,7 @@ def upgrade() -> None:
     sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('is_officer', sa.Boolean(), nullable=False),
     sa.Column('is_chief', sa.Boolean(), nullable=False),
-    sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=False),
+    sa.Column('role', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=True),
     sa.Column('is_reliable', sa.Boolean(), nullable=False),
     sa.Column('reliability_score', sa.Integer(), nullable=False),
     sa.Column('last_reliability_score_at', sa.DateTime(), nullable=True),
@@ -75,13 +75,14 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index('ixc_users_authorized_by_id', 'users', ['authorized_by', 'id'], unique=False)
-    op.create_index('ixp_users_is_admin_partial', 'users', ['is_admin'], unique=False, postgresql_where='is_admin IS TRUE')
-    op.create_index('ixp_users_is_blocked_partial', 'users', ['is_blocked'], unique=False, postgresql_where='is_blocked IS TRUE')
-    op.create_index('ixp_users_is_chief_partial', 'users', ['is_chief'], unique=False, postgresql_where='is_chief IS TRUE')
-    op.create_index('ixp_users_is_officer_partial', 'users', ['is_officer'], unique=False, postgresql_where='is_officer IS TRUE')
-    op.create_index('ixp_users_is_reliable_partial', 'users', ['is_reliable'], unique=False, postgresql_where='is_reliable IS FALSE')
-    op.create_index('ixp_users_pending_delete_since_partial', 'users', ['pending_delete_since'], unique=False, postgresql_where='pending_delete_since IS NOT NULL')
-    op.create_index('ixp_users_role_partial', 'users', ['role'], unique=False, postgresql_where="role <> 'citizen'")
+    op.create_index('ixc_users_surname_id', 'users', ['surname', 'id'], unique=False)
+    op.create_index('ixcp_users_role_id_where_role_not_null', 'users', ['role', 'id'], unique=False, postgresql_where='role IS NOT NULL')
+    op.create_index('ixp_users_id_where_is_admin', 'users', ['id'], unique=False, postgresql_where='is_admin IS TRUE')
+    op.create_index('ixp_users_id_where_is_blocked', 'users', ['id'], unique=False, postgresql_where='is_blocked IS TRUE')
+    op.create_index('ixp_users_id_where_is_chief', 'users', ['id'], unique=False, postgresql_where='is_chief IS TRUE')
+    op.create_index('ixp_users_id_where_is_not_reliable', 'users', ['id'], unique=False, postgresql_where='is_reliable IS FALSE')
+    op.create_index('ixp_users_id_where_is_officer', 'users', ['id'], unique=False, postgresql_where='is_officer IS TRUE')
+    op.create_index('ixp_users_pending_delete_since_where_not_null', 'users', ['pending_delete_since'], unique=False, postgresql_where='pending_delete_since IS NOT NULL')
     op.create_table('whitelist_entries',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
@@ -110,6 +111,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_alerts_user_id'), 'alerts', ['user_id'], unique=False)
     op.create_index('ixc_alerts_created_at_lat_long', 'alerts', ['created_at', 'latitude', 'longitude'], unique=False)
+    op.create_index('ixp_alerts_created_at_where_type_general', 'alerts', ['created_at'], unique=False, postgresql_where="type = 'general'")
     op.create_table('refresh_tokens',
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
@@ -163,19 +165,21 @@ def downgrade() -> None:
     op.drop_table('alerted_users')
     op.drop_index(op.f('ix_refresh_tokens_user_id'), table_name='refresh_tokens')
     op.drop_table('refresh_tokens')
+    op.drop_index('ixp_alerts_created_at_where_type_general', table_name='alerts', postgresql_where="type = 'general'")
     op.drop_index('ixc_alerts_created_at_lat_long', table_name='alerts')
     op.drop_index(op.f('ix_alerts_user_id'), table_name='alerts')
     op.drop_table('alerts')
     op.drop_index('ixc_whitelist_entries_created_by_id', table_name='whitelist_entries')
     op.drop_index(op.f('ix_whitelist_entries_email'), table_name='whitelist_entries')
     op.drop_table('whitelist_entries')
-    op.drop_index('ixp_users_role_partial', table_name='users', postgresql_where="role <> 'citizen'")
-    op.drop_index('ixp_users_pending_delete_since_partial', table_name='users', postgresql_where='pending_delete_since IS NOT NULL')
-    op.drop_index('ixp_users_is_reliable_partial', table_name='users', postgresql_where='is_reliable IS FALSE')
-    op.drop_index('ixp_users_is_officer_partial', table_name='users', postgresql_where='is_officer IS TRUE')
-    op.drop_index('ixp_users_is_chief_partial', table_name='users', postgresql_where='is_chief IS TRUE')
-    op.drop_index('ixp_users_is_blocked_partial', table_name='users', postgresql_where='is_blocked IS TRUE')
-    op.drop_index('ixp_users_is_admin_partial', table_name='users', postgresql_where='is_admin IS TRUE')
+    op.drop_index('ixp_users_pending_delete_since_where_not_null', table_name='users', postgresql_where='pending_delete_since IS NOT NULL')
+    op.drop_index('ixp_users_id_where_is_officer', table_name='users', postgresql_where='is_officer IS TRUE')
+    op.drop_index('ixp_users_id_where_is_not_reliable', table_name='users', postgresql_where='is_reliable IS FALSE')
+    op.drop_index('ixp_users_id_where_is_chief', table_name='users', postgresql_where='is_chief IS TRUE')
+    op.drop_index('ixp_users_id_where_is_blocked', table_name='users', postgresql_where='is_blocked IS TRUE')
+    op.drop_index('ixp_users_id_where_is_admin', table_name='users', postgresql_where='is_admin IS TRUE')
+    op.drop_index('ixcp_users_role_id_where_role_not_null', table_name='users', postgresql_where='role IS NOT NULL')
+    op.drop_index('ixc_users_surname_id', table_name='users')
     op.drop_index('ixc_users_authorized_by_id', table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')

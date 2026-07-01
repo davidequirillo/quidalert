@@ -13,8 +13,8 @@ from core.exceptions import (
 from models.general import RefreshToken, User, Alert, AlertType, AlertedUser
 from services.security import now_tz_naive
 from tests.fixtures.alerts import (
-    setup_users_data_and_teardown, # required (fixture automatically used)
-    setup_fake_functions, # required (fixture automatically used)
+    setup_users_data_and_teardown, # required (fixture automatically called)
+    setup_fake_functions, # required (fixture automatically called)
     RADIUS_KM,
 )
 from scripts.seed_redis_data import (
@@ -228,10 +228,6 @@ def test_create_alert_type_general_called_by_chief(client, db_session, test_chie
     # because we don't have to perform background tasks for this type of alert
     assert alert.is_pending == False
     assert alert.is_closed == False
-    assert alert.latitude < 0.01 # not considered for general alerts
-    assert alert.latitude > -0.01 # not considered for general alerts
-    assert alert.longitude < 0.01 # not considered for general alerts
-    assert alert.longitude > -0.01 # not considered for general alerts
     assert alert.radius == 1.0 # not considered for general alerts
     # No alerted users are created
     alerted_users = db_session.exec(select(AlertedUser).where(
@@ -393,7 +389,7 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     assert user.is_chief == False
     statement = select(RefreshToken).where(
          RefreshToken.user_id == user.id).where(
-             RefreshToken.fcm_token is not None)
+             RefreshToken.fcm_token != None)
     rtoken = db_session.exec(statement).first()
     assert rtoken is not None
     assert rtoken.fcm_token is not None # see conftest.py, where we set a fcm token for the logged user

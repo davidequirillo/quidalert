@@ -31,10 +31,10 @@ def two_factor_not_valid_exception():
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="2FA code not valid")
 
-def forbidden_exception(s: str = "Forbidden request"):
+def forbidden_exception(detail: str = "Forbidden request"):
     return HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail=s)
+        detail=detail)
 
 def two_factor_required_response(): # Note: this is not an exception, but a response
     return Response(
@@ -61,12 +61,12 @@ def invalid_file_type_exception():
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid file type")
 
-def invalid_request_exception(detail: str):
+def invalid_request_exception(detail: str = "Invalid request"):
     return HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=detail)
 
-def not_found_exception(detail: str):
+def not_found_exception(detail: str = "Resource not found"):
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=detail

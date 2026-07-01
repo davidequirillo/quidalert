@@ -11,8 +11,8 @@ from core.exceptions import (
 from models.general import User, Alert, AlertType, AlertedUser
 from services.security import now_tz_naive
 from tests.fixtures.alerts import (
-    setup_users_data_and_teardown, # required (fixture automatically used)
-    setup_alerts_data_and_teardown, # required (fixture automatically used)
+    setup_users_data_and_teardown, # required (fixture automatically called)
+    setup_alerts_data_and_teardown, # required (fixture automatically called)
 )
 
 def test_get_recent_alerts_not_authorized_missing_token(client):

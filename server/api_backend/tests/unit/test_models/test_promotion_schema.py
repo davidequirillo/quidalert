@@ -39,6 +39,45 @@ def test_promotion_schema_invalid_role():
     with pytest.raises(ValueError):
         PromotionSchema.model_validate(data)
 
+def test_promotion_schema_valid_role():
+    data = {
+        "type": UserType.admin.value,
+        "role": UserRole.volunteer.value,
+        "status": UserStatus.ok.value
+    }
+    promotion_schema = PromotionSchema.model_validate(data)
+    assert promotion_schema.role == data["role"]
+
+def test_promotion_schema_role_none():
+    data = {
+        "type": UserType.admin.value,
+        "role": None,
+        "status": UserStatus.ok.value
+    }
+    promotion_schema = PromotionSchema.model_validate(data)
+    assert promotion_schema.role is None
+
+def test_promotion_schema_role_empty_string():
+    data = {
+        "type": UserType.admin.value,
+        "role": "",
+        "status": UserStatus.ok.value
+    }
+    # An empty string is not valid
+    with pytest.raises(ValueError):
+        PromotionSchema.model_validate(data)
+
+def test_promotion_schema_role_citizen():
+    # Citizen role is not part of UserRole enum, but it is valid as a string
+    # Useful to force a user to have no role (base role) in the promotion endpoint
+    data = {
+        "type": UserType.admin.value,
+        "role": "citizen",
+        "status": UserStatus.ok.value
+    }
+    promotion_schema = PromotionSchema.model_validate(data)
+    assert promotion_schema.role == "citizen"
+
 def test_promotion_schema_invalid_status():
     data = {
         "type": UserType.admin.value,

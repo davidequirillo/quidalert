@@ -654,6 +654,10 @@ def test_login_returned_access_token_is_ok(client, db_session, not_logged_test_u
 
 def test_login_returned_gps_token_is_ok(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
+    # The user has no role assigned (default=None), 
+    # so the gps token should have a relative string role of "citizen" in the payload
+    assert user.role is None
+    user_role_str = user.role if user.role else "citizen"
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
@@ -680,7 +684,8 @@ def test_login_returned_gps_token_is_ok(client, db_session, not_logged_test_user
     assert gt_sub == str(user.id)
     assert gt_token_type == "gps-update"
     assert gt_is_chief == (1 if user.is_chief else 0)
-    assert gt_role == user.role
+    user_role_str = user.role if user.role is not None else "citizen"
+    assert gt_role == user_role_str
     assert gt_iat <= int(now_tz_aware().timestamp())
     assert gt_iat > int((now_tz_aware() - timedelta(minutes=1)).timestamp())
     iat_dt = from_timestamp_to_datetime_tz_naive(gt_iat)

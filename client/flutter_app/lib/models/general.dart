@@ -29,11 +29,18 @@ class WhiteListEntry {
   }
 }
 
-enum UserStatus { ok, unreliable, blocked }
-
-enum UserType { admin, officer, chief, base }
-
 enum UserRole {
+  firefighter,
+  wateroperator,
+  usar,
+  alpinerescuer,
+  medic,
+  military,
+  policeman,
+  volunteer,
+}
+
+enum UserRoleExtended {
   firefighter,
   wateroperator,
   usar,
@@ -45,7 +52,17 @@ enum UserRole {
   citizen,
 }
 
+enum UserStatus { unreliable, blocked }
+
+enum UserStatusExtended { unreliable, blocked, ok }
+
+enum UserType { admin, officer, chief }
+
+enum UserTypeExtended { admin, officer, chief, base }
+
 enum AlertType { local, managed, general, empty }
+
+enum AlertStatus { open, closed }
 
 class UserSmall {
   final String id;
@@ -74,7 +91,7 @@ class UserSmall {
 
   factory UserSmall.fromJson(Map<String, dynamic> json) {
     String t;
-    String st;
+    String s;
     final String id = json['id'] ?? '';
     final String email = json['email'] ?? '';
     final String fname = json['firstname'] ?? '';
@@ -87,24 +104,26 @@ class UserSmall {
     final bool isAdmin = json['is_admin'] ?? false;
     final bool isOfficer = json['is_officer'] ?? false;
     final bool isChief = json['is_chief'] ?? false;
-    final String role = json['role'] ?? '';
+    final String role =
+        json['role'] ??
+        UserRoleExtended.citizen.name; // default role is "citizen"
     final bool isReliable = json['is_reliable'] ?? true;
     final bool isBlocked = json['is_blocked'] ?? false;
     if (isAdmin == true) {
-      t = "admin";
+      t = UserTypeExtended.admin.name;
     } else if (isOfficer == true) {
-      t = "officer";
+      t = UserTypeExtended.officer.name;
     } else if (isChief == true) {
-      t = "chief";
+      t = UserTypeExtended.chief.name;
     } else {
-      t = "base";
+      t = UserTypeExtended.base.name;
     }
     if (isBlocked == true) {
-      st = "blocked";
+      s = UserStatusExtended.blocked.name;
     } else if (isReliable == false) {
-      st = "unreliable";
+      s = UserStatusExtended.unreliable.name;
     } else {
-      st = "ok";
+      s = UserStatusExtended.ok.name;
     }
     return UserSmall(
       id: id,
@@ -115,7 +134,7 @@ class UserSmall {
       authorizedAt: authAt,
       type: t,
       role: role,
-      status: st,
+      status: s,
       phone: phone,
     );
   }
@@ -184,7 +203,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     String t;
-    String st;
+    String s;
     final String id = json['id'] ?? '';
     final String email = json['email'] ?? '';
     final String fname = json['firstname'] ?? '';
@@ -194,23 +213,25 @@ class User {
     final bool isOfficer = json['is_officer'] ?? false;
     final bool isChief = json['is_chief'] ?? false;
     if (isAdmin == true) {
-      t = "admin";
+      t = UserTypeExtended.admin.name;
     } else if (isOfficer == true) {
-      t = "officer";
+      t = UserTypeExtended.officer.name;
     } else if (isChief == true) {
-      t = "chief";
+      t = UserTypeExtended.chief.name;
     } else {
-      t = "base";
+      t = UserTypeExtended.base.name;
     }
-    final String role = json['role'] ?? '';
+    final String role =
+        json['role'] ??
+        UserRoleExtended.citizen.name; // default role is "citizen"
     final bool isReliable = json['is_reliable'] ?? true;
     final bool isBlocked = json['is_blocked'] ?? false;
     if (isBlocked == true) {
-      st = "blocked";
+      s = UserStatusExtended.blocked.name;
     } else if (isReliable == false) {
-      st = "unreliable";
+      s = UserStatusExtended.unreliable.name;
     } else {
-      st = "ok";
+      s = UserStatusExtended.ok.name;
     }
     final int reliabilityScore = json['reliability_score'] ?? 0;
     final bool isActive = json['is_active'] ?? false;
@@ -256,7 +277,7 @@ class User {
       language: lang,
       type: t,
       role: role,
-      status: st,
+      status: s,
       reliabilityScore: reliabilityScore,
       isActive: isActive,
       resetLockedUntil: resetLockedUntil,
@@ -301,9 +322,9 @@ class Alert {
     final bool isClosed = json['is_closed'] ?? false;
     String status;
     if (isClosed) {
-      status = "closed";
+      status = AlertStatus.closed.name;
     } else {
-      status = "open";
+      status = AlertStatus.open.name;
     }
     final DateTime? createdAt = json['created_at'] != null
         ? DateTime.parse(json['created_at'])

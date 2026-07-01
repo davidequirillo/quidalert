@@ -16,13 +16,15 @@ from models.general import (
     UserStatus, UserType, UserRole
 )
 from dependencies import get_db_session, get_current_user, get_redis_session
-from core.exceptions import forbidden_exception, not_found_exception
+from core.exceptions import forbidden_exception, not_found_exception, invalid_request_exception
 from core.dbmgr import (
     get_redis_chief_locations_key, 
     REDIS_MUTEX_CHIEF_UPDATE_KEY,
     get_redis_chief_demotions_key)
 from core import api_events
 from services.security import ensure_tz_aware, now_tz_naive
+
+EMAIL_LIST_MAX_LENGTH_FOR_SEARCH = 10000
 
 router = APIRouter(
     tags=["Users"]
@@ -64,6 +66,16 @@ def get_users(
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
+    if type and (type not in [UserType.admin.value, UserType.officer.value, UserType.chief.value]):
+        raise invalid_request_exception(detail=f"Invalid search: '{type}' type not admitted")
+    if role and (role not in [r.value for r in UserRole]):
+        raise invalid_request_exception(detail=f"Invalid search: '{role}' role not admitted")
+    if status and (status not in [UserStatus.unreliable.value, UserStatus.blocked.value]):
+        raise invalid_request_exception(detail=f"Invalid search: '{status}' status not admitted")
+    if firstname and not surname:
+        raise invalid_request_exception(detail="Invalid search: firstname cannot be used without surname")
+    if authorizer and (not current_user.is_admin):
+        raise forbidden_exception(detail="Only admins can filter by authorizer")
     if limit not in [10, 100, 1000]:
         limit = 100
     next_cursor = None
@@ -76,12 +88,6 @@ def get_users(
         statement = statement.where(User.authorized_by == current_user.email)
     if authorizer:
         statement = statement.where(User.authorized_by == authorizer.lower()) 
-    if last_seen_id:
-        try:
-            last_seen_id_as_uuid = string_as_uuid(last_seen_id)
-            statement = statement.where(User.id < last_seen_id_as_uuid) # type: ignore
-        except ValueError:
-            raise not_found_exception(detail="Last seen id not valid")
     if surname:
         if firstname:
             statement = statement.where(User.surname == surname, User.firstname == firstname)
@@ -94,17 +100,19 @@ def get_users(
             statement = statement.where(User.is_officer == True) 
         elif type == UserType.chief.value:
             statement = statement.where(User.is_chief == True)
-        elif type == UserType.base.value:
-            pass
-    if role and role != UserRole.citizen.value:
+    if role:
         statement = statement.where(User.role == role)
     if status:
         if status == UserStatus.unreliable.value:
             statement = statement.where(User.is_reliable == False) 
         elif status == UserStatus.blocked.value:
             statement = statement.where(User.is_blocked == True)
-        elif status == UserStatus.ok.value:
-            pass
+    if last_seen_id:
+        try:
+            last_seen_id_as_uuid = string_as_uuid(last_seen_id)
+            statement = statement.where(User.id < last_seen_id_as_uuid) # type: ignore
+        except ValueError:
+            raise not_found_exception(detail="Last seen id not valid")
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
@@ -120,18 +128,20 @@ def get_users_by_emails(
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
+    if len(email_list.emails) > EMAIL_LIST_MAX_LENGTH_FOR_SEARCH:
+        raise invalid_request_exception(detail=f"Email list too long. Maximum allowed length is {EMAIL_LIST_MAX_LENGTH_FOR_SEARCH}")
     if limit not in [10, 100, 1000]:
         limit = 100
     next_cursor = None
     emails = [email.lower() for email in email_list.emails]
     statement = select(User)
+    statement = statement.where(User.email.in_(emails)) # type:ignore
     if (last_seen_id):
         try:
             last_seen_id_as_uuid = string_as_uuid(last_seen_id)
             statement = statement.where(User.id < last_seen_id_as_uuid)
         except ValueError:
             raise not_found_exception(detail="Last seen id not valid")
-    statement = statement.where(User.email.in_(emails)) # type:ignore
     statement = statement.order_by(desc(User.id)).limit(limit)
     users = db_session.exec(statement).all()
     if users:
@@ -171,42 +181,51 @@ async def promote_users(
             redis_client = Depends(get_redis_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if (promotion_schema.type):
-        if not current_user.is_admin: # officers cannot change users type
-            raise forbidden_exception()
-    def db_update_logic(): 
-        if (current_user.is_admin):
-            statement = update(User)
-        else: # officers can update only users authorized by them
-            statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
+    if type and (type not in [UserType.admin.value, UserType.officer.value, UserType.chief.value]):
+        raise invalid_request_exception(detail=f"Invalid search: '{type}' type not admitted")
+    if role and (role not in [r.value for r in UserRole]):
+        raise invalid_request_exception(detail=f"Invalid search: '{role}' role not admitted")
+    if status and (status not in [UserStatus.unreliable.value, UserStatus.blocked.value]):
+        raise invalid_request_exception(detail=f"Invalid search: '{status}' status not admitted")
+    if firstname and not surname:
+        raise invalid_request_exception(detail="Invalid search: firstname cannot be used without surname")
+    if authorizer and (not current_user.is_admin):
+        raise forbidden_exception(detail="Only admins can filter by authorizer")
+    if (promotion_schema.type) and (not current_user.is_admin): # officers cannot change users type
+        raise forbidden_exception()
+    if (not email) and (not surname) and (not type) and (not role) and (not status):
+        raise invalid_request_exception(detail="At least one search filter keyword must be provided to promote/demote users")
+    def db_update_logic():
         if email:
-            statement = statement.where(
-                User.email == email.lower()) # type: ignore
-        if authorizer:
-            statement = statement.where(User.authorized_by == authorizer.lower()) # type: ignore
-        if surname:
-            if firstname:
-                statement = statement.where(User.surname == surname, User.firstname == firstname) # type: ignore
-            else:
-                statement = statement.where(User.surname == surname) # type: ignore
-        if type:
-            if type == UserType.admin.value:
-                statement = statement.where(User.is_admin == True) # type: ignore 
-            elif type == UserType.officer.value:
-                statement = statement.where(User.is_officer == True) # type: ignore
-            elif type == UserType.chief.value:
-                statement = statement.where(User.is_chief == True) # type: ignore
-            elif type == UserType.base.value:
-                pass
-        if role and (role != UserRole.citizen.value):
-            statement = statement.where(User.role == role) # type: ignore
-        if status: 
-            if status == UserStatus.unreliable.value:
-                statement = statement.where(User.is_reliable == False) # type: ignore
-            elif status == UserStatus.blocked.value:
-                statement = statement.where(User.is_blocked == True) # type: ignore
-            elif status == UserStatus.ok.value:
-                pass
+            statement = update(User).where(User.email == email.lower()) # type:ignore
+            if (not current_user.is_admin): # officers can update only users authorized by them
+                statement = statement.where(User.authorized_by == current_user.email) # type: ignore
+        else:
+            if (current_user.is_admin):
+                statement = update(User)
+            else: # officers can update only users authorized by them
+                statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
+            if authorizer:
+                statement = statement.where(User.authorized_by == authorizer.lower()) # type: ignore
+            if surname:
+                if firstname:
+                    statement = statement.where(User.surname == surname, User.firstname == firstname) # type: ignore
+                else:
+                    statement = statement.where(User.surname == surname) # type: ignore
+            if type:
+                if type == UserType.admin.value:
+                    statement = statement.where(User.is_admin == True) # type: ignore 
+                elif type == UserType.officer.value:
+                    statement = statement.where(User.is_officer == True) # type: ignore
+                elif type == UserType.chief.value:
+                    statement = statement.where(User.is_chief == True) # type: ignore
+            if role:
+                statement = statement.where(User.role == role) # type: ignore
+            if status: 
+                if status == UserStatus.unreliable.value:
+                    statement = statement.where(User.is_reliable == False) # type: ignore
+                elif status == UserStatus.blocked.value:
+                    statement = statement.where(User.is_blocked == True) # type: ignore
         # Update fields according to promotion schema
         if (promotion_schema.type == UserType.admin.value):
             statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
@@ -217,7 +236,11 @@ async def promote_users(
         elif (promotion_schema.type == UserType.base.value):
             statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
         if promotion_schema.role:
-            statement = statement.values(role=promotion_schema.role)
+            # if promotion_schema.role is not in UserRole list, then we want to update the user to "base role", "citizen", so we set role to None
+            if promotion_schema.role not in [t.value for t in UserRole]:
+                statement = statement.values(role=None)
+            else:
+                statement = statement.values(role=promotion_schema.role)
         if promotion_schema.status:
             if promotion_schema.status == UserStatus.unreliable.value:
                 statement = statement.values(is_reliable=False, is_blocked=False)
@@ -303,18 +326,17 @@ async def promote_users_by_emails(
             redis_client = Depends(get_redis_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if (update_fields.type):
-        if not current_user.is_admin: # officers cannot change users type
-            raise forbidden_exception()
+    if len(email_list.emails) > EMAIL_LIST_MAX_LENGTH_FOR_SEARCH:
+        raise invalid_request_exception(detail=f"Email list too long. Maximum allowed length is {EMAIL_LIST_MAX_LENGTH_FOR_SEARCH}")
+    if (update_fields.type) and (not current_user.is_admin): # officers cannot change users type
+        raise forbidden_exception()
     emails = [email.lower() for email in email_list.emails]
     def db_update_logic(): 
         if len(emails) == 0:
             return None, {"message": "No emails provided", "updated_count": 0}
-        if (current_user.is_admin):
-            statement = update(User)
-        else: # officers can update only users authorized by them
-            statement = update(User).where(User.authorized_by == current_user.email) # type: ignore
-        statement = statement.where(User.email.in_(emails)) # type:ignore
+        statement = update(User).where(User.email.in_(emails)) # type:ignore
+        if (not current_user.is_admin): # officers can update only users authorized by them
+            statement = statement.where(User.authorized_by == current_user.email) # type: ignore
         # update fields according to promotion schema
         if (update_fields.type == UserType.admin.value):
             statement = statement.values(is_admin=True, is_officer=False, is_chief=False)
@@ -325,7 +347,11 @@ async def promote_users_by_emails(
         elif (update_fields.type == UserType.base.value):
             statement = statement.values(is_chief=False, is_admin=False, is_officer=False)
         if update_fields.role:
-            statement = statement.values(role = update_fields.role)
+            # if update_fields.role is not in UserRole list, then we want to update the user to "base role", "citizen", so we set role to None
+            if update_fields.role not in [t.value for t in UserRole]:
+                statement = statement.values(role=None)
+            else:
+                statement = statement.values(role=update_fields.role)
         if update_fields.status:
             if update_fields.status == UserStatus.unreliable.value:
                 statement = statement.values(is_reliable=False, is_blocked=False)

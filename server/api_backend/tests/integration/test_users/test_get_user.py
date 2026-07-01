@@ -16,7 +16,7 @@ def setup_and_teardown(db_session):
         password_hash="hashed_password", 
         firstname="Test1", surname="User1", 
         is_active=True, 
-        role=UserRole.citizen.value, 
+        role=None, 
         language=UserLanguage.en.value
     )
     db_session.add(user1)
@@ -25,7 +25,7 @@ def setup_and_teardown(db_session):
         password_hash="hashed_password", 
         firstname="Test2", surname="User2", 
         is_active=True, 
-        role=UserRole.citizen.value, 
+        role=None, 
         language=UserLanguage.en.value
     )
     db_session.add(user2)
@@ -34,7 +34,7 @@ def setup_and_teardown(db_session):
         password_hash="hashed_password", 
         firstname="Test3", surname="User3", 
         is_active=True, 
-        role=UserRole.citizen.value, 
+        role=None, 
         language=UserLanguage.en.value
     )
     db_session.add(user3)

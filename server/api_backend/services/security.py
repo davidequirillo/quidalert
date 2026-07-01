@@ -133,7 +133,7 @@ def create_geoposition_token(user_id, user_is_chief, user_role, expires_delta: O
         "type": "gps-update",
         "iat": now,
         "exp": expire,
-        "user_role": user_role,
+        "user_role": user_role if user_role else "citizen",
         "user_is_chief": 1 if user_is_chief else 0
     }
     token = jwt.encode(data, settings.jwt_secret_key, algorithm=JWT_ALGORITHM)
