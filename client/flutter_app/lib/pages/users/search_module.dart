@@ -112,14 +112,24 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
                   },
                 ),
                 TextFormField(
-                  controller: _firstnameController,
-                  decoration: InputDecoration(labelText: loc.labelFirstname),
-                  keyboardType: TextInputType.name,
-                ),
-                TextFormField(
                   controller: _surnameController,
                   decoration: InputDecoration(labelText: loc.labelSurname),
                   keyboardType: TextInputType.name,
+                  onChanged: (value) {
+                    if (value.isEmpty) {
+                      _firstnameController.clear();
+                    }
+                  },
+                ),
+                TextFormField(
+                  controller: _firstnameController,
+                  decoration: InputDecoration(labelText: loc.labelFirstname),
+                  keyboardType: TextInputType.name,
+                  onChanged: (value) {
+                    if (_surnameController.text.isEmpty) {
+                      _firstnameController.clear();
+                    }
+                  },
                 ),
                 if (authClient.isAdmin())
                   TextFormField(

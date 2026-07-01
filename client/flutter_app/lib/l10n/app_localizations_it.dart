@@ -195,6 +195,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorRegisteringDeviceForPushNotifications => 'Errore di registrazione del dispositivo per le notifiche push';
 
   @override
+  String get errorSearchParamsNotSufficientToProceed => 'Parametri della query non sufficienti per procedere';
+
+  @override
   String get errorServer => 'Errore nel server';
 
   @override
