@@ -467,6 +467,12 @@ abstract class AppLocalizations {
   /// **'Failed to register device for push notification'**
   String get errorRegisteringDeviceForPushNotifications;
 
+  /// No description provided for @errorSearchParamsNotSufficientToProceed.
+  ///
+  /// In en, this message translates to:
+  /// **'Query parameters not sufficient to proceed'**
+  String get errorSearchParamsNotSufficientToProceed;
+
   /// No description provided for @errorServer.
   ///
   /// In en, this message translates to:

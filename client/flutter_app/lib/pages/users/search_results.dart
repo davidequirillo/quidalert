@@ -182,9 +182,11 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
     }
     final loc = AppLocalizations.of(context)!;
     final args = ModalRoute.of(context)!.settings.arguments;
+    bool argsSufficientForPromote = false;
     String searchStr;
     if (args is List<String>) {
       searchStr = "${args.length} email addresses from CSV file";
+      argsSufficientForPromote = true;
     } else if (args is Map<String, String?>) {
       searchStr = args.entries
           .where((entry) => entry.value != null && entry.value!.isNotEmpty)
@@ -192,6 +194,12 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
           .join(", ");
       if (searchStr.isEmpty) {
         searchStr = loc.labelAllMasculinePlural;
+      }
+      for (var key in ['email', 'surname', 'type', 'role', 'status']) {
+        if (args[key] != null && args[key]!.isNotEmpty) {
+          argsSufficientForPromote = true;
+          break;
+        }
       }
     } else {
       throw Exception("Invalid arguments for search results page");
@@ -213,11 +221,22 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                 SizedBox(height: 10),
                 ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/accounts/users/promote-results',
-                      arguments: args,
-                    );
+                    if (argsSufficientForPromote) {
+                      Navigator.pushNamed(
+                        context,
+                        '/accounts/users/promote-results',
+                        arguments: args,
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            loc.errorSearchParamsNotSufficientToProceed,
+                          ),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
                   },
                   icon: Icon(Icons.edit),
                   label: Text(

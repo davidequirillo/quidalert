@@ -62,6 +62,7 @@
   "errorPermissionsNotValid": "Permissions not valid",
   "errorPositionNotAvailable": "Position not available",
   "errorRegisteringDeviceForPushNotifications": "Failed to register device for push notification",
+  "errorSearchParamsNotSufficientToProceed": "Query parameters not sufficient to proceed", 
   "errorServer": "Server error",
   "errorSomeEntriesNotAdded": "Some entries have not been added",
   "errorStringNotValid": "String not valid",
