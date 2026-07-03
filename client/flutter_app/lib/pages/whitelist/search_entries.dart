@@ -130,8 +130,8 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
       retMessage = loc.errorPermissionsNotValid;
     } on BadRequestException catch (_) {
       retMessage = loc.errorBadRequest;
-    } on NetworkException catch (_) {
-      retMessage = loc.errorNetwork;
+    } on ServerException catch (_) {
+      retMessage = loc.errorServer;
     } catch (e) {
       retMessage = e.toString();
     } finally {

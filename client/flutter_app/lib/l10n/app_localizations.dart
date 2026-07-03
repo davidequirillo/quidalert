@@ -233,11 +233,23 @@ abstract class AppLocalizations {
   /// **'Network error'**
   String get exceptionNetwork;
 
+  /// No description provided for @exceptionServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error'**
+  String get exceptionServer;
+
   /// No description provided for @exceptionNotFound.
   ///
   /// In en, this message translates to:
   /// **'Resource not found'**
   String get exceptionNotFound;
+
+  /// No description provided for @exceptionUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown error'**
+  String get exceptionUnknown;
 
   /// No description provided for @errorAccountBlocked.
   ///

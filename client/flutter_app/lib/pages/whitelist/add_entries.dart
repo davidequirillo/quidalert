@@ -121,12 +121,12 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
-    } on BadRequestException catch (_) {
-      retTitle = loc.errorError;
-      retMessage = loc.errorBadRequest;
-    } on NetworkException catch (_) {
-      retTitle = loc.errorError;
-      retMessage = loc.errorNetwork;
+    } on BadRequestException catch (e) {
+      retTitle = loc.errorBadRequest;
+      retMessage = e.toString();
+    } on ServerException catch (_) {
+      retTitle = loc.errorServer;
+      retMessage = loc.errorServer;
     } catch (e) {
       retTitle = loc.errorError;
       retMessage = e.toString();
@@ -203,12 +203,17 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     } on ForbiddenRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
-    } on BadRequestException catch (_) {
+    } on BadRequestException catch (e) {
+      if (e.message.contains("Email list too long")) {
+        retTitle = loc.errorBadRequest;
+        retMessage = e.toString();
+      } else {
+        retTitle = loc.errorError;
+        retMessage = loc.errorBadRequest;
+      }
+    } on ServerException catch (_) {
       retTitle = loc.errorError;
-      retMessage = loc.errorBadRequest;
-    } on NetworkException catch (_) {
-      retTitle = loc.errorError;
-      retMessage = loc.errorNetwork;
+      retMessage = loc.errorServer;
     } catch (e) {
       retTitle = loc.errorError;
       retMessage = e.toString();

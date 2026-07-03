@@ -82,26 +82,33 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
         promotedCount.toString(),
       );
       return;
-    } on BadRequestException catch (_) {
-      retTitle = loc.errorGeneric;
+    } on BadRequestException catch (e) {
+      if (e.message.contains("Email list too long")) {
+        retTitle = loc.errorBadRequest;
+        retMessage = e.toString();
+      } else {
+        retTitle = loc.errorError;
+        retMessage = loc.errorBadRequest;
+      }
+      retTitle = loc.errorError;
       retMessage = loc.errorBadRequest;
       error = true;
     } on ForbiddenRequestException catch (_) {
-      retTitle = loc.errorPermissionsNotValid;
+      retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
       error = true;
     } on GenericNotAuthorizedException catch (_) {
-      retTitle = loc.errorGeneric;
+      retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
       newLoginRequired = true;
-    } on NetworkException catch (_) {
-      retTitle = loc.errorGeneric;
-      retMessage = loc.errorNetwork;
+    } on ServerException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorServer;
       error = true;
     } catch (e) {
       debugPrint('Error: cannot receive or read response');
-      retTitle = loc.errorGeneric;
+      retTitle = loc.errorError;
       retMessage = e.toString();
       error = true;
     } finally {

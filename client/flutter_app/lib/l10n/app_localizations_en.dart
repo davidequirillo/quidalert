@@ -78,7 +78,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exceptionNetwork => 'Network error';
 
   @override
+  String get exceptionServer => 'Server error';
+
+  @override
   String get exceptionNotFound => 'Resource not found';
+
+  @override
+  String get exceptionUnknown => 'Unknown error';
 
   @override
   String get errorAccountBlocked => 'Account blocked';

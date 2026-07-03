@@ -193,25 +193,25 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         retMessage = loc.successAlertCreated;
       }
     } on ForbiddenRequestException catch (_) {
-      retTitle = loc.errorGeneric;
+      retTitle = loc.errorError;
       retMessage = loc.errorOpDeniedYouAreNotReliable;
       error = true;
     } on BadRequestException catch (_) {
-      retTitle = loc.errorGeneric;
+      retTitle = loc.errorError;
       retMessage = loc.errorBadRequest;
       error = true;
     } on GenericNotAuthorizedException catch (_) {
-      retTitle = loc.errorGeneric;
+      retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
       newLoginRequired = true;
-    } on NetworkException catch (_) {
-      retTitle = loc.errorGeneric;
-      retMessage = loc.errorNetwork;
+    } on ServerException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorServer;
       error = true;
     } catch (e) {
       debugPrint('Error: cannot receive or read response');
-      retTitle = loc.errorGeneric;
+      retTitle = loc.errorError;
       retMessage = e.toString();
       error = true;
     } finally {

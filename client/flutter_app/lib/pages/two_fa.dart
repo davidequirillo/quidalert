@@ -73,19 +73,40 @@ class _TwoFABodyState extends State<TwoFABody> {
         language: languageCode,
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        debugPrintC('2FA failed, response body: ${response.body}');
-        error = jsonDecode(response.body)['detail'];
+        debugPrintC(
+          '2FA failed, response status: ${response.statusCode}, response body: ${response.body}',
+        );
+        if (response.statusCode == 401) {
+          final jsonResp = jsonDecode(response.body);
+          error = jsonResp['detail'] ?? 'Not authorized';
+        } else if (response.statusCode == 403) {
+          error = 'Forbidden request';
+        } else if (response.statusCode >= 500) {
+          error = 'Server error';
+        } else if (response.statusCode >= 300) {
+          error = 'Bad request';
+        } else {
+          error = 'Unknown error';
+        }
       } else {
         error = null;
       }
     } catch (e) {
-      debugPrintC('2FA error: cannot receive or read response');
-      error = "Network error";
+      debugPrintC(
+        '2FA error: cannot receive or read response: ${e.toString()}',
+      );
+      error = "Unknown error";
     }
     if (error != null) {
       switch (error) {
-        case 'Network error':
-          endMessage = loc.errorNetwork;
+        case 'Unknown error':
+          endMessage = loc.errorGeneric;
+          break;
+        case 'Bad request':
+          endMessage = loc.errorBadRequest;
+          break;
+        case 'Server error':
+          endMessage = loc.errorServer;
           break;
         case '2FA code not valid':
           endMessage = loc.errorCodeNotValid;
@@ -99,7 +120,7 @@ class _TwoFABodyState extends State<TwoFABody> {
         default:
           endMessage = loc.errorBadRequest;
       }
-      endTitle = loc.errorGeneric;
+      endTitle = loc.errorError;
     } else {
       endTitle = loc.successLogin;
       endMessage = loc.successLogin;

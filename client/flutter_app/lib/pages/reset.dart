@@ -79,7 +79,7 @@ class _ResetBodyState extends State<ResetBody> {
   Future<void> _doPasswordResetRequest(Map<String, String> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
-    String? requestError;
+    bool isSuccess = false;
     String endMessage;
     String endTitle;
     final http.Response response;
@@ -90,34 +90,31 @@ class _ResetBodyState extends State<ResetBody> {
         headers: {"Content-Type": "application/json"},
         body: jsonBody,
       );
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        requestError = jsonDecode(response.body)['detail'];
+      if (response.statusCode < 200) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorBadRequest;
+      } else if (response.statusCode >= 500) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorServer;
+      } else if (response.statusCode >= 300) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorBadRequest;
       } else {
-        requestError = null;
+        endTitle = loc.successGeneric;
+        endMessage = loc.successResetRequest;
+        isSuccess = true;
       }
     } catch (e) {
-      debugPrint('Error: cannot receive or read response');
-      requestError = "Network error";
-    }
-    if (requestError != null) {
-      switch (requestError) {
-        case 'Network error':
-          endMessage = loc.errorNetwork;
-          break;
-        default:
-          endMessage = loc.errorBadRequest;
-      }
-      endTitle = loc.errorGeneric;
-    } else {
-      endTitle = loc.successGeneric;
-      endMessage = loc.successResetRequest;
+      debugPrint('Error: cannot receive or read response: ${e.toString()}');
+      endTitle = loc.errorError;
+      endMessage = loc.errorGeneric;
     }
     if (!mounted) return;
     await showGotoIfAlertDialog(
       context,
       endTitle,
       endMessage,
-      (requestError == null),
+      (!isSuccess),
       "/login",
     );
     setState(() {
@@ -128,7 +125,7 @@ class _ResetBodyState extends State<ResetBody> {
   Future<void> _doPasswordResetConfirmation(Map<String, String> data) async {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
-    String? resetError;
+    bool isSuccess = false;
     String endMessage;
     String endTitle;
     final http.Response response;
@@ -139,37 +136,37 @@ class _ResetBodyState extends State<ResetBody> {
         headers: {"Content-Type": "application/json"},
         body: jsonBody,
       );
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        resetError = jsonDecode(response.body)['detail'];
+      if (response.statusCode < 200) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorBadRequest;
+      } else if (response.statusCode >= 500) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorServer;
+      } else if (response.statusCode >= 300) {
+        if ((response.statusCode == 400) &&
+            (response.body.contains('Code or email not valid'))) {
+          endTitle = loc.errorError;
+          endMessage = loc.errorCodeOrEmailNotValid;
+        } else {
+          endTitle = loc.errorError;
+          endMessage = loc.errorBadRequest;
+        }
       } else {
-        resetError = null;
+        endTitle = loc.successGeneric;
+        endMessage = loc.successPasswordChanged;
+        isSuccess = true;
       }
     } catch (e) {
-      debugPrint('Error: cannot receive or read response');
-      resetError = "Network error";
-    }
-    if (resetError != null) {
-      switch (resetError) {
-        case 'Network error':
-          endMessage = loc.errorNetwork;
-          break;
-        case 'Code or email not valid':
-          endMessage = loc.errorCodeOrEmailNotValid;
-          break;
-        default:
-          endMessage = loc.errorBadRequest;
-      }
-      endTitle = loc.errorGeneric;
-    } else {
-      endTitle = loc.successGeneric;
-      endMessage = loc.successPasswordChanged;
+      debugPrint('Error: cannot receive or read response: ${e.toString()}');
+      endTitle = loc.errorError;
+      endMessage = loc.errorGeneric;
     }
     if (!mounted) return;
     await showGotoIfAlertDialog(
       context,
       endTitle,
       endMessage,
-      (resetError == null),
+      (isSuccess),
       "/login",
     );
   }

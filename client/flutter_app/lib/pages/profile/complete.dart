@@ -142,9 +142,9 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       retMessage = loc.errorNotAuthorizedDoLogin;
       error = true;
       newLoginRequired = true;
-    } on NetworkException catch (_) {
+    } on ServerException catch (_) {
       retTitle = loc.errorGeneric;
-      retMessage = loc.errorNetwork;
+      retMessage = loc.errorServer;
       error = true;
     } catch (e) {
       debugPrint('Error: cannot receive or read response');

@@ -137,15 +137,6 @@ class CAppDrawer extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/accounts');
               },
             ),
-          if (isLoggedIn)
-            ListTile(
-              leading: Icon(Icons.settings),
-              title: Text(loc.menuSettings),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.pushReplacementNamed(context, '/settings');
-              },
-            ),
           if (true)
             ListTile(
               leading: Icon(Icons.description),

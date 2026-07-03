@@ -132,7 +132,10 @@ class _HomeBodyState extends State<HomeBody> {
           if (snapshot.error.toString().startsWith("BadRequest")) {
             return Text(loc.errorBadRequest);
           }
-          return Text(loc.errorNetwork);
+          if (snapshot.error.toString().startsWith("Server")) {
+            return Text(loc.errorServer);
+          }
+          return Text(loc.errorGeneric);
         }
         if (snapshot.hasData) {
           final data = snapshot.data!;

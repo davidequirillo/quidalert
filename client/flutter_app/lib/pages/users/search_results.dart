@@ -145,10 +145,14 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
       newLoginRequired = true;
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
-    } on BadRequestException catch (_) {
-      retMessage = loc.errorBadRequest;
-    } on NetworkException catch (_) {
-      retMessage = loc.errorNetwork;
+    } on BadRequestException catch (e) {
+      if (e.message.contains("Email list too long")) {
+        retMessage = "${loc.errorBadRequest}: ${e.message}";
+      } else {
+        retMessage = loc.errorBadRequest;
+      }
+    } on ServerException catch (_) {
+      retMessage = loc.errorServer;
     } catch (e) {
       retMessage = e.toString();
     } finally {

@@ -81,7 +81,7 @@ class _RegisterBodyState extends State<RegisterBody> {
     final loc = AppLocalizations.of(context)!;
     final jsonBody = jsonEncode(data);
     final isLoggedIn = context.read<AuthClient>().isLoggedIn();
-    String? registerError;
+    bool isSuccess = false;
     String endMessage;
     String endTitle;
     final http.Response response;
@@ -92,41 +92,31 @@ class _RegisterBodyState extends State<RegisterBody> {
         headers: {"Content-Type": "application/json"},
         body: jsonBody,
       );
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        if (response.statusCode == 422) {
-          registerError = "Bad request error";
-        } else {
-          registerError = "Server error";
-        }
+      if (response.statusCode < 200) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorBadRequest;
+      } else if (response.statusCode >= 500) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorServer;
+      } else if (response.statusCode >= 300) {
+        endTitle = loc.errorError;
+        endMessage = loc.errorBadRequest;
       } else {
-        registerError = null;
+        isSuccess = true;
+        endTitle = loc.successGeneric;
+        endMessage = loc.successRegistration;
       }
     } catch (e) {
-      debugPrint('Error: cannot receive or read response');
-      registerError = "Network error";
-    }
-    if (registerError != null) {
-      switch (registerError) {
-        case 'Bad request error':
-          endMessage = loc.errorBadRequest;
-          break;
-        case 'Server error':
-          endMessage = loc.errorServer;
-          break;
-        default:
-          endMessage = loc.errorNetwork;
-      }
-      endTitle = loc.errorGeneric;
-    } else {
-      endTitle = loc.successGeneric;
-      endMessage = loc.successRegistration;
+      debugPrint('Error: cannot receive or read response: ${e.toString()}');
+      endTitle = loc.errorError;
+      endMessage = loc.errorGeneric;
     }
     if (!mounted) return;
     await showGotoIfAlertDialog(
       context,
       endTitle,
       endMessage,
-      (registerError == null),
+      isSuccess,
       (isLoggedIn) ? "/home" : "/login",
     );
   }

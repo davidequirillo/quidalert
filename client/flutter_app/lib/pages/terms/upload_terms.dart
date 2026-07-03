@@ -85,11 +85,11 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     } on ForbiddenRequestException catch (_) {
       retMessage = loc.errorPermissionsNotValid;
       retColor = Colors.red;
-    } on BadRequestException catch (_) {
-      retMessage = loc.errorBadRequest;
+    } on BadRequestException catch (e) {
+      retMessage = "${loc.errorBadRequest}: ${e.message}";
       retColor = Colors.red;
-    } on NetworkException catch (_) {
-      retMessage = loc.errorNetwork;
+    } on ServerException catch (_) {
+      retMessage = loc.errorServer;
       retColor = Colors.red;
     } catch (e) {
       retMessage = "Error: $e";

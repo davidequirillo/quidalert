@@ -19,8 +19,12 @@ extension AppLocalizationsExtension on AppLocalizations {
         return exceptionGenericNotAuthorized;
       case 'exceptionNetwork':
         return exceptionNetwork;
+      case 'exceptionServer':
+        return exceptionServer;
       case 'exceptionNotFound':
         return exceptionNotFound;
+      case 'exceptionUnknown':
+        return exceptionUnknown;
       case 'alertTypeGeneral':
         return alertTypeGeneral;
       case 'alertTypeLocal':
