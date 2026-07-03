@@ -34,18 +34,29 @@ class TermsPage extends StatelessWidget {
 class TermsBody extends StatelessWidget {
   const TermsBody({super.key});
 
-  Future<String> _loadFromServer({String? lang}) async {
+  Future<String> _loadFromServer(BuildContext context, {String? lang}) async {
+    final loc = AppLocalizations.of(context)!;
     final url = Uri.parse('${config.apiBaseUrl}/terms');
     final http.Response response;
     try {
       response = await http.get(url, headers: {"Accept-Language": "$lang"});
     } catch (e) {
-      debugPrint('Error: cannot receive or read response');
-      return 'Network error';
+      debugPrint(
+        'Error: cannot receive or read response from server, ${e.toString()}',
+      );
+      return loc.errorGeneric;
     }
-    if (response.statusCode < 200 || response.statusCode >= 300) {
+    if (response.statusCode < 200) {
       debugPrint("HTTP ${response.statusCode}: ${response.body}");
-      return 'Network error';
+      return loc.errorBadRequest;
+    }
+    if (response.statusCode >= 500) {
+      debugPrint("HTTP ${response.statusCode}: ${response.body}");
+      return loc.errorServer;
+    }
+    if (response.statusCode >= 300) {
+      debugPrint("HTTP ${response.statusCode}: ${response.body}");
+      return loc.errorBadRequest;
     } else {
       return response.body;
     }
@@ -59,7 +70,7 @@ class TermsBody extends StatelessWidget {
     final locale = Localizations.localeOf(context);
     final languageCode = locale.languageCode;
     return FutureBuilder<String>(
-      future: _loadFromServer(lang: languageCode),
+      future: _loadFromServer(context, lang: languageCode),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

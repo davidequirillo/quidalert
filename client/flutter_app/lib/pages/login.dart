@@ -8,11 +8,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -62,23 +64,29 @@ class _LoginBodyState extends State<LoginBody> {
     String endTitle;
     final http.Response response;
     try {
+      debugPrintC("Attempting login for $email");
       response = await authClient.login(
         email,
         password,
         loginCode: code,
         language: languageCode,
       );
+      debugPrintC("Login response: ${response.statusCode} ${response.body}");
       if (response.statusCode < 200 || response.statusCode >= 300) {
         if (response.statusCode == 422) {
           loginError = 'Invalid credentials';
-        } else if ((response.statusCode == 401) &&
-            (response.body.contains('2FA required'))) {
-          loginError = '2FA required'; // Handled separately
-        } else if (response.statusCode == 401 &&
-            (response.body.contains('2FA locked'))) {
-          loginError = '2FA locked';
         } else if (response.statusCode == 401) {
-          loginError = 'Invalid credentials';
+          if (response.body.contains("2FA required")) {
+            loginError = '2FA required';
+          } else if (response.body.contains("2FA locked")) {
+            loginError = '2FA locked';
+          } else {
+            loginError = 'Invalid credentials';
+          }
+        } else if (response.statusCode >= 500) {
+          loginError = 'Server error';
+        } else if (response.statusCode >= 300) {
+          loginError = 'Bad request';
         } else {
           loginError = 'Unknown error';
         }
@@ -86,8 +94,8 @@ class _LoginBodyState extends State<LoginBody> {
         loginError = null;
       }
     } catch (e) {
-      debugPrint('Error: cannot receive or read response');
-      loginError = "Network error";
+      debugPrintC('Error: cannot receive or read response: ${e.toString()}');
+      loginError = "Unknown error";
     }
     if (loginError != null) {
       switch (loginError) {
@@ -106,13 +114,19 @@ class _LoginBodyState extends State<LoginBody> {
         case 'Invalid credentials':
           endMessage = loc.errorInvalidCredentials;
           break;
-        case 'Network error':
-          endMessage = loc.errorNetwork;
+        case 'Server error':
+          endMessage = loc.errorServer;
+          break;
+        case 'Bad request':
+          endMessage = loc.errorBadRequest;
+          break;
+        case 'Unknown error':
+          endMessage = loc.errorGeneric;
           break;
         default:
-          endMessage = loc.errorBadRequest;
+          endMessage = loc.errorGeneric;
       }
-      endTitle = loc.errorGeneric;
+      endTitle = loc.errorError;
     } else {
       endTitle = loc.successLogin;
       endMessage = loc.successLogin;

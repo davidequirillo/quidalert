@@ -12,7 +12,6 @@ import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/models/general.dart';
-import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 
@@ -69,10 +68,13 @@ class AlertDetailsBody extends StatelessWidget {
           if (snapshot.error.toString().startsWith("BadRequest")) {
             return Text(loc.errorBadRequest);
           }
+          if (snapshot.error.toString().startsWith("Server")) {
+            return Text(loc.errorServer);
+          }
           if (snapshot.error.toString().startsWith("NotFound")) {
             return Center(child: Text(loc.errorNoEntryFound));
           }
-          return Text(loc.errorNetwork);
+          return Text(loc.errorGeneric);
         }
         if (snapshot.hasData) {
           final alert = snapshot.data!;

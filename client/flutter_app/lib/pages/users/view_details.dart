@@ -72,7 +72,10 @@ class UserDetailsBody extends StatelessWidget {
           if (snapshot.error.toString().startsWith("NotFound")) {
             return Center(child: Text(loc.errorNoEntryFound));
           }
-          return Text(loc.errorNetwork);
+          if (snapshot.error.toString().startsWith("Server")) {
+            return Center(child: Text(loc.errorServer));
+          }
+          return Text(loc.errorGeneric);
         }
         if (snapshot.hasData) {
           final user = snapshot.data![0] as User;

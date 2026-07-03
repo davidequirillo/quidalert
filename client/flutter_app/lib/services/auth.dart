@@ -51,11 +51,11 @@ class BadRequestException implements Exception {
   String toString() => 'BadRequestException: $message';
 }
 
-class NetworkException implements Exception {
+class ServerException implements Exception {
   final String message;
-  NetworkException([this.message = 'Network error']);
+  ServerException([this.message = 'Server error']);
   @override
-  String toString() => 'NetworkException: $message';
+  String toString() => 'ServerException: $message';
 }
 
 class NotFoundException implements Exception {
@@ -63,6 +63,13 @@ class NotFoundException implements Exception {
   NotFoundException([this.message = 'Not found']);
   @override
   String toString() => 'NotFoundException: $message';
+}
+
+class UnknownException implements Exception {
+  final String message;
+  UnknownException([this.message = 'Unknown error']);
+  @override
+  String toString() => 'UnknownException: $message';
 }
 
 class AuthClient extends ChangeNotifier {
@@ -101,6 +108,10 @@ class AuthClient extends ChangeNotifier {
       debugPrintC('AuthClient init, refresh token expired');
     } on BadRequestException catch (_) {
       debugPrintC('AuthClient init, bad request during token refresh');
+    } on ServerException catch (_) {
+      debugPrintC('AuthClient init, server error during token refresh');
+    } on GenericNotAuthorizedException catch (_) {
+      debugPrintC('AuthClient init, not authorized during token refresh');
     } catch (e) {
       debugPrintC('AuthClient init, cannot refresh tokens: $e');
     }
@@ -213,6 +224,12 @@ class AuthClient extends ChangeNotifier {
         debugPrintC(
           "Try refresh tokens, cannot refresh tokens, HTTP ${resp.statusCode}: ${resp.body}",
         );
+        if (resp.statusCode >= 500) {
+          throw ServerException();
+        }
+        if (resp.statusCode >= 300) {
+          throw BadRequestException();
+        }
         throw BadRequestException();
       }
     }
@@ -483,9 +500,15 @@ class AuthClient extends ChangeNotifier {
         throw ForbiddenRequestException('Forbidden request');
       } else if (isNotFound) {
         throw NotFoundException('Not found');
-      } else if ((!isExpired) &&
-          (resp.statusCode < 200 || resp.statusCode >= 300)) {
-        throw BadRequestException('Bad request');
+      } else if (!isExpired &&
+          (resp.statusCode < 200 ||
+              ((resp.statusCode >= 300) && (resp.statusCode <= 500)))) {
+        final badRequestMsg = respMessage.isNotEmpty
+            ? respMessage
+            : 'Bad request';
+        throw BadRequestException(badRequestMsg);
+      } else if (!isExpired && (resp.statusCode >= 500)) {
+        throw ServerException('Server error');
       }
       debugPrintC('$m (auth), access token: $accessToken');
       if (isExpired) {
@@ -515,22 +538,24 @@ class AuthClient extends ChangeNotifier {
       return resp;
     } on ExpiredTokenException catch (_) {
       throw GenericNotAuthorizedException();
-    } on InvalidTokenException catch (_) {
+    } on InvalidTokenException catch (e) {
+      debugPrintC("$m (auth), invalid token exception caught: ${e.toString()}");
       throw GenericNotAuthorizedException();
     } on ForbiddenRequestException catch (_) {
       rethrow;
     } on NotFoundException catch (_) {
       rethrow;
-    } on BadRequestException catch (_) {
-      debugPrintC("$m (auth), bad request exception");
+    } on BadRequestException catch (e) {
+      debugPrintC("$m (auth), bad request exception caught: ${e.toString()}");
       rethrow;
-    } on NetworkException catch (_) {
+    } on ServerException catch (e) {
+      debugPrintC("$m (auth), server exception caught: ${e.toString()}");
       rethrow;
     } on GenericNotAuthorizedException catch (_) {
       rethrow;
     } catch (e) {
-      debugPrintC('$m (auth), unexpected error: $e');
-      throw Exception("Unexpected error: $e");
+      debugPrintC('$m (auth), unexpected error: ${e.toString()}');
+      throw UnknownException(e.toString());
     }
   }
 
@@ -585,8 +610,8 @@ class AuthClient extends ChangeNotifier {
     } on BadRequestException catch (_) {
       debugPrintC('Bad request');
       isError = true;
-    } on NetworkException catch (_) {
-      debugPrintC('Network error');
+    } on ServerException catch (_) {
+      debugPrintC('Server error');
       isError = true;
     } catch (e) {
       debugPrintC('Unexpected error: $e');
@@ -623,8 +648,10 @@ class AuthClient extends ChangeNotifier {
       lastFcmToken = fcmToken;
       debugPrintC('FCM token synced with backend successfully');
       return;
+    } on ServerException catch (_) {
+      debugPrintC('Server error');
     } catch (e) {
-      debugPrintC('Error syncing FCM token with backend: $e');
+      debugPrintC('Unexpected error: $e');
     }
   }
 }
