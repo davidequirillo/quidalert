@@ -9,6 +9,8 @@ from moto import mock_aws
 from freezegun import freeze_time
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session, StaticPool
+from sqlalchemy.engine import Engine # Useful for sqlalchemy event.listener
+from sqlalchemy import event # Useful for sqlalchemy event.listener
 from fakeredis.aioredis import FakeRedis
 from models.general import (
     User, UserRole, UserLanguage, 
@@ -38,6 +40,17 @@ db_engine_test = create_engine(
     poolclass=StaticPool,
     echo=False
 )
+
+# This function is used to set the SQLite PRAGMA foreign_keys=ON for each new connection to the SQLite database. 
+# This ensures that foreign key constraints are enforced during testing, 
+# which is important for maintaining data integrity in tests that involve related tables.
+# The handler function accept two arguments: dbapi_connection, which is the raw DBAPI connection object, and connection_record (not used here).
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, _):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 redis_engine_test = FakeRedis(
     decode_responses=True,
     cluster_mode=True,
@@ -95,7 +108,7 @@ def client_fixture(db_session: Session):
     original_app_mode = settings.app_mode
     original_redis_mode = settings.redis_mode
     original_bucket_name = settings.s3_bucket_name
-    settings.app_mode = "testing"
+    settings.app_mode = "test"
     settings.redis_mode = "cluster"
     settings.s3_bucket_name = bucket_name
     # Override some dependencies in the app with our "fake" function

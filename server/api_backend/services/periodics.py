@@ -7,7 +7,7 @@ from datetime import timedelta
 from sqlmodel import Session, select, update, delete
 from fakeredis.aioredis import FakeRedis
 from models.general import (
-    User, UserLanguage, UserRole,
+    User, UserLanguage,
     Alert, Message
 )
 from services.security import (

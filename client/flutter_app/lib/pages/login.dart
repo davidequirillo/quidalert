@@ -76,13 +76,8 @@ class _LoginBodyState extends State<LoginBody> {
         if (response.statusCode == 422) {
           loginError = 'Invalid credentials';
         } else if (response.statusCode == 401) {
-          if (response.body.contains("2FA required")) {
-            loginError = '2FA required';
-          } else if (response.body.contains("2FA locked")) {
-            loginError = '2FA locked';
-          } else {
-            loginError = 'Invalid credentials';
-          }
+          final jsonResp = jsonDecode(response.body);
+          loginError = jsonResp['detail'] ?? 'Not authorized';
         } else if (response.statusCode >= 500) {
           loginError = 'Server error';
         } else if (response.statusCode >= 300) {

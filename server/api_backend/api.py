@@ -7,7 +7,7 @@ from datetime import timedelta
 from fastapi import (FastAPI, Depends,
     Request, HTTPException, BackgroundTasks)
 from fastapi import status as http_status
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.request_ctx import RequestContextMiddleware
 from contextlib import asynccontextmanager
@@ -50,9 +50,10 @@ from services.periodics import (
 from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
-    two_factor_not_valid_exception, two_factor_required_response,
+    two_factor_not_valid_exception,
     forbidden_exception, invalid_request_exception
     )
+from core.responses import two_factor_required_response
 from dependencies import get_db_session, get_current_user
 from routers import users, alerts, terms, whitelist_entries
 
@@ -103,7 +104,7 @@ async def init_engines(app: FastAPI):
     )
     app.state.scheduler.add_job(
         do_alerts_cleanup,
-        trigger=CronTrigger(hour=15, minute=15), # UTC time
+        trigger=CronTrigger(hour=18, minute=25), # UTC time
         args=[app.state.db_engine],
         id="cleanup_old_alerts_job_v1",
     )
@@ -137,7 +138,7 @@ async def shutdown_engines(app: FastAPI):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up api framework...")
-    is_testing = (settings.app_mode == "testing")
+    is_testing = (settings.app_mode == "test")
     if not is_testing:
         init_logging_and_others()
     if not is_testing:
@@ -191,7 +192,7 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
         (RefreshToken.id == token_jti_as_uuid) and (RefreshToken.user_id == user.id))
     refresh_token = db_session.exec(q).first()
     if (refresh_token is None):
-        raise TokenNotValidException
+        raise TokenNotValidException()
     if (refresh_token.is_revoked):
         raise TokenExpiredException()
     if not check_token_against_hash(token_raw_secret, refresh_token.raw_hash):
