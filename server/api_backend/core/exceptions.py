@@ -2,7 +2,7 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-from fastapi import HTTPException, Response, status
+from fastapi import HTTPException, status
 
 def token_not_valid_exception():
     return HTTPException(
@@ -35,11 +35,6 @@ def forbidden_exception(detail: str = "Forbidden request"):
     return HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail=detail)
-
-def two_factor_required_response(): # Note: this is not an exception, but a response
-    return Response(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content="2FA required")
 
 def file_too_large_exception(max_size: int):
     return HTTPException(

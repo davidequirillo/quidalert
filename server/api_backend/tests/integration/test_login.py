@@ -26,10 +26,10 @@ from services.security import (
     check_token_against_hash)
 from core.exceptions import (
     credentials_exception, 
-    two_factor_required_response,
     two_factor_not_valid_exception,
     two_factor_locked_exception,
     forbidden_exception)
+from core.responses import two_factor_required_response
 
 def test_login_request_missing_credentials(client):
     payload = {}
@@ -76,7 +76,7 @@ def test_login_request_valid_password(client, db_session, not_logged_test_user):
     payload = {"email": user.email, "password": valid_password}
     response = client.post("/api/auth/login", json=payload)
     assert response.status_code == two_factor_required_response().status_code
-    assert response.content == two_factor_required_response().body
+    assert response.json()["detail"] == "2FA required"
     db_session.refresh(user)
     assert user.login_code_hash is not None
     assert user.login_expires_at is not None
@@ -120,7 +120,7 @@ def test_login_request_again_too_soon(client, db_session, not_logged_test_user):
     payload = {"email": user.email, "password": valid_password}
     response1 = client.post("/api/auth/login", json=payload)
     assert response1.status_code == two_factor_required_response().status_code
-    assert response1.content == two_factor_required_response().body
+    assert response1.json()["detail"] == "2FA required"
     db_session.refresh(user)
     assert user.login_code_hash is not None
     assert user.login_expires_at is not None
@@ -130,7 +130,7 @@ def test_login_request_again_too_soon(client, db_session, not_logged_test_user):
     # Try to login again immediately, which should be too soon and return the same 2FA required response without generating a new code
     response2 = client.post("/api/auth/login", json=payload)
     assert response2.status_code == two_factor_required_response().status_code
-    assert response2.content == two_factor_required_response().body
+    assert response2.json()["detail"] == "2FA required"
     db_session.refresh(user)
     # The login code hash and expires_at should be unchanged (same code still valid)
     assert user.login_code_hash == old_login_code_hash
@@ -146,7 +146,7 @@ def test_login_request_again_after_expiry(client, db_session, not_logged_test_us
     payload = {"email": user.email, "password": valid_password}
     response1 = client.post("/api/auth/login", json=payload)
     assert response1.status_code == two_factor_required_response().status_code
-    assert response1.content == two_factor_required_response().body
+    assert response1.json()["detail"] == "2FA required"
     db_session.refresh(user)
     assert user.login_code_hash is not None
     assert user.login_expires_at is not None
@@ -157,7 +157,7 @@ def test_login_request_again_after_expiry(client, db_session, not_logged_test_us
     # Try to login again, which should generate a new code since the old one is expired
     response2 = client.post("/api/auth/login", json=payload)
     assert response2.status_code == two_factor_required_response().status_code
-    assert response2.content == two_factor_required_response().body
+    assert response2.json()["detail"] == "2FA required"
     db_session.refresh(user)
     # The login code hash and expires_at should be updated (new code generated)
     assert user.login_code_hash != old_login_code_hash
@@ -173,7 +173,7 @@ def test_login_2fa_wrong_code(client, db_session, not_logged_test_user):
     payload = {"email": user.email, "password": valid_password}
     response = client.post("/api/auth/login", json=payload)
     assert response.status_code == two_factor_required_response().status_code
-    assert response.content == two_factor_required_response().body
+    assert response.json()["detail"] == "2FA required"
     db_session.refresh(user)
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
@@ -279,7 +279,7 @@ def test_login_2fa_successful(client, db_session, not_logged_test_user):
     payload = {"email": user.email, "password": valid_password}
     response = client.post("/api/auth/login", json=payload)
     assert response.status_code == two_factor_required_response().status_code
-    assert response.content == two_factor_required_response().body
+    assert response.json()["detail"] == "2FA required"
     db_session.refresh(user)
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
@@ -396,7 +396,7 @@ def test_login_2fa_successful_and_login_token_works(client, db_session, not_logg
     payload = {"email": user.email, "password": valid_password}
     response = client.post("/api/auth/login", json=payload)
     assert response.status_code == two_factor_required_response().status_code
-    assert response.content == two_factor_required_response().body
+    assert response.json()["detail"] == "2FA required"
     db_session.refresh(user) # Refresh to get the latest login code hash and expires_at
     valid_otp_code = "123456"
     valid_otp_code_hash = otp_hmac(valid_otp_code)
@@ -457,7 +457,7 @@ def test_login_token_expired(client, db_session, not_logged_test_user):
     response = client.post("/api/auth/login", json=payload)
     # The token is expired, so the login will send to the user the 2FA required response (2FA code via mail)
     assert response.status_code == two_factor_required_response().status_code
-    assert response.content == two_factor_required_response().body
+    assert response.json()["detail"] == "2FA required"
 
 def test_login_user_is_blocked(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user

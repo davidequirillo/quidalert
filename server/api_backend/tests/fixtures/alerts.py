@@ -13,7 +13,7 @@ from scripts.seed_redis_data import (
 from sqlmodel import delete, select
 from models.general import (
     User, UserRole, RefreshToken, UserLanguage,
-    Alert, AlertType, AlertedUser
+    Alert, AlertType, AlertedUser, Message
 )
 from services.security import now_tz_naive, now_tz_aware
 from core.dbmgr import (
@@ -264,7 +264,7 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             db_session.add(alerted_user)
     # Now we create some alerted users for the alerts created, using the test baseuser and test chief as alerted users for some alerts
     # We will add the test baseuser as an alerted user for the first 3 alerts, and the test chief as an alerted user for the next 3 alerts
-    # Note: the alerts are not created by the test baseuser or test chief (are created by the "strange" user), so they can be alerted users for these alerts
+    # Note: the alerts are not created by the test baseuser or test chief (are created by the "strange" user, "test_officer"), so they can be alerted users for these alerts
     statement = select(Alert).where(Alert.user_id != user.id, Alert.user_id != chief.id)
     for i, alert in enumerate(db_session.exec(statement).all()):
         if (alert.type == AlertType.general.value):
@@ -282,9 +282,31 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
                 alert_id=alert.id,
                 user_id=chief.id
             )
-            db_session.add(alerted_user) 
+            db_session.add(alerted_user)
+    # Now we create some messages for the alerts
+    statement = select(Alert)
+    alerts = db_session.exec(statement).all()
+    for i, alert in enumerate(alerts):
+        if (alert.type == AlertType.general.value):
+            continue # generale alerts have no messages
+        if (alert.type == AlertType.empty.value):
+            continue # empty alerts have no messages
+        alerted_users_stmt = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+        alerted_users = db_session.exec(alerted_users_stmt).all()
+        if len(alerted_users) == 0:
+            continue # no alerted users for this alert, so we skip message creation
+        for alerted_user in alerted_users:
+            message_sender_id = alerted_user.user_id
+            for j in range(0, 3):
+                message = Message(
+                    alert_id=alert.id,
+                    user_id=message_sender_id,
+                    content=f"Test message {j} by user {message_sender_id} for alert {alert.id}"
+                )
+                db_session.add(message)
     db_session.commit()
     yield {"alerts_created": True}
+    db_session.exec(delete(Message))
     db_session.exec(delete(AlertedUser))
     db_session.exec(delete(Alert))
     db_session.commit()

@@ -3,7 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import re
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
 from enum import Enum
 import uuid_utils as uuid_pkg
