@@ -104,7 +104,7 @@ async def init_engines(app: FastAPI):
     )
     app.state.scheduler.add_job(
         do_alerts_cleanup,
-        trigger=CronTrigger(hour=18, minute=25), # UTC time
+        trigger=CronTrigger(hour=15, minute=15), # UTC time
         args=[app.state.db_engine],
         id="cleanup_old_alerts_job_v1",
     )

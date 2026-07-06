@@ -8,11 +8,19 @@
 
 import 'package:flutter/foundation.dart';
 
+String timezoneOffsetAsString(DateTime datetime) {
+  final offset = datetime.timeZoneOffset;
+  final hours = offset.inHours.abs().toString().padLeft(2, '0');
+  final minutes = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+  final sign = offset.isNegative ? '-' : '+';
+  return "$sign$hours:$minutes";
+}
+
 String datetimeAsStringWithoutMicroseconds(
   DateTime datetime, {
   bool includeTimezone = true,
 }) {
-  return "${datetime.toIso8601String().replaceFirst('T', ' ').split('.').first}${includeTimezone ? ' UTC' : ''}";
+  return "${datetime.toIso8601String().replaceFirst('T', ' ').split('.').first}${includeTimezone ? timezoneOffsetAsString(datetime) : ''}";
 }
 
 void debugPrintC(String message) {

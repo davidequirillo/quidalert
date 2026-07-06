@@ -92,7 +92,7 @@ def notify_single_client(
         log_notify_single_client_success(request_info, detail=f"Notification sent successfully to user_id {user_id}")
         return response
     except firebase_messaging.UnregisteredError as e:
-        log_notify_single_client_unregistered_error(request_info, detail="FCM token unregistered, deleting it...")
+        log_notify_single_client_unregistered_error(request_info, detail=f"FCM token associated with user_id {user_id} is unregistered, deleting it...")
         with Session(db_engine) as db_session:
             # We clean unregistered FCM token from database
             try:
@@ -108,10 +108,22 @@ def notify_single_client(
                 rtoken.fcm_token_updated_at = None
                 db_session.add(rtoken)
                 db_session.commit()
+                log_notify_single_client_unregistered_error(request_info, detail=f"FCM token associated with user_id {user_id} deleted from database")
         raise(e)
     except Exception as e:
         log_notify_single_client_error(request_info, detail=f"Error notifying single client: {e}")
         raise(e)
+    
+def clean_unregistered_fcm_tokens(tokens_to_delete_by_uuids, tokens_to_delete, db_engine):
+    with Session(db_engine) as db_session:
+        # We clean unregistered FCM tokens (by ids in...) from database
+        statement = update(RefreshToken).where(
+        RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
+            ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
+            ).values(
+            fcm_token=None, fcm_token_updated_at=None)
+        db_session.exec(statement)
+        db_session.commit()
 
 async def notify_many_clients(
         user_ids, fcm_tokens, 
@@ -150,15 +162,7 @@ async def notify_many_clients(
                             tokens_to_delete_by_uuids.append(string_as_uuid(uid))
                         except Exception as e:
                             log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: Error converting user_id string to UUID: {e}")
-                    with Session(db_engine) as db_session:
-                    # We clean unregistered FCM tokens (by ids in...) from database
-                        statement = update(RefreshToken).where(
-                            RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
-                            ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
-                            ).values(
-                                fcm_token=None, fcm_token_updated_at=None)
-                        db_session.exec(statement)
-                        db_session.commit()
+                    await run_in_threadpool(clean_unregistered_fcm_tokens, tokens_to_delete_by_uuids, tokens_to_delete, db_engine)
                     log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: {len(tokens_to_delete)} wrong fcm tokens deleted from database")
             success_count += response.success_count
             failure_count += response.failure_count
