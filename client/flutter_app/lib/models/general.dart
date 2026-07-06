@@ -24,7 +24,7 @@ class WhiteListEntry {
       id: json['id'],
       email: json['email'],
       createdBy: json['created_by'],
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: DateTime.parse("${json['created_at']}Z"),
     );
   }
 }
@@ -98,7 +98,7 @@ class UserSmall {
     final String sname = json['surname'] ?? '';
     final String? authBy = json['authorized_by'];
     final DateTime? authAt = json['authorized_at'] != null
-        ? DateTime.parse(json['authorized_at'])
+        ? DateTime.parse("${json['authorized_at']}Z")
         : null;
     final String phone = json['phone'] ?? '';
     final bool isAdmin = json['is_admin'] ?? false;
@@ -236,29 +236,29 @@ class User {
     final int reliabilityScore = json['reliability_score'] ?? 0;
     final bool isActive = json['is_active'] ?? false;
     final DateTime? resetLockedUntil = json['reset_locked_until'] != null
-        ? DateTime.parse(json['reset_locked_until'])
+        ? DateTime.parse("${json['reset_locked_until']}Z")
         : null;
     final DateTime? lastResetDoneAt = json['last_reset_done_at'] != null
-        ? DateTime.parse(json['last_reset_done_at'])
+        ? DateTime.parse("${json['last_reset_done_at']}Z")
         : null;
     final DateTime? loginLockedUntil = json['login_locked_until'] != null
-        ? DateTime.parse(json['login_locked_until'])
+        ? DateTime.parse("${json['login_locked_until']}Z")
         : null;
     final DateTime? lastLoginDoneAt = json['last_login_done_at'] != null
-        ? DateTime.parse(json['last_login_done_at'])
+        ? DateTime.parse("${json['last_login_done_at']}Z")
         : null;
     final DateTime? lastRefreshAt = json['last_refresh_at'] != null
-        ? DateTime.parse(json['last_refresh_at'])
+        ? DateTime.parse("${json['last_refresh_at']}Z")
         : null;
     final DateTime? creatAt = json['created_at'] != null
-        ? DateTime.parse(json['created_at'])
+        ? DateTime.parse("${json['created_at']}Z")
         : null;
     final String? authBy = json['authorized_by'];
     final DateTime? authAt = json['authorized_at'] != null
-        ? DateTime.parse(json['authorized_at'])
+        ? DateTime.parse("${json['authorized_at']}Z")
         : null;
     final DateTime? updAt = json['updated_at'] != null
-        ? DateTime.parse(json['updated_at'])
+        ? DateTime.parse("${json['updated_at']}Z")
         : null;
     final String? updBy = json['updated_by'];
     final String street = json['street'] ?? '';
@@ -327,7 +327,7 @@ class Alert {
       status = AlertStatus.open.name;
     }
     final DateTime? createdAt = json['created_at'] != null
-        ? DateTime.parse(json['created_at'])
+        ? DateTime.parse("${json['created_at']}Z").toLocal()
         : null;
     final String type = json['type'] ?? '';
     final String description = json['description'] ?? '';

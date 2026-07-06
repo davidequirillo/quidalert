@@ -50,6 +50,7 @@ class RecentAlertsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primaryController = PrimaryScrollController.of(context);
     final loc = AppLocalizations.of(context)!;
     return FutureBuilder<List<Alert>>(
       future: _getRecentAlerts(context),
@@ -72,13 +73,7 @@ class RecentAlertsBody extends StatelessWidget {
         }
         if (snapshot.hasData) {
           final alerts = snapshot.data!;
-          return Scrollbar(
-            thumbVisibility: true,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: SafeArea(top: false, child: alertList(context, alerts)),
-            ),
-          );
+          return SafeArea(top: false, child: alertList(context, alerts));
         }
         return Center(child: Text(loc.errorGeneric));
       },
@@ -90,37 +85,44 @@ class RecentAlertsBody extends StatelessWidget {
     if (alerts.isEmpty) {
       return Center(child: Text(loc.labelNoEntryFound));
     }
-    return ListView.separated(
-      shrinkWrap: true,
-      itemCount: alerts.length,
-      separatorBuilder: (context, index) => Divider(),
-      itemBuilder: (context, index) {
-        final alert = alerts[index];
-        final alertTypeKey =
-            'alertType${alert.type[0].toUpperCase()}${alert.type.substring(1)}';
-        final alertStatusKey =
-            'alertStatus${alert.status[0].toUpperCase()}${alert.status.substring(1)}';
-        return ListTile(
-          title: Text(
-            alert.description.substring(
-                  0,
-                  alert.description.length > 50 ? 50 : alert.description.length,
-                ) +
-                (alert.description.length > 50 ? "..." : ""),
-          ),
-          subtitle: Text(
-            "${loc.labelType}: ${loc.getString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getString(alertStatusKey)}",
-          ),
-          trailing: Text(datetimeAsStringWithoutMicroseconds(alert.createdAt!)),
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/alerts/view-alert-details',
-              arguments: alert.id,
-            );
-          },
-        );
-      },
+    return Expanded(
+      child: ListView.separated(
+        controller: PrimaryScrollController.of(context),
+        itemCount: alerts.length,
+        separatorBuilder: (context, index) => Divider(),
+        itemBuilder: (context, index) {
+          final alert = alerts[index];
+          final alertTypeKey =
+              'alertType${alert.type[0].toUpperCase()}${alert.type.substring(1)}';
+          final alertStatusKey =
+              'alertStatus${alert.status[0].toUpperCase()}${alert.status.substring(1)}';
+          final description =
+              alert.description.substring(
+                0,
+                alert.description.length > 50 ? 50 : alert.description.length,
+              ) +
+              (alert.description.length > 50 ? "..." : "");
+          final alertCreatedAt = alert.createdAt!;
+          final alertDateTimeStr = datetimeAsStringWithoutMicroseconds(
+            alertCreatedAt,
+            includeTimezone: false,
+          );
+          return ListTile(
+            title: Text(description),
+            subtitle: Text(
+              "${loc.labelType}: ${loc.getString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getString(alertStatusKey)}",
+            ),
+            trailing: Text(alertDateTimeStr),
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/alerts/view-alert-details',
+                arguments: alert.id,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
