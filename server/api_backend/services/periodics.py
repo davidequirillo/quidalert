@@ -7,6 +7,7 @@ from datetime import timedelta
 from sqlmodel import Session, select, update, delete
 from fakeredis.aioredis import FakeRedis
 from models.general import (
+    WhiteListEntry,
     User, UserLanguage,
     Alert, Message
 )
@@ -211,7 +212,7 @@ def do_users_cleanup(db_engine):
     It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
     If the period is less than 30 days, nothing happens, and the user can re-login if he changes his mind and wants to keep the account active.
     If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is wiped completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
-    If the period is longer than 2 years, the user is destroyed completely from the database with all his related data (alerts, messages, etc.)
+    If the period is longer than 2 years, the deactivated user is destroyed completely from the database with all his related data (alerts, messages, and whitelists entries)
     """
     now = now_tz_aware()
     deactivation_timedelta = timedelta(days=USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS)
@@ -221,13 +222,16 @@ def do_users_cleanup(db_engine):
         try:
             users_to_deact_stmt = (select(User)
                 .where(User.pending_delete_since != None)
-                .where(User.pending_delete_since < now - deactivation_timedelta) # type: ignore
+                .where(User.pending_delete_since < (now - deactivation_timedelta)) # type: ignore
                 .where(User.is_active == True))
-            users_to_destroy_stmt = (select(User.id)
+            users_to_destroy_stmt = (select(User.id, User.email)
                 .where(User.pending_delete_since != None)
-                .where(User.pending_delete_since < now - destruction_timedelta)) # type: ignore
+                .where(User.pending_delete_since < (now - destruction_timedelta)) # type: ignore
+                .where(User.is_active == False))
             users_to_deact = db_session.exec(users_to_deact_stmt).all()
-            users_to_destroy_ids = db_session.exec(users_to_destroy_stmt).all()
+            users_to_destroy = db_session.exec(users_to_destroy_stmt).all()
+            users_to_destroy_ids = [row[0] for row in users_to_destroy]
+            users_to_destroy_emails = [row[1] for row in users_to_destroy]
         except Exception as e:
             log_cleanup_dismissed_users_error(detail=str(e))
             return 0, 0
@@ -236,7 +240,7 @@ def do_users_cleanup(db_engine):
         # We deactivate users in a loop, because we need to anonymize their personal data and update related alerts and messages
         for user in users_to_deact:
             with db_session.begin_nested():
-                try: 
+                try:
                     deactivate_user(user, db_session)
                     db_session.flush() # flush the changes to the database before committing
                     deactivated_count += 1
@@ -248,13 +252,15 @@ def do_users_cleanup(db_engine):
             try:
                 delete_stmt = delete(User).where(User.id.in_(users_to_destroy_ids)) # type: ignore
                 db_session.exec(delete_stmt)
-                deleted_count = len(users_to_destroy_ids)
+                delete_stmt = delete(WhiteListEntry).where(WhiteListEntry.email.in_(users_to_destroy_emails)) # type: ignore
+                db_session.exec(delete_stmt)
                 db_session.commit()
+                deleted_count = len(users_to_destroy_ids)
             except Exception as e:
                 log_cleanup_dismissed_users_error(detail=str(e))
                 db_session.rollback()
     log_cleanup_dismissed_users_completed(detail=f"Cleanup completed: {deleted_count} users destroyed, {deactivated_count} users deactivated")
-    return deleted_count, deactivated_count
+    return deactivated_count, deleted_count
 
 def deactivate_user(user, db_session):
     user.is_active = False
@@ -286,7 +292,8 @@ def deactivate_user(user, db_session):
     db_session.exec(update(Message).where(Message.user_id == user.id).values(content=anonymous_msg))
     # We also reset all alert descriptions related to this user
     anonymous_desc = "This alert description has been removed due to account deactivation."
-    db_session.exec(update(Alert).where(Alert.user_id == user.id).values(description=anonymous_desc))
+    anonymous_addr = "Unknown address"
+    db_session.exec(update(Alert).where(Alert.user_id == user.id).values(description=anonymous_desc, address=anonymous_addr))
 
 def do_alerts_cleanup(db_engine):
     """

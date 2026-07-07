@@ -140,6 +140,9 @@ def get_recent_alerts(current_user: User = Depends(get_current_user),
     statement = union_all(alerts_by_me_stmt, alerts_to_me_stmt, alerts_general_stmt)
     statement = statement.order_by(desc(Alert.created_at))
     alerts = db_session.exec(statement).all() # type: ignore
+    for alert in alerts:
+        if alert.is_banned:
+            alert.description = "[BANNED ALERT]"
     return alerts
 
 @router.get("/api/alert/{alert_id}", response_model=AlertOut)
