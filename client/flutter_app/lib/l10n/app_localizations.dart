@@ -665,6 +665,12 @@ abstract class AppLocalizations {
   /// **'Details'**
   String get labelDetails;
 
+  /// No description provided for @labelDismissAccountConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: only in case you want to delete your account, type DELETE here and press ok'**
+  String get labelDismissAccountConfirmation;
+
   /// No description provided for @labelDoNotHaveAccount.
   ///
   /// In en, this message translates to:
@@ -1090,6 +1096,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration white list'**
   String get menuWhiteList;
+
+  /// No description provided for @successAccountDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active'**
+  String get successAccountDismissed;
 
   /// No description provided for @successAlertCreated.
   ///

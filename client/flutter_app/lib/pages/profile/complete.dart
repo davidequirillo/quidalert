@@ -66,7 +66,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -86,7 +86,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
-      _selectDate(context);
+      await _selectDate();
       return;
     }
     String dateToSend = _selectedDate!.toIso8601String();
@@ -282,7 +282,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                       border: OutlineInputBorder(),
                       suffixIcon: Icon(Icons.calendar_today),
                     ),
-                    onTap: () => _selectDate(context),
+                    onTap: () => _selectDate(),
                   ),
                   SizedBox(height: 25),
                   TextFormField(

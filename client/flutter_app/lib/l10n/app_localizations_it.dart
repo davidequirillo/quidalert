@@ -84,7 +84,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get exceptionNotFound => 'Risorsa non trovata';
 
   @override
-  String get exceptionUnknown => 'Unknown error';
+  String get exceptionUnknown => 'Errore sconosciuto';
 
   @override
   String get errorAccountBlocked => 'Account bloccato';
@@ -292,6 +292,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelDetails => 'Dettagli';
+
+  @override
+  String get labelDismissAccountConfirmation => 'Nota: solo nel caso in cui vuoi eliminare il tuo account, scrivi DELETE qui e premi su ok';
 
   @override
   String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
@@ -505,6 +508,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'White list per registrazione';
+
+  @override
+  String get successAccountDismissed => 'Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo';
 
   @override
   String get successAlertCreated => 'Allerta creata con successo';
