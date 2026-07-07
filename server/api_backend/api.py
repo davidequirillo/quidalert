@@ -92,25 +92,25 @@ async def init_engines(app: FastAPI):
     app.state.scheduler = AsyncIOScheduler()
     app.state.scheduler.add_job(
         do_locations_cleanup,
-        trigger=CronTrigger(hour=19, minute=15), # UTC time
+        trigger=CronTrigger(hour=13, minute=15), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_locations_job_v1",
     )
     app.state.scheduler.add_job(
         do_demotions_cleanup,
-        trigger=CronTrigger(hour=17, minute=15), # UTC time
+        trigger=CronTrigger(hour=15, minute=15), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_demotions_job_v1",
     )
     app.state.scheduler.add_job(
         do_alerts_cleanup,
-        trigger=CronTrigger(hour=15, minute=15), # UTC time
+        trigger=CronTrigger(hour=17, minute=15), # UTC time
         args=[app.state.db_engine],
         id="cleanup_old_alerts_job_v1",
     )
     app.state.scheduler.add_job(
         do_users_cleanup,
-        trigger=CronTrigger(hour=13, minute=15), # UTC time
+        trigger=CronTrigger(hour=19, minute=15), # UTC time
         args=[app.state.db_engine],
         id="cleanup_dismissed_users_job_v1",
     )
@@ -485,7 +485,6 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     auth_by = None # authorized by
     auth_at = None # authorized at
     now = now_tz_naive()
-    log_deleted_user = False
     if user_in.email and user_in.email.strip() != "":
         email_lowercase = user_in.email.strip().lower()
     else:
@@ -493,15 +492,24 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     existing_user = db_session.exec(
         select(User).where(User.email == email_lowercase)
     ).first()
+    existing_user_deleted = False
+    is_blocked = None
+    is_reliable = None
+    reliability_score = None
+    last_reliability_score_at = None
     if existing_user:
         if existing_user.is_active:
             return { "message": reg_message }
         else:
             if (existing_user.activation_expires_at and 
                     (existing_user.activation_expires_at < now)):
+                is_blocked = existing_user.is_blocked
+                is_reliable = existing_user.is_reliable
+                reliability_score = existing_user.reliability_score
+                last_reliability_score_at = existing_user.last_reliability_score_at
                 db_session.delete(existing_user)
                 db_session.flush()
-                log_deleted_user = True
+                existing_user_deleted = True
             else:
                 return { "message": reg_message }
     # If database is empty and password is correct we insert the admin
@@ -537,10 +545,19 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         authorized_by=auth_by,
         authorized_at=auth_at
     )
+    if existing_user_deleted:
+        if is_blocked is not None:
+            user.is_blocked = is_blocked
+        if is_reliable is not None:
+            user.is_reliable = is_reliable
+        if reliability_score is not None:
+            user.reliability_score = reliability_score
+        if last_reliability_score_at is not None:
+            user.last_reliability_score_at = last_reliability_score_at
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
-    if log_deleted_user:
+    if existing_user_deleted:
         api_events.log_deleted_user_to_renew_registration(str(user.id))
     background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
     return { "message": reg_message }

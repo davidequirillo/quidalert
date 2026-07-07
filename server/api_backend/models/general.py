@@ -424,6 +424,7 @@ class AlertOut(AlertIn, table=False):
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_pending: bool = Field(default=True, nullable=False) # "pending" means that the alert has been created but it's in processing phase (background task is running to spread the alert to nearby users)
     spread_count: int = Field(default=0, ge=0, le=3, nullable=False) # number of times the alert can spread to nearby users (adding new users to the alerted users list), max 3 spreads (initial alert + 3 spreads = max 4 "generations" of alerted users)
+    is_banned: bool = Field(default=False, nullable=False)
     is_closed: bool = Field(default=False, nullable=False)
 
 class Alert(AlertOut, table=True):
@@ -512,6 +513,7 @@ class Message(SQLModel, table=True):
         index=True
     )
     content: str = Field(nullable=False, min_length=1, max_length=512)
+    is_banned: bool = Field(default=False, nullable=False)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
 
 class AlertOutWithInfo(BaseModel):

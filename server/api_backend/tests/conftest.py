@@ -145,7 +145,7 @@ def create_not_logged_test_user(db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
         "surname": "Surname1",
-        "email": "test_user_not_logged@example.com",
+        "email": "test.user.not.logged@example.com",
         "language": UserLanguage.en.value,
         "password_hash": "myfakehashedpasswordabcde",
         "is_superuser": False,
@@ -156,7 +156,7 @@ def create_not_logged_test_user(db_session: Session):
         "is_active": True,
         "activation_code": "fakeacttoken",
         "activation_code_expires_at": activation_expiry(),
-        "authorized_by": "superuser@example.com",
+        "authorized_by": "test.superuser@example.com",
         "authorized_at": now_tz_naive(),
     })
     db_session.add(test_user)
@@ -168,7 +168,7 @@ def create_logged_test_user(user_type, db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
         "surname": "Surname1",
-        "email": f"test_{user_type}@example.com",
+        "email": f"test.{user_type}@example.com",
         "language": UserLanguage.en.value,
         "password_hash": "myfakehashedpasswordabcde",
         "is_superuser": (user_type == "superuser"),
@@ -179,7 +179,7 @@ def create_logged_test_user(user_type, db_session: Session):
         "is_active": True,
         "activation_code": "fakeacttoken",
         "activation_code_expires_at": activation_expiry(),
-        "authorized_by": "superuser@example.com",
+        "authorized_by": "test.superuser@example.com",
         "authorized_at": now_tz_naive(),
     })
     now = now_tz_naive()
@@ -243,7 +243,7 @@ def existing_superuser(db_session):
     superuser = User(
         firstname="Admin",
         surname="Super",
-        email="admin@example.com",
+        email="superuser.in.db@example.com",
         password_hash="fakepwdhash",
         activation_code="fakeactivationcode",
         activation_expires_at=activation_expiry(),
@@ -258,7 +258,7 @@ def existing_superuser(db_session):
 
 @pytest.fixture(name="whitelist_entry")
 def existing_whitelist_entry(db_session):
-    entry = WhiteListEntry(email="whitelisted@example.com", created_by="admin@example.com")
+    entry = WhiteListEntry(email="whitelisted@example.com", created_by="superuser.in.db@example.com")
     db_session.add(entry)
     db_session.commit()
     db_session.refresh(entry)

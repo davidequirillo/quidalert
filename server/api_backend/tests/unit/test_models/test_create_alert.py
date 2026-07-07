@@ -205,6 +205,7 @@ def test_create_alert_out_with_defaults():
     assert alert.radius == 1.0
     assert alert.type == AlertType.local.value
     assert alert.spread_count == 0
+    assert alert.is_banned == False
     assert alert.is_closed == False
     assert alert.is_pending == True
 

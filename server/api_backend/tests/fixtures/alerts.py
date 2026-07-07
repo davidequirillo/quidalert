@@ -244,8 +244,10 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             radius=random.uniform(2,5)
         )
         db_session.add(alert)
-    # User candidates (to be alerted users) are not chiefs and must not include the test baseuser, the test chief, or the test "strange" user
-    user_candidates_stmt = select(User).where(User.is_chief == False, User.id != user.id, User.id != chief.id, User.id != strange_user.id)
+    # We keep base users as candidates to be "alerted users" (not including test_baseuser, test_chief, or test_strange_user)
+    user_candidates_stmt = select(User).where(
+        User.is_chief == False, User.is_admin == False, User.is_officer == False, 
+        User.id != user.id, User.id != chief.id, User.id != strange_user.id)
     user_candidates = db_session.exec(user_candidates_stmt).all()
     if len(user_candidates) == 0:
         raise Exception("No user candidates found to create alerted users for the test alerts, please check the setup_users_data_and_teardown fixture and ensure that it is imported in the test file")
@@ -264,7 +266,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             db_session.add(alerted_user)
     # Now we create some alerted users for the alerts created, using the test baseuser and test chief as alerted users for some alerts
     # We will add the test baseuser as an alerted user for the first 3 alerts, and the test chief as an alerted user for the next 3 alerts
-    # Note: the alerts are not created by the test baseuser or test chief (are created by the "strange" user, "test_officer"), so they can be alerted users for these alerts
+    # Note: the alerts are not created by the test baseuser or test chief (are created by the "strange" user, "test_officer"),
+    # so test_baseuser and test_chief can be alerted users for these alerts
     statement = select(Alert).where(Alert.user_id != user.id, Alert.user_id != chief.id)
     for i, alert in enumerate(db_session.exec(statement).all()):
         if (alert.type == AlertType.general.value):

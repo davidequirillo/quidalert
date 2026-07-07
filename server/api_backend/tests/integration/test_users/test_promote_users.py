@@ -761,8 +761,8 @@ def test_promote_users_modify_authorizer_called_by_admin(client, db_session, tes
     # There are for sure 4 chiefs with role "usar" in the database (see setup fixture)
     assert len(usar_chiefs) == 4
     # Now we call the promote API to change the authorizer of all chiefs with role "usar" to "admin1@example.com"
-    # The api caller is test_admin (test_admin@example.com)
-    assert user.email == "test_admin@example.com"
+    # The api caller is test_admin (test.admin@example.com)
+    assert user.email == "test.admin@example.com"
     params = {
         "type": UserType.chief.value,
         "role": UserRole.usar.value

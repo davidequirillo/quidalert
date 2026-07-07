@@ -15,7 +15,7 @@ from tests.fixtures.alerts import (
     setup_alerts_data_and_teardown # required (fixture automatically called)
 )
 
-def test_delete_old_alerts_with_one_old_alert_in_db(db_session: Session):
+def test_delete_old_alerts_one_old_alert_in_db(db_session: Session):
     now = now_tz_naive()
     statement = select(Alert)
     # We get the first alert from the database (see setup_alerts_data fixture)
@@ -59,7 +59,7 @@ def test_delete_old_alerts_with_one_old_alert_in_db(db_session: Session):
     alerted_users_after_cleanup = db_session.exec(statement).all()
     assert len(alerted_users_after_cleanup) == 0
 
-def test_delete_old_alerts_with_no_old_alerts_in_db(db_session: Session):
+def test_delete_old_alerts_no_old_alerts_in_db(db_session: Session):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)
@@ -98,7 +98,7 @@ def test_delete_old_alerts_empty_table(db_session: Session):
     # Check that no alert has been deleted, because there are no alerts in the database
     assert cleaned_num == 0
 
-def test_delete_old_alerts_with_some_old_alerts_in_db(db_session: Session):
+def test_delete_old_alerts_some_old_alerts_in_db(db_session: Session):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)

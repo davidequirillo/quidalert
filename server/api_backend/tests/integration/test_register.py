@@ -303,3 +303,109 @@ def test_register_overwrite_user_if_inactive_and_expired(client, db_session, sup
     assert user.activation_expires_at > now_tz_naive()
     assert user.firstname == payload["firstname"] # the new user should have the new firstname and surname from the new payload
     assert user.surname == payload["surname"] # the new user should have the new firstname and surname from the new payload
+
+def test_register_overwrite_user_if_inactive_blocked_and_unreliable(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": whitelist_entry.email,
+        "password": "MyValidPassword123!"
+    }
+    # 1st registration attempt with the email in the whitelist
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the user was created with the email in the whitelist
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user_in_db = results[0]
+    assert user_in_db.email == whitelist_entry.email
+    assert user_in_db.firstname == payload["firstname"]
+    assert user_in_db.surname == payload["surname"]
+    assert user_in_db.is_superuser == False
+    assert user_in_db.is_admin == False
+    # A new user is created with these default values
+    assert user_in_db.is_blocked == False
+    assert user_in_db.is_reliable == True
+    assert user_in_db.reliability_score == 100
+    # Modify the user to be inactive, blocked and unreliable
+    user_in_db.activation_expires_at = now_tz_naive() - timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS + 1) # expired token
+    user_in_db.is_blocked = True
+    user_in_db.is_reliable = False
+    user_in_db.reliability_score = 0
+    user_in_db.last_reliability_score_at = now_tz_naive() - timedelta(hours=ACTIVATION_TOKEN_TTL_HOURS + 1)
+    db_session.add(user_in_db)
+    db_session.commit()
+    db_session.refresh(user_in_db)
+    # Now, we try to do a 2nd registration attempt, with the same email,
+    # with the malicious intent to reset the is_blocked, is_reliable and reliability_score fields to default values.
+    # But the system should not allow this, and should remember the old values of these fields
+    payload["firstname"] = "NewJohn"
+    payload["surname"] = "NewDoe"
+    payload["email"] = whitelist_entry.email
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the old user has been overwritten  
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user = results[0]
+    assert user.is_superuser == False
+    assert user.is_admin == False
+    assert user.firstname == payload["firstname"]
+    assert user.surname == payload["surname"]
+    # Blocked and unreliable fields should remain as they were before the 2nd registration attempt
+    assert user.is_blocked == True
+    assert user.is_reliable == False
+    assert user.reliability_score == 0
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at == user_in_db.last_reliability_score_at
+
+def test_register_overwrite_but_not_whitelisted_anymore(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": whitelist_entry.email,
+        "password": "MyValidPassword123!"
+    }
+    # 1st registration attempt with the email in the whitelist
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the user was created with the email in the whitelist
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user_in_db = results[0]
+    assert user_in_db.email == whitelist_entry.email
+    assert user_in_db.firstname == payload["firstname"]
+    assert user_in_db.surname == payload["surname"]
+    assert user_in_db.is_superuser == False
+    assert user_in_db.is_admin == False
+    # Now, we remove the whitelist entry for this email
+    db_session.delete(whitelist_entry)
+    db_session.commit()
+    # 2nd registration attempt with the same email, but now it is not in the whitelist anymore,
+    # because the whitelist entry was deleted. The system should not allow this, and should not overwrite the existing user.
+    payload["firstname"] = "NewJohn"
+    payload["surname"] = "NewDoe"
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the existing user was not overwritten
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user_in_db = results[0]
+    assert user_in_db.firstname == "John" # the old firstname
+    assert user_in_db.surname == "Doe" # the old surname, so it was not overwritten
