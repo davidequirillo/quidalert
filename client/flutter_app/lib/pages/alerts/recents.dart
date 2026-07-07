@@ -50,7 +50,6 @@ class RecentAlertsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryController = PrimaryScrollController.of(context);
     final loc = AppLocalizations.of(context)!;
     return FutureBuilder<List<Alert>>(
       future: _getRecentAlerts(context),
@@ -81,13 +80,14 @@ class RecentAlertsBody extends StatelessWidget {
   }
 
   Widget alertList(BuildContext context, List<Alert> alerts) {
+    final primaryScrollController = PrimaryScrollController.of(context);
     final loc = AppLocalizations.of(context)!;
     if (alerts.isEmpty) {
       return Center(child: Text(loc.labelNoEntryFound));
     }
     return Expanded(
       child: ListView.separated(
-        controller: PrimaryScrollController.of(context),
+        controller: primaryScrollController,
         itemCount: alerts.length,
         separatorBuilder: (context, index) => Divider(),
         itemBuilder: (context, index) {

@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import os
+import random
 from datetime import timedelta
 from fastapi import (FastAPI, Depends,
     Request, HTTPException, BackgroundTasks)
@@ -90,27 +91,39 @@ async def init_engines(app: FastAPI):
         print("Firebase Admin SDK already initialized")
     print("Initializing periodic tasks scheduler...")
     app.state.scheduler = AsyncIOScheduler()
+    random_hour = random.randint(0, 23)
+    random_minute = random.randint(0, 59)
+    print(f"Scheduling periodic task 'cleanup_expired_locations' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_locations_cleanup,
-        trigger=CronTrigger(hour=13, minute=15), # UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_locations_job_v1",
     )
+    random_hour = random.randint(0, 23)
+    random_minute = random.randint(0, 59)
+    print(f"Scheduling periodic task 'cleanup_expired_demotions' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_demotions_cleanup,
-        trigger=CronTrigger(hour=15, minute=15), # UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute), # UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_demotions_job_v1",
     )
+    random_hour = random.randint(0, 23)
+    random_minute = random.randint(0, 59)
+    print(f"Scheduling periodic task 'cleanup_old_alerts' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_alerts_cleanup,
-        trigger=CronTrigger(hour=17, minute=15), # UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute), # UTC time
         args=[app.state.db_engine],
         id="cleanup_old_alerts_job_v1",
     )
+    random_hour = random.randint(0, 23)
+    random_minute = random.randint(0, 59)
+    print(f"Scheduling periodic task 'cleanup_dismissed_users' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_users_cleanup,
-        trigger=CronTrigger(hour=19, minute=15), # UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute), # UTC time
         args=[app.state.db_engine],
         id="cleanup_dismissed_users_job_v1",
     )

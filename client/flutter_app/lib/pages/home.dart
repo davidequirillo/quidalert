@@ -12,6 +12,7 @@ import 'dart:convert';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/notification.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
@@ -39,6 +40,8 @@ class HomeBody extends StatefulWidget {
 
 class _HomeBodyState extends State<HomeBody> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _dismissInputFieldController =
+      TextEditingController();
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _HomeBodyState extends State<HomeBody> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _dismissInputFieldController.dispose();
     super.dispose();
   }
 
@@ -79,6 +83,44 @@ class _HomeBodyState extends State<HomeBody> {
       '/user/profile',
     );
     return json.decode(response.body);
+  }
+
+  Future<void> submitDismissAccountRequest() async {
+    if (_dismissInputFieldController.text.trim().toLowerCase() != "delete") {
+      return;
+    }
+    final authClient = context.read<AuthClient>();
+    final loc = AppLocalizations.of(context)!;
+    String retTitle = "";
+    String retMessage = "";
+    bool isError = true;
+    try {
+      await authClient.doProtectedApiRequest("post", '/dismiss-account');
+      isError = false;
+      retTitle = loc.successGeneric;
+      retMessage = loc.successAccountDismissed;
+    } catch (e) {
+      debugPrint("Error submitting dismiss account request: $e");
+      final exceptionName = e.runtimeType.toString();
+      final locAttribute = "exception$exceptionName".replaceAll(
+        "Exception",
+        "",
+      );
+      final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+      retTitle = loc.errorGeneric;
+      retMessage = errorMessage;
+    } finally {
+      if (mounted) {
+        await showSimpleAlertDialog(context, retTitle, retMessage);
+      }
+      if (!isError) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      } else {
+        _dismissInputFieldController.clear();
+      }
+    }
   }
 
   Future<void> _syncFcmToken() async {
@@ -200,6 +242,24 @@ class _HomeBodyState extends State<HomeBody> {
                     ),
                     SizedBox(height: 35),
                     _buildProfileCard(data),
+                    ListTile(
+                      leading: Icon(Icons.delete_forever),
+                      title: Text(loc.labelDismissAccountConfirmation),
+                    ),
+                    TextField(
+                      keyboardType: TextInputType.emailAddress,
+                      controller: _dismissInputFieldController,
+                      decoration: InputDecoration(
+                        labelText: loc.labelTypeDeleteToConfirm,
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        submitDismissAccountRequest();
+                      },
+                      label: Text(loc.labelOK),
+                    ),
                   ],
                 ),
               ),
