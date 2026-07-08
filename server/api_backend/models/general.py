@@ -523,4 +523,4 @@ class AlertOutWithInfo(BaseModel):
     sender_reliability_score: int
     sender: Optional[UserOutSmall] = None # the chief (alert manager) can view all sender info
     alerted_users: Optional[List[UserOutSmall]] = None # the chief (alert manager) can view all alerted users info
-    alerted_users_number: int
+    alerted_users_num: int

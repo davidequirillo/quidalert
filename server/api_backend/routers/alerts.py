@@ -15,7 +15,10 @@ from dependencies import (get_current_user,
 from sqlmodel import Session, desc, select, union_all
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
-from core.exceptions import forbidden_exception
+from core.exceptions import (
+    forbidden_exception,
+    not_found_exception
+)
 from core.logging import get_request_info
 from core.dbmgr import (
     get_redis_chief_locations_key, 
@@ -23,9 +26,12 @@ from core.dbmgr import (
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key)
 from models.general import (string_as_uuid,
-    Alert, AlertType, AlertIn, AlertOut,
-    GpsCoordinatesSchema, GpsTokenData, RefreshToken, User,
-    AlertedUser)
+    Alert, AlertType, AlertIn, 
+    AlertOut, AlertOutWithInfo, 
+    AlertedUser,
+    GpsCoordinatesSchema, GpsTokenData, 
+    RefreshToken, User
+    )
 from services.security import (
     now_tz_naive, now_tz_aware)
 from services.alert_btasks import (
@@ -145,15 +151,49 @@ def get_recent_alerts(current_user: User = Depends(get_current_user),
             alert.description = "[BANNED ALERT]"
     return alerts
 
-@router.get("/api/alert/{alert_id}", response_model=AlertOut)
+@router.get("/api/alert/{alert_id}", response_model=AlertOutWithInfo)
 def get_alert(alert_id: int,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
-    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
-    if alert is None:
-        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Alert not found")
-    # At the moment, all users can see all alerts
-    # But we might want to restrict an alert visibility to the alerted users (the chief, and nearby users)
+    statement = (select(Alert, User)
+        .join(User, Alert.user_id == User.id) # type: ignore
+        .where(Alert.id == alert_id))   
+    result = db_session.exec(statement).first()
+    if result:
+        alert = result[0]
+        sender = result[1]
+    else:
+        alert = None
+        sender = None
+    if not alert or not sender:
+        raise not_found_exception("Alert not found")
+    if alert.type != AlertType.general.value:
+        # A note about non-general alerts: 
+        # base users can only see alerts they created or alerts they were alerted about;
+        # officers can see alerts they created, alerts they were alerted about, and alerts created by users authorized by them;
+        if ((alert.user_id != current_user.id) 
+            and (not current_user.is_admin) and  
+                    (not current_user.is_chief)):
+            alerted_user = db_session.exec(select(AlertedUser).where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)).first()
+            if current_user.is_officer:
+                if (alerted_user is None):
+                    if sender.authorized_by != current_user.email:
+                        raise forbidden_exception()
+            else:
+                if alerted_user is None:
+                    raise forbidden_exception()
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    alert_out_with_info = {
+        "alert": alert, 
+        "sender_firstname": sender.firstname,
+        "sender_surname": sender.surname,
+        "sender_reliability_score": sender.reliability_score,
+        "alerted_users_num": len(alerted_users),
+    }
+    if current_user.is_admin or current_user.is_chief:
+        alert_out_with_info["sender"] = sender
+        alert_out_with_info["alerted_users"] = alerted_users
     return alert
 
 @router.post("/api/alert-close")
@@ -165,7 +205,7 @@ def close_alert(alert_id: int,
         raise forbidden_exception()
     alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
     if alert is None:
-        return {"message": "Alert not found"}
+        raise not_found_exception("Alert not found")
     alert.is_closed = True
     db_session.add(alert)
     db_session.commit()
