@@ -167,7 +167,15 @@ def get_alert(alert_id: int,
         sender = None
     if not alert or not sender:
         raise not_found_exception("Alert not found")
-    if alert.type != AlertType.general.value:
+    if alert.type == AlertType.general.value:
+        return {
+            "alert": alert, 
+            "sender_firstname": sender.firstname,
+            "sender_surname": sender.surname,
+            "sender_reliability_score": sender.reliability_score,
+            "alerted_users_num": 0,
+        }
+    else:
         # A note about non-general alerts: 
         # base users can only see alerts they created or alerts they were alerted about;
         # officers can see alerts they created, alerts they were alerted about, and alerts created by users authorized by them;
@@ -194,6 +202,9 @@ def get_alert(alert_id: int,
     if current_user.is_admin or current_user.is_chief:
         alert_out_with_info["sender"] = sender
         alert_out_with_info["alerted_users"] = alerted_users
+    else:
+        alert_out_with_info["sender"] = None
+        alert_out_with_info["alerted_users"] = None
     return alert
 
 @router.post("/api/alert-close")
