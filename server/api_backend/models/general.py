@@ -521,6 +521,14 @@ class AlertOutWithInfo(BaseModel):
     sender_firstname: str
     sender_surname: str
     sender_reliability_score: int
-    sender: Optional[UserOutSmall] = None # the chief (alert manager) can view all sender info
-    alerted_users: Optional[List[UserOutSmall]] = None # the chief (alert manager) can view all alerted users info
     alerted_users_num: int
+    positive_votes_num: int
+    negative_votes_num: int
+    chief_is_alerted: bool
+    chief_closing_vote: int
+
+class AlertOutWithUsers(BaseModel):
+    alert: AlertOut
+    sender: UserOutSmall
+    users: List[UserOutSmall]
+    votes_map: dict[uuid.UUID, AlertedUser] # user_id -> vote info (AlertedUser object, with vote and closing_vote)

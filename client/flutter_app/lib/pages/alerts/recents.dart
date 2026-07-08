@@ -38,7 +38,7 @@ class RecentAlertsBody extends StatelessWidget {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "get",
-      '/recent-alerts',
+      '/alerts/recent',
     );
     final List<dynamic>? respObj = json.decode(response.body);
     if (respObj == null) {

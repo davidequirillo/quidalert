@@ -27,7 +27,7 @@ from core.dbmgr import (
     get_redis_chief_demotions_key)
 from models.general import (string_as_uuid,
     Alert, AlertType, AlertIn, 
-    AlertOut, AlertOutWithInfo, 
+    AlertOut, AlertOutWithInfo, AlertOutWithUsers,
     AlertedUser,
     GpsCoordinatesSchema, GpsTokenData, 
     RefreshToken, User
@@ -130,7 +130,7 @@ def create_alert(alert_in: AlertIn,
     else:
         return {"message": f"{alert.type.capitalize()} alert created, searching for nearby users and chiefs to notify"}
 
-@router.get("/api/recent-alerts", response_model=list[AlertOut])
+@router.get("/api/alerts/recent", response_model=list[AlertOut])
 def get_recent_alerts(current_user: User = Depends(get_current_user),
         db_session: Session = Depends(get_db_session)):
     now = now_tz_naive()
@@ -151,6 +151,8 @@ def get_recent_alerts(current_user: User = Depends(get_current_user),
             alert.description = "[BANNED ALERT]"
     return alerts
 
+# API endpoint used by all users to view general details of a specific alert, 
+# for example: description, gps location, sender name and reliability score, number of alerted users
 @router.get("/api/alert/{alert_id}", response_model=AlertOutWithInfo)
 def get_alert(alert_id: int,
             current_user: User = Depends(get_current_user), 
@@ -165,47 +167,97 @@ def get_alert(alert_id: int,
     else:
         alert = None
         sender = None
-    if not alert or not sender:
+    if (not alert) or (not sender):
         raise not_found_exception("Alert not found")
-    if alert.type == AlertType.general.value:
-        return {
-            "alert": alert, 
-            "sender_firstname": sender.firstname,
-            "sender_surname": sender.surname,
-            "sender_reliability_score": sender.reliability_score,
-            "alerted_users_num": 0,
-        }
-    else:
+    if alert.is_banned:
+        alert.description = "[BANNED ALERT]"
+    current_user_is_the_sender = False
+    current_user_is_alerted = False
+    chief_is_alerted = False
+    chief_closing_vote = 0
+    alerted_users_num = 0
+    votes_up_num = 0
+    votes_down_num = 0
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    if current_user.id == alert.user_id:
+        current_user_is_the_sender = True
+    for au in alerted_users:
+        if au.user_id == current_user.id:
+            current_user_is_alerted = True
+        if au.is_manager:
+            chief_is_alerted = True
+            chief_closing_vote = au.closing_vote
+        if au.vote > 0:
+            votes_up_num += 1
+        elif au.vote < 0:
+            votes_down_num += 1
+        alerted_users_num += 1
+    if alert.type != AlertType.general.value:
         # A note about non-general alerts: 
         # base users can only see alerts they created or alerts they were alerted about;
         # officers can see alerts they created, alerts they were alerted about, and alerts created by users authorized by them;
-        if ((alert.user_id != current_user.id) 
-            and (not current_user.is_admin) and  
+        if ((not current_user_is_the_sender) and 
+                (not current_user.is_admin) and 
                     (not current_user.is_chief)):
-            alerted_user = db_session.exec(select(AlertedUser).where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)).first()
             if current_user.is_officer:
-                if (alerted_user is None):
+                if (not current_user_is_alerted):
                     if sender.authorized_by != current_user.email:
                         raise forbidden_exception()
             else:
-                if alerted_user is None:
+                if (not current_user_is_alerted):
                     raise forbidden_exception()
-    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
-    alerted_users = db_session.exec(statement).all()
-    alert_out_with_info = {
+    alert_with_info = {
         "alert": alert, 
         "sender_firstname": sender.firstname,
         "sender_surname": sender.surname,
         "sender_reliability_score": sender.reliability_score,
-        "alerted_users_num": len(alerted_users),
+        "alerted_users_num": alerted_users_num,
+        "positive_votes_num": votes_up_num,
+        "negative_votes_num": votes_down_num,
+        "chief_is_alerted": chief_is_alerted,
+        "chief_closing_vote": chief_closing_vote
     }
-    if current_user.is_admin or current_user.is_chief:
-        alert_out_with_info["sender"] = sender
-        alert_out_with_info["alerted_users"] = alerted_users
+    return alert_with_info
+
+# API endpoint used by the chief to list all users involved in the specific alert (sender and alerted users),
+# so he can see their personal info and their votes about the alert
+@router.get("/api/alert/{alert_id}/users", response_model=AlertOutWithUsers)
+def get_alert_with_users(alert_id: int,
+                current_user: User = Depends(get_current_user), 
+                db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_admin) and (not current_user.is_chief):
+        raise forbidden_exception()
+    statement = (select(Alert, User)
+        .join(User, Alert.user_id == User.id) # type: ignore
+        .where(Alert.id == alert_id))
+    result = db_session.exec(statement).first()
+    if result:
+        alert = result[0]
+        sender = result[1]
     else:
-        alert_out_with_info["sender"] = None
-        alert_out_with_info["alerted_users"] = None
-    return alert
+        alert = None
+        sender = None
+    if (not alert) or (not sender):
+        raise not_found_exception("Alert not found")
+    statement = (select(User, AlertedUser)
+        .join(AlertedUser, User.id == AlertedUser.user_id) # type: ignore
+        .where(AlertedUser.alert_id == alert.id))
+    results = db_session.exec(statement).all()
+    users = []
+    votes_map = {}
+    for r in results:
+        user = r[0]
+        alerted_user = r[1]
+        users.append(user)
+        votes_map[user.id] = alerted_user
+    alert_with_users = { 
+        "alert": alert, 
+        "sender": sender, 
+        "users": users, 
+        "votes_map": votes_map 
+    }
+    return alert_with_users
 
 @router.post("/api/alert-close")
 def close_alert(alert_id: int,
