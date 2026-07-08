@@ -2,7 +2,7 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from fastapi import status
 from sqlmodel import select, delete
 from core.exceptions import (
@@ -16,12 +16,12 @@ from tests.fixtures.alerts import (
 )
 
 def test_get_recent_alerts_not_authorized_missing_token(client):
-    response = client.get("/api/recent-alerts")
+    response = client.get("/api/alerts/recent")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_get_recent_alerts_not_authorized_invalid_token(client):
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": "Bearer invalidtoken"})
+        "/api/alerts/recent", headers={"Authorization": "Bearer invalidtoken"})
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
@@ -45,7 +45,7 @@ def test_get_recent_alerts(client, db_session, test_baseuser):
     alerts_general = db_session.exec(alerts_general_stmt).all()
     recent_alerts = alerts_by_me + alerts_to_me + alerts_general
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     assert len(alerts) > 0
@@ -104,7 +104,7 @@ def test_get_recent_alerts_some_are_expired(client, db_session, test_baseuser):
     db_session.commit()
     # Now we call the recent alerts API endpoint
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     # The result is positive, because we have some alerts that are not expired (see setup_alerts_data_and_teardown fixture in tests/fixtures/alerts.py)
@@ -123,7 +123,7 @@ def test_get_recent_alerts_empty_table(client, db_session, test_baseuser):
     db_session.exec(delete(Alert))
     db_session.commit()
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     assert len(alerts) == 0
@@ -145,7 +145,7 @@ def test_get_recent_alerts_no_alerts_by_me(client, db_session, test_baseuser):
     alerts_general = db_session.exec(alerts_general_stmt).all()
     recent_alerts = alerts_to_me + alerts_general
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     # Some alerts are returned for sure (alerts to me and general alerts), but not all alerts in the database
@@ -169,7 +169,7 @@ def test_get_recent_alerts_no_alerts_by_me_and_to_me(client, db_session, test_ba
     alerts_general_stmt = (select(Alert).where(Alert.type == AlertType.general.value))
     alerts_general = db_session.exec(alerts_general_stmt).all()
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     # Some alerts are returned for sure (general alerts), but not all alerts in the database
@@ -191,7 +191,7 @@ def test_get_recent_alerts_no_alerts_by_me_and_to_me_and_no_general_alerts(clien
     db_session.exec(delete(Alert).where(Alert.type == AlertType.general.value)) # type: ignore
     db_session.commit()
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     # No alerts are returned, because we deleted all alerts by me, to me and general alerts
@@ -221,7 +221,7 @@ def test_get_recent_alerts_called_by_testchief(client, db_session, test_chief):
     alerts_general = db_session.exec(alerts_general_stmt).all()
     recent_alerts = alerts_by_me + alerts_to_me + alerts_general
     response = client.get(
-        "/api/recent-alerts", headers={"Authorization": f"Bearer {access_token}"})
+        "/api/alerts/recent", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     alerts = response.json()
     assert len(alerts) > 0

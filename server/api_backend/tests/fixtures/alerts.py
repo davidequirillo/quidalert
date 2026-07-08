@@ -268,12 +268,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
     # We will add the test baseuser as an alerted user for the first 3 alerts, and the test chief as an alerted user for the next 3 alerts
     # Note: the alerts are not created by the test baseuser or test chief (are created by the "strange" user, "test_officer"),
     # so test_baseuser and test_chief can be alerted users for these alerts
-    statement = select(Alert).where(Alert.user_id != user.id, Alert.user_id != chief.id)
+    statement = select(Alert).where(Alert.user_id != user.id, Alert.user_id != chief.id, Alert.type == AlertType.local.value)
     for i, alert in enumerate(db_session.exec(statement).all()):
-        if (alert.type == AlertType.general.value):
-            continue # generale alerts have no alerted users
-        if (alert.type == AlertType.empty.value):
-            continue # empty alerts have no alerted users
         if i < 3:
             alerted_user = AlertedUser(
                 alert_id=alert.id,

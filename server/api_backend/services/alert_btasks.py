@@ -123,7 +123,7 @@ async def task_alert_search_and_notify(
     else:
         log_alert_no_nearby_users_to_notify(str(alert.id), request_info)
     if settings.app_mode == "development":
-        await asyncio.sleep(10) # to simulate a long processing time, for manual testing purposes, to be removed in production
+        await asyncio.sleep(10) # line executed only in development-mode, to simulate a long processing time, for manual testing purposes
     if (chief_can_be_notified) or (nearby_users_can_be_notified):
         description = alert.description if (len(alert.description) <= 100) else (alert.description[:100] + "...")
         message_prefix = alert_notification_templates[user.language]["alert_prefix"].format(

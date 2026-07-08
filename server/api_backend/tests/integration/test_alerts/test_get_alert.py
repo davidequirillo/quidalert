@@ -1,0 +1,279 @@
+# Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Copyright (C) 2025  Davide Quirillo
+# Licensed under the GNU GPL v3 or later. See LICENSE for details.
+
+from datetime import timedelta
+from fastapi import status
+from sqlmodel import select, delete
+from core.exceptions import (
+    not_found_exception,
+    token_not_valid_exception,
+    forbidden_exception
+)
+from models.general import User, Alert, AlertType, AlertedUser
+from services.security import now_tz_naive
+from tests.fixtures.alerts import (
+    setup_users_data_and_teardown, # required (fixture automatically called)
+    setup_alerts_data_and_teardown, # required (fixture automatically called)
+)
+
+def test_get_alert_not_authorized_missing_token(client, db_session):
+    statement = select(Alert)
+    alert = db_session.exec(statement).first()
+    # There is at least one alert (see setup_alerts_data_and_teardown fixture)
+    assert alert is not None, "No alert found in the database for testing"
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+def test_get_alert_not_authorized_invalid_token(client, db_session):
+    statement = select(Alert)
+    alert = db_session.exec(statement).first()
+    # There is at least one alert (see setup_alerts_data_and_teardown fixture)
+    assert alert is not None, "No alert found in the database for testing"
+    alert_id = alert.id
+    response = client.get(
+        f"/api/alert/{alert_id}", headers={"Authorization": "Bearer invalidtoken"})
+    assert response.status_code == token_not_valid_exception().status_code
+    assert response.json()["detail"] == token_not_valid_exception().detail
+
+def test_get_alert_not_found(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None, "No user found in the database for testing"
+    access_token = test_baseuser['access_token']
+    statement = select(Alert)
+    alert = db_session.exec(statement).first()
+    # There is at least one alert (see setup_alerts_data_and_teardown fixture)
+    assert alert is not None, "No alert found in the database for testing"
+    alert_id = alert.id
+    # We delete the alert to simulate a not found scenario
+    db_session.exec(delete(Alert).where(Alert.id == alert_id))
+    db_session.commit()
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == not_found_exception("Alert not found").status_code
+    assert "Alert not found" in response.json()["detail"]
+
+def test_get_alert_user_not_found(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None, "No user found in the database for testing"
+    access_token = test_baseuser['access_token']
+    statement = select(Alert, User).join(User, Alert.user_id == User.id) # type: ignore
+    result = db_session.exec(statement).first()
+    # There is at least one alert with related user (see setup_alerts_data_and_teardown fixture)
+    assert result is not None, "No alert and user found in the database for testing"
+    alert, sender = result
+    assert alert is not None, "No alert found in the database for testing"
+    alert_id = alert.id
+    assert sender is not None, "No user found in the database for testing"
+    sender_id = sender.id
+    # We delete the user (the sender) to simulate a not found scenario
+    db_session.exec(delete(User).where(User.id == sender_id))
+    db_session.commit()
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == not_found_exception("Alert not found").status_code
+    assert "Alert not found" in response.json()["detail"]
+
+def test_get_alert_success_but_is_banned(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None, "No user found in the database for testing"
+    access_token = test_baseuser['access_token']
+    statement = select(Alert, User).join(User, Alert.user_id == User.id) # type: ignore
+    result = db_session.exec(statement).first()
+    # There is at least one alert with related user (see setup_alerts_data_and_teardown fixture)
+    assert result is not None, "No alert and user found in the database for testing"
+    alert, sender = result
+    assert alert is not None, "No alert found in the database for testing"
+    alert_id = alert.id
+    assert sender is not None, "No user found in the database for testing"
+    # We set "is_banned" field of the alert, to simulate a banned alert scenario
+    alert.is_banned = True
+    db_session.add(alert)
+    db_session.commit()
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_obj = response.json()
+    assert resp_obj["alert"]["description"] == "[BANNED ALERT]"
+
+def test_get_alert_success_general_alert(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None, "No user found in the database for testing"
+    access_token = test_baseuser['access_token']
+    statement = select(Alert, User).join(User, Alert.user_id == User.id).where(Alert.type == AlertType.general.value) # type: ignore
+    result = db_session.exec(statement).first()
+    # There is at least one alert with related user (see setup_alerts_data_and_teardown fixture)
+    assert result is not None, "No alert and user found in the database for testing"
+    alert, sender = result
+    assert alert is not None, "No alert found in the database for testing"
+    alert_id = alert.id
+    assert sender is not None, "No user found in the database for testing"
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_obj = response.json()
+    assert resp_obj["alert"]["id"] == alert.id
+    assert resp_obj["alert"]["description"] == alert.description
+    assert resp_obj["alert"]["type"] == alert.type
+    assert resp_obj["alert"]["latitude"] <= alert.latitude + 0.0001 
+    assert resp_obj["alert"]["latitude"] >= alert.latitude - 0.0001
+    assert resp_obj["alert"]["longitude"] <= alert.longitude + 0.0001
+    assert resp_obj["alert"]["longitude"] >= alert.longitude - 0.0001
+    assert resp_obj["alert"]["created_at"] == alert.created_at.isoformat()
+    assert resp_obj["sender_firstname"] == sender.firstname
+    assert resp_obj["sender_surname"] == sender.surname
+    assert resp_obj["sender_reliability_score"] == sender.reliability_score
+    # It's a general alert (no alerted users)
+    assert resp_obj["alerted_users_num"] == 0
+    assert resp_obj["positive_votes_num"] == 0
+    assert resp_obj["negative_votes_num"] == 0
+
+def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None
+    access_token = test_baseuser['access_token']
+    statement = select(Alert).where(Alert.user_id == caller.id, Alert.type == AlertType.local.value) # type: ignore
+    alert = db_session.exec(statement).first()
+    # There is at least one local alert created by the caller (see setup_alerts_data_and_teardown fixture)
+    assert alert is not None
+    assert alert.user_id == caller.id
+    assert alert.type == AlertType.local.value
+    # And this alert has some alerted users (see setup_alerts_data_and_teardown fixture)
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    assert len(alerted_users) > 0
+    # Now we can test the API endpoint to get the alert details,
+    # and we verify that the results are the same of the results obtained from database
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_obj = response.json()
+    assert resp_obj["alert"]["id"] == alert.id
+    assert resp_obj["alert"]["description"] == alert.description
+    assert resp_obj["alert"]["type"] == alert.type
+    assert resp_obj["alert"]["latitude"] <= alert.latitude + 0.0001 
+    assert resp_obj["alert"]["latitude"] >= alert.latitude - 0.0001
+    assert resp_obj["alert"]["longitude"] <= alert.longitude + 0.0001
+    assert resp_obj["alert"]["longitude"] >= alert.longitude - 0.0001
+    assert resp_obj["alert"]["created_at"] == alert.created_at.isoformat()
+    # Little security check: the user_id of the alert (sender user_id) should not be exposed in the API response 
+    # (API returns AlertOut object, not Alert object)
+    assert "user_id" not in resp_obj["alert"]
+    # The sender is the caller
+    assert resp_obj["sender_firstname"] == caller.firstname
+    assert resp_obj["sender_surname"] == caller.surname
+    assert resp_obj["sender_reliability_score"] == caller.reliability_score
+    # It's a local alert created by the caller (no alerted users)
+    assert resp_obj["alerted_users_num"] == len(alerted_users)
+    assert resp_obj["positive_votes_num"] == 0
+    assert resp_obj["negative_votes_num"] == 0
+
+def test_get_alert_not_created_by_me_and_not_involved(client, db_session, test_baseuser, test_chief):
+    caller: User = test_baseuser['user']
+    chief: User = test_chief['user']
+    assert caller is not None
+    assert chief is not None
+    access_token = test_baseuser['access_token']
+    # We select a non-general alert, not created by the caller
+    # It's a "managed" alert created by test_chief user (see setup_alerts_data_and_teardown fixture)
+    # In this fixture, all the alerts of type "managed" created by test_chief don't involve test_baseuser,
+    # so, test_baseuser is not inserted as alerted user (he is not involved), and he can't see the alert
+    statement = select(Alert).where(Alert.user_id == chief.id, Alert.type == AlertType.managed.value) # type: ignore
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    assert alert.user_id == test_chief["user"].id
+    assert alert.type == AlertType.managed.value
+    # This alert has some alerted users for sure (see setup_alerts_data_and_teardown fixture),
+    # and the caller is not one of them (see setup_alerts_data_and_teardown fixture)
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    assert len(alerted_users) > 0
+    for alerted_user in alerted_users:
+        assert alerted_user.user_id != caller.id
+    # Now we can test the API endpoint to get the alert details
+    # The result is a forbidden error
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == forbidden_exception().status_code
+    assert response.json()["detail"] == forbidden_exception().detail
+ 
+def test_get_alert_not_created_by_me_but_involved(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None
+    access_token = test_baseuser['access_token']
+    # We select an alert_id of a non-general alert,
+    # where the caller is an alerted user (he is involved in the alert)
+    statement = select(AlertedUser).where(AlertedUser.user_id == caller.id)
+    alerted_caller = db_session.exec(statement).first()
+    # The caller (test_baseuser) is an alerted user for at least one alert (see setup_alerts_data_and_teardown fixture)
+    assert alerted_caller is not None
+    # We extract the alert in which the caller is involved (he is an alerted user)
+    alert = db_session.exec(select(Alert).where(Alert.id == alerted_caller.alert_id)).first()
+    assert alert is not None
+    assert alert.type != AlertType.general.value
+    found_caller_in_alerted_users = False
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    for alerted_user in alerted_users:
+        if alerted_user.user_id == caller.id:
+            found_caller_in_alerted_users = True
+            break
+    assert found_caller_in_alerted_users
+    # Now we can test the API endpoint to get the alert details,
+    # and we verify that the results are the same of the results obtained from database
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    assert resp_data["alert"]["id"] == alert.id
+    assert resp_data["alert"]["type"] == alert.type
+    assert resp_data["alert"]["description"] == alert.description
+    assert resp_data["sender_firstname"] is not None
+    assert resp_data["sender_surname"] is not None
+    assert resp_data["sender_reliability_score"] is not None
+    assert resp_data["alerted_users_num"] == len(alerted_users)
+
+def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, db_session, test_officer, test_baseuser):
+    caller: User = test_officer['user']
+    baseuser: User = test_baseuser['user']
+    assert caller is not None
+    assert baseuser is not None
+    access_token = test_officer['access_token']
+    # We select an alert_id of a non-general alert, 
+    # where test_officer is not the alert sender, and is not an alerted user
+    # We take a local alert created by test_baseuser (see setup_alerts_data_and_teardown fixture), 
+    # We can see that test_officer is not an alerted user for this alert
+    statement = select(Alert).where(Alert.user_id == baseuser.id, Alert.type == AlertType.local.value) # type: ignore
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    assert alert.type == AlertType.local.value
+    assert alert.user_id == baseuser.id
+    # Now we check that test_officer is not an alerted user for this alert
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    assert len(alerted_users) > 0
+    for alerted_user in alerted_users:
+        assert alerted_user.user_id != caller.id
+    # So, if test_officer calls the API endpoint to get the alert details, 
+    # he should receive a forbidden error
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == forbidden_exception().status_code
+    # But, if the alert sender has been authorized by the test_officer,
+    # then test_officer can see the alert details, because the alert sender belongs to his jurisdiction
+    # We simulate this scenario, setting the "authorized_by" field of the alert sender to the test_officer email
+    # We remember that the alert sender is test_baseuser
+    assert baseuser.id == alert.user_id
+    baseuser.authorized_by = caller.email
+    db_session.add(baseuser)
+    db_session.commit()
+    db_session.refresh(baseuser)
+    # Now, if test_officer calls the API endpoint to get the alert details,
+    # he should receive a success response, because the alert sender belongs to his jurisdiction
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    assert resp_data["alert"]["id"] == alert.id
+    assert resp_data["alert"]["type"] == alert.type
+    assert resp_data["alert"]["description"] == alert.description
+    assert resp_data["sender_firstname"] == baseuser.firstname
+    assert resp_data["sender_surname"] == baseuser.surname
+    assert resp_data["sender_reliability_score"] == baseuser.reliability_score
+    assert resp_data["alerted_users_num"] == len(alerted_users)
