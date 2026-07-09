@@ -298,7 +298,7 @@ def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseus
     assert len(alerted_users) > 0
     for alerted_user in alerted_users:
         assert alerted_user.user_id != caller.id
-    # But the user is a chief, so he can see the alert details anyway, 
+    # But the caller is a chief, so he can see the alert details anyway, 
     # even if he is not the alert sender and is not an alerted user
     alert_id = alert.id
     response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
@@ -312,6 +312,41 @@ def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseus
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
     assert resp_data["alerted_users_num"] == len(alerted_users)
 
+def test_get_alert_called_by_admin(client, db_session, test_admin, test_baseuser):
+    caller: User = test_admin['user']
+    baseuser: User = test_baseuser['user']
+    assert caller is not None
+    assert baseuser is not None
+    access_token = test_admin['access_token']
+    # We select an alert_id of a non-general alert, 
+    # where test_admin is not the alert sender, and is not an alerted user
+    # We take a local alert created by test_baseuser (see setup_alerts_data_and_teardown fixture), 
+    # We can see that test_admin is not an alerted user for this alert
+    statement = select(Alert).where(Alert.user_id == baseuser.id, Alert.type == AlertType.local.value) # type: ignore
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    assert alert.type == AlertType.local.value
+    assert alert.user_id != caller.id
+    # Now we check that test_admin is not an alerted user for this alert
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    assert len(alerted_users) > 0
+    for alerted_user in alerted_users:
+        assert alerted_user.user_id != caller.id
+    # But the caller is an admin, so he can see the alert details anyway, 
+    # even if he is not the alert sender and is not an alerted user
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    assert resp_data["alert"]["id"] == alert.id
+    assert resp_data["alert"]["type"] == alert.type
+    assert resp_data["alert"]["description"] == alert.description
+    assert resp_data["sender_firstname"] == baseuser.firstname
+    assert resp_data["sender_surname"] == baseuser.surname
+    assert resp_data["sender_reliability_score"] == baseuser.reliability_score
+    assert resp_data["alerted_users_num"] == len(alerted_users)
+    
 def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_officer, test_chief):
     caller: User = test_officer['user']
     chief: User = test_chief['user']
