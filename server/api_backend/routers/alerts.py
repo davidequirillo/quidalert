@@ -222,7 +222,7 @@ def get_alert(alert_id: int,
 
 # API endpoint used by the chief to list all users involved in the specific alert (sender and alerted users),
 # so he can see their personal info and their votes about the alert
-@router.get("/api/alert/{alert_id}/users", response_model=AlertOutWithUsers)
+@router.get("/api/alert/users/{alert_id}", response_model=AlertOutWithUsers)
 def get_alert_with_users(alert_id: int,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
