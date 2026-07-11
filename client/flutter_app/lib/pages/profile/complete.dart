@@ -24,7 +24,7 @@ class CompleteProfilePage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelCompleteProfile, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: CompleteProfileBody(),
+      body: SafeArea(top: false, child: CompleteProfileBody()),
     );
   }
 }
@@ -176,145 +176,142 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       child: SingleChildScrollView(
         controller: _scrollController,
         padding: EdgeInsets.all(16),
-        child: SafeArea(
-          top: false,
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TextFormField(
-                    controller: _firstnameController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelFirstname,
-                      border: OutlineInputBorder(),
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TextFormField(
+                  controller: _firstnameController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelFirstname,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 64,
+                  validator: (value) {
+                    return validateName(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _surnameController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelSurname,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 64,
+                  validator: (value) {
+                    return validateName(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _streetController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelStreetAndNumber,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 256,
+                  validator: (value) {
+                    return validateStreetAndNumber(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _postalCodeController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelPostalCode,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 16,
+                  validator: (value) {
+                    return validatePostalCode(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _cityController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelCity,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 128,
+                  validator: (value) {
+                    return validateCity(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _provinceController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelProvince,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 128,
+                  validator: (value) {
+                    return validateProvince(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _countryController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelCountry,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 128,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return null; // Country is optional
+                    }
+                    return validateCountry(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextField(
+                  controller: _birthdateController,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: loc.labelBirthdate,
+                    border: OutlineInputBorder(),
+                    suffixIcon: Icon(Icons.calendar_today),
+                  ),
+                  onTap: () => _selectDate(),
+                ),
+                SizedBox(height: 25),
+                TextFormField(
+                  controller: _phoneNumberController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelPhoneNumber,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 16,
+                  validator: (value) {
+                    return validatePhoneNumber(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submit();
+                      },
+                      child: Text("OK"),
                     ),
-                    maxLength: 64,
-                    validator: (value) {
-                      return validateName(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _surnameController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelSurname,
-                      border: OutlineInputBorder(),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonCancel),
                     ),
-                    maxLength: 64,
-                    validator: (value) {
-                      return validateName(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _streetController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelStreetAndNumber,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 256,
-                    validator: (value) {
-                      return validateStreetAndNumber(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _postalCodeController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelPostalCode,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 16,
-                    validator: (value) {
-                      return validatePostalCode(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _cityController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelCity,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 128,
-                    validator: (value) {
-                      return validateCity(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _provinceController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelProvince,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 128,
-                    validator: (value) {
-                      return validateProvince(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _countryController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelCountry,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 128,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return null; // Country is optional
-                      }
-                      return validateCountry(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextField(
-                    controller: _birthdateController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: loc.labelBirthdate,
-                      border: OutlineInputBorder(),
-                      suffixIcon: Icon(Icons.calendar_today),
-                    ),
-                    onTap: () => _selectDate(),
-                  ),
-                  SizedBox(height: 25),
-                  TextFormField(
-                    controller: _phoneNumberController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelPhoneNumber,
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 16,
-                    validator: (value) {
-                      return validatePhoneNumber(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submit();
-                        },
-                        child: Text("OK"),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.buttonCancel),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

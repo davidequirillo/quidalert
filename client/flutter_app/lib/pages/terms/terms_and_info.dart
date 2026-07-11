@@ -26,7 +26,7 @@ class TermsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuTerms),
       drawer: const CAppDrawer(),
-      body: TermsBody(),
+      body: SafeArea(top: false, child: TermsBody()),
     ); // build
   }
 }
@@ -158,59 +158,50 @@ class InfoBody extends StatelessWidget {
           debugPrint("Error: ${snapshot.error}");
           return Center(child: Text(loc.errorLoading));
         }
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  '${loc.labelCompetenceTerritory}: ${config.competenceTerritory}',
-                ),
-                Expanded(
-                  child: Markdown(
-                    data: snapshot.data!,
-                    onTapLink: (text, href, title) {
-                      switch (href) {
-                        case '/terms':
+        return Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(
+                '${loc.labelCompetenceTerritory}: ${config.competenceTerritory}',
+              ),
+              Expanded(
+                child: Markdown(
+                  data: snapshot.data!,
+                  onTapLink: (text, href, title) {
+                    switch (href) {
+                      case '/terms':
+                        Navigator.pushReplacementNamed(context, '/terms');
+                        break;
+                      case '/register':
+                        if (termsAccepted && !authClient.isLoggedIn()) {
+                          Navigator.pushReplacementNamed(context, '/register');
+                        } else if (authClient.isLoggedIn() &&
+                            !authClient.isAdmin()) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        } else if (authClient.isLoggedIn() &&
+                            authClient.isAdmin()) {
+                          Navigator.pushReplacementNamed(context, '/register');
+                        } else {
                           Navigator.pushReplacementNamed(context, '/terms');
-                          break;
-                        case '/register':
-                          if (termsAccepted && !authClient.isLoggedIn()) {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              '/register',
-                            );
-                          } else if (authClient.isLoggedIn() &&
-                              !authClient.isAdmin()) {
-                            Navigator.pushReplacementNamed(context, '/home');
-                          } else if (authClient.isLoggedIn() &&
-                              authClient.isAdmin()) {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              '/register',
-                            );
-                          } else {
-                            Navigator.pushReplacementNamed(context, '/terms');
-                          }
-                          break;
-                        case '/login':
-                          if (termsAccepted && !authClient.isLoggedIn()) {
-                            Navigator.pushReplacementNamed(context, '/login');
-                          } else if (authClient.isLoggedIn()) {
-                            Navigator.pushReplacementNamed(context, '/home');
-                          } else {
-                            Navigator.pushReplacementNamed(context, '/terms');
-                          }
-                          break;
-                        default:
-                          debugPrint('Unknown link: $href');
-                      }
-                    },
-                  ),
+                        }
+                        break;
+                      case '/login':
+                        if (termsAccepted && !authClient.isLoggedIn()) {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        } else if (authClient.isLoggedIn()) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        } else {
+                          Navigator.pushReplacementNamed(context, '/terms');
+                        }
+                        break;
+                      default:
+                        debugPrint('Unknown link: $href');
+                    }
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },

@@ -25,7 +25,7 @@ class UsersSearchResultsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: UsersSearchResultsBody(),
+      body: SafeArea(top: false, child: UsersSearchResultsBody()),
     );
   }
 }
@@ -208,101 +208,98 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
     } else {
       throw Exception("Invalid arguments for search results page");
     }
-    return SafeArea(
-      top: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Query -> $searchStr",
-                  style: Theme.of(context).textTheme.titleMedium,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Query -> $searchStr",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: () {
+                  if (argsSufficientForPromote) {
+                    Navigator.pushNamed(
+                      context,
+                      '/accounts/users/promote-results',
+                      arguments: args,
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          loc.errorSearchParamsNotSufficientToProceed,
+                        ),
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                },
+                icon: Icon(Icons.edit),
+                label: Text(
+                  '${loc.buttonPromote}/${loc.buttonModify.toLowerCase()} ${loc.labelQueryUsers.toLowerCase()}',
                 ),
-                SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    if (argsSufficientForPromote) {
-                      Navigator.pushNamed(
-                        context,
-                        '/accounts/users/promote-results',
-                        arguments: args,
+              ),
+            ],
+          ),
+        ),
+        Divider(),
+        // Query results area
+        Expanded(
+          child: !_hasSearched
+              ? Center(child: Text(loc.labelWaitPlease))
+              : _users.isEmpty && _isLoadingPage
+              ? Center(child: CircularProgressIndicator())
+              : _users.isEmpty
+              ? Center(child: Text(loc.errorNoEntryFound))
+              : ListView.separated(
+                  controller: _scrollController,
+                  itemCount: _usersCount + (_hasMore ? 1 : 0),
+                  separatorBuilder: (_, _) => const Divider(),
+                  itemBuilder: (context, index) {
+                    if (index < _usersCount) {
+                      String fname = _users[index].firstname;
+                      String sname = _users[index].surname;
+                      String subtitle =
+                          '${loc.labelAuthorizedBy}: ${_users[index].authorizedBy ?? "N/A"}';
+                      subtitle +=
+                          '\n${_users[index].type},'
+                          ' ${_users[index].role},'
+                          ' ${_users[index].status}';
+                      return ListTile(
+                        title: Text('${_users[index].email} ($fname $sname)'),
+                        subtitle: Text(subtitle),
+                        trailing: Text(
+                          (_users[index].authorizedAt != null)
+                              ? datetimeAsStringWithoutMicroseconds(
+                                  _users[index].authorizedAt!,
+                                )
+                              : "N/A",
+                        ),
+                        onTap: () => {
+                          Navigator.pushNamed(
+                            context,
+                            '/accounts/users/view-user-details',
+                            arguments: _users[index].id,
+                          ),
+                        },
                       );
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            loc.errorSearchParamsNotSufficientToProceed,
-                          ),
-                          duration: const Duration(seconds: 4),
-                        ),
+                      // Loading spinner at the bottom of the list
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32.0),
+                        child: Center(child: CircularProgressIndicator()),
                       );
                     }
                   },
-                  icon: Icon(Icons.edit),
-                  label: Text(
-                    '${loc.buttonPromote}/${loc.buttonModify.toLowerCase()} ${loc.labelQueryUsers.toLowerCase()}',
-                  ),
                 ),
-              ],
-            ),
-          ),
-          Divider(),
-          // Query results area
-          Expanded(
-            child: !_hasSearched
-                ? Center(child: Text(loc.labelWaitPlease))
-                : _users.isEmpty && _isLoadingPage
-                ? Center(child: CircularProgressIndicator())
-                : _users.isEmpty
-                ? Center(child: Text(loc.errorNoEntryFound))
-                : ListView.separated(
-                    controller: _scrollController,
-                    itemCount: _usersCount + (_hasMore ? 1 : 0),
-                    separatorBuilder: (_, _) => const Divider(),
-                    itemBuilder: (context, index) {
-                      if (index < _usersCount) {
-                        String fname = _users[index].firstname;
-                        String sname = _users[index].surname;
-                        String subtitle =
-                            '${loc.labelAuthorizedBy}: ${_users[index].authorizedBy ?? "N/A"}';
-                        subtitle +=
-                            '\n${_users[index].type},'
-                            ' ${_users[index].role},'
-                            ' ${_users[index].status}';
-                        return ListTile(
-                          title: Text('${_users[index].email} ($fname $sname)'),
-                          subtitle: Text(subtitle),
-                          trailing: Text(
-                            (_users[index].authorizedAt != null)
-                                ? datetimeAsStringWithoutMicroseconds(
-                                    _users[index].authorizedAt!,
-                                  )
-                                : "N/A",
-                          ),
-                          onTap: () => {
-                            Navigator.pushNamed(
-                              context,
-                              '/accounts/users/view-user-details',
-                              arguments: _users[index].id,
-                            ),
-                          },
-                        );
-                      } else {
-                        // Loading spinner at the bottom of the list
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 32.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                    },
-                  ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

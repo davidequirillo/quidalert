@@ -22,7 +22,7 @@ class UsersSearchByCSVPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: UsersSearchByCSVBody(),
+      body: SafeArea(top: false, child: UsersSearchByCSVBody()),
     );
   }
 }
@@ -109,47 +109,44 @@ class _UsersSearchByCSVBodyState extends State<UsersSearchByCSVBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  buildSectionTitle(
-                    '${loc.buttonSearch} ${loc.labelEmailMany.toLowerCase()}',
-                  ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                buildSectionTitle(
+                  '${loc.buttonSearch} ${loc.labelEmailMany.toLowerCase()}',
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
+                if (_pickedFile != null) ...[
                   const SizedBox(height: 10),
-                  ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
-                  if (_pickedFile != null) ...[
-                    const SizedBox(height: 10),
-                    Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
-                  ],
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submit();
-                        },
-                        child: Text(loc.buttonSearch),
-                      ),
-                      const SizedBox(width: 15),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.buttonBack),
-                      ),
-                    ],
-                  ),
+                  Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
                 ],
-              ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submit();
+                      },
+                      child: Text(loc.buttonSearch),
+                    ),
+                    const SizedBox(width: 15),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonBack),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

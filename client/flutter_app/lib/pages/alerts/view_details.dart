@@ -11,7 +11,9 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/models/general.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 
@@ -24,7 +26,7 @@ class AlertDetailsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelDetails, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: AlertDetailsBody(),
+      body: SafeArea(top: false, child: AlertDetailsBody()),
     );
   }
 }
@@ -32,7 +34,10 @@ class AlertDetailsPage extends StatelessWidget {
 class AlertDetailsBody extends StatelessWidget {
   const AlertDetailsBody({super.key});
 
-  Future<Alert> _getAlertDetails(BuildContext context, String id) async {
+  Future<AlertWithInfo> _getAlertDetails(
+    BuildContext context,
+    String id,
+  ) async {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "get",
@@ -42,8 +47,27 @@ class AlertDetailsBody extends StatelessWidget {
     if (respObj == null || respObj.isEmpty) {
       throw NotFoundException();
     }
-    final alert = Alert.fromJson(respObj);
-    return alert;
+    if (!respObj.containsKey("alert") || respObj["alert"] == null) {
+      throw NotFoundException();
+    }
+    final alertWithInfo = AlertWithInfo.fromJson(respObj);
+    return alertWithInfo;
+  }
+
+  void _refreshPage(BuildContext context) {
+    final id = ModalRoute.of(context)!.settings.arguments as String;
+    Navigator.pushReplacementNamed(
+      context,
+      '/alerts/view-alert-details',
+      arguments: id,
+    );
+  }
+
+  void _viewInTheMap(BuildContext context, double latitude, double longitude) {
+    // todo: open the map using the default external map application
+    // or using the default browser with Google Maps
+    final url =
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
   }
 
   @override
@@ -51,30 +75,24 @@ class AlertDetailsBody extends StatelessWidget {
     final primaryController = PrimaryScrollController.of(context);
     final loc = AppLocalizations.of(context)!;
     final id = ModalRoute.of(context)!.settings.arguments as String;
-    return FutureBuilder<Alert>(
+    return FutureBuilder<AlertWithInfo>(
       future: _getAlertDetails(context, id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
+          debugPrint("Error fetching recent alerts: ${snapshot.error}");
+          final exceptionName = snapshot.error.runtimeType.toString();
+          final locAttribute = "exception$exceptionName".replaceAll(
+            "Exception",
+            "",
+          );
+          final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             goToLoginPagePostFrameCallback(context);
-            return Text(loc.errorSessionNotValidOrExpired);
           }
-          if (snapshot.error.toString().startsWith("Forbidden")) {
-            return Text(loc.errorPermissionsNotValid);
-          }
-          if (snapshot.error.toString().startsWith("BadRequest")) {
-            return Text(loc.errorBadRequest);
-          }
-          if (snapshot.error.toString().startsWith("Server")) {
-            return Text(loc.errorServer);
-          }
-          if (snapshot.error.toString().startsWith("NotFound")) {
-            return Center(child: Text(loc.errorNoEntryFound));
-          }
-          return Text(loc.errorGeneric);
+          return Center(child: Text(errorMessage));
         }
         if (snapshot.hasData) {
           final alert = snapshot.data!;
@@ -84,20 +102,90 @@ class AlertDetailsBody extends StatelessWidget {
             child: SingleChildScrollView(
               controller: primaryController,
               padding: const EdgeInsets.all(16),
-              child: SafeArea(top: false, child: alertColumn(context, alert)),
+              child: alertColumn(context, alert),
             ),
           );
         }
-        return Text(loc.errorGeneric);
+        return Center(child: Text(loc.errorGeneric));
       },
     );
   }
 
-  Widget alertColumn(BuildContext context, Alert alert) {
+  Widget alertColumn(BuildContext context, AlertWithInfo alertWithInfo) {
     final loc = AppLocalizations.of(context)!;
+    final createdAt = datetimeAsStringWithoutMicroseconds(
+      alertWithInfo.alert.createdAt,
+      includeTimezone: false,
+    );
+    final senderIsChief = (alertWithInfo.alert.type != AlertType.local.name)
+        ? true
+        : false;
+    final chiefIsAlerted =
+        (alertWithInfo.chiefFirstname != null &&
+            alertWithInfo.chiefFirstname!.isNotEmpty &&
+            alertWithInfo.chiefSurname != null &&
+            alertWithInfo.chiefSurname!.isNotEmpty)
+        ? true
+        : false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [buildSectionTitle("Alert Info")],
+      children: [
+        buildSectionTitle("Alert Info"),
+        Text('${loc.labelDatetime}: $createdAt'),
+        Text('${loc.labelType}: ${alertWithInfo.alert.type}'),
+        Text('${loc.labelStatus}: ${alertWithInfo.alert.status}'),
+        if (alertWithInfo.alert.status == AlertStatus.pending.name)
+          InkWell(
+            onTap: () {
+              _refreshPage(context);
+            },
+            child: Text(
+              loc.labelReloadPage,
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        if (alertWithInfo.alert.type != AlertType.general.name)
+          Text(
+            '${loc.labelGpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
+          ),
+        if (alertWithInfo.alert.type != AlertType.general.name)
+          InkWell(
+            onTap: () {
+              _viewInTheMap(
+                context,
+                alertWithInfo.alert.latitude,
+                alertWithInfo.alert.longitude,
+              );
+            },
+            child: Text(
+              loc.labelViewInTheMap,
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        if (alertWithInfo.alert.type != AlertType.general.name)
+          Text('${loc.alertRadius}: ${alertWithInfo.alert.radius} km'),
+        SizedBox(height: 20),
+        Text('${loc.labelDescription}: ${alertWithInfo.alert.description}'),
+        Divider(height: 40, thickness: 1),
+        buildSectionTitle(loc.sectionUsers),
+        Text(
+          senderIsChief
+              ? '${loc.alertSender}: ${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname} (${loc.alertChief})'
+              : '${loc.alertSender}: ${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname}',
+        ),
+        Text(
+          chiefIsAlerted
+              ? '${loc.alertChief}: ${alertWithInfo.chiefFirstname} ${alertWithInfo.chiefSurname}'
+              : '${loc.alertChief}: N/A',
+        ),
+        Text('${loc.alertAlertedUsers}: '),
+      ],
     );
   }
 }

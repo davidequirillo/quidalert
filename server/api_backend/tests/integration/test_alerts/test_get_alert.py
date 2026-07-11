@@ -9,7 +9,10 @@ from core.exceptions import (
     token_not_valid_exception,
     forbidden_exception
 )
-from models.general import User, Alert, AlertType, AlertedUser
+from models.general import (
+    User, Alert, AlertType, 
+    AlertedUser, Message
+)
 from services.security import now_tz_naive
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
@@ -119,10 +122,14 @@ def test_get_alert_success_general_alert(client, db_session, test_baseuser):
     assert resp_obj["sender_firstname"] == sender.firstname
     assert resp_obj["sender_surname"] == sender.surname
     assert resp_obj["sender_reliability_score"] == sender.reliability_score
+    # For non-local alerts the chief is the sender
+    assert resp_obj["chief_firstname"] == sender.firstname
+    assert resp_obj["chief_surname"] == sender.surname
     # It's a general alert (no alerted users)
     assert resp_obj["alerted_users_num"] == 0
     assert resp_obj["positive_votes_num"] == 0
     assert resp_obj["negative_votes_num"] == 0
+    assert resp_obj["messages_num"] == 0
 
 def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     caller: User = test_baseuser['user']
@@ -353,10 +360,10 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     assert caller is not None
     assert chief is not None
     access_token = test_officer['access_token']
-    # We select an alert_id of a non-general alert, 
+    # We select an alert_id of a local alert, 
     # where the sender is test_officer, see setup_alerts_data_and_teardown fixture.
     # Between alerts created by test_officer, we select one alert in which test_chief is an alerted user
-    statement = select(Alert).where(Alert.user_id == caller.id, Alert.type != AlertType.general.value) # type: ignore
+    statement = select(Alert).where(Alert.user_id == caller.id, Alert.type == AlertType.local.value) # type: ignore
     alerts = db_session.exec(statement).all()
     assert len(alerts) > 0
     alert_ids = [a.id for a in alerts]
@@ -372,7 +379,7 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     db_session.add(alerted_chief)
     db_session.commit()
     db_session.refresh(alerted_chief)
-    # We extract the related alert (in which the chief is an alerted user
+    # We extract the related alert (in which the chief is an alerted user)
     alert = db_session.exec(select(Alert).where(Alert.id == alerted_chief.alert_id)).first()
     assert alert is not None
     assert alert.type != AlertType.general.value
@@ -392,6 +399,13 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
             alerted_user.vote = 0
         db_session.add(alerted_user)
     db_session.commit()
+    alerted_chief_user = db_session.exec(select(User).where(User.id == alerted_chief.user_id)).first()
+    assert alerted_chief_user is not None
+    alerted_chief_firstname = alerted_chief_user.firstname
+    alerted_chief_surname = alerted_chief_user.surname
+    # We check the presence of alert messages
+    statement = select(Message).where(Message.alert_id == alert.id)
+    alert_messages = db_session.exec(statement).all()
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
     alert_id = alert.id
@@ -407,6 +421,8 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     assert resp_data["alerted_users_num"] == len(alerted_users)
     assert resp_data["positive_votes_num"] == sum(1 for au in alerted_users if au.vote > 0)
     assert resp_data["negative_votes_num"] == sum(1 for au in alerted_users if au.vote < 0)
-    assert resp_data["chief_is_alerted"] == True
+    assert resp_data["chief_firstname"] == alerted_chief_firstname
+    assert resp_data["chief_surname"] == alerted_chief_surname
     assert resp_data["chief_closing_vote"] != 0 
     assert resp_data["chief_closing_vote"] == alerted_chief_closing_vote
+    assert resp_data["messages_num"] == len(alert_messages)

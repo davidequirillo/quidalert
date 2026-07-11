@@ -25,7 +25,7 @@ class UsersPromoteResultsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: UsersPromoteResultsBody(),
+      body: SafeArea(top: false, child: UsersPromoteResultsBody()),
     );
   }
 }
@@ -213,145 +213,142 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       child: SingleChildScrollView(
         controller: _scrollController,
         padding: const EdgeInsets.all(16.0),
-        child: SafeArea(
-          top: false,
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Text(
-                  "Query -> $searchStr",
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 20),
-                if (authClient.isAdmin())
-                  DropdownButtonFormField<UserTypeExtended>(
-                    decoration: InputDecoration(
-                      labelText: loc.labelType,
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    initialValue: null,
-                    items: UserTypeExtended.values.map((UserTypeExtended type) {
-                      return DropdownMenuItem<UserTypeExtended>(
-                        value: type,
-                        child: Text(
-                          type.name[0].toUpperCase() + type.name.substring(1),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      selectedType = newValue;
-                    },
-                  ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<UserRoleExtended>(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              Text(
+                "Query -> $searchStr",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 20),
+              if (authClient.isAdmin())
+                DropdownButtonFormField<UserTypeExtended>(
                   decoration: InputDecoration(
-                    labelText: loc.labelRole,
+                    labelText: loc.labelType,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
                   initialValue: null,
-                  items: UserRoleExtended.values.map((UserRoleExtended role) {
-                    return DropdownMenuItem<UserRoleExtended>(
-                      value: role,
+                  items: UserTypeExtended.values.map((UserTypeExtended type) {
+                    return DropdownMenuItem<UserTypeExtended>(
+                      value: type,
                       child: Text(
-                        role.name[0].toUpperCase() + role.name.substring(1),
+                        type.name[0].toUpperCase() + type.name.substring(1),
                       ),
                     );
                   }).toList(),
                   onChanged: (newValue) {
-                    selectedRole = newValue;
+                    selectedType = newValue;
                   },
                 ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<UserStatusExtended>(
-                  decoration: InputDecoration(
-                    labelText: loc.labelStatus,
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  initialValue: null,
-                  items: UserStatusExtended.values.map((
-                    UserStatusExtended status,
-                  ) {
-                    return DropdownMenuItem<UserStatusExtended>(
-                      value: status,
-                      child: Text(
-                        status.name[0].toUpperCase() + status.name.substring(1),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    selectedStatus = newValue;
-                  },
+              const SizedBox(height: 20),
+              DropdownButtonFormField<UserRoleExtended>(
+                decoration: InputDecoration(
+                  labelText: loc.labelRole,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
-                const SizedBox(height: 20),
-                CheckboxListTile(
-                  title: Text(loc.labelAddNotes),
-                  value: _activateNotes,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _activateNotes = value ?? false;
-                    });
-                  },
-                ),
-                if (_activateNotes) const SizedBox(height: 20),
-                if (_activateNotes)
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelNotes,
-                      border: OutlineInputBorder(),
+                initialValue: null,
+                items: UserRoleExtended.values.map((UserRoleExtended role) {
+                  return DropdownMenuItem<UserRoleExtended>(
+                    value: role,
+                    child: Text(
+                      role.name[0].toUpperCase() + role.name.substring(1),
                     ),
-                    maxLines: 3,
-                    maxLength: 256,
-                    validator: (value) {
-                      if ((value == null) || (value.isEmpty)) {
-                        return null;
-                      }
-                      return validateDescription(context, value);
-                    },
-                  ),
-                const SizedBox(height: 50),
-                Text(loc.labelCompileToChangeAuthorizer),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  selectedRole = newValue;
+                },
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<UserStatusExtended>(
+                decoration: InputDecoration(
+                  labelText: loc.labelStatus,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
+                ),
+                initialValue: null,
+                items: UserStatusExtended.values.map((
+                  UserStatusExtended status,
+                ) {
+                  return DropdownMenuItem<UserStatusExtended>(
+                    value: status,
+                    child: Text(
+                      status.name[0].toUpperCase() + status.name.substring(1),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  selectedStatus = newValue;
+                },
+              ),
+              const SizedBox(height: 20),
+              CheckboxListTile(
+                title: Text(loc.labelAddNotes),
+                value: _activateNotes,
+                onChanged: (bool? value) {
+                  setState(() {
+                    _activateNotes = value ?? false;
+                  });
+                },
+              ),
+              if (_activateNotes) const SizedBox(height: 20),
+              if (_activateNotes)
                 TextFormField(
-                  keyboardType: TextInputType.emailAddress,
-                  controller: _authorizerController,
+                  controller: _notesController,
                   decoration: InputDecoration(
-                    labelText: loc.labelAuthorizedBy,
+                    labelText: loc.labelNotes,
                     border: OutlineInputBorder(),
                   ),
+                  maxLines: 3,
+                  maxLength: 256,
                   validator: (value) {
                     if ((value == null) || (value.isEmpty)) {
                       return null;
                     }
-                    return validateEmail(context, value);
+                    return validateDescription(context, value);
                   },
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => submit(),
-                  child: Text(loc.buttonModify),
+              const SizedBox(height: 50),
+              Text(loc.labelCompileToChangeAuthorizer),
+              TextFormField(
+                keyboardType: TextInputType.emailAddress,
+                controller: _authorizerController,
+                decoration: InputDecoration(
+                  labelText: loc.labelAuthorizedBy,
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    // clear all fields and reset dropdowns to initial state
-                    setState(() {
-                      selectedType = null;
-                      selectedRole = null;
-                      selectedStatus = null;
-                      _authorizerController.clear();
-                      _notesController.clear();
-                      _activateNotes = false;
-                      _formKey.currentState?.reset();
-                    });
-                  },
-                  child: Text(loc.buttonClear),
-                ),
-              ],
-            ),
+                validator: (value) {
+                  if ((value == null) || (value.isEmpty)) {
+                    return null;
+                  }
+                  return validateEmail(context, value);
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => submit(),
+                child: Text(loc.buttonModify),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // clear all fields and reset dropdowns to initial state
+                  setState(() {
+                    selectedType = null;
+                    selectedRole = null;
+                    selectedStatus = null;
+                    _authorizerController.clear();
+                    _notesController.clear();
+                    _activateNotes = false;
+                    _formKey.currentState?.reset();
+                  });
+                },
+                child: Text(loc.buttonClear),
+              ),
+            ],
           ),
         ),
       ),

@@ -9,6 +9,27 @@ class AppLocalizationsIt extends AppLocalizations {
   AppLocalizationsIt([String locale = 'it']) : super(locale);
 
   @override
+  String get alertSender => 'Mittente';
+
+  @override
+  String get alertChief => 'Capo';
+
+  @override
+  String get alertAlertedUsers => 'Utenti allertati';
+
+  @override
+  String get alertRadius => 'Raggio';
+
+  @override
+  String get alertStatusOpen => 'Aperta';
+
+  @override
+  String get alertStatusClosed => 'Chiusa';
+
+  @override
+  String get alertStatusPending => 'In elaborazione';
+
+  @override
   String get alertTypeGeneral => 'Generale';
 
   @override
@@ -19,15 +40,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get alertTypeManaged => 'Gestita';
-
-  @override
-  String get alertStatusOpen => 'Aperta';
-
-  @override
-  String get alertStatusClosed => 'Chiusa';
-
-  @override
-  String get alertStatusPending => 'In elaborazione';
 
   @override
   String get buttonAccept => 'Accetta';
@@ -82,6 +94,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get exceptionNotFound => 'Risorsa non trovata';
+
+  @override
+  String get exceptionFromJsonObj => 'Errore di lettura oggetto json';
 
   @override
   String get exceptionUnknown => 'Errore sconosciuto';
@@ -151,9 +166,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorLoginLocked => 'Troppi tentativi, l\'accesso (login) è bloccato per 24 ore';
-
-  @override
-  String get errorNetwork => 'Errore di rete';
 
   @override
   String get errorNoEntryToAdd => 'Nessuna voce da aggiungere';
@@ -283,6 +295,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelCurrentWhiteListEntries => 'Voci presenti nella white list';
+
+  @override
+  String get labelDatetime => 'Data/ora';
 
   @override
   String get labelDatetimesAreInUTC => 'Date/ore sono espresse in UTC';
@@ -426,6 +441,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelRegistration => 'Registrazione';
 
   @override
+  String get labelReloadPage => 'Ricarica pagina';
+
+  @override
   String get labelReliability => 'Affidabilità';
 
   @override
@@ -477,6 +495,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelVerificationCode => 'Codice di verifica';
 
   @override
+  String get labelViewInTheMap => 'Visualizza nella mappa';
+
+  @override
   String get labelWaitPlease => 'Attendere, prego';
 
   @override
@@ -508,6 +529,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'White list per registrazione';
+
+  @override
+  String get sectionUsers => 'Utenti';
 
   @override
   String get successAccountDismissed => 'Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo';

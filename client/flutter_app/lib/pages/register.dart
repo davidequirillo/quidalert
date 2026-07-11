@@ -26,7 +26,7 @@ class RegisterPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelRegistration),
       drawer: const CAppDrawer(),
-      body: RegisterBody(),
+      body: SafeArea(top: false, child: RegisterBody()),
     );
   }
 }
@@ -130,118 +130,115 @@ class _RegisterBodyState extends State<RegisterBody> {
       child: SingleChildScrollView(
         controller: _scrollController,
         padding: EdgeInsets.all(16),
-        child: SafeArea(
-          top: false,
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TextFormField(
-                    controller: _firstnameController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelFirstname,
-                      border: OutlineInputBorder(),
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TextFormField(
+                  controller: _firstnameController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelFirstname,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 64,
+                  validator: (value) {
+                    return validateName(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  controller: _surnameController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelSurname,
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 64,
+                  validator: (value) {
+                    return validateName(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  keyboardType: TextInputType.emailAddress,
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 128,
+                  validator: (value) {
+                    return validateEmail(context, value);
+                  },
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  keyboardType: TextInputType.visiblePassword,
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 256,
+                  validator: (value) {
+                    return validatePassword(context, value);
+                  },
+                  obscureText: !showPasswordFlag,
+                ),
+                SizedBox(height: 5),
+                TextFormField(
+                  keyboardType: TextInputType.visiblePassword,
+                  controller: _rePasswordController,
+                  decoration: InputDecoration(
+                    labelText: loc.labelConfirmPassword,
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value != _passwordController.text) {
+                      return loc.errorPasswordsDoNotMatch;
+                    }
+                    return validatePassword(context, value);
+                  },
+                  obscureText: !showPasswordFlag,
+                ),
+                SizedBox(height: 5),
+                Row(
+                  children: [
+                    Checkbox(
+                      tristate: false,
+                      value: showPasswordFlag,
+                      onChanged: (value) {
+                        setState(() {
+                          showPasswordFlag = value!;
+                        });
+                      },
                     ),
-                    maxLength: 64,
-                    validator: (value) {
-                      return validateName(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    controller: _surnameController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelSurname,
-                      border: OutlineInputBorder(),
+                    Text(loc.labelShowPassword),
+                  ],
+                ),
+                SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submit();
+                      },
+                      child: Text("OK"),
                     ),
-                    maxLength: 64,
-                    validator: (value) {
-                      return validateName(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    keyboardType: TextInputType.emailAddress,
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pushReplacementNamed(context, '/login'),
+                      child: Text(loc.buttonCancel),
                     ),
-                    maxLength: 128,
-                    validator: (value) {
-                      return validateEmail(context, value);
-                    },
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    keyboardType: TextInputType.visiblePassword,
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLength: 256,
-                    validator: (value) {
-                      return validatePassword(context, value);
-                    },
-                    obscureText: !showPasswordFlag,
-                  ),
-                  SizedBox(height: 5),
-                  TextFormField(
-                    keyboardType: TextInputType.visiblePassword,
-                    controller: _rePasswordController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelConfirmPassword,
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value != _passwordController.text) {
-                        return loc.errorPasswordsDoNotMatch;
-                      }
-                      return validatePassword(context, value);
-                    },
-                    obscureText: !showPasswordFlag,
-                  ),
-                  SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Checkbox(
-                        tristate: false,
-                        value: showPasswordFlag,
-                        onChanged: (value) {
-                          setState(() {
-                            showPasswordFlag = value!;
-                          });
-                        },
-                      ),
-                      Text(loc.labelShowPassword),
-                    ],
-                  ),
-                  SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submit();
-                        },
-                        child: Text("OK"),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: () =>
-                            Navigator.pushReplacementNamed(context, '/login'),
-                        child: Text(loc.buttonCancel),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
