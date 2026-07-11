@@ -95,6 +95,48 @@ abstract class AppLocalizations {
     Locale('it')
   ];
 
+  /// No description provided for @alertSender.
+  ///
+  /// In en, this message translates to:
+  /// **'Sender'**
+  String get alertSender;
+
+  /// No description provided for @alertChief.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief'**
+  String get alertChief;
+
+  /// No description provided for @alertAlertedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerted users'**
+  String get alertAlertedUsers;
+
+  /// No description provided for @alertRadius.
+  ///
+  /// In en, this message translates to:
+  /// **'Raggio'**
+  String get alertRadius;
+
+  /// No description provided for @alertStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get alertStatusOpen;
+
+  /// No description provided for @alertStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get alertStatusClosed;
+
+  /// No description provided for @alertStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get alertStatusPending;
+
   /// No description provided for @alertTypeGeneral.
   ///
   /// In en, this message translates to:
@@ -118,24 +160,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Managed'**
   String get alertTypeManaged;
-
-  /// No description provided for @alertStatusOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Open'**
-  String get alertStatusOpen;
-
-  /// No description provided for @alertStatusClosed.
-  ///
-  /// In en, this message translates to:
-  /// **'Closed'**
-  String get alertStatusClosed;
-
-  /// No description provided for @alertStatusPending.
-  ///
-  /// In en, this message translates to:
-  /// **'Pending'**
-  String get alertStatusPending;
 
   /// No description provided for @buttonAccept.
   ///
@@ -244,6 +268,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resource not found'**
   String get exceptionNotFound;
+
+  /// No description provided for @exceptionFromJsonObj.
+  ///
+  /// In en, this message translates to:
+  /// **'Json object reading error'**
+  String get exceptionFromJsonObj;
 
   /// No description provided for @exceptionUnknown.
   ///
@@ -382,12 +412,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many attempts, login is locked for 24 hours'**
   String get errorLoginLocked;
-
-  /// No description provided for @errorNetwork.
-  ///
-  /// In en, this message translates to:
-  /// **'Network error'**
-  String get errorNetwork;
 
   /// No description provided for @errorNoEntryToAdd.
   ///
@@ -646,6 +670,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current white list entries'**
   String get labelCurrentWhiteListEntries;
+
+  /// No description provided for @labelDatetime.
+  ///
+  /// In en, this message translates to:
+  /// **'Datetime'**
+  String get labelDatetime;
 
   /// No description provided for @labelDatetimesAreInUTC.
   ///
@@ -929,6 +959,12 @@ abstract class AppLocalizations {
   /// **'Registration'**
   String get labelRegistration;
 
+  /// No description provided for @labelReloadPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload page'**
+  String get labelReloadPage;
+
   /// No description provided for @labelReliability.
   ///
   /// In en, this message translates to:
@@ -1031,6 +1067,12 @@ abstract class AppLocalizations {
   /// **'Verification code'**
   String get labelVerificationCode;
 
+  /// No description provided for @labelViewInTheMap.
+  ///
+  /// In en, this message translates to:
+  /// **'View in the map'**
+  String get labelViewInTheMap;
+
   /// No description provided for @labelWaitPlease.
   ///
   /// In en, this message translates to:
@@ -1096,6 +1138,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration white list'**
   String get menuWhiteList;
+
+  /// No description provided for @sectionUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get sectionUsers;
 
   /// No description provided for @successAccountDismissed.
   ///

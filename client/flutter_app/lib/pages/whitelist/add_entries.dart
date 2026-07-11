@@ -27,7 +27,7 @@ class WhiteListAddPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: const WhiteListAddBody(),
+      body: SafeArea(top: false, child: WhiteListAddBody()),
     );
   }
 }
@@ -235,82 +235,79 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            buildSectionTitle(
-              '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
-            ),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const SizedBox(height: 5),
-                  TextFormField(
-                    keyboardType: TextInputType.emailAddress,
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      border: OutlineInputBorder(),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          buildSectionTitle(
+            '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
+          ),
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 5),
+                TextFormField(
+                  keyboardType: TextInputType.emailAddress,
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    labelText: "Email",
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 128,
+                  validator: (value) {
+                    return validateEmail(context, value);
+                  },
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submitSingle();
+                      },
+                      child: Text(loc.buttonAdd),
                     ),
-                    maxLength: 128,
-                    validator: (value) {
-                      return validateEmail(context, value);
-                    },
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submitSingle();
-                        },
-                        child: Text(loc.buttonAdd),
-                      ),
-                      const SizedBox(width: 15),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.buttonBack),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  Divider(),
-                  const SizedBox(height: 15),
-                  buildSectionTitle(
-                    '${loc.buttonAdd} ${loc.labelEmailMany.toLowerCase()}',
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
-                  if (_pickedFile != null) ...[
-                    const SizedBox(height: 10),
-                    Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
+                    const SizedBox(width: 15),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonBack),
+                    ),
                   ],
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          submitMany();
-                        },
-                        child: Text(loc.buttonAdd),
-                      ),
-                      const SizedBox(width: 15),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text(loc.buttonBack),
-                      ),
-                    ],
-                  ),
+                ),
+                const SizedBox(height: 15),
+                Divider(),
+                const SizedBox(height: 15),
+                buildSectionTitle(
+                  '${loc.buttonAdd} ${loc.labelEmailMany.toLowerCase()}',
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
+                if (_pickedFile != null) ...[
+                  const SizedBox(height: 10),
+                  Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
                 ],
-              ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        submitMany();
+                      },
+                      child: Text(loc.buttonAdd),
+                    ),
+                    const SizedBox(width: 15),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonBack),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

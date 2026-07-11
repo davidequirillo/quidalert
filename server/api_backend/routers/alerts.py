@@ -7,7 +7,6 @@ from fastapi import (
     APIRouter, Depends, 
     HTTPException, 
     Request, BackgroundTasks)
-from fastapi import status as http_status
 from dependencies import (get_current_user, 
             get_db_session, get_redis_session, 
             get_geoposition_token_data,
@@ -25,12 +24,11 @@ from core.dbmgr import (
     get_redis_user_locations_key, 
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key)
-from models.general import (string_as_uuid,
+from models.general import (
     Alert, AlertType, AlertIn, 
     AlertOut, AlertOutWithInfo, AlertOutWithUsers,
-    AlertedUser,
-    GpsCoordinatesSchema, GpsTokenData, 
-    RefreshToken, User
+    AlertedUser, Message,
+    GpsCoordinatesSchema, GpsTokenData, User,
     )
 from services.security import (
     now_tz_naive, now_tz_aware)
@@ -173,7 +171,8 @@ def get_alert(alert_id: int,
         alert.description = "[BANNED ALERT]"
     current_user_is_the_sender = False
     current_user_is_alerted = False
-    chief_is_alerted = False
+    chief_id = None
+    chief = None
     chief_closing_vote = 0
     alerted_users_num = 0
     votes_up_num = 0
@@ -186,7 +185,7 @@ def get_alert(alert_id: int,
         if au.user_id == current_user.id:
             current_user_is_alerted = True
         if au.is_manager:
-            chief_is_alerted = True
+            chief_id = au.user_id
             chief_closing_vote = au.closing_vote
         if au.vote > 0:
             votes_up_num += 1
@@ -207,16 +206,26 @@ def get_alert(alert_id: int,
             else:
                 if (not current_user_is_alerted):
                     raise forbidden_exception()
+    statement = select(Message.id).where(Message.alert_id == alert.id)
+    message_ids = db_session.exec(statement).all()
+    messages_num = len(message_ids)
+    if alert.type != AlertType.local.value:
+        chief = sender
+    else:
+        if chief_id:
+            chief = db_session.exec(select(User).where(User.id == chief_id)).first()
     alert_with_info = {
         "alert": alert, 
         "sender_firstname": sender.firstname,
         "sender_surname": sender.surname,
         "sender_reliability_score": sender.reliability_score,
+        "chief_firstname": chief.firstname if chief else None,
+        "chief_surname": chief.surname if chief else None,
         "alerted_users_num": alerted_users_num,
         "positive_votes_num": votes_up_num,
         "negative_votes_num": votes_down_num,
-        "chief_is_alerted": chief_is_alerted,
-        "chief_closing_vote": chief_closing_vote
+        "chief_closing_vote": chief_closing_vote,
+        "messages_num": messages_num
     }
     return alert_with_info
 

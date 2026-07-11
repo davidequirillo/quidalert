@@ -6,6 +6,15 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
+import 'package:quidalert_flutter/utils/strings.dart';
+
+class FromJsonObjException implements Exception {
+  final String? message;
+  FromJsonObjException([this.message = "Error parsing JSON object"]);
+  @override
+  String toString() => "FromJsonObjException: $message";
+}
+
 class WhiteListEntry {
   final int id;
   final String email;
@@ -20,11 +29,14 @@ class WhiteListEntry {
   });
 
   factory WhiteListEntry.fromJson(Map<String, dynamic> json) {
+    final createdAt = json['created_at'] != null
+        ? DateTime.parse("${json['created_at']}Z")
+        : DateTime(0);
     return WhiteListEntry(
       id: json['id'],
       email: json['email'],
       createdBy: json['created_by'],
-      createdAt: DateTime.parse("${json['created_at']}Z"),
+      createdAt: createdAt,
     );
   }
 }
@@ -62,7 +74,7 @@ enum UserTypeExtended { admin, officer, chief, base }
 
 enum AlertType { local, managed, general, empty }
 
-enum AlertStatus { open, closed }
+enum AlertStatus { pending, open, closed }
 
 class UserSmall {
   final String id;
@@ -307,36 +319,107 @@ class Alert {
   final String type;
   final String description;
   final String status;
-  final DateTime? createdAt;
+  final double latitude;
+  final double longitude;
+  final double radius;
+  final DateTime createdAt;
 
   Alert({
     required this.id,
     required this.type,
     required this.description,
     required this.status,
+    required this.latitude,
+    required this.longitude,
+    required this.radius,
     required this.createdAt,
   });
 
   factory Alert.fromJson(Map<String, dynamic> json) {
     final String id = json['id'].toString();
     final bool isClosed = json['is_closed'] ?? false;
+    final bool isPending = json['is_pending'] ?? true;
     String status;
     if (isClosed) {
       status = AlertStatus.closed.name;
+    } else if (isPending) {
+      status = AlertStatus.pending.name;
     } else {
       status = AlertStatus.open.name;
     }
-    final DateTime? createdAt = json['created_at'] != null
+    final DateTime createdAt = json['created_at'] != null
         ? DateTime.parse("${json['created_at']}Z").toLocal()
-        : null;
+        : DateTime(0);
     final String type = json['type'] ?? '';
     final String description = json['description'] ?? '';
+    final double latitude = json['latitude'] != null
+        ? json['latitude'].toDouble()
+        : 0.0;
+    final double longitude = json['longitude'] != null
+        ? json['longitude'].toDouble()
+        : 0.0;
+    final double radius = json['radius'] != null
+        ? json['radius'].toDouble()
+        : 0.0;
     return Alert(
       id: id,
       type: type,
       description: description,
+      latitude: latitude,
+      longitude: longitude,
+      radius: radius,
       status: status,
       createdAt: createdAt,
     );
+  }
+}
+
+class AlertWithInfo {
+  final Alert alert;
+  final String senderFirstname;
+  final String senderSurname;
+  final String? chiefFirstname;
+  final String? chiefSurname;
+  final int senderReliabilityScore;
+  final int alertedUsersNum;
+  final int positiveVotesNum;
+  final int negativeVotesNum;
+  final int chiefClosingVote;
+  final int messagesNum;
+
+  AlertWithInfo({
+    required this.alert,
+    required this.senderFirstname,
+    required this.senderSurname,
+    required this.senderReliabilityScore,
+    required this.chiefFirstname,
+    required this.chiefSurname,
+    required this.alertedUsersNum,
+    required this.positiveVotesNum,
+    required this.negativeVotesNum,
+    required this.chiefClosingVote,
+    required this.messagesNum,
+  });
+
+  factory AlertWithInfo.fromJson(Map<String, dynamic> json) {
+    try {
+      final alert = Alert.fromJson(json['alert']);
+      return AlertWithInfo(
+        alert: alert,
+        senderFirstname: json['sender_firstname'],
+        senderSurname: json['sender_surname'],
+        senderReliabilityScore: json['sender_reliability_score'],
+        chiefFirstname: json['chief_firstname'],
+        chiefSurname: json['chief_surname'],
+        alertedUsersNum: json['alerted_users_num'],
+        positiveVotesNum: json['positive_votes_num'],
+        negativeVotesNum: json['negative_votes_num'],
+        chiefClosingVote: json['chief_closing_vote'],
+        messagesNum: json['messages_num'],
+      );
+    } catch (e) {
+      debugPrintC("Error parsing AlertWithInfo from JSON: $e");
+      throw FromJsonObjException();
+    }
   }
 }

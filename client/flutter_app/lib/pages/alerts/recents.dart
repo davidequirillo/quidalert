@@ -26,7 +26,7 @@ class RecentAlertsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelRecentAlerts, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: const RecentAlertsBody(),
+      body: SafeArea(top: false, child: RecentAlertsBody()),
     );
   }
 }
@@ -72,7 +72,7 @@ class RecentAlertsBody extends StatelessWidget {
         }
         if (snapshot.hasData) {
           final alerts = snapshot.data!;
-          return SafeArea(top: false, child: alertList(context, alerts));
+          return alertList(context, alerts);
         }
         return Center(child: Text(loc.errorGeneric));
       },
@@ -102,7 +102,7 @@ class RecentAlertsBody extends StatelessWidget {
                 alert.description.length > 50 ? 50 : alert.description.length,
               ) +
               (alert.description.length > 50 ? "..." : "");
-          final alertCreatedAt = alert.createdAt!;
+          final alertCreatedAt = alert.createdAt;
           final alertDateTimeStr = datetimeAsStringWithoutMicroseconds(
             alertCreatedAt,
             includeTimezone: false,

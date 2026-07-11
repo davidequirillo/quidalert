@@ -23,7 +23,7 @@ class UsersSearchModulePage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: UsersSearchModuleBody(),
+      body: SafeArea(top: false, child: UsersSearchModuleBody()),
     );
   }
 }
@@ -94,16 +94,46 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
       child: SingleChildScrollView(
         controller: _scrollController,
         padding: const EdgeInsets.all(16.0),
-        child: SafeArea(
-          top: false,
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                keyboardType: TextInputType.emailAddress,
+                controller: _emailController,
+                decoration: InputDecoration(labelText: "Email"),
+                validator: (value) {
+                  if ((value == null) || (value.isEmpty)) {
+                    return null;
+                  }
+                  return validateEmail(context, value);
+                },
+              ),
+              TextFormField(
+                controller: _surnameController,
+                decoration: InputDecoration(labelText: loc.labelSurname),
+                keyboardType: TextInputType.name,
+                onChanged: (value) {
+                  if (value.isEmpty) {
+                    _firstnameController.clear();
+                  }
+                },
+              ),
+              TextFormField(
+                controller: _firstnameController,
+                decoration: InputDecoration(labelText: loc.labelFirstname),
+                keyboardType: TextInputType.name,
+                onChanged: (value) {
+                  if (_surnameController.text.isEmpty) {
+                    _firstnameController.clear();
+                  }
+                },
+              ),
+              if (authClient.isAdmin())
                 TextFormField(
                   keyboardType: TextInputType.emailAddress,
-                  controller: _emailController,
-                  decoration: InputDecoration(labelText: "Email"),
+                  controller: _authorizerController,
+                  decoration: InputDecoration(labelText: loc.labelAuthorizedBy),
                   validator: (value) {
                     if ((value == null) || (value.isEmpty)) {
                       return null;
@@ -111,125 +141,90 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
                     return validateEmail(context, value);
                   },
                 ),
-                TextFormField(
-                  controller: _surnameController,
-                  decoration: InputDecoration(labelText: loc.labelSurname),
-                  keyboardType: TextInputType.name,
-                  onChanged: (value) {
-                    if (value.isEmpty) {
-                      _firstnameController.clear();
-                    }
-                  },
-                ),
-                TextFormField(
-                  controller: _firstnameController,
-                  decoration: InputDecoration(labelText: loc.labelFirstname),
-                  keyboardType: TextInputType.name,
-                  onChanged: (value) {
-                    if (_surnameController.text.isEmpty) {
-                      _firstnameController.clear();
-                    }
-                  },
-                ),
-                if (authClient.isAdmin())
-                  TextFormField(
-                    keyboardType: TextInputType.emailAddress,
-                    controller: _authorizerController,
-                    decoration: InputDecoration(
-                      labelText: loc.labelAuthorizedBy,
-                    ),
-                    validator: (value) {
-                      if ((value == null) || (value.isEmpty)) {
-                        return null;
-                      }
-                      return validateEmail(context, value);
-                    },
-                  ),
-                const SizedBox(height: 20),
-                if (authClient.isAdmin())
-                  DropdownButtonFormField<UserType>(
-                    decoration: InputDecoration(
-                      labelText: loc.labelType,
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    initialValue: null,
-                    items: UserType.values.map((UserType type) {
-                      return DropdownMenuItem<UserType>(
-                        value: type,
-                        child: Text(
-                          type.name[0].toUpperCase() + type.name.substring(1),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      selectedType = newValue;
-                    },
-                  ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<UserRole>(
+              const SizedBox(height: 20),
+              if (authClient.isAdmin())
+                DropdownButtonFormField<UserType>(
                   decoration: InputDecoration(
-                    labelText: loc.labelRole,
+                    labelText: loc.labelType,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
                   initialValue: null,
-                  items: UserRole.values.map((UserRole role) {
-                    return DropdownMenuItem<UserRole>(
-                      value: role,
+                  items: UserType.values.map((UserType type) {
+                    return DropdownMenuItem<UserType>(
+                      value: type,
                       child: Text(
-                        role.name[0].toUpperCase() + role.name.substring(1),
+                        type.name[0].toUpperCase() + type.name.substring(1),
                       ),
                     );
                   }).toList(),
                   onChanged: (newValue) {
-                    selectedRole = newValue;
+                    selectedType = newValue;
                   },
                 ),
-                const SizedBox(height: 20),
-                DropdownButtonFormField<UserStatus>(
-                  decoration: InputDecoration(
-                    labelText: "Status",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                  initialValue: null,
-                  items: UserStatus.values.map((UserStatus status) {
-                    return DropdownMenuItem<UserStatus>(
-                      value: status,
-                      child: Text(
-                        status.name[0].toUpperCase() + status.name.substring(1),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    selectedStatus = newValue;
-                  },
+              const SizedBox(height: 20),
+              DropdownButtonFormField<UserRole>(
+                decoration: InputDecoration(
+                  labelText: loc.labelRole,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => _submit(),
-                  child: Text(loc.buttonSearch),
+                initialValue: null,
+                items: UserRole.values.map((UserRole role) {
+                  return DropdownMenuItem<UserRole>(
+                    value: role,
+                    child: Text(
+                      role.name[0].toUpperCase() + role.name.substring(1),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  selectedRole = newValue;
+                },
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<UserStatus>(
+                decoration: InputDecoration(
+                  labelText: "Status",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    // clear all fields and reset dropdowns to initial state
-                    setState(() {
-                      _emailController.clear();
-                      _firstnameController.clear();
-                      _surnameController.clear();
-                      _authorizerController.clear();
-                      selectedType = null;
-                      selectedRole = null;
-                      selectedStatus = null;
-                      _formKey.currentState?.reset();
-                    });
-                  },
-                  child: Text(loc.buttonClear),
-                ),
-              ],
-            ),
+                initialValue: null,
+                items: UserStatus.values.map((UserStatus status) {
+                  return DropdownMenuItem<UserStatus>(
+                    value: status,
+                    child: Text(
+                      status.name[0].toUpperCase() + status.name.substring(1),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  selectedStatus = newValue;
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => _submit(),
+                child: Text(loc.buttonSearch),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  // clear all fields and reset dropdowns to initial state
+                  setState(() {
+                    _emailController.clear();
+                    _firstnameController.clear();
+                    _surnameController.clear();
+                    _authorizerController.clear();
+                    selectedType = null;
+                    selectedRole = null;
+                    selectedStatus = null;
+                    _formKey.currentState?.reset();
+                  });
+                },
+                child: Text(loc.buttonClear),
+              ),
+            ],
           ),
         ),
       ),

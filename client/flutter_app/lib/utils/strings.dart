@@ -23,6 +23,10 @@ String datetimeAsStringWithoutMicroseconds(
   return "${datetime.toIso8601String().replaceFirst('T', ' ').split('.').first}${includeTimezone ? timezoneOffsetAsString(datetime) : ''}";
 }
 
+String gpsCoordinatesAsString(double latitude, double longitude) {
+  return "${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}";
+}
+
 void debugPrintC(String message) {
   if (kDebugMode) {
     print(message);

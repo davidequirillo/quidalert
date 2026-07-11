@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/location.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 
@@ -23,7 +24,7 @@ class LocationTestPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelGpsLocationTest, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: const LocationTestBody(),
+      body: SafeArea(top: false, child: LocationTestBody()),
     );
   }
 }
@@ -77,9 +78,10 @@ class _LocationTestBodyState extends State<LocationTestBody> {
 
   String getCoords(Map<String, double>? positionMap) {
     if (positionMap != null) {
-      final String lat = positionMap['lat']!.toStringAsFixed(6);
-      final String long = positionMap['long']!.toStringAsFixed(6);
-      return "$lat, $long";
+      return gpsCoordinatesAsString(
+        positionMap['latitude']!,
+        positionMap['longitude']!,
+      );
     } else {
       final loc = AppLocalizations.of(context)!;
       return loc.errorPositionNotAvailable;
@@ -99,44 +101,41 @@ class _LocationTestBodyState extends State<LocationTestBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.watch<LocationClient>();
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Icon(Icons.location_on, size: 50, color: Colors.blue),
-              const SizedBox(height: 15),
-              const SizedBox(height: 15),
-              SelectableText(
-                '(${loc.labelLatitude}, ${loc.labelLongitude}): $coords',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              locationClient.isFetching
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: copyCoordsToClipboard,
-                      child: Text(loc.buttonCopy),
-                    ),
-              const SizedBox(height: 20),
-              SelectableText(
-                locationClient.currentAddress ?? loc.errorAddressNotFound,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              locationClient.isFetching
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _fetchCurrentLocation,
-                      child: Text(loc.buttonObtain),
-                    ),
-            ],
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(Icons.location_on, size: 50, color: Colors.blue),
+            const SizedBox(height: 15),
+            const SizedBox(height: 15),
+            SelectableText(
+              '(${loc.labelLatitude}, ${loc.labelLongitude}): $coords',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            locationClient.isFetching
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: copyCoordsToClipboard,
+                    child: Text(loc.buttonCopy),
+                  ),
+            const SizedBox(height: 20),
+            SelectableText(
+              locationClient.currentAddress ?? loc.errorAddressNotFound,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            locationClient.isFetching
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: _fetchCurrentLocation,
+                    child: Text(loc.buttonObtain),
+                  ),
+          ],
         ),
       ),
     );

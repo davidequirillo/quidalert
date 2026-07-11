@@ -16,7 +16,10 @@ Per poter usare questa applicazione, devi fare le seguenti cose:
 
 Per inviare una richiesta di aiuto (un'allerta), l'app accederà alla tua posizione GPS istantaneamente. 
 
-Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle vicinanze, l'app ha bisogno di aggiornare la tua posizione in background approssimativamente ogni 30 minuti, anche quando l'applicazione è chiusa, pertanto, l'autorizzazione alla posizione GPS deve essere impostata su "consenti sempre" (oppure, in base al sistema operativo, bisogna fare click su "consenti mentre l'app e in uso", e subito dopo cambiare la modalità in "consenti sempre"). Questo processo in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout). 
+Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle vicinanze, l'app ha bisogno di aggiornare la tua posizione in background approssimativamente ogni 30 minuti, anche quando l'applicazione è chiusa, pertanto, l'autorizzazione alla posizione GPS deve essere impostata su "consenti sempre" (oppure, in base al sistema operativo, bisogna fare click su "consenti mentre l'app è in uso", e subito dopo cambiare la modalità in "consenti sempre").  
+Questo processo di tracciamento in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout).
+
+Nota: è preferibile impostare la modalità "esatta" del tracciamento GPS (non "approssimativa").
 
 Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento, garantendo così il massimo risparmio della batteria e del traffico dati.
 

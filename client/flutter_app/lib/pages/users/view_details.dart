@@ -25,7 +25,7 @@ class UserDetailsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.labelDetails, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: UserDetailsBody(),
+      body: SafeArea(top: false, child: UserDetailsBody()),
     );
   }
 }
@@ -56,18 +56,18 @@ class UserDetailsBody extends StatelessWidget {
       future: getUserDetails(context, id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             goToLoginPagePostFrameCallback(context);
-            return Text(loc.errorSessionNotValidOrExpired);
+            return Center(child: Text(loc.errorSessionNotValidOrExpired));
           }
           if (snapshot.error.toString().startsWith("Forbidden")) {
-            return Text(loc.errorPermissionsNotValid);
+            return Center(child: Text(loc.errorPermissionsNotValid));
           }
           if (snapshot.error.toString().startsWith("BadRequest")) {
-            return Text(loc.errorBadRequest);
+            return Center(child: Text(loc.errorBadRequest));
           }
           if (snapshot.error.toString().startsWith("NotFound")) {
             return Center(child: Text(loc.errorNoEntryFound));
@@ -75,7 +75,7 @@ class UserDetailsBody extends StatelessWidget {
           if (snapshot.error.toString().startsWith("Server")) {
             return Center(child: Text(loc.errorServer));
           }
-          return Text(loc.errorGeneric);
+          return Center(child: Text(loc.errorGeneric));
         }
         if (snapshot.hasData) {
           final user = snapshot.data![0] as User;
@@ -86,14 +86,11 @@ class UserDetailsBody extends StatelessWidget {
             child: SingleChildScrollView(
               controller: primaryController,
               padding: const EdgeInsets.all(16),
-              child: SafeArea(
-                top: false,
-                child: userColumn(context, user, alerts),
-              ),
+              child: userColumn(context, user, alerts),
             ),
           );
         }
-        return Text(loc.errorGeneric);
+        return Center(child: Text(loc.errorGeneric));
       },
     );
   }
@@ -162,15 +159,13 @@ class UserDetailsBody extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: alerts.length,
             itemBuilder: (context, index) {
-              final createdAt = alerts[index].createdAt != null
-                  ? datetimeAsStringWithoutMicroseconds(
-                      alerts[index].createdAt!,
-                    )
-                  : "N/A";
+              final createdAtStr = datetimeAsStringWithoutMicroseconds(
+                alerts[index].createdAt,
+              );
               final description =
                   '${alerts[index].description.substring(0, alerts[index].description.length > 50 ? 50 : alerts[index].description.length)}...';
               return ListTile(
-                title: Text('$createdAt - ${alerts[index].status}'),
+                title: Text('$createdAtStr - ${alerts[index].status}'),
                 subtitle: Text('${alerts[index].id} - $description'),
               );
             },

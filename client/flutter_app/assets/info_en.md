@@ -16,7 +16,10 @@ To use this application, you must do the following steps:
 
 To send a help (alert) request, the app will access your GPS location, instantly. 
 
-To receive alerts from others nearby, the app needs to update your position in background approximately every 30 minutes, even when the app is closed, so gps location permission must be set to "always allow" (or, based on the operative system, you must push to "allow while the app is in use" and then change the mode to "always allow"). This background process will start automatically once you have successfully logged in, and will be immediately stopped if you decide to logout, to disconnect from the server. 
+To receive alerts from others nearby, the app needs to update your position in background approximately every 30 minutes, even when the app is closed, so gps location permission must be set to "allow all the time" (or, based on the operative system, you must push to "allow while the app is in use" and then change the mode to "allow all the time").  
+This background process will start automatically once you have successfully logged in, and will be immediately stopped if you decide to logout, to disconnect from the server.
+
+Note: the gps tracking recommended mode is the "precise" mode, not the approximate one.
 
 Note: to maximize battery efficiency, the system only sends updates when a significant change in location is detected.
 

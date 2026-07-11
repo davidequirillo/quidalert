@@ -521,11 +521,13 @@ class AlertOutWithInfo(BaseModel):
     sender_firstname: str
     sender_surname: str
     sender_reliability_score: int
+    chief_firstname: Optional[str] = None
+    chief_surname: Optional[str] = None
     alerted_users_num: int
     positive_votes_num: int
     negative_votes_num: int
-    chief_is_alerted: bool
     chief_closing_vote: int
+    messages_num: int
 
 class AlertOutWithUsers(BaseModel):
     alert: AlertOut

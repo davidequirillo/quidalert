@@ -24,7 +24,7 @@ class WhiteListDeletePage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: const WhiteListDeleteBody(),
+      body: SafeArea(top: false, child: WhiteListDeleteBody()),
     );
   }
 }
@@ -215,61 +215,100 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       child: SingleChildScrollView(
         controller: _scrollController,
         padding: const EdgeInsets.all(16.0),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              buildSectionTitle(
-                '${loc.buttonDelete} ${loc.labelEntrySingle.toLowerCase()} (by email)',
-              ),
-              Form(
-                key: _formDelByEmailKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      keyboardType: TextInputType.emailAddress,
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: "Email",
-                        border: OutlineInputBorder(),
+        child: Column(
+          children: [
+            buildSectionTitle(
+              '${loc.buttonDelete} ${loc.labelEntrySingle.toLowerCase()} (by email)',
+            ),
+            Form(
+              key: _formDelByEmailKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 128,
+                    validator: (value) {
+                      return validateEmail(context, value);
+                    },
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submitDeleteSingleEntry();
+                        },
+                        child: Text(loc.buttonDelete),
                       ),
-                      maxLength: 128,
-                      validator: (value) {
-                        return validateEmail(context, value);
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            submitDeleteSingleEntry();
-                          },
-                          child: Text(loc.buttonDelete),
-                        ),
-                        const SizedBox(width: 25),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(loc.buttonBack),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 25),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonBack),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              SizedBox(height: 15),
-              Divider(thickness: 0.25),
-              SizedBox(height: 15),
+            ),
+            SizedBox(height: 15),
+            Divider(thickness: 0.25),
+            SizedBox(height: 15),
+            Form(
+              key: _formDelMyEntriesKey,
+              child: Column(
+                children: [
+                  buildSectionTitle(
+                    '${loc.buttonDelete} ${loc.labelEntriesAuthorizedByMe.toLowerCase()}',
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _confirmation1Controller,
+                    decoration: InputDecoration(
+                      labelText: loc.labelTypeDeleteToConfirm,
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      return validateDeleteConfirmation(context, value);
+                    },
+                  ),
+                  const SizedBox(height: 35),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          submitDeleteMyEntries();
+                        },
+                        child: Text(loc.buttonDelete),
+                      ),
+                      const SizedBox(width: 25),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(loc.buttonBack),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 15),
+            Divider(thickness: 0.25),
+            SizedBox(height: 15),
+            if (authClient.isAdmin()) ...[
               Form(
-                key: _formDelMyEntriesKey,
+                key: _formDelAllEntriesKey,
                 child: Column(
                   children: [
                     buildSectionTitle(
-                      '${loc.buttonDelete} ${loc.labelEntriesAuthorizedByMe.toLowerCase()}',
+                      '${loc.buttonDelete} ${loc.labelEntriesAll.toLowerCase()}',
                     ),
-                    const SizedBox(height: 10),
                     TextFormField(
-                      controller: _confirmation1Controller,
+                      controller: _confirmation2Controller,
                       decoration: InputDecoration(
                         labelText: loc.labelTypeDeleteToConfirm,
                         border: OutlineInputBorder(),
@@ -284,7 +323,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            submitDeleteMyEntries();
+                            submitDeleteAllEntries();
                           },
                           child: Text(loc.buttonDelete),
                         ),
@@ -298,50 +337,8 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
                   ],
                 ),
               ),
-              SizedBox(height: 15),
-              Divider(thickness: 0.25),
-              SizedBox(height: 15),
-              if (authClient.isAdmin()) ...[
-                Form(
-                  key: _formDelAllEntriesKey,
-                  child: Column(
-                    children: [
-                      buildSectionTitle(
-                        '${loc.buttonDelete} ${loc.labelEntriesAll.toLowerCase()}',
-                      ),
-                      TextFormField(
-                        controller: _confirmation2Controller,
-                        decoration: InputDecoration(
-                          labelText: loc.labelTypeDeleteToConfirm,
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          return validateDeleteConfirmation(context, value);
-                        },
-                      ),
-                      const SizedBox(height: 35),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              submitDeleteAllEntries();
-                            },
-                            child: Text(loc.buttonDelete),
-                          ),
-                          const SizedBox(width: 25),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text(loc.buttonBack),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

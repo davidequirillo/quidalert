@@ -23,6 +23,8 @@ extension AppLocalizationsExtension on AppLocalizations {
         return exceptionServer;
       case 'exceptionNotFound':
         return exceptionNotFound;
+      case 'exceptionFromJsonObj':
+        return exceptionFromJsonObj;
       case 'exceptionUnknown':
         return exceptionUnknown;
       case 'alertTypeGeneral':

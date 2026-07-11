@@ -103,12 +103,6 @@ async def task_alert_search_and_notify(
     nearby_users_to_fcm_tokens = await run_in_threadpool(
         save_nearby_users_in_db, 
         alert, nearby_users, request_info, db_engine)
-    # We set the alert as not pending anymore, because we have already searched for chiefs and nearby users, and we have saved them in database
-    # Note: we don't pass the "alert" object to the function, because it is a copy of the original alert object coming from api endpoint, 
-    # so, we need to retrieve the original alert object from database, to update its is_pending field (see function "set_alert_as_not_pending_anymore")
-    await run_in_threadpool(
-        set_alert_as_not_pending_anymore, 
-        alert.id, request_info, db_engine)
     if sender_fcm_token:
         sender_can_be_notified = True
     else:
@@ -124,6 +118,12 @@ async def task_alert_search_and_notify(
         log_alert_no_nearby_users_to_notify(str(alert.id), request_info)
     if settings.app_mode == "development":
         await asyncio.sleep(10) # line executed only in development-mode, to simulate a long processing time, for manual testing purposes
+    # Now we set the alert as not pending anymore, because we have already searched for chiefs and nearby users, and we have saved them in database
+    # Note: we don't pass the "alert" object to the function, because it is a copy of the original alert object coming from api endpoint, 
+    # so, we need to retrieve the original alert object from database, to update its is_pending field (see function "set_alert_as_not_pending_anymore")
+    await run_in_threadpool(
+        set_alert_as_not_pending_anymore, 
+        alert.id, request_info, db_engine)
     if (chief_can_be_notified) or (nearby_users_can_be_notified):
         description = alert.description if (len(alert.description) <= 100) else (alert.description[:100] + "...")
         message_prefix = alert_notification_templates[user.language]["alert_prefix"].format(

@@ -21,7 +21,7 @@ class AccountsPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: "Accounts"),
       drawer: const CAppDrawer(),
-      body: AccountsBody(),
+      body: SafeArea(top: false, child: AccountsBody()),
     ); // build
   }
 }
@@ -40,45 +40,42 @@ class AccountsBody extends StatelessWidget {
       child: SingleChildScrollView(
         controller: primaryController,
         padding: const EdgeInsets.all(16),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            buildSectionLink(
+              context,
+              '${loc.menuWhiteList} (${loc.buttonAdd.toLowerCase()})',
+              "/accounts/whitelist/add-entries",
+            ),
+            buildSectionLink(
+              context,
+              '${loc.menuWhiteList} (${loc.buttonSearch.toLowerCase()})',
+              "/accounts/whitelist/search-entries",
+            ),
+            buildSectionLink(
+              context,
+              '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
+              "/accounts/whitelist/delete-entries",
+            ),
+            buildSectionLink(
+              context,
+              '${loc.menuUsers} (${loc.buttonSearch.toLowerCase()})',
+              "/accounts/users/search-module",
+            ),
+            buildSectionLink(
+              context,
+              '${loc.menuUsers} (${loc.labelSearchByCSV.toLowerCase()})',
+              "/accounts/users/search-by-csv",
+            ),
+            if (authClient.isAdmin())
               buildSectionLink(
                 context,
-                '${loc.menuWhiteList} (${loc.buttonAdd.toLowerCase()})',
-                "/accounts/whitelist/add-entries",
+                loc.menuUploadTerms,
+                "/accounts/upload-terms",
               ),
-              buildSectionLink(
-                context,
-                '${loc.menuWhiteList} (${loc.buttonSearch.toLowerCase()})',
-                "/accounts/whitelist/search-entries",
-              ),
-              buildSectionLink(
-                context,
-                '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
-                "/accounts/whitelist/delete-entries",
-              ),
-              buildSectionLink(
-                context,
-                '${loc.menuUsers} (${loc.buttonSearch.toLowerCase()})',
-                "/accounts/users/search-module",
-              ),
-              buildSectionLink(
-                context,
-                '${loc.menuUsers} (${loc.labelSearchByCSV.toLowerCase()})',
-                "/accounts/users/search-by-csv",
-              ),
-              if (authClient.isAdmin())
-                buildSectionLink(
-                  context,
-                  loc.menuUploadTerms,
-                  "/accounts/upload-terms",
-                ),
-            ],
-          ),
+          ],
         ),
       ),
     );

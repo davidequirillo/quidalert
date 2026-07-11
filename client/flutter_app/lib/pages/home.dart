@@ -26,7 +26,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: "Home"),
       drawer: const CAppDrawer(),
-      body: HomeBody(),
+      body: SafeArea(top: false, child: HomeBody()),
     );
   }
 }
@@ -188,80 +188,75 @@ class _HomeBodyState extends State<HomeBody> {
             child: SingleChildScrollView(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/alerts/new');
-                      },
-                      icon: Icon(Icons.add_alert),
-                      label: Text(loc.labelNewAlert),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/alerts/new');
+                    },
+                    icon: Icon(Icons.add_alert),
+                    label: Text(loc.labelNewAlert),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/alerts/recents');
+                    },
+                    icon: Icon(Icons.history),
+                    label: Text(loc.labelRecents),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/advice');
+                    },
+                    icon: Icon(Icons.help),
+                    label: Text(loc.labelAdvice),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/alerts/location-test');
+                    },
+                    icon: Icon(Icons.gps_fixed),
+                    label: Text(loc.labelGpsLocationTest),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushNamed('/profile/complete');
+                    },
+                    icon: Icon(Icons.person),
+                    label: Text(loc.labelCompleteProfile),
+                  ),
+                  SizedBox(height: 15),
+                  ElevatedButton.icon(
+                    onPressed: _refreshProfile,
+                    icon: Icon(Icons.refresh),
+                    label: Text("Refresh"),
+                  ),
+                  SizedBox(height: 35),
+                  _buildProfileCard(data),
+                  ListTile(
+                    leading: Icon(Icons.delete_forever),
+                    title: Text(loc.labelDismissAccountConfirmation),
+                  ),
+                  TextField(
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _dismissInputFieldController,
+                    decoration: InputDecoration(
+                      labelText: loc.labelTypeDeleteToConfirm,
+                      border: OutlineInputBorder(),
                     ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/alerts/recents');
-                      },
-                      icon: Icon(Icons.history),
-                      label: Text(loc.labelRecents),
-                    ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/advice');
-                      },
-                      icon: Icon(Icons.help),
-                      label: Text(loc.labelAdvice),
-                    ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(
-                          context,
-                        ).pushNamed('/alerts/location-test');
-                      },
-                      icon: Icon(Icons.gps_fixed),
-                      label: Text(loc.labelGpsLocationTest),
-                    ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed('/profile/complete');
-                      },
-                      icon: Icon(Icons.person),
-                      label: Text(loc.labelCompleteProfile),
-                    ),
-                    SizedBox(height: 15),
-                    ElevatedButton.icon(
-                      onPressed: _refreshProfile,
-                      icon: Icon(Icons.refresh),
-                      label: Text("Refresh"),
-                    ),
-                    SizedBox(height: 35),
-                    _buildProfileCard(data),
-                    ListTile(
-                      leading: Icon(Icons.delete_forever),
-                      title: Text(loc.labelDismissAccountConfirmation),
-                    ),
-                    TextField(
-                      keyboardType: TextInputType.emailAddress,
-                      controller: _dismissInputFieldController,
-                      decoration: InputDecoration(
-                        labelText: loc.labelTypeDeleteToConfirm,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        submitDismissAccountRequest();
-                      },
-                      label: Text(loc.labelOK),
-                    ),
-                  ],
-                ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      submitDismissAccountRequest();
+                    },
+                    label: Text(loc.labelOK),
+                  ),
+                ],
               ),
             ),
           );

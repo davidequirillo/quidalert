@@ -26,7 +26,7 @@ class WhiteListSearchPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: WhiteListSearchBody(),
+      body: SafeArea(top: false, child: WhiteListSearchBody()),
     );
   }
 }
@@ -160,110 +160,107 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
-    return SafeArea(
-      top: false,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        keyboardType: TextInputType.emailAddress,
-                        controller: _emailController,
-                        decoration: InputDecoration(labelText: "Email"),
-                        validator: (value) => validateEmail(context, value),
-                      ),
-                    ],
-                  ),
-                ),
-                buildSectionTitle(loc.buttonSearch),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Form(
+                key: _formKey,
+                child: Column(
                   children: [
+                    TextFormField(
+                      keyboardType: TextInputType.emailAddress,
+                      controller: _emailController,
+                      decoration: InputDecoration(labelText: "Email"),
+                      validator: (value) => validateEmail(context, value),
+                    ),
+                  ],
+                ),
+              ),
+              buildSectionTitle(loc.buttonSearch),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _isLoadingPage
+                        ? null
+                        : () {
+                            searchCriteria = "email";
+                            _startNewSearch();
+                          },
+                    label: Text("by Email"),
+                  ),
+                  const SizedBox(width: 25),
+                  ElevatedButton.icon(
+                    onPressed: _isLoadingPage
+                        ? null
+                        : () {
+                            searchCriteria = "";
+                            _startNewSearch();
+                          },
+                    label: Text(loc.labelAllMasculinePlural),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (authClient.isAdmin())
                     ElevatedButton.icon(
                       onPressed: _isLoadingPage
                           ? null
                           : () {
-                              searchCriteria = "email";
+                              searchCriteria = "authorizer";
                               _startNewSearch();
                             },
-                      label: Text("by Email"),
+                      label: Text("by Authorizer"),
                     ),
-                    const SizedBox(width: 25),
-                    ElevatedButton.icon(
-                      onPressed: _isLoadingPage
-                          ? null
-                          : () {
-                              searchCriteria = "";
-                              _startNewSearch();
-                            },
-                      label: Text(loc.labelAllMasculinePlural),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (authClient.isAdmin())
-                      ElevatedButton.icon(
-                        onPressed: _isLoadingPage
-                            ? null
-                            : () {
-                                searchCriteria = "authorizer";
-                                _startNewSearch();
-                              },
-                        label: Text("by Authorizer"),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
-          // Results area
-          Expanded(
-            child: !_hasSearched
-                ? Center(child: Text(loc.labelClickSearchToLoadEntries))
-                : _entries.isEmpty && _isLoadingPage
-                ? Center(child: CircularProgressIndicator())
-                : _entries.isEmpty
-                ? Center(child: Text(loc.errorNoEntryFound))
-                : ListView.separated(
-                    controller: _scrollController,
-                    itemCount: _entriesCount + (_hasMore ? 1 : 0),
-                    separatorBuilder: (_, _) => const Divider(),
-                    itemBuilder: (context, index) {
-                      if (index < _entriesCount) {
-                        return ListTile(
-                          title: Text(_entries[index].email),
-                          subtitle: Text(
-                            "Authorized by: ${_entries[index].createdBy}",
+        ),
+        // Results area
+        Expanded(
+          child: !_hasSearched
+              ? Center(child: Text(loc.labelClickSearchToLoadEntries))
+              : _entries.isEmpty && _isLoadingPage
+              ? Center(child: CircularProgressIndicator())
+              : _entries.isEmpty
+              ? Center(child: Text(loc.errorNoEntryFound))
+              : ListView.separated(
+                  controller: _scrollController,
+                  itemCount: _entriesCount + (_hasMore ? 1 : 0),
+                  separatorBuilder: (_, _) => const Divider(),
+                  itemBuilder: (context, index) {
+                    if (index < _entriesCount) {
+                      return ListTile(
+                        title: Text(_entries[index].email),
+                        subtitle: Text(
+                          "Authorized by: ${_entries[index].createdBy}",
+                        ),
+                        trailing: Text(
+                          datetimeAsStringWithoutMicroseconds(
+                            _entries[index].createdAt,
                           ),
-                          trailing: Text(
-                            datetimeAsStringWithoutMicroseconds(
-                              _entries[index].createdAt,
-                            ),
-                          ),
-                        );
-                      } else {
-                        // Loading spinner at the bottom of the list
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 32.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                    },
-                  ),
-          ),
-        ],
-      ),
+                        ),
+                      );
+                    } else {
+                      // Loading spinner at the bottom of the list
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
