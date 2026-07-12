@@ -118,7 +118,7 @@ class _UsersSearchByCSVBodyState extends State<UsersSearchByCSVBody> {
             child: Column(
               children: [
                 buildSectionTitle(
-                  '${loc.buttonSearch} ${loc.labelEmailMany.toLowerCase()}',
+                  '${loc.buttonSearch} ${loc.labelEmailsMany.toLowerCase()}',
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),

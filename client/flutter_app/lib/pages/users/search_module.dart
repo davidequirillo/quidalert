@@ -111,7 +111,7 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
               ),
               TextFormField(
                 controller: _surnameController,
-                decoration: InputDecoration(labelText: loc.labelSurname),
+                decoration: InputDecoration(labelText: loc.userSurname),
                 keyboardType: TextInputType.name,
                 onChanged: (value) {
                   if (value.isEmpty) {
@@ -121,7 +121,7 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
               ),
               TextFormField(
                 controller: _firstnameController,
-                decoration: InputDecoration(labelText: loc.labelFirstname),
+                decoration: InputDecoration(labelText: loc.userFirstname),
                 keyboardType: TextInputType.name,
                 onChanged: (value) {
                   if (_surnameController.text.isEmpty) {
@@ -133,7 +133,7 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
                 TextFormField(
                   keyboardType: TextInputType.emailAddress,
                   controller: _authorizerController,
-                  decoration: InputDecoration(labelText: loc.labelAuthorizedBy),
+                  decoration: InputDecoration(labelText: loc.userAuthorizedBy),
                   validator: (value) {
                     if ((value == null) || (value.isEmpty)) {
                       return null;
@@ -145,7 +145,7 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
               if (authClient.isAdmin())
                 DropdownButtonFormField<UserType>(
                   decoration: InputDecoration(
-                    labelText: loc.labelType,
+                    labelText: loc.userType,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.category),
                   ),
@@ -165,7 +165,7 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
               const SizedBox(height: 20),
               DropdownButtonFormField<UserRole>(
                 decoration: InputDecoration(
-                  labelText: loc.labelRole,
+                  labelText: loc.userRole,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category),
                 ),

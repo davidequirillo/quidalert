@@ -184,9 +184,9 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
         final int existingCount = respObj['existing_count'];
         retTitle = loc.successGeneric;
         retMessage =
-            '${loc.labelRowsTotal}: $totalCount\n${loc.labelEntriesAdded}: $addedCount\n${loc.labelEntriesSkipped}: $skippedCount\n${loc.labelEntriesFailed}: $failedCount\n${loc.labelEntriesExisting}: $existingCount';
+            '${loc.labelRowsTotal}: $totalCount\n${loc.entriesAdded}: $addedCount\n${loc.entriesSkipped}: $skippedCount\n${loc.entriesFailed}: $failedCount\n${loc.entriesExisting}: $existingCount';
         if (emailsNotAdded.isNotEmpty) {
-          retMessage += '\n\n${loc.labelEntriesFailed}:\n';
+          retMessage += '\n\n${loc.entriesFailed}:\n';
           for (var email in emailsNotAdded) {
             retMessage += ', $email\n';
           }
@@ -279,7 +279,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
                 Divider(),
                 const SizedBox(height: 15),
                 buildSectionTitle(
-                  '${loc.buttonAdd} ${loc.labelEmailMany.toLowerCase()}',
+                  '${loc.buttonAdd} ${loc.labelEmailsMany.toLowerCase()}',
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),

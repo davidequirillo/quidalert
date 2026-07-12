@@ -22,7 +22,7 @@ class LocationTestPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.labelGpsLocationTest, showBackButton: true),
+      appBar: CAppBar(title: loc.gpsLocationTest, showBackButton: true),
       drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: LocationTestBody()),
     );
@@ -112,7 +112,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
             const SizedBox(height: 15),
             const SizedBox(height: 15),
             SelectableText(
-              '(${loc.labelLatitude}, ${loc.labelLongitude}): $coords',
+              '(${loc.gpsLatitude}, ${loc.gpsLongitude}): $coords',
               style: const TextStyle(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),

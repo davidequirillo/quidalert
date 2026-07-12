@@ -142,7 +142,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                 TextFormField(
                   controller: _firstnameController,
                   decoration: InputDecoration(
-                    labelText: loc.labelFirstname,
+                    labelText: loc.userFirstname,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 64,
@@ -154,7 +154,7 @@ class _RegisterBodyState extends State<RegisterBody> {
                 TextFormField(
                   controller: _surnameController,
                   decoration: InputDecoration(
-                    labelText: loc.labelSurname,
+                    labelText: loc.userSurname,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 64,

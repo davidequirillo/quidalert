@@ -113,7 +113,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         retMessage = loc.errorEmailNotFound;
       } else {
         retTitle = loc.successGeneric;
-        retMessage = '${loc.labelEntriesDeleted}: $deletedCount';
+        retMessage = '${loc.entriesDeleted}: $deletedCount';
       }
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
@@ -168,7 +168,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       );
       final Map<String, dynamic> respObj = json.decode(response.body);
       retMessage =
-          '${loc.labelEntriesDeleted}: ${respObj['deleted_count']}\n${loc.labelEntriesTotal}: ${respObj['total_count']}';
+          '${loc.entriesDeleted}: ${respObj['deleted_count']}\n${loc.entriesTotal}: ${respObj['total_count']}';
       retTitle = loc.successGeneric;
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
@@ -218,7 +218,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         child: Column(
           children: [
             buildSectionTitle(
-              '${loc.buttonDelete} ${loc.labelEntrySingle.toLowerCase()} (by email)',
+              '${loc.buttonDelete} ${loc.entriesSingle.toLowerCase()} (by email)',
             ),
             Form(
               key: _formDelByEmailKey,
@@ -263,7 +263,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
               child: Column(
                 children: [
                   buildSectionTitle(
-                    '${loc.buttonDelete} ${loc.labelEntriesAuthorizedByMe.toLowerCase()}',
+                    '${loc.buttonDelete} ${loc.entriesAuthorizedByMe.toLowerCase()}',
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
@@ -305,7 +305,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
                 child: Column(
                   children: [
                     buildSectionTitle(
-                      '${loc.buttonDelete} ${loc.labelEntriesAll.toLowerCase()}',
+                      '${loc.buttonDelete} ${loc.entriesAll.toLowerCase()}',
                     ),
                     TextFormField(
                       controller: _confirmation2Controller,

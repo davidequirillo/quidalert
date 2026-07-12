@@ -315,7 +315,7 @@ class User {
 }
 
 class Alert {
-  final String id;
+  final int id;
   final String type;
   final String description;
   final String status;
@@ -336,7 +336,7 @@ class Alert {
   });
 
   factory Alert.fromJson(Map<String, dynamic> json) {
-    final String id = json['id'].toString();
+    final int id = json['id'] ?? 0;
     final bool isClosed = json['is_closed'] ?? false;
     final bool isPending = json['is_pending'] ?? true;
     String status;

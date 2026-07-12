@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
@@ -25,7 +26,7 @@ class NewAlertPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.labelNewAlert, showBackButton: true),
+      appBar: CAppBar(title: loc.alertNew, showBackButton: true),
       drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: NewAlertBody()),
     );
@@ -256,22 +257,22 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                   segments: [
                     ButtonSegment(
                       value: AlertType.local.name,
-                      label: Text(loc.labelLocal),
+                      label: Text(loc.getString("alertTypeLocal")!),
                       icon: Icon(Icons.place),
                     ),
                     ButtonSegment(
                       value: AlertType.managed.name,
-                      label: Text(loc.labelManagedF),
+                      label: Text(loc.getString("alertTypeManaged")!),
                       icon: Icon(Icons.manage_accounts),
                     ),
                     ButtonSegment(
                       value: AlertType.general.name,
-                      label: Text(loc.labelGeneral),
+                      label: Text(loc.getString("alertTypeGeneral")!),
                       icon: Icon(Icons.public),
                     ),
                     ButtonSegment(
                       value: AlertType.empty.name,
-                      label: Text(loc.labelEmptyF),
+                      label: Text(loc.getString("alertTypeEmpty")!),
                       icon: Icon(Icons.block),
                     ),
                   ],
@@ -288,7 +289,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                 TextFormField(
                   controller: _customCoordinates,
                   decoration: InputDecoration(
-                    labelText: loc.labelGpsPosition,
+                    labelText: loc.gpsPosition,
                     hintText: "lat, long",
                     border: const OutlineInputBorder(),
                   ),
@@ -303,7 +304,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
               TextFormField(
                 controller: _description,
                 decoration: InputDecoration(
-                  labelText: loc.labelDescription,
+                  labelText: loc.alertDescription,
                   border: const OutlineInputBorder(),
                 ),
                 maxLength: 256,

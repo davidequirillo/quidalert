@@ -70,6 +70,24 @@ class AlertDetailsBody extends StatelessWidget {
         'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
   }
 
+  void _viewAlertedUsersPage(BuildContext context, int alertId) {
+    Navigator.pushNamed(
+      context,
+      '/alerts/view-alert-users',
+      arguments: alertId.toString(),
+    );
+    return;
+  }
+
+  void _viewMessagesPage(BuildContext context, int alertId) {
+    Navigator.pushNamed(
+      context,
+      '/alerts/view-alert-messages',
+      arguments: alertId.toString(),
+    );
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryController = PrimaryScrollController.of(context);
@@ -149,7 +167,7 @@ class AlertDetailsBody extends StatelessWidget {
           ),
         if (alertWithInfo.alert.type != AlertType.general.name)
           Text(
-            '${loc.labelGpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
+            '${loc.gpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
           ),
         if (alertWithInfo.alert.type != AlertType.general.name)
           InkWell(
@@ -171,7 +189,7 @@ class AlertDetailsBody extends StatelessWidget {
         if (alertWithInfo.alert.type != AlertType.general.name)
           Text('${loc.alertRadius}: ${alertWithInfo.alert.radius} km'),
         SizedBox(height: 20),
-        Text('${loc.labelDescription}: ${alertWithInfo.alert.description}'),
+        Text('${loc.alertDescription}: ${alertWithInfo.alert.description}'),
         Divider(height: 40, thickness: 1),
         buildSectionTitle(loc.sectionUsers),
         Text(
@@ -184,7 +202,36 @@ class AlertDetailsBody extends StatelessWidget {
               ? '${loc.alertChief}: ${alertWithInfo.chiefFirstname} ${alertWithInfo.chiefSurname}'
               : '${loc.alertChief}: N/A',
         ),
-        Text('${loc.alertAlertedUsers}: '),
+        SizedBox(height: 20),
+        Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
+        if (alertWithInfo.alertedUsersNum > 0)
+          InkWell(
+            onTap: () {
+              _viewAlertedUsersPage(context, alertWithInfo.alert.id);
+            },
+            child: Text(
+              loc.buttonView,
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        SizedBox(height: 20),
+        Text('${loc.alertMessages}: (${alertWithInfo.messagesNum})'),
+        if (alertWithInfo.messagesNum > 0)
+          InkWell(
+            onTap: () {
+              _viewMessagesPage(context, alertWithInfo.alert.id);
+            },
+            child: Text(
+              loc.buttonView,
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
+              ),
+            ),
+          ),
       ],
     );
   }

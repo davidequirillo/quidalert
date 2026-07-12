@@ -197,7 +197,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
           .map((entry) => "${entry.key}: ${entry.value}")
           .join(", ");
       if (searchStr.isEmpty) {
-        searchStr = loc.labelAllMasculinePlural;
+        searchStr = loc.labelAllPm;
       }
       for (var key in ['email', 'surname', 'type', 'role', 'status']) {
         if (args[key] != null && args[key]!.isNotEmpty) {
@@ -266,7 +266,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                       String fname = _users[index].firstname;
                       String sname = _users[index].surname;
                       String subtitle =
-                          '${loc.labelAuthorizedBy}: ${_users[index].authorizedBy ?? "N/A"}';
+                          '${loc.userAuthorizedBy}: ${_users[index].authorizedBy ?? "N/A"}';
                       subtitle +=
                           '\n${_users[index].type},'
                           ' ${_users[index].role},'
