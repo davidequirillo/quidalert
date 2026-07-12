@@ -489,6 +489,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionPersonalInfo => 'Personal Info';
 
   @override
+  String get sectionRecentUserAlerts => 'Recent user alerts';
+
+  @override
   String get sectionTechnicalInfo => 'Technical Info';
 
   @override

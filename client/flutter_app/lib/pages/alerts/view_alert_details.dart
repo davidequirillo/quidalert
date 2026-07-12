@@ -88,6 +88,11 @@ class AlertDetailsBody extends StatelessWidget {
     return;
   }
 
+  void _extendAlertPage(BuildContext context) {
+    Navigator.pushNamed(context, '/alerts/extend-alert');
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryController = PrimaryScrollController.of(context);
@@ -130,6 +135,7 @@ class AlertDetailsBody extends StatelessWidget {
   }
 
   Widget alertColumn(BuildContext context, AlertWithInfo alertWithInfo) {
+    final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     final createdAt = datetimeAsStringWithoutMicroseconds(
       alertWithInfo.alert.createdAt,
@@ -204,7 +210,7 @@ class AlertDetailsBody extends StatelessWidget {
         ),
         SizedBox(height: 20),
         Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
-        if (alertWithInfo.alertedUsersNum > 0)
+        if (alertWithInfo.alertedUsersNum > 0 && authClient.isChief())
           InkWell(
             onTap: () {
               _viewAlertedUsersPage(context, alertWithInfo.alert.id);
@@ -232,6 +238,21 @@ class AlertDetailsBody extends StatelessWidget {
               ),
             ),
           ),
+        SizedBox(height: 20),
+        if (authClient.isChief())
+          InkWell(
+            onTap: () {
+              _extendAlertPage(context);
+            },
+            child: Text(
+              "Extend alert",
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
+              ),
+            ),
+          ),
+        Divider(height: 40, thickness: 1),
       ],
     );
   }

@@ -85,43 +85,50 @@ class RecentAlertsBody extends StatelessWidget {
     if (alerts.isEmpty) {
       return Center(child: Text(loc.entriesNotFound));
     }
-    return ListView.separated(
-      shrinkWrap: true,
-      controller: primaryScrollController,
-      itemCount: alerts.length,
-      separatorBuilder: (context, index) => Divider(),
-      itemBuilder: (context, index) {
-        final alert = alerts[index];
-        final alertTypeKey =
-            'alertType${alert.type[0].toUpperCase()}${alert.type.substring(1)}';
-        final alertStatusKey =
-            'alertStatus${alert.status[0].toUpperCase()}${alert.status.substring(1)}';
-        final description =
-            alert.description.substring(
-              0,
-              alert.description.length > 50 ? 50 : alert.description.length,
-            ) +
-            (alert.description.length > 50 ? "..." : "");
-        final alertCreatedAt = alert.createdAt;
-        final alertDateTimeStr = datetimeAsStringWithoutMicroseconds(
-          alertCreatedAt,
-          includeTimezone: false,
-        );
-        return ListTile(
-          title: Text(description),
-          subtitle: Text(
-            "${loc.labelType}: ${loc.getString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getString(alertStatusKey)}",
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            controller: primaryScrollController,
+            itemCount: alerts.length,
+            separatorBuilder: (context, index) => Divider(),
+            itemBuilder: (context, index) {
+              final alert = alerts[index];
+              final alertTypeKey =
+                  'alertType${alert.type[0].toUpperCase()}${alert.type.substring(1)}';
+              final alertStatusKey =
+                  'alertStatus${alert.status[0].toUpperCase()}${alert.status.substring(1)}';
+              final description =
+                  alert.description.substring(
+                    0,
+                    alert.description.length > 50
+                        ? 50
+                        : alert.description.length,
+                  ) +
+                  (alert.description.length > 50 ? "..." : "");
+              final alertCreatedAt = alert.createdAt;
+              final alertDateTimeStr = datetimeAsStringWithoutMicroseconds(
+                alertCreatedAt,
+                includeTimezone: false,
+              );
+              return ListTile(
+                title: Text(description),
+                subtitle: Text(
+                  "${loc.labelType}: ${loc.getString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getString(alertStatusKey)}",
+                ),
+                trailing: Text(alertDateTimeStr),
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/alerts/view-alert-details',
+                    arguments: alert.id.toString(),
+                  );
+                },
+              );
+            },
           ),
-          trailing: Text(alertDateTimeStr),
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/alerts/view-alert-details',
-              arguments: alert.id.toString(),
-            );
-          },
-        );
-      },
+        ),
+      ],
     );
   }
 }

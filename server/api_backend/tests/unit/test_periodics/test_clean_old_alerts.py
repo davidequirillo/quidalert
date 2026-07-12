@@ -4,9 +4,10 @@
 
 from datetime import timedelta
 from sqlmodel import Session, select, delete
-from models.general import Alert, AlertedUser, Message
+from models.general import Alert, AlertType, AlertedUser, Message
 from services.periodics import (
     ALERT_TTL_DAYS,
+    ALERT_TTSO_DAYS,
     do_alerts_cleanup
 )
 from services.security import now_tz_naive 
@@ -15,7 +16,7 @@ from tests.fixtures.alerts import (
     setup_alerts_data_and_teardown # required (fixture automatically called)
 )
 
-def test_delete_old_alerts_one_old_alert_in_db(db_session: Session):
+def test_clean_old_alerts_one_old_alert_in_db(db_session: Session):
     now = now_tz_naive()
     statement = select(Alert)
     # We get the first alert from the database (see setup_alerts_data fixture)
@@ -43,9 +44,9 @@ def test_delete_old_alerts_one_old_alert_in_db(db_session: Session):
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
     alert_id = alert.id   
-    cleaned_num = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine)
     # Check if the alert has been deleted
-    assert cleaned_num == 1
+    assert deleted_count == 1
     alerts_after_cleanup = db_session.exec(statement).all()
     alerts_num_after_cleanup = len(alerts_after_cleanup)
     assert alerts_num_after_cleanup == alerts_num - 1
@@ -59,7 +60,7 @@ def test_delete_old_alerts_one_old_alert_in_db(db_session: Session):
     alerted_users_after_cleanup = db_session.exec(statement).all()
     assert len(alerted_users_after_cleanup) == 0
 
-def test_delete_old_alerts_no_old_alerts_in_db(db_session: Session):
+def test_clean_old_alerts_no_old_alerts_in_db(db_session: Session):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)
@@ -79,11 +80,11 @@ def test_delete_old_alerts_no_old_alerts_in_db(db_session: Session):
     db_session.commit()
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
-    cleaned_num = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine)
     # Check that no alert has been deleted
-    assert cleaned_num == 0
+    assert deleted_count == 0
 
-def test_delete_old_alerts_empty_table(db_session: Session):
+def test_clean_old_alerts_empty_table(db_session: Session):
     # We manually delete all alerts from the database
     # so, we simulate the case where there are no alerts in the database
     db_session.exec(delete(Alert))
@@ -94,11 +95,11 @@ def test_delete_old_alerts_empty_table(db_session: Session):
     assert alerts_num_after_cleanup == 0
     db_engine = db_session.get_bind()
     # Now we call the do_alerts_cleanup function (periodic task)
-    cleaned_num = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine)
     # Check that no alert has been deleted, because there are no alerts in the database
-    assert cleaned_num == 0
+    assert deleted_count == 0
 
-def test_delete_old_alerts_some_old_alerts_in_db(db_session: Session):
+def test_clean_old_alerts_some_old_alerts_in_db(db_session: Session):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)
@@ -118,8 +119,8 @@ def test_delete_old_alerts_some_old_alerts_in_db(db_session: Session):
     db_session.commit()
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
-    cleaned_num = do_alerts_cleanup(db_engine)
-    assert cleaned_num == alerts_num // 2
+    _, deleted_count = do_alerts_cleanup(db_engine)
+    assert deleted_count == alerts_num // 2
     # We check that the remaining alerts in the database are all newer than ALERT_TTL_DAYS
     remaining_alerts = db_session.exec(statement).all()
     for alert in remaining_alerts:
@@ -133,3 +134,54 @@ def test_delete_old_alerts_some_old_alerts_in_db(db_session: Session):
         statement = select(AlertedUser).where(AlertedUser.alert_id == old_alert_id)
         alerted_users_after_cleanup = db_session.exec(statement).all()
         assert len(alerted_users_after_cleanup) == 0
+
+def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session):
+    now = now_tz_naive()
+    statement = select(Alert)
+    # We get alerts from the database (see setup_alerts_data fixture)
+    alerts = db_session.exec(statement).all()
+    alerts_num = len(alerts)
+    # There is at least one alert in the database (see setup_alerts_data fixture)
+    # and all alerts initially are in open status (is_closed=False)
+    assert alerts_num > 0
+    assert all(not alert.is_closed for alert in alerts)
+    # We set some local alert to be older than ALERT_TTSO_DAYS (to be closed) 
+    # and some alerts to be older than ALERT_TTL_DAYS (to be deleted)
+    alerts_to_close_ids = []
+    alerts_to_close_num = 0
+    alerts_to_delete_ids = []
+    alerts_to_delete_num = 0
+    for i, alert in enumerate(alerts):
+        if i % 3 == 0:
+            alert.created_at = now - timedelta(days=ALERT_TTL_DAYS + 1)
+            alerts_to_delete_ids.append(alert.id)
+            alerts_to_delete_num += 1
+            # We simulate that it's already closed
+            # So it will not count as an alert to be closed, but it will be deleted because it's older than ALERT_TTL_DAYS
+            alert.is_closed = True
+        elif i % 3 == 1:
+            alert.created_at = now - timedelta(days=ALERT_TTSO_DAYS + 1)
+            if (alert.type == AlertType.local.value) and (not alert.is_closed):
+                alerts_to_close_ids.append(alert.id)
+                alerts_to_close_num += 1
+        else:
+            alert.created_at = now - timedelta(days=ALERT_TTSO_DAYS - 1)
+        db_session.add(alert)
+    db_session.commit()
+    assert alerts_to_close_num > 0
+    assert alerts_to_delete_num > 0
+    db_engine = db_session.get_bind()
+    # Call the do_alerts_cleanup function (periodic task)
+    # We verify the results with the results coming from db
+    closed_num, deleted_num = do_alerts_cleanup(db_engine)
+    assert deleted_num > 0
+    assert closed_num > 0
+    assert closed_num == alerts_to_close_num
+    assert deleted_num == alerts_to_delete_num
+    for alert_id in alerts_to_close_ids:
+        alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+        assert alert is not None
+        assert alert.is_closed is True
+    for alert_id in alerts_to_delete_ids:
+        alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+        assert alert is None

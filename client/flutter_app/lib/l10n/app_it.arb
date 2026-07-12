@@ -160,6 +160,7 @@
   "menuUsers": "Utenti",
   "menuWhiteList": "White list per registrazione",
   "sectionPersonalInfo": "Informazioni personali",
+  "sectionRecentUserAlerts": "Allerte recenti dell'utente",
   "sectionTechnicalInfo": "Informazioni tecniche",
   "sectionUsers": "Utenti",
   "successAccountDismissed": "Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo",

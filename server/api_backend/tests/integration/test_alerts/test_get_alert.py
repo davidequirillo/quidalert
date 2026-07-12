@@ -108,6 +108,11 @@ def test_get_alert_success_general_alert(client, db_session, test_baseuser):
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
     assert sender is not None, "No user found in the database for testing"
+    # A general alert cannot have alerted users, 
+    # but it can have messages (coming from the alert sender, which is a chief)
+    messages = db_session.exec(select(Message).where(Message.alert_id == alert.id)).all()
+    # Now we can test the API endpoint to get the alert details,
+    # and we verify that the results are the same of the results obtained from database
     response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_obj = response.json()
@@ -129,7 +134,11 @@ def test_get_alert_success_general_alert(client, db_session, test_baseuser):
     assert resp_obj["alerted_users_num"] == 0
     assert resp_obj["positive_votes_num"] == 0
     assert resp_obj["negative_votes_num"] == 0
-    assert resp_obj["messages_num"] == 0
+    assert resp_obj["messages_num"] == len(messages)
+    # It's a general alert (there are not any alerted users or voters)
+    assert resp_obj["user_is_alerted"] is False
+    assert resp_obj["user_is_manager"] is False
+    assert resp_obj["user_vote"] == 0
 
 def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     caller: User = test_baseuser['user']
@@ -170,6 +179,12 @@ def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     assert resp_obj["alerted_users_num"] == len(alerted_users)
     assert resp_obj["positive_votes_num"] == 0
     assert resp_obj["negative_votes_num"] == 0
+    # The caller is the alert sender, so he is not an alerted user,
+    # and even more, the caller is not the alert manager
+    # and he cannot vote, because he is not an alerted user
+    assert resp_obj["user_is_alerted"] is False
+    assert resp_obj["user_is_manager"] is False
+    assert resp_obj["user_vote"] == 0
 
 def test_get_alert_not_created_by_me_and_not_involved(client, db_session, test_baseuser, test_chief):
     caller: User = test_baseuser['user']
@@ -235,6 +250,13 @@ def test_get_alert_not_created_by_me_but_involved(client, db_session, test_baseu
     assert resp_data["sender_surname"] is not None
     assert resp_data["sender_reliability_score"] is not None
     assert resp_data["alerted_users_num"] == len(alerted_users)
+    # The caller is an alerted user for this alert, so he is involved in the alert
+    # But the caller (a base user) cannot be the alert manager
+    # The caller can vote, because he is an alerted user, but he has not voted yet in this test (vote=0)
+    assert resp_data["user_is_alerted"] is True
+    assert resp_data["user_is_manager"] is False
+    assert resp_data["user_vote"] == 0
+
 
 def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, db_session, test_officer, test_baseuser):
     caller: User = test_officer['user']
@@ -283,6 +305,12 @@ def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, 
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
     assert resp_data["alerted_users_num"] == len(alerted_users)
+    # The caller is not an alerted user in this test
+    # so, even more, he is not the alert manager
+    # and he cannot vote, because he is not an alerted user
+    assert resp_data["user_is_alerted"] == False
+    assert resp_data["user_is_manager"] == False
+    assert resp_data["user_vote"] == 0
 
 def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseuser):
     caller: User = test_chief['user']
@@ -318,6 +346,12 @@ def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseus
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
     assert resp_data["alerted_users_num"] == len(alerted_users)
+    # Test_chief is not an alerted user in this test
+    # and even more, he is not the alert manager
+    # and he cannot vote, because he is not an alerted user
+    assert resp_data["user_is_alerted"] == False
+    assert resp_data["user_is_manager"] == False
+    assert resp_data["user_vote"] == 0
 
 def test_get_alert_called_by_admin(client, db_session, test_admin, test_baseuser):
     caller: User = test_admin['user']
@@ -426,3 +460,71 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     assert resp_data["chief_closing_vote"] != 0 
     assert resp_data["chief_closing_vote"] == alerted_chief_closing_vote
     assert resp_data["messages_num"] == len(alert_messages)
+    # The caller is not an alerted user in this test
+    # and even more, he is not the alert manager
+    # and he cannot vote, because he is not an alerted user
+    assert resp_data["user_is_alerted"] == False
+    assert resp_data["user_is_manager"] == False
+    assert resp_data["user_vote"] == 0
+
+def test_get_alert_the_caller_has_voted(client, db_session, test_baseuser):
+    caller: User = test_baseuser['user']
+    assert caller is not None
+    access_token = test_baseuser['access_token']
+    # We select an alert_id of a non-general alert, 
+    # where the caller is an alerted user (he is involved in the alert)
+    statement = select(AlertedUser).where(AlertedUser.user_id == caller.id)
+    alerted_caller = db_session.exec(statement).first()
+    # The caller (test_baseuser) is an alerted user for at least one alert (see setup_alerts_data_and_teardown fixture)
+    assert alerted_caller is not None
+    # We extract the alert in which the caller is involved (he is an alerted user)
+    alert = db_session.exec(select(Alert).where(Alert.id == alerted_caller.alert_id)).first()
+    assert alert is not None
+    assert alert.type != AlertType.general.value
+    # Now we set a vote for the caller (alerted user) to simulate that he has voted
+    alerted_caller.vote = 1
+    db_session.add(alerted_caller)
+    db_session.commit()
+    # Now we can test the API endpoint to get the alert details,
+    # and we verify that the results are the same of the results obtained from database
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    assert resp_data["alert"]["id"] == alert.id
+    assert resp_data["alert"]["type"] == alert.type
+    assert resp_data["alert"]["description"] == alert.description
+    assert resp_data["user_is_alerted"] is True
+    assert resp_data["user_is_manager"] is False
+    assert resp_data["user_vote"] == 1
+
+def test_get_alert_the_caller_is_manager(client, db_session, test_chief):
+    caller: User = test_chief['user']
+    assert caller is not None
+    access_token = test_chief['access_token']
+    # We select an alert_id of a non-general alert, 
+    # where the caller is an alerted user (he is involved in the alert)
+    statement = select(AlertedUser).where(AlertedUser.user_id == caller.id)
+    alerted_caller = db_session.exec(statement).first()
+    # The caller (test_chief) is an alerted user for at least one alert (see setup_alerts_data_and_teardown fixture)
+    assert alerted_caller is not None
+    # We extract the alert in which the caller is involved (he is an alerted user)
+    alert = db_session.exec(select(Alert).where(Alert.id == alerted_caller.alert_id)).first()
+    assert alert is not None
+    assert alert.type != AlertType.general.value
+    # Now we set the caller as manager for this alert
+    alerted_caller.is_manager = True
+    db_session.add(alerted_caller)
+    db_session.commit()
+    # Now we can test the API endpoint to get the alert details,
+    # and we verify that the results are the same of the results obtained from database
+    alert_id = alert.id
+    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    assert resp_data["alert"]["id"] == alert.id
+    assert resp_data["alert"]["type"] == alert.type
+    assert resp_data["alert"]["description"] == alert.description
+    assert resp_data["user_is_alerted"] is True
+    assert resp_data["user_is_manager"] is True
+    assert resp_data["user_vote"] == 0

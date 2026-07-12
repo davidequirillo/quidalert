@@ -47,7 +47,7 @@ class _HomeBodyState extends State<HomeBody> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      debugPrint(
+      debugPrintC(
         "HomeBody initState: syncing FCM token and starting background location tracking...",
       );
       await _syncFcmToken();
@@ -63,15 +63,17 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   Future<void> _refreshProfile() async {
-    final authClient = context.read<AuthClient>();
     try {
-      await authClient.refreshTokens();
-      debugPrint("Home page: tokens refreshed successfully.");
+      // Calling authClient.refreshTokens function can be helpful for debugging,
+      // but it's not strictly necessary, as the tokens are refreshed automatically
+      // by the AuthClient when we do a protected API request (like fetchProfile) and the access token is expired.
+      // await authClient.refreshTokens();
+      debugPrintC("Home page: tokens refreshed successfully.");
     } catch (e) {
-      debugPrint("Home page: error refreshing tokens: $e");
-      // Ignore errors here, they will be handled in fetchProfile
+      debugPrintC("Home page: error refreshing tokens: $e");
     }
     setState(() {
+      debugPrintC("Home page: refreshProfile called, triggering rebuild.");
       // it triggers rebuild to fetch profile again
     });
   }
@@ -100,7 +102,7 @@ class _HomeBodyState extends State<HomeBody> {
       retTitle = loc.successGeneric;
       retMessage = loc.successAccountDismissed;
     } catch (e) {
-      debugPrint("Error submitting dismiss account request: $e");
+      debugPrintC("Error submitting dismiss account request: $e");
       final exceptionName = e.runtimeType.toString();
       final locAttribute = "exception$exceptionName".replaceAll(
         "Exception",
@@ -129,7 +131,7 @@ class _HomeBodyState extends State<HomeBody> {
     notifProvider.setAuthClient(authClient);
     await notifProvider.getFcmToken();
     if (notifProvider.fcmToken == null || notifProvider.fcmToken!.isEmpty) {
-      debugPrint(
+      debugPrintC(
         "FCM token is null or empty, skipping registration for push notifications.",
       );
       return;
@@ -151,7 +153,7 @@ class _HomeBodyState extends State<HomeBody> {
     try {
       await BackgroundLocationService.startTracking();
     } catch (e) {
-      debugPrint("Error initializing background location tracking: $e");
+      debugPrintC("Error initializing background location tracking: $e");
     }
   }
 
@@ -163,21 +165,21 @@ class _HomeBodyState extends State<HomeBody> {
       future: fetchProfile(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator();
+          return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          debugPrint("Home page: error fetching profile: ${snapshot.error}");
+          debugPrintC("Home page: error fetching profile: ${snapshot.error}");
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             goToLoginPagePostFrameCallback(context);
-            return Text(loc.errorSessionNotValidOrExpired);
+            return Center(child: Text(loc.errorSessionNotValidOrExpired));
           }
           if (snapshot.error.toString().startsWith("BadRequest")) {
-            return Text(loc.errorBadRequest);
+            return Center(child: Text(loc.errorBadRequest));
           }
           if (snapshot.error.toString().startsWith("Server")) {
-            return Text(loc.errorServer);
+            return Center(child: Text(loc.errorServer));
           }
-          return Text(loc.errorGeneric);
+          return Center(child: Text(loc.errorGeneric));
         }
         if (snapshot.hasData) {
           final data = snapshot.data!;
@@ -261,7 +263,7 @@ class _HomeBodyState extends State<HomeBody> {
             ),
           );
         }
-        return Text(loc.errorGeneric);
+        return Center(child: Text(loc.errorGeneric));
       },
     );
   }
