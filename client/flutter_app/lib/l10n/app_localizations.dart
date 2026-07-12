@@ -1055,6 +1055,12 @@ abstract class AppLocalizations {
   /// **'Personal Info'**
   String get sectionPersonalInfo;
 
+  /// No description provided for @sectionRecentUserAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent user alerts'**
+  String get sectionRecentUserAlerts;
+
   /// No description provided for @sectionTechnicalInfo.
   ///
   /// In en, this message translates to:

@@ -9,7 +9,8 @@ from fakeredis.aioredis import FakeRedis
 from models.general import (
     WhiteListEntry,
     User, UserLanguage,
-    Alert, Message
+    Alert, AlertType,
+    Message
 )
 from services.security import (
     now_tz_aware,
@@ -51,8 +52,9 @@ LOCATIONS_TTL_HOURS = 48
 # note: we add a small grace period of 5 minutes to avoid edge cases of demotions being removed just before the token expires
 CHIEF_DEMOTIONS_TTL_MINUTES = GEOPOSITION_TOKEN_TTL_MINUTES + 5
 
-# Expiration threshold for alerts: 18 months
-ALERT_TTL_DAYS = 30 * 18 # approximately 18 months
+# Expiration thresholds for alerts (for automatic close and delete after a certain time)
+ALERT_TTSO_DAYS = 30 # Time to stay open: 30 days
+ALERT_TTL_DAYS = 30 * 18 # Time to live: approximately 18 months
 
 # User pending deletion thresholds: 30 days (1 month) for deactivation, 2 years for complete deletion from the database
 USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS = 30
@@ -303,12 +305,19 @@ def do_alerts_cleanup(db_engine):
     log_cleanup_old_alerts_started(detail=f"Starting cleanup of alerts older than {ALERT_TTL_DAYS} days")
     with Session(db_engine) as db_session:
         try:
-            # We delete alerts in bulk, leaving to the dbms the responsibility of handling foreign key constraints and cascading deletions defined (see models/general.py)
+            # We close all local open alerts in bulk (that are older than some days)
+            statement = (update(Alert)
+                .where(Alert.is_closed == False) # type: ignore
+                .where(Alert.created_at < (now - timedelta(days=ALERT_TTSO_DAYS))) # type: ignore
+                .where(Alert.type == AlertType.local) # type: ignore
+                .values(is_closed=True))
+            closed_count = db_session.exec(statement).rowcount
+            # We delete very old alerts in bulk, leaving to the dbms the responsibility of handling foreign key constraints and cascading deletions defined (see models/general.py)
             statement = delete(Alert).where(Alert.created_at < (now - timedelta(days=ALERT_TTL_DAYS))) # type: ignore
             deleted_count = db_session.exec(statement).rowcount
             db_session.commit()
         except Exception as e:
             log_cleanup_old_alerts_error(detail=str(e))
-            return 0
-    log_cleanup_old_alerts_completed(detail=f"Cleanup completed: {deleted_count} alerts destroyed")
-    return deleted_count
+            return 0, 0
+    log_cleanup_old_alerts_completed(detail=f"Cleanup completed: {closed_count} alerts closed, {deleted_count} alerts destroyed")
+    return closed_count, deleted_count

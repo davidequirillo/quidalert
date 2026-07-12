@@ -171,6 +171,7 @@ def get_alert(alert_id: int,
         alert.description = "[BANNED ALERT]"
     current_user_is_the_sender = False
     current_user_is_alerted = False
+    current_user_vote = 0
     chief_id = None
     chief = None
     chief_closing_vote = 0
@@ -184,6 +185,7 @@ def get_alert(alert_id: int,
     for au in alerted_users:
         if au.user_id == current_user.id:
             current_user_is_alerted = True
+            current_user_vote = au.vote
         if au.is_manager:
             chief_id = au.user_id
             chief_closing_vote = au.closing_vote
@@ -225,7 +227,10 @@ def get_alert(alert_id: int,
         "positive_votes_num": votes_up_num,
         "negative_votes_num": votes_down_num,
         "chief_closing_vote": chief_closing_vote,
-        "messages_num": messages_num
+        "messages_num": messages_num,
+        "user_is_alerted": current_user_is_alerted,
+        "user_is_manager": (chief_id is not None) and (current_user.id == chief_id),
+        "user_vote": current_user_vote
     }
     return alert_with_info
 

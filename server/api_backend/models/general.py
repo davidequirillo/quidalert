@@ -445,6 +445,11 @@ class Alert(AlertOut, table=True):
             "created_at", 
             postgresql_where="type = 'general'"
         ),
+        Index(
+            "ixp_alerts_created_at_where_is_not_closed", 
+            "created_at", 
+            postgresql_where="is_closed IS FALSE"
+        )
     )
 
 class UserOutWithAlerts(BaseModel):
@@ -528,6 +533,9 @@ class AlertOutWithInfo(BaseModel):
     negative_votes_num: int
     chief_closing_vote: int
     messages_num: int
+    user_is_alerted: bool
+    user_is_manager: bool
+    user_vote: int
 
 class AlertOutWithUsers(BaseModel):
     alert: AlertOut

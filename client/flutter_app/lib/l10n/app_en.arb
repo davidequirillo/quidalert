@@ -160,6 +160,7 @@
   "menuUsers": "Users",
   "menuWhiteList": "Registration white list",
   "sectionPersonalInfo": "Personal Info",
+  "sectionRecentUserAlerts": "Recent user alerts",
   "sectionTechnicalInfo": "Technical Info",
   "sectionUsers": "Users",
   "successAccountDismissed": "Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active",

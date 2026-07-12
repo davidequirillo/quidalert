@@ -150,7 +150,7 @@ class UserDetailsBody extends StatelessWidget {
         Text('${loc.labelNotes}: ${user.notes}'),
         SizedBox(height: 20),
         const Divider(height: 40, thickness: 2),
-        buildSectionTitle(loc.labelRecents),
+        buildSectionTitle(loc.sectionRecentUserAlerts),
         if (alerts.isEmpty)
           Text(loc.errorNoEntryFound)
         else
