@@ -202,7 +202,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
           .map((entry) => "${entry.key}: ${entry.value}")
           .join(", ");
       if (searchStr.isEmpty) {
-        searchStr = loc.labelAllMasculinePlural;
+        searchStr = loc.labelAllPm;
       }
     } else {
       throw Exception("Invalid arguments for search results page");
@@ -245,7 +245,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
               const SizedBox(height: 20),
               DropdownButtonFormField<UserRoleExtended>(
                 decoration: InputDecoration(
-                  labelText: loc.labelRole,
+                  labelText: loc.userRole,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category),
                 ),
@@ -317,7 +317,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
                 keyboardType: TextInputType.emailAddress,
                 controller: _authorizerController,
                 decoration: InputDecoration(
-                  labelText: loc.labelAuthorizedBy,
+                  labelText: loc.userAuthorizedBy,
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {

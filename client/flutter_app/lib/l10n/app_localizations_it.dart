@@ -9,13 +9,40 @@ class AppLocalizationsIt extends AppLocalizations {
   AppLocalizationsIt([String locale = 'it']) : super(locale);
 
   @override
+  String get addressStreet => 'Via/piazza';
+
+  @override
+  String get addressStreetAndNumber => 'Via/piazza e numero civico';
+
+  @override
+  String get addressCity => 'Città';
+
+  @override
+  String get addressPostalCode => 'CAP/ZIP';
+
+  @override
+  String get addressProvince => 'Provincia';
+
+  @override
+  String get addressCountry => 'Nazione';
+
+  @override
   String get alertSender => 'Mittente';
 
   @override
   String get alertChief => 'Capo';
 
   @override
+  String get alertDescription => 'Descrizione';
+
+  @override
+  String get alertInvolvedUsers => 'Utenti allertati';
+
+  @override
   String get alertAlertedUsers => 'Utenti allertati';
+
+  @override
+  String get alertMessages => 'Messaggi';
 
   @override
   String get alertRadius => 'Raggio';
@@ -40,6 +67,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get alertTypeManaged => 'Gestita';
+
+  @override
+  String get alertNew => 'Nuova allerta';
+
+  @override
+  String get alertRecents => 'Allerte recenti';
 
   @override
   String get buttonAccept => 'Accetta';
@@ -78,28 +111,37 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonSearch => 'Cerca';
 
   @override
-  String get exceptionBadRequest => 'Richiesta non accettata';
+  String get buttonView => 'Visualizza';
 
   @override
-  String get exceptionForbiddenRequest => 'Permessi non validi';
+  String get entriesAll => 'Tutte le voci';
 
   @override
-  String get exceptionGenericNotAuthorized => 'Non autorizzato, ritenta il login';
+  String get entriesDeleted => 'Voci cancellate';
 
   @override
-  String get exceptionNetwork => 'Errore di rete';
+  String get entriesFailed => 'Voci fallite';
 
   @override
-  String get exceptionServer => 'Errore nel server';
+  String get entriesSkipped => 'Voci saltate';
 
   @override
-  String get exceptionNotFound => 'Risorsa non trovata';
+  String get entriesTotal => 'Voci totali';
 
   @override
-  String get exceptionFromJsonObj => 'Errore di lettura oggetto json';
+  String get entriesAdded => 'Voci aggiunte';
 
   @override
-  String get exceptionUnknown => 'Errore sconosciuto';
+  String get entriesExisting => 'Voci esistenti';
+
+  @override
+  String get entriesSingle => 'Voce singola';
+
+  @override
+  String get entriesAuthorizedByMe => 'Tutte le voci autorizzate da me';
+
+  @override
+  String get entriesNotFound => 'Nessuna voce trovata';
 
   @override
   String get errorAccountBlocked => 'Account bloccato';
@@ -231,13 +273,61 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorStringTooShort => 'Stringa troppo corta';
 
   @override
-  String get errorUnknownState => 'Stato sconosciuto';
-
-  @override
   String get errorSessionNotValidOrExpired => 'Sessione non valida o scaduta';
 
   @override
-  String get labelActive => 'Attivo';
+  String get errorUnknownState => 'Stato sconosciuto';
+
+  @override
+  String get exceptionBadRequest => 'Richiesta non accettata';
+
+  @override
+  String get exceptionForbiddenRequest => 'Permessi non validi';
+
+  @override
+  String get exceptionGenericNotAuthorized => 'Non autorizzato, ritenta il login';
+
+  @override
+  String get exceptionNetwork => 'Errore di rete';
+
+  @override
+  String get exceptionServer => 'Errore nel server';
+
+  @override
+  String get exceptionNotFound => 'Risorsa non trovata';
+
+  @override
+  String get exceptionFromJsonObj => 'Errore di lettura oggetto json';
+
+  @override
+  String get exceptionUnknown => 'Errore sconosciuto';
+
+  @override
+  String get gpsLocation => 'Locazione GPS';
+
+  @override
+  String get gpsLocationTest => 'Test locazione GPS';
+
+  @override
+  String get gpsPosition => 'Posizione GPS';
+
+  @override
+  String get gpsPositionTest => 'Test positione GPS';
+
+  @override
+  String get gpsLatitude => 'Latitudine';
+
+  @override
+  String get gpsLongitude => 'Longitudine';
+
+  @override
+  String get labelAllPm => 'Tutti';
+
+  @override
+  String get labelAllPf => 'Tutte';
+
+  @override
+  String get labelAllSm => 'Tutto';
 
   @override
   String get labelAddNotes => 'Aggiungi delle note';
@@ -252,22 +342,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelAdvice => 'Consigli';
 
   @override
-  String get labelAllMasculinePlural => 'Tutti';
-
-  @override
   String get labelAreYouSure => 'Vuoi confermare l\'operazione?';
-
-  @override
-  String get labelAuthorizedBy => 'Autorizzato da';
-
-  @override
-  String get labelAuthorizer => 'Autorizzatore';
-
-  @override
-  String get labelBirthdate => 'Data di nascita';
-
-  @override
-  String get labelCity => 'Città';
 
   @override
   String get labelClickToSelectFile => 'Fare click per selezionare il file';
@@ -282,16 +357,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelCompileToChangeAuthorizer => 'Compila solo se devi cambiare l\'autorizzatore';
 
   @override
-  String get labelCompleteProfile => 'Completa profilo';
-
-  @override
   String get labelConfirmPassword => 'Conferma password';
 
   @override
   String get labelConfirmNewPassword => 'Conferma nuova password';
-
-  @override
-  String get labelCountry => 'Nazione';
 
   @override
   String get labelCurrentWhiteListEntries => 'Voci presenti nella white list';
@@ -303,9 +372,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelDatetimesAreInUTC => 'Date/ore sono espresse in UTC';
 
   @override
-  String get labelDescription => 'Descrizione';
-
-  @override
   String get labelDetails => 'Dettagli';
 
   @override
@@ -315,88 +381,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelDoNotHaveAccount => 'Non hai un account? Registrati';
 
   @override
-  String get labelEmail => 'Email';
-
-  @override
   String get labelEmailSingle => 'Indirizzo email singolo';
 
   @override
-  String get labelEmailMany => 'Molti indirizzi email';
-
-  @override
-  String get labelEmptyF => 'Vuota';
-
-  @override
-  String get labelEntrySingle => 'Voce singola';
-
-  @override
-  String get labelEntriesAuthorizedByMe => 'Tutte le voci autorizzate da me';
-
-  @override
-  String get labelEntriesAll => 'Tutte le voci';
+  String get labelEmailsMany => 'Molti indirizzi email';
 
   @override
   String get labelEnterVerificationMailCode => 'Inserisci il codice di verifica che ti è stato appena inviato via email';
 
   @override
-  String get labelEntriesDeleted => 'Voci cancellate';
-
-  @override
-  String get labelEntriesFailed => 'Voci fallite';
-
-  @override
-  String get labelEntriesSkipped => 'Voci saltate';
-
-  @override
-  String get labelEntriesTotal => 'Voci totali';
-
-  @override
-  String get labelEntriesAdded => 'Voci aggiunte';
-
-  @override
-  String get labelEntriesExisting => 'Voci esistenti';
-
-  @override
   String get labelFileSelected => 'File selezionato';
-
-  @override
-  String get labelFirstname => 'Nome';
-
-  @override
-  String get labelGeneral => 'Generale';
-
-  @override
-  String get labelGpsLocation => 'Locazione GPS';
-
-  @override
-  String get labelGpsLocationTest => 'Test locazione GPS';
-
-  @override
-  String get labelGpsPosition => 'Posizione GPS';
-
-  @override
-  String get labelGpsPositionTest => 'Test positione GPS';
-
-  @override
-  String get labelLastRefreshAt => 'Data dell\'ultima refresh';
-
-  @override
-  String get labelLanguage => 'Lingua';
-
-  @override
-  String get labelLatitude => 'Latitudine';
-
-  @override
-  String get labelLongitude => 'Longitudine';
-
-  @override
-  String get labelLocal => 'Locale';
-
-  @override
-  String get labelManagedF => 'Gestita';
-
-  @override
-  String get labelNewAlert => 'Nuova allerta';
 
   @override
   String get labelNewPassword => 'Nuova password';
@@ -414,19 +408,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelPasswordForgotten => 'Password dimenticata?';
 
   @override
-  String get labelPersonalInfo => 'Informazioni personali';
-
-  @override
-  String get labelPhoneNumber => 'Telefono';
-
-  @override
-  String get labelPostalCode => 'CAP/ZIP';
-
-  @override
   String get labelPressButtonToObtainPosition => 'Premi il tasto per ottenere la posizione';
-
-  @override
-  String get labelProvince => 'Provincia';
 
   @override
   String get labelQueryUsers => 'Utenti della query';
@@ -435,22 +417,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelRecents => 'Recenti';
 
   @override
-  String get labelRecentAlerts => 'Allerte recenti';
-
-  @override
   String get labelRegistration => 'Registrazione';
 
   @override
   String get labelReloadPage => 'Ricarica pagina';
-
-  @override
-  String get labelReliability => 'Affidabilità';
-
-  @override
-  String get labelReliabilityScore => 'Punteggio di affidabilità';
-
-  @override
-  String get labelRole => 'Ruolo';
 
   @override
   String get labelRowsTotal => 'Righe totali';
@@ -468,22 +438,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelStatus => 'Status';
 
   @override
-  String get labelStreet => 'Via/piazza';
-
-  @override
-  String get labelStreetAndNumber => 'Via/piazza e numero civico';
-
-  @override
   String get labelSubmittingAlert => 'Sto per inviare l\'allerta';
-
-  @override
-  String get labelSurname => 'Cognome';
-
-  @override
-  String get labelNoEntryFound => 'Nessuna voce trovata';
-
-  @override
-  String get labelTechnicalInfo => 'Informazioni tecniche';
 
   @override
   String get labelType => 'Tipo';
@@ -529,6 +484,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'White list per registrazione';
+
+  @override
+  String get sectionPersonalInfo => 'Informazioni personali';
+
+  @override
+  String get sectionTechnicalInfo => 'Informazioni tecniche';
 
   @override
   String get sectionUsers => 'Utenti';
@@ -580,4 +541,52 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get successGeneric => 'Operazione effettuata';
+
+  @override
+  String get userEmail => 'Email';
+
+  @override
+  String get userFirstname => 'Nome';
+
+  @override
+  String get userSurname => 'Cognome';
+
+  @override
+  String get userAuthorizedBy => 'Autorizzato da';
+
+  @override
+  String get userAuthorizer => 'Autorizzatore';
+
+  @override
+  String get userActive => 'Attivo';
+
+  @override
+  String get userReliability => 'Affidabilità';
+
+  @override
+  String get userReliabilityScore => 'Punteggio di affidabilità';
+
+  @override
+  String get userType => 'Tipo';
+
+  @override
+  String get userRole => 'Ruolo';
+
+  @override
+  String get userStatus => 'Status';
+
+  @override
+  String get userLastRefreshAt => 'Data dell\'ultima refresh';
+
+  @override
+  String get userBirthdate => 'Data di nascita';
+
+  @override
+  String get userPhoneNumber => 'Telefono';
+
+  @override
+  String get userLanguage => 'Lingua';
+
+  @override
+  String get userCompleteProfile => 'Completa profilo';
 }

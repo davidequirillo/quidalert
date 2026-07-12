@@ -202,7 +202,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                             searchCriteria = "";
                             _startNewSearch();
                           },
-                    label: Text(loc.labelAllMasculinePlural),
+                    label: Text(loc.labelAllSm),
                   ),
                 ],
               ),

@@ -95,6 +95,42 @@ abstract class AppLocalizations {
     Locale('it')
   ];
 
+  /// No description provided for @addressStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'Street'**
+  String get addressStreet;
+
+  /// No description provided for @addressStreetAndNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Street and civic number'**
+  String get addressStreetAndNumber;
+
+  /// No description provided for @addressCity.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get addressCity;
+
+  /// No description provided for @addressPostalCode.
+  ///
+  /// In en, this message translates to:
+  /// **'CAP/ZIP'**
+  String get addressPostalCode;
+
+  /// No description provided for @addressProvince.
+  ///
+  /// In en, this message translates to:
+  /// **'Province'**
+  String get addressProvince;
+
+  /// No description provided for @addressCountry.
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get addressCountry;
+
   /// No description provided for @alertSender.
   ///
   /// In en, this message translates to:
@@ -107,16 +143,34 @@ abstract class AppLocalizations {
   /// **'Chief'**
   String get alertChief;
 
+  /// No description provided for @alertDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get alertDescription;
+
+  /// No description provided for @alertInvolvedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerted users'**
+  String get alertInvolvedUsers;
+
   /// No description provided for @alertAlertedUsers.
   ///
   /// In en, this message translates to:
   /// **'Alerted users'**
   String get alertAlertedUsers;
 
+  /// No description provided for @alertMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get alertMessages;
+
   /// No description provided for @alertRadius.
   ///
   /// In en, this message translates to:
-  /// **'Raggio'**
+  /// **'Radius'**
   String get alertRadius;
 
   /// No description provided for @alertStatusOpen.
@@ -160,6 +214,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Managed'**
   String get alertTypeManaged;
+
+  /// No description provided for @alertNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New alert'**
+  String get alertNew;
+
+  /// No description provided for @alertRecents.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent alerts'**
+  String get alertRecents;
 
   /// No description provided for @buttonAccept.
   ///
@@ -233,53 +299,71 @@ abstract class AppLocalizations {
   /// **'Search'**
   String get buttonSearch;
 
-  /// No description provided for @exceptionBadRequest.
+  /// No description provided for @buttonView.
   ///
   /// In en, this message translates to:
-  /// **'Bad request'**
-  String get exceptionBadRequest;
+  /// **'View'**
+  String get buttonView;
 
-  /// No description provided for @exceptionForbiddenRequest.
+  /// No description provided for @entriesAll.
   ///
   /// In en, this message translates to:
-  /// **'Permissions not valid'**
-  String get exceptionForbiddenRequest;
+  /// **'All entries'**
+  String get entriesAll;
 
-  /// No description provided for @exceptionGenericNotAuthorized.
+  /// No description provided for @entriesDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Not authorized, retry login'**
-  String get exceptionGenericNotAuthorized;
+  /// **'Deleted entries'**
+  String get entriesDeleted;
 
-  /// No description provided for @exceptionNetwork.
+  /// No description provided for @entriesFailed.
   ///
   /// In en, this message translates to:
-  /// **'Network error'**
-  String get exceptionNetwork;
+  /// **'Failed entries'**
+  String get entriesFailed;
 
-  /// No description provided for @exceptionServer.
+  /// No description provided for @entriesSkipped.
   ///
   /// In en, this message translates to:
-  /// **'Server error'**
-  String get exceptionServer;
+  /// **'Skipped entries'**
+  String get entriesSkipped;
 
-  /// No description provided for @exceptionNotFound.
+  /// No description provided for @entriesTotal.
   ///
   /// In en, this message translates to:
-  /// **'Resource not found'**
-  String get exceptionNotFound;
+  /// **'Total entries'**
+  String get entriesTotal;
 
-  /// No description provided for @exceptionFromJsonObj.
+  /// No description provided for @entriesAdded.
   ///
   /// In en, this message translates to:
-  /// **'Json object reading error'**
-  String get exceptionFromJsonObj;
+  /// **'Added entries'**
+  String get entriesAdded;
 
-  /// No description provided for @exceptionUnknown.
+  /// No description provided for @entriesExisting.
   ///
   /// In en, this message translates to:
-  /// **'Unknown error'**
-  String get exceptionUnknown;
+  /// **'Existing entries'**
+  String get entriesExisting;
+
+  /// No description provided for @entriesSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single entry'**
+  String get entriesSingle;
+
+  /// No description provided for @entriesAuthorizedByMe.
+  ///
+  /// In en, this message translates to:
+  /// **'All entries authorized by me'**
+  String get entriesAuthorizedByMe;
+
+  /// No description provided for @entriesNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Nessuna voce trovata'**
+  String get entriesNotFound;
 
   /// No description provided for @errorAccountBlocked.
   ///
@@ -539,23 +623,119 @@ abstract class AppLocalizations {
   /// **'String too short'**
   String get errorStringTooShort;
 
-  /// No description provided for @errorUnknownState.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown state'**
-  String get errorUnknownState;
-
   /// No description provided for @errorSessionNotValidOrExpired.
   ///
   /// In en, this message translates to:
   /// **'Session not valid or expired'**
   String get errorSessionNotValidOrExpired;
 
-  /// No description provided for @labelActive.
+  /// No description provided for @errorUnknownState.
   ///
   /// In en, this message translates to:
-  /// **'Active'**
-  String get labelActive;
+  /// **'Unknown state'**
+  String get errorUnknownState;
+
+  /// No description provided for @exceptionBadRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Bad request'**
+  String get exceptionBadRequest;
+
+  /// No description provided for @exceptionForbiddenRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions not valid'**
+  String get exceptionForbiddenRequest;
+
+  /// No description provided for @exceptionGenericNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized, retry login'**
+  String get exceptionGenericNotAuthorized;
+
+  /// No description provided for @exceptionNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error'**
+  String get exceptionNetwork;
+
+  /// No description provided for @exceptionServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server error'**
+  String get exceptionServer;
+
+  /// No description provided for @exceptionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Resource not found'**
+  String get exceptionNotFound;
+
+  /// No description provided for @exceptionFromJsonObj.
+  ///
+  /// In en, this message translates to:
+  /// **'Json object reading error'**
+  String get exceptionFromJsonObj;
+
+  /// No description provided for @exceptionUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown error'**
+  String get exceptionUnknown;
+
+  /// No description provided for @gpsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS location'**
+  String get gpsLocation;
+
+  /// No description provided for @gpsLocationTest.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS location test'**
+  String get gpsLocationTest;
+
+  /// No description provided for @gpsPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS position'**
+  String get gpsPosition;
+
+  /// No description provided for @gpsPositionTest.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS position test'**
+  String get gpsPositionTest;
+
+  /// No description provided for @gpsLatitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get gpsLatitude;
+
+  /// No description provided for @gpsLongitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get gpsLongitude;
+
+  /// No description provided for @labelAllPm.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get labelAllPm;
+
+  /// No description provided for @labelAllPf.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get labelAllPf;
+
+  /// No description provided for @labelAllSm.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get labelAllSm;
 
   /// No description provided for @labelAddNotes.
   ///
@@ -581,41 +761,11 @@ abstract class AppLocalizations {
   /// **'Advice'**
   String get labelAdvice;
 
-  /// No description provided for @labelAllMasculinePlural.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get labelAllMasculinePlural;
-
   /// No description provided for @labelAreYouSure.
   ///
   /// In en, this message translates to:
   /// **'Are you sure?'**
   String get labelAreYouSure;
-
-  /// No description provided for @labelAuthorizedBy.
-  ///
-  /// In en, this message translates to:
-  /// **'Authorized by'**
-  String get labelAuthorizedBy;
-
-  /// No description provided for @labelAuthorizer.
-  ///
-  /// In en, this message translates to:
-  /// **'Authorizer'**
-  String get labelAuthorizer;
-
-  /// No description provided for @labelBirthdate.
-  ///
-  /// In en, this message translates to:
-  /// **'Birthdate'**
-  String get labelBirthdate;
-
-  /// No description provided for @labelCity.
-  ///
-  /// In en, this message translates to:
-  /// **'City'**
-  String get labelCity;
 
   /// No description provided for @labelClickToSelectFile.
   ///
@@ -641,12 +791,6 @@ abstract class AppLocalizations {
   /// **'Compile only if you need to change the authorizer'**
   String get labelCompileToChangeAuthorizer;
 
-  /// No description provided for @labelCompleteProfile.
-  ///
-  /// In en, this message translates to:
-  /// **'Complete profile'**
-  String get labelCompleteProfile;
-
   /// No description provided for @labelConfirmPassword.
   ///
   /// In en, this message translates to:
@@ -658,12 +802,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm new password'**
   String get labelConfirmNewPassword;
-
-  /// No description provided for @labelCountry.
-  ///
-  /// In en, this message translates to:
-  /// **'Country'**
-  String get labelCountry;
 
   /// No description provided for @labelCurrentWhiteListEntries.
   ///
@@ -683,12 +821,6 @@ abstract class AppLocalizations {
   /// **'Datetimes are in UTC format'**
   String get labelDatetimesAreInUTC;
 
-  /// No description provided for @labelDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get labelDescription;
-
   /// No description provided for @labelDetails.
   ///
   /// In en, this message translates to:
@@ -707,47 +839,17 @@ abstract class AppLocalizations {
   /// **'Don\'t have an account? Sign Up'**
   String get labelDoNotHaveAccount;
 
-  /// No description provided for @labelEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Email'**
-  String get labelEmail;
-
   /// No description provided for @labelEmailSingle.
   ///
   /// In en, this message translates to:
   /// **'Single email address'**
   String get labelEmailSingle;
 
-  /// No description provided for @labelEmailMany.
+  /// No description provided for @labelEmailsMany.
   ///
   /// In en, this message translates to:
   /// **'Many email addresses'**
-  String get labelEmailMany;
-
-  /// No description provided for @labelEmptyF.
-  ///
-  /// In en, this message translates to:
-  /// **'Empty'**
-  String get labelEmptyF;
-
-  /// No description provided for @labelEntrySingle.
-  ///
-  /// In en, this message translates to:
-  /// **'Single entry'**
-  String get labelEntrySingle;
-
-  /// No description provided for @labelEntriesAuthorizedByMe.
-  ///
-  /// In en, this message translates to:
-  /// **'All entries authorized by me'**
-  String get labelEntriesAuthorizedByMe;
-
-  /// No description provided for @labelEntriesAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All entries'**
-  String get labelEntriesAll;
+  String get labelEmailsMany;
 
   /// No description provided for @labelEnterVerificationMailCode.
   ///
@@ -755,125 +857,11 @@ abstract class AppLocalizations {
   /// **'Enter the verification code just sent to you by email'**
   String get labelEnterVerificationMailCode;
 
-  /// No description provided for @labelEntriesDeleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Deleted entries'**
-  String get labelEntriesDeleted;
-
-  /// No description provided for @labelEntriesFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed entries'**
-  String get labelEntriesFailed;
-
-  /// No description provided for @labelEntriesSkipped.
-  ///
-  /// In en, this message translates to:
-  /// **'Skipped entries'**
-  String get labelEntriesSkipped;
-
-  /// No description provided for @labelEntriesTotal.
-  ///
-  /// In en, this message translates to:
-  /// **'Total entries'**
-  String get labelEntriesTotal;
-
-  /// No description provided for @labelEntriesAdded.
-  ///
-  /// In en, this message translates to:
-  /// **'Added entries'**
-  String get labelEntriesAdded;
-
-  /// No description provided for @labelEntriesExisting.
-  ///
-  /// In en, this message translates to:
-  /// **'Existing entries'**
-  String get labelEntriesExisting;
-
   /// No description provided for @labelFileSelected.
   ///
   /// In en, this message translates to:
   /// **'File selected'**
   String get labelFileSelected;
-
-  /// No description provided for @labelFirstname.
-  ///
-  /// In en, this message translates to:
-  /// **'Firstname'**
-  String get labelFirstname;
-
-  /// No description provided for @labelGeneral.
-  ///
-  /// In en, this message translates to:
-  /// **'General'**
-  String get labelGeneral;
-
-  /// No description provided for @labelGpsLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS location'**
-  String get labelGpsLocation;
-
-  /// No description provided for @labelGpsLocationTest.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS location test'**
-  String get labelGpsLocationTest;
-
-  /// No description provided for @labelGpsPosition.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS position'**
-  String get labelGpsPosition;
-
-  /// No description provided for @labelGpsPositionTest.
-  ///
-  /// In en, this message translates to:
-  /// **'GPS position test'**
-  String get labelGpsPositionTest;
-
-  /// No description provided for @labelLastRefreshAt.
-  ///
-  /// In en, this message translates to:
-  /// **'Last refresh at'**
-  String get labelLastRefreshAt;
-
-  /// No description provided for @labelLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'Language'**
-  String get labelLanguage;
-
-  /// No description provided for @labelLatitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Latitude'**
-  String get labelLatitude;
-
-  /// No description provided for @labelLongitude.
-  ///
-  /// In en, this message translates to:
-  /// **'Longitude'**
-  String get labelLongitude;
-
-  /// No description provided for @labelLocal.
-  ///
-  /// In en, this message translates to:
-  /// **'Local'**
-  String get labelLocal;
-
-  /// No description provided for @labelManagedF.
-  ///
-  /// In en, this message translates to:
-  /// **'Managed'**
-  String get labelManagedF;
-
-  /// No description provided for @labelNewAlert.
-  ///
-  /// In en, this message translates to:
-  /// **'New alert'**
-  String get labelNewAlert;
 
   /// No description provided for @labelNewPassword.
   ///
@@ -905,35 +893,11 @@ abstract class AppLocalizations {
   /// **'Forgot password?'**
   String get labelPasswordForgotten;
 
-  /// No description provided for @labelPersonalInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Personal Info'**
-  String get labelPersonalInfo;
-
-  /// No description provided for @labelPhoneNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Phone'**
-  String get labelPhoneNumber;
-
-  /// No description provided for @labelPostalCode.
-  ///
-  /// In en, this message translates to:
-  /// **'CAP/ZIP'**
-  String get labelPostalCode;
-
   /// No description provided for @labelPressButtonToObtainPosition.
   ///
   /// In en, this message translates to:
   /// **'Press button to obtain the position'**
   String get labelPressButtonToObtainPosition;
-
-  /// No description provided for @labelProvince.
-  ///
-  /// In en, this message translates to:
-  /// **'Province'**
-  String get labelProvince;
 
   /// No description provided for @labelQueryUsers.
   ///
@@ -947,12 +911,6 @@ abstract class AppLocalizations {
   /// **'Recents'**
   String get labelRecents;
 
-  /// No description provided for @labelRecentAlerts.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent alerts'**
-  String get labelRecentAlerts;
-
   /// No description provided for @labelRegistration.
   ///
   /// In en, this message translates to:
@@ -964,24 +922,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reload page'**
   String get labelReloadPage;
-
-  /// No description provided for @labelReliability.
-  ///
-  /// In en, this message translates to:
-  /// **'Reliability'**
-  String get labelReliability;
-
-  /// No description provided for @labelReliabilityScore.
-  ///
-  /// In en, this message translates to:
-  /// **'Reliability score'**
-  String get labelReliabilityScore;
-
-  /// No description provided for @labelRole.
-  ///
-  /// In en, this message translates to:
-  /// **'Role'**
-  String get labelRole;
 
   /// No description provided for @labelRowsTotal.
   ///
@@ -1013,41 +953,11 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get labelStatus;
 
-  /// No description provided for @labelStreet.
-  ///
-  /// In en, this message translates to:
-  /// **'Street'**
-  String get labelStreet;
-
-  /// No description provided for @labelStreetAndNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Street and civic number'**
-  String get labelStreetAndNumber;
-
   /// No description provided for @labelSubmittingAlert.
   ///
   /// In en, this message translates to:
   /// **'Submitting alert'**
   String get labelSubmittingAlert;
-
-  /// No description provided for @labelSurname.
-  ///
-  /// In en, this message translates to:
-  /// **'Surname'**
-  String get labelSurname;
-
-  /// No description provided for @labelNoEntryFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No entry found'**
-  String get labelNoEntryFound;
-
-  /// No description provided for @labelTechnicalInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Technical Info'**
-  String get labelTechnicalInfo;
 
   /// No description provided for @labelType.
   ///
@@ -1138,6 +1048,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration white list'**
   String get menuWhiteList;
+
+  /// No description provided for @sectionPersonalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Info'**
+  String get sectionPersonalInfo;
+
+  /// No description provided for @sectionTechnicalInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical Info'**
+  String get sectionTechnicalInfo;
 
   /// No description provided for @sectionUsers.
   ///
@@ -1240,6 +1162,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Operation done'**
   String get successGeneric;
+
+  /// No description provided for @userEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get userEmail;
+
+  /// No description provided for @userFirstname.
+  ///
+  /// In en, this message translates to:
+  /// **'Firstname'**
+  String get userFirstname;
+
+  /// No description provided for @userSurname.
+  ///
+  /// In en, this message translates to:
+  /// **'Surname'**
+  String get userSurname;
+
+  /// No description provided for @userAuthorizedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized by'**
+  String get userAuthorizedBy;
+
+  /// No description provided for @userAuthorizer.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorizer'**
+  String get userAuthorizer;
+
+  /// No description provided for @userActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get userActive;
+
+  /// No description provided for @userReliability.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability'**
+  String get userReliability;
+
+  /// No description provided for @userReliabilityScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Reliability score'**
+  String get userReliabilityScore;
+
+  /// No description provided for @userType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get userType;
+
+  /// No description provided for @userRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get userRole;
+
+  /// No description provided for @userStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get userStatus;
+
+  /// No description provided for @userLastRefreshAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Last refresh at'**
+  String get userLastRefreshAt;
+
+  /// No description provided for @userBirthdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Birthdate'**
+  String get userBirthdate;
+
+  /// No description provided for @userPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get userPhoneNumber;
+
+  /// No description provided for @userLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get userLanguage;
+
+  /// No description provided for @userCompleteProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete profile'**
+  String get userCompleteProfile;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -9,16 +9,43 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get addressStreet => 'Street';
+
+  @override
+  String get addressStreetAndNumber => 'Street and civic number';
+
+  @override
+  String get addressCity => 'City';
+
+  @override
+  String get addressPostalCode => 'CAP/ZIP';
+
+  @override
+  String get addressProvince => 'Province';
+
+  @override
+  String get addressCountry => 'Country';
+
+  @override
   String get alertSender => 'Sender';
 
   @override
   String get alertChief => 'Chief';
 
   @override
+  String get alertDescription => 'Description';
+
+  @override
+  String get alertInvolvedUsers => 'Alerted users';
+
+  @override
   String get alertAlertedUsers => 'Alerted users';
 
   @override
-  String get alertRadius => 'Raggio';
+  String get alertMessages => 'Messages';
+
+  @override
+  String get alertRadius => 'Radius';
 
   @override
   String get alertStatusOpen => 'Open';
@@ -40,6 +67,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get alertTypeManaged => 'Managed';
+
+  @override
+  String get alertNew => 'New alert';
+
+  @override
+  String get alertRecents => 'Recent alerts';
 
   @override
   String get buttonAccept => 'Accept';
@@ -78,28 +111,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonSearch => 'Search';
 
   @override
-  String get exceptionBadRequest => 'Bad request';
+  String get buttonView => 'View';
 
   @override
-  String get exceptionForbiddenRequest => 'Permissions not valid';
+  String get entriesAll => 'All entries';
 
   @override
-  String get exceptionGenericNotAuthorized => 'Not authorized, retry login';
+  String get entriesDeleted => 'Deleted entries';
 
   @override
-  String get exceptionNetwork => 'Network error';
+  String get entriesFailed => 'Failed entries';
 
   @override
-  String get exceptionServer => 'Server error';
+  String get entriesSkipped => 'Skipped entries';
 
   @override
-  String get exceptionNotFound => 'Resource not found';
+  String get entriesTotal => 'Total entries';
 
   @override
-  String get exceptionFromJsonObj => 'Json object reading error';
+  String get entriesAdded => 'Added entries';
 
   @override
-  String get exceptionUnknown => 'Unknown error';
+  String get entriesExisting => 'Existing entries';
+
+  @override
+  String get entriesSingle => 'Single entry';
+
+  @override
+  String get entriesAuthorizedByMe => 'All entries authorized by me';
+
+  @override
+  String get entriesNotFound => 'Nessuna voce trovata';
 
   @override
   String get errorAccountBlocked => 'Account blocked';
@@ -231,13 +273,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorStringTooShort => 'String too short';
 
   @override
-  String get errorUnknownState => 'Unknown state';
-
-  @override
   String get errorSessionNotValidOrExpired => 'Session not valid or expired';
 
   @override
-  String get labelActive => 'Active';
+  String get errorUnknownState => 'Unknown state';
+
+  @override
+  String get exceptionBadRequest => 'Bad request';
+
+  @override
+  String get exceptionForbiddenRequest => 'Permissions not valid';
+
+  @override
+  String get exceptionGenericNotAuthorized => 'Not authorized, retry login';
+
+  @override
+  String get exceptionNetwork => 'Network error';
+
+  @override
+  String get exceptionServer => 'Server error';
+
+  @override
+  String get exceptionNotFound => 'Resource not found';
+
+  @override
+  String get exceptionFromJsonObj => 'Json object reading error';
+
+  @override
+  String get exceptionUnknown => 'Unknown error';
+
+  @override
+  String get gpsLocation => 'GPS location';
+
+  @override
+  String get gpsLocationTest => 'GPS location test';
+
+  @override
+  String get gpsPosition => 'GPS position';
+
+  @override
+  String get gpsPositionTest => 'GPS position test';
+
+  @override
+  String get gpsLatitude => 'Latitude';
+
+  @override
+  String get gpsLongitude => 'Longitude';
+
+  @override
+  String get labelAllPm => 'All';
+
+  @override
+  String get labelAllPf => 'All';
+
+  @override
+  String get labelAllSm => 'All';
 
   @override
   String get labelAddNotes => 'Add notes';
@@ -252,22 +342,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelAdvice => 'Advice';
 
   @override
-  String get labelAllMasculinePlural => 'All';
-
-  @override
   String get labelAreYouSure => 'Are you sure?';
-
-  @override
-  String get labelAuthorizedBy => 'Authorized by';
-
-  @override
-  String get labelAuthorizer => 'Authorizer';
-
-  @override
-  String get labelBirthdate => 'Birthdate';
-
-  @override
-  String get labelCity => 'City';
 
   @override
   String get labelClickToSelectFile => 'Click to select file';
@@ -282,16 +357,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelCompileToChangeAuthorizer => 'Compile only if you need to change the authorizer';
 
   @override
-  String get labelCompleteProfile => 'Complete profile';
-
-  @override
   String get labelConfirmPassword => 'Confirm password';
 
   @override
   String get labelConfirmNewPassword => 'Confirm new password';
-
-  @override
-  String get labelCountry => 'Country';
 
   @override
   String get labelCurrentWhiteListEntries => 'Current white list entries';
@@ -303,9 +372,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelDatetimesAreInUTC => 'Datetimes are in UTC format';
 
   @override
-  String get labelDescription => 'Description';
-
-  @override
   String get labelDetails => 'Details';
 
   @override
@@ -315,88 +381,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
 
   @override
-  String get labelEmail => 'Email';
-
-  @override
   String get labelEmailSingle => 'Single email address';
 
   @override
-  String get labelEmailMany => 'Many email addresses';
-
-  @override
-  String get labelEmptyF => 'Empty';
-
-  @override
-  String get labelEntrySingle => 'Single entry';
-
-  @override
-  String get labelEntriesAuthorizedByMe => 'All entries authorized by me';
-
-  @override
-  String get labelEntriesAll => 'All entries';
+  String get labelEmailsMany => 'Many email addresses';
 
   @override
   String get labelEnterVerificationMailCode => 'Enter the verification code just sent to you by email';
 
   @override
-  String get labelEntriesDeleted => 'Deleted entries';
-
-  @override
-  String get labelEntriesFailed => 'Failed entries';
-
-  @override
-  String get labelEntriesSkipped => 'Skipped entries';
-
-  @override
-  String get labelEntriesTotal => 'Total entries';
-
-  @override
-  String get labelEntriesAdded => 'Added entries';
-
-  @override
-  String get labelEntriesExisting => 'Existing entries';
-
-  @override
   String get labelFileSelected => 'File selected';
-
-  @override
-  String get labelFirstname => 'Firstname';
-
-  @override
-  String get labelGeneral => 'General';
-
-  @override
-  String get labelGpsLocation => 'GPS location';
-
-  @override
-  String get labelGpsLocationTest => 'GPS location test';
-
-  @override
-  String get labelGpsPosition => 'GPS position';
-
-  @override
-  String get labelGpsPositionTest => 'GPS position test';
-
-  @override
-  String get labelLastRefreshAt => 'Last refresh at';
-
-  @override
-  String get labelLanguage => 'Language';
-
-  @override
-  String get labelLatitude => 'Latitude';
-
-  @override
-  String get labelLongitude => 'Longitude';
-
-  @override
-  String get labelLocal => 'Local';
-
-  @override
-  String get labelManagedF => 'Managed';
-
-  @override
-  String get labelNewAlert => 'New alert';
 
   @override
   String get labelNewPassword => 'New password';
@@ -414,19 +408,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelPasswordForgotten => 'Forgot password?';
 
   @override
-  String get labelPersonalInfo => 'Personal Info';
-
-  @override
-  String get labelPhoneNumber => 'Phone';
-
-  @override
-  String get labelPostalCode => 'CAP/ZIP';
-
-  @override
   String get labelPressButtonToObtainPosition => 'Press button to obtain the position';
-
-  @override
-  String get labelProvince => 'Province';
 
   @override
   String get labelQueryUsers => 'Query users';
@@ -435,22 +417,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelRecents => 'Recents';
 
   @override
-  String get labelRecentAlerts => 'Recent alerts';
-
-  @override
   String get labelRegistration => 'Registration';
 
   @override
   String get labelReloadPage => 'Reload page';
-
-  @override
-  String get labelReliability => 'Reliability';
-
-  @override
-  String get labelReliabilityScore => 'Reliability score';
-
-  @override
-  String get labelRole => 'Role';
 
   @override
   String get labelRowsTotal => 'Total rows';
@@ -468,22 +438,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelStatus => 'Status';
 
   @override
-  String get labelStreet => 'Street';
-
-  @override
-  String get labelStreetAndNumber => 'Street and civic number';
-
-  @override
   String get labelSubmittingAlert => 'Submitting alert';
-
-  @override
-  String get labelSurname => 'Surname';
-
-  @override
-  String get labelNoEntryFound => 'No entry found';
-
-  @override
-  String get labelTechnicalInfo => 'Technical Info';
 
   @override
   String get labelType => 'Type';
@@ -529,6 +484,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'Registration white list';
+
+  @override
+  String get sectionPersonalInfo => 'Personal Info';
+
+  @override
+  String get sectionTechnicalInfo => 'Technical Info';
 
   @override
   String get sectionUsers => 'Users';
@@ -580,4 +541,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successGeneric => 'Operation done';
+
+  @override
+  String get userEmail => 'Email';
+
+  @override
+  String get userFirstname => 'Firstname';
+
+  @override
+  String get userSurname => 'Surname';
+
+  @override
+  String get userAuthorizedBy => 'Authorized by';
+
+  @override
+  String get userAuthorizer => 'Authorizer';
+
+  @override
+  String get userActive => 'Active';
+
+  @override
+  String get userReliability => 'Reliability';
+
+  @override
+  String get userReliabilityScore => 'Reliability score';
+
+  @override
+  String get userType => 'Type';
+
+  @override
+  String get userRole => 'Role';
+
+  @override
+  String get userStatus => 'Status';
+
+  @override
+  String get userLastRefreshAt => 'Last refresh at';
+
+  @override
+  String get userBirthdate => 'Birthdate';
+
+  @override
+  String get userPhoneNumber => 'Phone';
+
+  @override
+  String get userLanguage => 'Language';
+
+  @override
+  String get userCompleteProfile => 'Complete profile';
 }

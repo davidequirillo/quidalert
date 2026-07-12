@@ -22,7 +22,7 @@ class CompleteProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.labelCompleteProfile, showBackButton: true),
+      appBar: CAppBar(title: loc.userCompleteProfile, showBackButton: true),
       drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: CompleteProfileBody()),
     );
@@ -188,7 +188,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _firstnameController,
                   decoration: InputDecoration(
-                    labelText: loc.labelFirstname,
+                    labelText: loc.userFirstname,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 64,
@@ -200,7 +200,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _surnameController,
                   decoration: InputDecoration(
-                    labelText: loc.labelSurname,
+                    labelText: loc.userSurname,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 64,
@@ -212,7 +212,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _streetController,
                   decoration: InputDecoration(
-                    labelText: loc.labelStreetAndNumber,
+                    labelText: loc.addressStreetAndNumber,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 256,
@@ -224,7 +224,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _postalCodeController,
                   decoration: InputDecoration(
-                    labelText: loc.labelPostalCode,
+                    labelText: loc.addressPostalCode,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 16,
@@ -236,7 +236,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _cityController,
                   decoration: InputDecoration(
-                    labelText: loc.labelCity,
+                    labelText: loc.addressCity,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 128,
@@ -248,7 +248,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _provinceController,
                   decoration: InputDecoration(
-                    labelText: loc.labelProvince,
+                    labelText: loc.addressProvince,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 128,
@@ -260,7 +260,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _countryController,
                   decoration: InputDecoration(
-                    labelText: loc.labelCountry,
+                    labelText: loc.addressCountry,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 128,
@@ -276,7 +276,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                   controller: _birthdateController,
                   readOnly: true,
                   decoration: InputDecoration(
-                    labelText: loc.labelBirthdate,
+                    labelText: loc.userBirthdate,
                     border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.calendar_today),
                   ),
@@ -286,7 +286,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
                 TextFormField(
                   controller: _phoneNumberController,
                   decoration: InputDecoration(
-                    labelText: loc.labelPhoneNumber,
+                    labelText: loc.userPhoneNumber,
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 16,

@@ -196,7 +196,7 @@ class _HomeBodyState extends State<HomeBody> {
                       Navigator.of(context).pushNamed('/alerts/new');
                     },
                     icon: Icon(Icons.add_alert),
-                    label: Text(loc.labelNewAlert),
+                    label: Text(loc.alertNew),
                   ),
                   SizedBox(height: 15),
                   ElevatedButton.icon(
@@ -220,7 +220,7 @@ class _HomeBodyState extends State<HomeBody> {
                       Navigator.of(context).pushNamed('/alerts/location-test');
                     },
                     icon: Icon(Icons.gps_fixed),
-                    label: Text(loc.labelGpsLocationTest),
+                    label: Text(loc.gpsLocationTest),
                   ),
                   SizedBox(height: 15),
                   ElevatedButton.icon(
@@ -228,7 +228,7 @@ class _HomeBodyState extends State<HomeBody> {
                       Navigator.of(context).pushNamed('/profile/complete');
                     },
                     icon: Icon(Icons.person),
-                    label: Text(loc.labelCompleteProfile),
+                    label: Text(loc.userCompleteProfile),
                   ),
                   SizedBox(height: 15),
                   ElevatedButton.icon(
@@ -297,7 +297,7 @@ class _HomeBodyState extends State<HomeBody> {
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitle(loc.labelTechnicalInfo),
+        buildSectionTitle(loc.sectionTechnicalInfo),
         ListTile(
           title: Text(
             "${user['firstname']} ${user['surname']}",
@@ -306,36 +306,34 @@ class _HomeBodyState extends State<HomeBody> {
           subtitle: ListBody(
             children: [
               Text(
-                "${user['email']}\n${loc.labelLastRefreshAt}: $lastRefreshAtStr",
+                "${user['email']}\n${loc.userLastRefreshAt}: $lastRefreshAtStr",
               ),
               Text(
-                "${loc.labelAuthorizedBy}: ${user['authorized_by'] ?? "N/A"}",
+                "${loc.userAuthorizedBy}: ${user['authorized_by'] ?? "N/A"}",
               ),
-              Text("${loc.labelType}: $type"),
-              Text("${loc.labelRole}: ${user['role']}"),
+              Text("${loc.userType}: $type"),
+              Text("${loc.userRole}: ${user['role']}"),
               Text("Status: $status"),
-              Text(
-                "${loc.labelReliabilityScore}: ${user['reliability_score']}",
-              ),
+              Text("${loc.userReliabilityScore}: ${user['reliability_score']}"),
             ],
           ),
           isThreeLine: false,
         ),
         SizedBox(height: 20),
-        buildSectionTitle(loc.labelPersonalInfo),
+        buildSectionTitle(loc.sectionPersonalInfo),
         ListTile(
           title: Text("${user['firstname']} ${user['surname']}"),
           subtitle: ListBody(
             children: [
-              Text("${loc.labelStreet}: ${user['street'] ?? "N/A"}"),
-              Text("${loc.labelPostalCode}: ${user['postal_code'] ?? "N/A"}"),
-              Text("${loc.labelCity}: ${user['city'] ?? "N/A"}"),
-              Text("${loc.labelProvince}: ${user['province'] ?? "N/A"}"),
+              Text("${loc.addressStreet}: ${user['street'] ?? "N/A"}"),
+              Text("${loc.addressPostalCode}: ${user['postal_code'] ?? "N/A"}"),
+              Text("${loc.addressCity}: ${user['city'] ?? "N/A"}"),
+              Text("${loc.addressProvince}: ${user['province'] ?? "N/A"}"),
               Text(
-                "${loc.labelCountry}: ${user['country'] ?? "N/A"}",
+                "${loc.addressCountry}: ${user['country'] ?? "N/A"}",
               ), // example: "Italy", "United States", "Germany"
-              Text("${loc.labelBirthdate}: ${user['birthdate'] ?? "N/A"}"),
-              Text("${loc.labelPhoneNumber}: ${user['phone'] ?? "N/A"}"),
+              Text("${loc.userBirthdate}: ${user['birthdate'] ?? "N/A"}"),
+              Text("${loc.userPhoneNumber}: ${user['phone'] ?? "N/A"}"),
             ],
           ),
           isThreeLine: false,
