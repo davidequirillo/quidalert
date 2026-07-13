@@ -386,6 +386,9 @@ class AlertWithInfo {
   final int negativeVotesNum;
   final int chiefClosingVote;
   final int messagesNum;
+  final bool userIsAlerted;
+  final bool userIsManager;
+  final int userVote;
 
   AlertWithInfo({
     required this.alert,
@@ -399,6 +402,9 @@ class AlertWithInfo {
     required this.negativeVotesNum,
     required this.chiefClosingVote,
     required this.messagesNum,
+    required this.userIsAlerted,
+    required this.userIsManager,
+    required this.userVote,
   });
 
   factory AlertWithInfo.fromJson(Map<String, dynamic> json) {
@@ -416,6 +422,9 @@ class AlertWithInfo {
         negativeVotesNum: json['negative_votes_num'],
         chiefClosingVote: json['chief_closing_vote'],
         messagesNum: json['messages_num'],
+        userIsAlerted: json['user_is_alerted'],
+        userIsManager: json['user_is_manager'],
+        userVote: json['user_vote'],
       );
     } catch (e) {
       debugPrintC("Error parsing AlertWithInfo from JSON: $e");

@@ -215,6 +215,12 @@ abstract class AppLocalizations {
   /// **'Managed'**
   String get alertTypeManaged;
 
+  /// No description provided for @alertExtend.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend alert'**
+  String get alertExtend;
+
   /// No description provided for @alertNew.
   ///
   /// In en, this message translates to:
@@ -304,6 +310,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View'**
   String get buttonView;
+
+  /// No description provided for @buttonVotePositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get buttonVotePositive;
+
+  /// No description provided for @buttonVoteNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get buttonVoteNegative;
+
+  /// No description provided for @buttonVoteNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'I don\'t know'**
+  String get buttonVoteNeutral;
+
+  /// No description provided for @buttonClosingPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm and close'**
+  String get buttonClosingPositive;
+
+  /// No description provided for @buttonClosingNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny and close'**
+  String get buttonClosingNegative;
+
+  /// No description provided for @buttonClosingNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal close'**
+  String get buttonClosingNeutral;
+
+  /// No description provided for @buttonClosingPunitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Punitive close'**
+  String get buttonClosingPunitive;
 
   /// No description provided for @entriesAll.
   ///
@@ -1048,6 +1096,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration white list'**
   String get menuWhiteList;
+
+  /// No description provided for @sectionAlertVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote'**
+  String get sectionAlertVote;
+
+  /// No description provided for @sectionAlertClosing.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert closing'**
+  String get sectionAlertClosing;
 
   /// No description provided for @sectionPersonalInfo.
   ///

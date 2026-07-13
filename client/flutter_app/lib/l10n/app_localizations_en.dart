@@ -69,6 +69,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertTypeManaged => 'Managed';
 
   @override
+  String get alertExtend => 'Extend alert';
+
+  @override
   String get alertNew => 'New alert';
 
   @override
@@ -112,6 +115,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get buttonView => 'View';
+
+  @override
+  String get buttonVotePositive => 'Confirm';
+
+  @override
+  String get buttonVoteNegative => 'Deny';
+
+  @override
+  String get buttonVoteNeutral => 'I don\'t know';
+
+  @override
+  String get buttonClosingPositive => 'Confirm and close';
+
+  @override
+  String get buttonClosingNegative => 'Deny and close';
+
+  @override
+  String get buttonClosingNeutral => 'Normal close';
+
+  @override
+  String get buttonClosingPunitive => 'Punitive close';
 
   @override
   String get entriesAll => 'All entries';
@@ -484,6 +508,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'Registration white list';
+
+  @override
+  String get sectionAlertVote => 'Vote';
+
+  @override
+  String get sectionAlertClosing => 'Alert closing';
 
   @override
   String get sectionPersonalInfo => 'Personal Info';
