@@ -233,6 +233,12 @@ abstract class AppLocalizations {
   /// **'Recent alerts'**
   String get alertRecents;
 
+  /// No description provided for @alertYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get alertYou;
+
   /// No description provided for @buttonAccept.
   ///
   /// In en, this message translates to:
@@ -304,6 +310,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get buttonSearch;
+
+  /// No description provided for @buttonWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write'**
+  String get buttonWrite;
 
   /// No description provided for @buttonView.
   ///
@@ -683,6 +695,12 @@ abstract class AppLocalizations {
   /// **'Unknown state'**
   String get errorUnknownState;
 
+  /// No description provided for @errorUnableToOpenMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open map'**
+  String get errorUnableToOpenMap;
+
   /// No description provided for @exceptionBadRequest.
   ///
   /// In en, this message translates to:
@@ -989,6 +1007,12 @@ abstract class AppLocalizations {
   /// **'Select'**
   String get labelSelect;
 
+  /// No description provided for @labelShowAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Show address'**
+  String get labelShowAddress;
+
   /// No description provided for @labelShowPassword.
   ///
   /// In en, this message translates to:
@@ -1025,11 +1049,11 @@ abstract class AppLocalizations {
   /// **'Verification code'**
   String get labelVerificationCode;
 
-  /// No description provided for @labelViewInTheMap.
+  /// No description provided for @labelViewOnMap.
   ///
   /// In en, this message translates to:
-  /// **'View in the map'**
-  String get labelViewInTheMap;
+  /// **'View on map'**
+  String get labelViewOnMap;
 
   /// No description provided for @labelWaitPlease.
   ///

@@ -228,6 +228,7 @@ def get_alert(alert_id: int,
         "negative_votes_num": votes_down_num,
         "chief_closing_vote": chief_closing_vote,
         "messages_num": messages_num,
+        "user_is_sender": current_user_is_the_sender,
         "user_is_alerted": current_user_is_alerted,
         "user_is_manager": (chief_id is not None) and (current_user.id == chief_id),
         "user_vote": current_user_vote

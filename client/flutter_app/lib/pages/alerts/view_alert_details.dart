@@ -6,10 +6,13 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/models/general.dart';
@@ -40,6 +43,7 @@ class AlertDetailsBody extends StatefulWidget {
 
 class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   AlertWithInfo? alertWithInfo;
+  bool punitiveCloseUnblocked = false; // state for the checkbox
 
   @override
   void dispose() {
@@ -76,11 +80,47 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     );
   }
 
-  void _viewInTheMap(BuildContext context, double latitude, double longitude) {
-    // todo: open the map using the default external map application
-    // or using the default browser with Google Maps
-    final url =
-        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+  Future<void> _showAddress(
+    BuildContext context,
+    double latitude,
+    double longitude,
+  ) async {
+    final loc = AppLocalizations.of(context)!;
+    final locationClient = context.read<LocationClient>();
+    final address = await locationClient.translateToAddress(
+      latitude,
+      longitude,
+    );
+    if (!context.mounted) return;
+    showSimpleAlertDialog(
+      context,
+      loc.labelAddress,
+      address ?? loc.errorAddressNotFound,
+    );
+  }
+
+  Future<void> _viewOnMap(
+    BuildContext context,
+    double latitude,
+    double longitude,
+  ) async {
+    final loc = AppLocalizations.of(context)!;
+    Uri url;
+    if (Platform.isAndroid) {
+      url = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude");
+    } else if (Platform.isIOS) {
+      url = Uri.parse("maps://?ll=$latitude,$longitude&q=$latitude,$longitude");
+    } else {
+      url = Uri.parse(
+        "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude",
+      );
+    }
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (!context.mounted) return;
+      showSimpleAlertDialog(context, loc.errorError, loc.errorUnableToOpenMap);
+    }
   }
 
   void _viewAlertedUsersPage(BuildContext context, int alertId) {
@@ -171,7 +211,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       alertWithInfo.alert.createdAt,
       includeTimezone: false,
     );
-    final senderIsChief = (alertWithInfo.alert.type != AlertType.local.name)
+    final alertIsNotLocal = (alertWithInfo.alert.type != AlertType.local.name)
         ? true
         : false;
     final chiefIsAlerted =
@@ -181,6 +221,19 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             alertWithInfo.chiefSurname!.isNotEmpty)
         ? true
         : false;
+    String senderName =
+        "${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname}";
+    if (alertIsNotLocal) {
+      senderName += " (${loc.alertChief})";
+    }
+    if (alertWithInfo.userIsSender) {
+      senderName += " (${loc.alertYou})";
+    }
+    String chiefName =
+        "${alertWithInfo.chiefFirstname} ${alertWithInfo.chiefSurname}";
+    if (alertWithInfo.userIsManager) {
+      chiefName += " (${loc.alertYou})";
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -206,21 +259,44 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             '${loc.gpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
           ),
         if (alertWithInfo.alert.type != AlertType.general.name)
-          InkWell(
-            onTap: () {
-              _viewInTheMap(
-                context,
-                alertWithInfo.alert.latitude,
-                alertWithInfo.alert.longitude,
-              );
-            },
-            child: Text(
-              loc.labelViewInTheMap,
-              style: TextStyle(
-                decoration: TextDecoration.underline,
-                color: Colors.blue,
+          Row(
+            children: [
+              InkWell(
+                onTap: () {
+                  _showAddress(
+                    context,
+                    alertWithInfo.alert.latitude,
+                    alertWithInfo.alert.longitude,
+                  );
+                },
+                child: Text(
+                  loc.labelShowAddress,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
               ),
-            ),
+              SizedBox(width: 20),
+              // we add an icon to viewonmap link
+              InkWell(
+                onTap: () {
+                  _viewOnMap(
+                    context,
+                    alertWithInfo.alert.latitude,
+                    alertWithInfo.alert.longitude,
+                  );
+                },
+                child: Text(
+                  loc.labelViewOnMap,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+              Icon(Icons.map, size: 20, color: Colors.blue),
+            ],
           ),
         if (alertWithInfo.alert.type != AlertType.general.name)
           Text('${loc.alertRadius}: ${alertWithInfo.alert.radius} km'),
@@ -228,14 +304,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         Text('${loc.alertDescription}: ${alertWithInfo.alert.description}'),
         Divider(height: 40, thickness: 1),
         buildSectionTitle(loc.sectionUsers),
-        Text(
-          senderIsChief
-              ? '${loc.alertSender}: ${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname} (${loc.alertChief})'
-              : '${loc.alertSender}: ${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname}',
-        ),
+        Text('${loc.alertSender}: $senderName'),
         Text(
           chiefIsAlerted
-              ? '${loc.alertChief}: ${alertWithInfo.chiefFirstname} ${alertWithInfo.chiefSurname}'
+              ? '${loc.alertChief}: $chiefName'
               : '${loc.alertChief}: N/A',
         ),
         SizedBox(height: 20),
@@ -255,19 +327,38 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           ),
         SizedBox(height: 20),
         Text('${loc.alertMessages}: (${alertWithInfo.messagesNum})'),
-        if (alertWithInfo.messagesNum > 0)
-          InkWell(
-            onTap: () {
-              _viewMessagesPage(context, alertWithInfo.alert.id);
-            },
-            child: Text(
-              loc.buttonView,
-              style: TextStyle(
-                decoration: TextDecoration.underline,
-                color: Colors.blue,
+        Row(
+          children: [
+            if (alertWithInfo.messagesNum > 0)
+              InkWell(
+                onTap: () {
+                  _viewMessagesPage(context, alertWithInfo.alert.id);
+                },
+                child: Text(
+                  loc.buttonView,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
               ),
-            ),
-          ),
+            if (alertWithInfo.messagesNum > 0 && alertWithInfo.userIsSender)
+              SizedBox(width: 20),
+            if (alertWithInfo.userIsSender)
+              InkWell(
+                onTap: () {
+                  _viewMessagesPage(context, alertWithInfo.alert.id);
+                },
+                child: Text(
+                  loc.buttonWrite,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+          ],
+        ),
         SizedBox(height: 20),
         if (authClient.isChief())
           InkWell(
@@ -329,6 +420,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ],
           ),
+        SizedBox(height: 20),
         Row(
           children: [
             ElevatedButton(
@@ -339,10 +431,21 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             ),
             SizedBox(width: 10),
             ElevatedButton(
-              onPressed: () {
-                // Handle reopen alert
-              },
+              onPressed: punitiveCloseUnblocked
+                  ? () {
+                      // Handle reopen alert
+                    }
+                  : null,
               child: Text(loc.buttonClosingPunitive),
+            ),
+            SizedBox(width: 5),
+            Checkbox(
+              value: punitiveCloseUnblocked,
+              onChanged: (value) {
+                setState(() {
+                  punitiveCloseUnblocked = value!;
+                });
+              },
             ),
           ],
         ),

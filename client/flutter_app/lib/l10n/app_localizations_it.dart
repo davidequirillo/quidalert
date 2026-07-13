@@ -78,6 +78,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertRecents => 'Allerte recenti';
 
   @override
+  String get alertYou => 'Tu';
+
+  @override
   String get buttonAccept => 'Accetta';
 
   @override
@@ -112,6 +115,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get buttonSearch => 'Cerca';
+
+  @override
+  String get buttonWrite => 'Scrivi';
 
   @override
   String get buttonView => 'Visualizza';
@@ -303,6 +309,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorUnknownState => 'Stato sconosciuto';
 
   @override
+  String get errorUnableToOpenMap => 'Impossibile aprire la mappa';
+
+  @override
   String get exceptionBadRequest => 'Richiesta non accettata';
 
   @override
@@ -456,6 +465,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelSelect => 'Seleziona';
 
   @override
+  String get labelShowAddress => 'Mostra indirizzo';
+
+  @override
   String get labelShowPassword => 'Mostra password';
 
   @override
@@ -474,7 +486,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelVerificationCode => 'Codice di verifica';
 
   @override
-  String get labelViewInTheMap => 'Visualizza nella mappa';
+  String get labelViewOnMap => 'Visualizza sulla mappa';
 
   @override
   String get labelWaitPlease => 'Attendere, prego';

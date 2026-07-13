@@ -386,6 +386,7 @@ class AlertWithInfo {
   final int negativeVotesNum;
   final int chiefClosingVote;
   final int messagesNum;
+  final bool userIsSender;
   final bool userIsAlerted;
   final bool userIsManager;
   final int userVote;
@@ -402,6 +403,7 @@ class AlertWithInfo {
     required this.negativeVotesNum,
     required this.chiefClosingVote,
     required this.messagesNum,
+    required this.userIsSender,
     required this.userIsAlerted,
     required this.userIsManager,
     required this.userVote,
@@ -422,6 +424,7 @@ class AlertWithInfo {
         negativeVotesNum: json['negative_votes_num'],
         chiefClosingVote: json['chief_closing_vote'],
         messagesNum: json['messages_num'],
+        userIsSender: json['user_is_sender'],
         userIsAlerted: json['user_is_alerted'],
         userIsManager: json['user_is_manager'],
         userVote: json['user_vote'],

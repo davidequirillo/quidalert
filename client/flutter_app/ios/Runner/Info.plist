@@ -73,5 +73,11 @@
         <string>com.transistorsoft.fetch</string>
         <string>com.transistorsoft.customtask</string>
     </array>
+	<!-- Quidalert: the following lines are for url_launcher and external maps -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+  		<string>https</string>
+  		<string>maps</string>
+	</array>
 </dict>
 </plist>
