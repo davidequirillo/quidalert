@@ -43,6 +43,7 @@ dependencies:
   flutter_background_geolocation: ^5.0.5 # it requires commercial license key for production release
   firebase_core: ^4.5.0
   firebase_messaging: ^16.1.2
+  url_launcher: ^6.3.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

@@ -533,6 +533,7 @@ class AlertOutWithInfo(BaseModel):
     negative_votes_num: int
     chief_closing_vote: int
     messages_num: int
+    user_is_sender: bool
     user_is_alerted: bool
     user_is_manager: bool
     user_vote: int

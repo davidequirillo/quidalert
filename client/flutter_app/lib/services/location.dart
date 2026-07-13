@@ -153,7 +153,10 @@ class LocationClient extends ChangeNotifier {
       }
       _currentPosition = returnedPosition;
       _lastFetchingTime = DateTime.now();
-      _currentAddress = await _translateToAddress(_currentPosition!);
+      _currentAddress = await translateToAddress(
+        _currentPosition!.coords.latitude,
+        _currentPosition!.coords.longitude,
+      );
       if (_currentAddress == null || _currentAddress!.isEmpty) {
         debugPrintC("Address is <empty> for the current position");
         throw LocationClientAddressNotFoundException();
@@ -175,10 +178,6 @@ class LocationClient extends ChangeNotifier {
       _currentPosition = null;
       _currentAddress = null;
       rethrow;
-    } on NoResultFoundException catch (_) {
-      debugPrintC("No address found for the current position");
-      _currentAddress = null;
-      throw LocationClientAddressNotFoundException();
     } catch (e) {
       debugPrintC("Error fetching foreground location: $e");
       _currentPosition = null;
@@ -192,15 +191,10 @@ class LocationClient extends ChangeNotifier {
     }
   }
 
-  Future<String?> _translateToAddress(bg.Location pos) async {
-    debugPrintC(
-      "Translating position to address: ${pos.coords.latitude}, ${pos.coords.longitude}",
-    );
+  Future<String?> translateToAddress(double latitude, double longitude) async {
+    debugPrintC("Translating position to address: $latitude, $longitude");
     try {
-      List<Placemark> p = await placemarkFromCoordinates(
-        pos.coords.latitude,
-        pos.coords.longitude,
-      );
+      List<Placemark> p = await placemarkFromCoordinates(latitude, longitude);
       if (p.isNotEmpty) {
         debugPrintC("Address found");
         final addr = p.first;
@@ -210,7 +204,8 @@ class LocationClient extends ChangeNotifier {
         return null;
       }
     } on NoResultFoundException catch (_) {
-      rethrow;
+      debugPrintC("No address found for the given coordinates");
+      return null;
     } catch (e) {
       debugPrintC("Unknown error translating position to address: $e");
       return null;

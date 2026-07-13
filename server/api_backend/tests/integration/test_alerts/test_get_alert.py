@@ -139,6 +139,8 @@ def test_get_alert_success_general_alert(client, db_session, test_baseuser):
     assert resp_obj["user_is_alerted"] is False
     assert resp_obj["user_is_manager"] is False
     assert resp_obj["user_vote"] == 0
+    # The API caller (test_baseuser) is not the alert sender in this test
+    assert resp_obj["user_is_sender"] is False
 
 def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     caller: User = test_baseuser['user']
@@ -185,6 +187,8 @@ def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     assert resp_obj["user_is_alerted"] is False
     assert resp_obj["user_is_manager"] is False
     assert resp_obj["user_vote"] == 0
+    # The API caller (test_baseuser) is the alert sender in this test
+    assert resp_obj["user_is_sender"] is True
 
 def test_get_alert_not_created_by_me_and_not_involved(client, db_session, test_baseuser, test_chief):
     caller: User = test_baseuser['user']
@@ -256,7 +260,8 @@ def test_get_alert_not_created_by_me_but_involved(client, db_session, test_baseu
     assert resp_data["user_is_alerted"] is True
     assert resp_data["user_is_manager"] is False
     assert resp_data["user_vote"] == 0
-
+    # The API caller (test_baseuser) is not the alert sender in this test
+    assert resp_data["user_is_sender"] is False
 
 def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, db_session, test_officer, test_baseuser):
     caller: User = test_officer['user']
@@ -305,12 +310,14 @@ def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, 
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
     assert resp_data["alerted_users_num"] == len(alerted_users)
-    # The caller is not an alerted user in this test
+    # The API caller (test_officer) is not an alerted user in this test
     # so, even more, he is not the alert manager
     # and he cannot vote, because he is not an alerted user
     assert resp_data["user_is_alerted"] == False
     assert resp_data["user_is_manager"] == False
     assert resp_data["user_vote"] == 0
+    # The API caller (test_officer) is not the alert sender in this test
+    assert resp_data["user_is_sender"] == False
 
 def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseuser):
     caller: User = test_chief['user']
@@ -346,11 +353,13 @@ def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseus
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
     assert resp_data["alerted_users_num"] == len(alerted_users)
-    # Test_chief is not an alerted user in this test
+    # The API caller (test_chief) is not an alerted user in this test
     # and even more, he is not the alert manager
     # and he cannot vote, because he is not an alerted user
+    # and he is not the alert sender
     assert resp_data["user_is_alerted"] == False
     assert resp_data["user_is_manager"] == False
+    assert resp_data["user_is_sender"] == False
     assert resp_data["user_vote"] == 0
 
 def test_get_alert_called_by_admin(client, db_session, test_admin, test_baseuser):
@@ -395,7 +404,7 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     assert chief is not None
     access_token = test_officer['access_token']
     # We select an alert_id of a local alert, 
-    # where the sender is test_officer, see setup_alerts_data_and_teardown fixture.
+    # where the alert sender is test_officer, see setup_alerts_data_and_teardown fixture.
     # Between alerts created by test_officer, we select one alert in which test_chief is an alerted user
     statement = select(Alert).where(Alert.user_id == caller.id, Alert.type == AlertType.local.value) # type: ignore
     alerts = db_session.exec(statement).all()
@@ -460,12 +469,14 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     assert resp_data["chief_closing_vote"] != 0 
     assert resp_data["chief_closing_vote"] == alerted_chief_closing_vote
     assert resp_data["messages_num"] == len(alert_messages)
-    # The caller is not an alerted user in this test
+    # The API caller (test_officer) is not an alerted user in this test
     # and even more, he is not the alert manager
     # and he cannot vote, because he is not an alerted user
     assert resp_data["user_is_alerted"] == False
     assert resp_data["user_is_manager"] == False
     assert resp_data["user_vote"] == 0
+    # The API caller (test_officer) is the alert sender in this test
+    assert resp_data["user_is_sender"] == True
 
 def test_get_alert_the_caller_has_voted(client, db_session, test_baseuser):
     caller: User = test_baseuser['user']
@@ -497,6 +508,8 @@ def test_get_alert_the_caller_has_voted(client, db_session, test_baseuser):
     assert resp_data["user_is_alerted"] is True
     assert resp_data["user_is_manager"] is False
     assert resp_data["user_vote"] == 1
+    # The API caller (test_baseuser) is not the alert sender in this test
+    assert resp_data["user_is_sender"] is False
 
 def test_get_alert_the_caller_is_manager(client, db_session, test_chief):
     caller: User = test_chief['user']
@@ -528,3 +541,5 @@ def test_get_alert_the_caller_is_manager(client, db_session, test_chief):
     assert resp_data["user_is_alerted"] is True
     assert resp_data["user_is_manager"] is True
     assert resp_data["user_vote"] == 0
+    # The API caller (test_chief) is not the alert sender in this test
+    assert resp_data["user_is_sender"] is False
