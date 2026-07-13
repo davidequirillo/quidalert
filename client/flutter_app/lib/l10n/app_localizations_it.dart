@@ -69,6 +69,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertTypeManaged => 'Gestita';
 
   @override
+  String get alertExtend => 'Estendi allerta';
+
+  @override
   String get alertNew => 'Nuova allerta';
 
   @override
@@ -112,6 +115,27 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get buttonView => 'Visualizza';
+
+  @override
+  String get buttonVotePositive => 'Conferma';
+
+  @override
+  String get buttonVoteNegative => 'Nega';
+
+  @override
+  String get buttonVoteNeutral => 'Non lo so';
+
+  @override
+  String get buttonClosingPositive => 'Conferma e chiudi';
+
+  @override
+  String get buttonClosingNegative => 'Nega e chiudi';
+
+  @override
+  String get buttonClosingNeutral => 'Chiusura normale';
+
+  @override
+  String get buttonClosingPunitive => 'Chiusura punitiva';
 
   @override
   String get entriesAll => 'Tutte le voci';
@@ -484,6 +508,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'White list per registrazione';
+
+  @override
+  String get sectionAlertVote => 'Vote';
+
+  @override
+  String get sectionAlertClosing => 'Chiusura allerta';
 
   @override
   String get sectionPersonalInfo => 'Informazioni personali';

@@ -32,6 +32,7 @@ import 'package:quidalert_flutter/pages/two_fa.dart';
 import 'package:quidalert_flutter/pages/home.dart';
 import 'package:quidalert_flutter/pages/alerts/location_test.dart';
 import 'package:quidalert_flutter/pages/alerts/new.dart';
+import 'package:quidalert_flutter/pages/alerts/extend.dart';
 import 'package:quidalert_flutter/pages/alerts/recents.dart';
 import 'package:quidalert_flutter/pages/alerts/view_alert_details.dart';
 import 'package:quidalert_flutter/pages/alerts/view_alert_users.dart';
@@ -154,6 +155,11 @@ class QuidalertWidget extends StatelessWidget {
             case '/alerts/new':
               return MaterialPageRoute(
                 builder: (_) => const NewAlertPage(),
+                settings: settings,
+              );
+            case '/alerts/extend':
+              return MaterialPageRoute(
+                builder: (_) => const ExtendAlertPage(),
                 settings: settings,
               );
             case '/alerts/recents':

@@ -31,8 +31,21 @@ class AlertDetailsPage extends StatelessWidget {
   }
 }
 
-class AlertDetailsBody extends StatelessWidget {
+class AlertDetailsBody extends StatefulWidget {
   const AlertDetailsBody({super.key});
+
+  @override
+  State<AlertDetailsBody> createState() => _AlertDetailsBodyState();
+}
+
+class _AlertDetailsBodyState extends State<AlertDetailsBody> {
+  AlertWithInfo? alertWithInfo;
+
+  @override
+  void dispose() {
+    debugPrintC("Disposing AlertDetailsBody widget state");
+    super.dispose();
+  }
 
   Future<AlertWithInfo> _getAlertDetails(
     BuildContext context,
@@ -88,49 +101,66 @@ class AlertDetailsBody extends StatelessWidget {
     return;
   }
 
-  void _extendAlertPage(BuildContext context) {
-    Navigator.pushNamed(context, '/alerts/extend-alert');
+  void _viewExtendAlertPage(BuildContext context, int alertId) {
+    Navigator.pushNamed(
+      context,
+      '/alerts/extend',
+      arguments: alertId.toString(),
+    );
     return;
   }
 
   @override
   Widget build(BuildContext context) {
-    final primaryController = PrimaryScrollController.of(context);
     final loc = AppLocalizations.of(context)!;
     final id = ModalRoute.of(context)!.settings.arguments as String;
-    return FutureBuilder<AlertWithInfo>(
-      future: _getAlertDetails(context, id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          debugPrint("Error fetching recent alerts: ${snapshot.error}");
-          final exceptionName = snapshot.error.runtimeType.toString();
-          final locAttribute = "exception$exceptionName".replaceAll(
-            "Exception",
-            "",
-          );
-          final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
-          if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
-            goToLoginPagePostFrameCallback(context);
+    if (alertWithInfo != null) {
+      debugPrintC("Using cached alert details for id: $id");
+      return scrollableAlertDetails(context, alertWithInfo!);
+    } else {
+      debugPrintC("Fetching alert details for id: $id");
+      return FutureBuilder<AlertWithInfo>(
+        future: _getAlertDetails(context, id),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
           }
-          return Center(child: Text(errorMessage));
-        }
-        if (snapshot.hasData) {
-          final alert = snapshot.data!;
-          return Scrollbar(
-            thumbVisibility: true,
-            controller: primaryController,
-            child: SingleChildScrollView(
-              controller: primaryController,
-              padding: const EdgeInsets.all(16),
-              child: alertColumn(context, alert),
-            ),
-          );
-        }
-        return Center(child: Text(loc.errorGeneric));
-      },
+          if (snapshot.hasError) {
+            debugPrint("Error fetching recent alerts: ${snapshot.error}");
+            final exceptionName = snapshot.error.runtimeType.toString();
+            final locAttribute = "exception$exceptionName".replaceAll(
+              "Exception",
+              "",
+            );
+            final errorMessage =
+                loc.getString(locAttribute) ?? loc.errorGeneric;
+            if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
+              goToLoginPagePostFrameCallback(context);
+            }
+            return Center(child: Text(errorMessage));
+          }
+          if (snapshot.hasData) {
+            alertWithInfo = snapshot.data!;
+            return scrollableAlertDetails(context, alertWithInfo!);
+          }
+          return Center(child: Text(loc.errorGeneric));
+        },
+      );
+    }
+  }
+
+  Widget scrollableAlertDetails(
+    BuildContext context,
+    AlertWithInfo alertWithInfo,
+  ) {
+    final primaryController = PrimaryScrollController.of(context);
+    return Scrollbar(
+      controller: primaryController,
+      child: SingleChildScrollView(
+        controller: primaryController,
+        padding: const EdgeInsets.all(16.0),
+        child: alertColumn(context, alertWithInfo),
+      ),
     );
   }
 
@@ -242,10 +272,10 @@ class AlertDetailsBody extends StatelessWidget {
         if (authClient.isChief())
           InkWell(
             onTap: () {
-              _extendAlertPage(context);
+              _viewExtendAlertPage(context, alertWithInfo.alert.id);
             },
             child: Text(
-              "Extend alert",
+              loc.alertExtend,
               style: TextStyle(
                 decoration: TextDecoration.underline,
                 color: Colors.blue,
@@ -253,6 +283,69 @@ class AlertDetailsBody extends StatelessWidget {
             ),
           ),
         Divider(height: 40, thickness: 1),
+        buildSectionTitle(loc.sectionAlertVote),
+        // buttons for voting
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                // Handle positive vote
+              },
+              child: Text(loc.buttonVotePositive),
+            ),
+            SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: () {
+                // Handle negative vote
+              },
+              child: Text(loc.buttonVoteNegative),
+            ),
+            SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: () {
+                // Handle neutral vote
+              },
+              child: Text(loc.buttonVoteNeutral),
+            ),
+          ],
+        ),
+        Divider(height: 40, thickness: 1),
+        if (authClient.isChief()) buildSectionTitle(loc.sectionAlertClosing),
+        if (authClient.isChief())
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  // Handle chief closing vote
+                },
+                child: Text(loc.buttonClosingPositive),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  // Handle chief closing vote
+                },
+                child: Text(loc.buttonClosingNegative),
+              ),
+            ],
+          ),
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                // Handle close alert
+              },
+              child: Text(loc.buttonClosingNeutral),
+            ),
+            SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: () {
+                // Handle reopen alert
+              },
+              child: Text(loc.buttonClosingPunitive),
+            ),
+          ],
+        ),
       ],
     );
   }
