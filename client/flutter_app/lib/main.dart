@@ -80,7 +80,7 @@ class QuidalertWidget extends StatelessWidget {
     if (lang == 'it') {
       return const Locale('it');
     }
-    return const Locale('it');
+    return const Locale('en');
   }
 
   @override
