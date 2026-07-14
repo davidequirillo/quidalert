@@ -76,10 +76,11 @@ class QuidalertWidget extends StatelessWidget {
 
   Locale? _resolveLocale(Locale? locale, Iterable<Locale> supportedLocales) {
     final String? lang = locale?.languageCode.toLowerCase();
+    debugPrintC("System language is: $lang");
     if (lang == 'it') {
       return const Locale('it');
     }
-    return const Locale('en');
+    return const Locale('it');
   }
 
   @override

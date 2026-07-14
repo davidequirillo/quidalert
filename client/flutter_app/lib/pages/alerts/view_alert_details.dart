@@ -8,6 +8,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
@@ -196,6 +197,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     final primaryController = PrimaryScrollController.of(context);
     return Scrollbar(
       controller: primaryController,
+      thumbVisibility: true,
       child: SingleChildScrollView(
         controller: primaryController,
         padding: const EdgeInsets.all(16.0),
@@ -211,7 +213,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       alertWithInfo.alert.createdAt,
       includeTimezone: false,
     );
-    final alertIsNotLocal = (alertWithInfo.alert.type != AlertType.local.name)
+    final alertIsLocal = (alertWithInfo.alert.type == AlertType.local.name)
+        ? true
+        : false;
+    final alertIsGeneral = (alertWithInfo.alert.type == AlertType.general.name)
         ? true
         : false;
     final chiefIsAlerted =
@@ -223,7 +228,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         : false;
     String senderName =
         "${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname}";
-    if (alertIsNotLocal) {
+    if (!alertIsLocal) {
       senderName += " (${loc.alertChief})";
     }
     if (alertWithInfo.userIsSender) {
@@ -254,11 +259,32 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
-        if (alertWithInfo.alert.type != AlertType.general.name)
-          Text(
-            '${loc.gpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
+        if (!alertIsGeneral)
+          Row(
+            children: [
+              Text(
+                '${loc.gpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
+              ),
+              SizedBox(width: 10),
+              InkWell(
+                onTap: () {
+                  final gpsCoordsStr = gpsCoordinatesAsString(
+                    alertWithInfo.alert.latitude,
+                    alertWithInfo.alert.longitude,
+                  );
+                  Clipboard.setData(ClipboardData(text: gpsCoordsStr));
+                },
+                child: Text(
+                  loc.buttonCopy,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+            ],
           ),
-        if (alertWithInfo.alert.type != AlertType.general.name)
+        if (!alertIsGeneral)
           Row(
             children: [
               InkWell(
@@ -298,10 +324,13 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               Icon(Icons.map, size: 20, color: Colors.blue),
             ],
           ),
-        if (alertWithInfo.alert.type != AlertType.general.name)
+        if (!alertIsGeneral)
           Text('${loc.alertRadius}: ${alertWithInfo.alert.radius} km'),
         SizedBox(height: 20),
-        Text('${loc.alertDescription}: ${alertWithInfo.alert.description}'),
+        Text(
+          '${loc.alertDescription}: ${alertWithInfo.alert.description}',
+          style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
+        ),
         Divider(height: 40, thickness: 1),
         buildSectionTitle(loc.sectionUsers),
         Text('${loc.alertSender}: $senderName'),
@@ -311,8 +340,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               : '${loc.alertChief}: N/A',
         ),
         SizedBox(height: 20),
-        Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
-        if (alertWithInfo.alertedUsersNum > 0 && authClient.isChief())
+        if (!alertIsGeneral)
+          Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
+        if (!alertIsGeneral &&
+            (alertWithInfo.alertedUsersNum > 0) &&
+            authClient.isChief())
           InkWell(
             onTap: () {
               _viewAlertedUsersPage(context, alertWithInfo.alert.id);
@@ -342,9 +374,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                   ),
                 ),
               ),
-            if (alertWithInfo.messagesNum > 0 && alertWithInfo.userIsSender)
+            if ((alertWithInfo.messagesNum > 0) &&
+                ((alertWithInfo.userIsSender) || (alertWithInfo.userIsManager)))
               SizedBox(width: 20),
-            if (alertWithInfo.userIsSender)
+            if ((alertWithInfo.userIsSender) || (alertWithInfo.userIsManager))
               InkWell(
                 onTap: () {
                   _viewMessagesPage(context, alertWithInfo.alert.id);
@@ -425,15 +458,16 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           ),
         if (alertWithInfo.userIsManager) SizedBox(height: 20),
         if (alertWithInfo.userIsManager)
+          ElevatedButton(
+            onPressed: () {
+              // Handle close alert
+            },
+            child: Text(loc.buttonClosingNeutral),
+          ),
+        SizedBox(height: 20),
+        if (alertWithInfo.userIsManager)
           Row(
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  // Handle close alert
-                },
-                child: Text(loc.buttonClosingNeutral),
-              ),
-              SizedBox(width: 10),
               ElevatedButton(
                 onPressed: punitiveCloseUnblocked
                     ? () {
@@ -442,7 +476,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                     : null,
                 child: Text(loc.buttonClosingPunitive),
               ),
-              SizedBox(width: 5),
+              SizedBox(width: 2),
               Checkbox(
                 value: punitiveCloseUnblocked,
                 onChanged: (value) {
