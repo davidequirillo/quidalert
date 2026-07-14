@@ -22,7 +22,7 @@ from core.logging import setup_logging, get_client_ip
 from core import api_events, security_events
 import services.localization as i18n
 from models.general import (string_as_uuid, 
-    UserIn, User, UserLanguage,
+    UserIn, User, UserOut, UserLanguage, UserInCompleteProfile,
     USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE,
     USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS, 
     PasswordResetRequest, PasswordResetConfirm, 
@@ -704,3 +704,24 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
     if can_send:
         background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
     return {"message": "Password reset successful"}
+
+@app.get("/api/profile", response_model=UserOut | None, status_code=http_status.HTTP_200_OK)
+def get_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@app.put("/api/profile")
+def update_profile(user_data: UserInCompleteProfile, 
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    current_user.firstname = user_data.firstname
+    current_user.surname = user_data.surname
+    current_user.street = user_data.street
+    current_user.postal_code = user_data.postal_code
+    current_user.city = user_data.city
+    current_user.province = user_data.province
+    current_user.country = user_data.country
+    current_user.birthdate = user_data.birthdate
+    current_user.phone = user_data.phone
+    db_session.add(current_user)
+    db_session.commit()
+    return { "message": "Profile updated" }

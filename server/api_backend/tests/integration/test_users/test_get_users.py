@@ -828,14 +828,20 @@ def test_get_users_by_emails_not_authorized_token_invalid(client):
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
-def test_get_users_by_emails_method_not_allowed(client, test_admin):
+def test_get_users_by_emails_called_with_get_method(client, test_admin):
     user: User = test_admin['user']
     assert user is not None
     headers = {"Authorization": f"Bearer {test_admin['access_token']}"}
     data = { "emails": ["testuser1@example.com", "testuser2@example.com"] }
     response = client.get("/api/users/get-by-emails", headers=headers, params=data)
-    # GET method is not allowed for this endpoint, only POST is allowed
-    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+    # If the method is GET, the api call becomes "GET /api/users/get-by-emails"
+    # where the string "get-by-emails" is interpreted as an id to search by,
+    # so the API will try to find a user with id="get-by-emails" and it will not find it, returning 404 Not Found
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    # The correct method is POST, so the API should be called like this:
+    data = { "emails": ["testuser1@example.com", "testuser2@example.com"] }
+    response = client.post("/api/users/get-by-emails", headers=headers, json=data)
+    assert response.status_code == status.HTTP_200_OK
 
 def test_get_users_by_emails_forbidden_access(client, test_baseuser):
     user: User = test_baseuser['user']

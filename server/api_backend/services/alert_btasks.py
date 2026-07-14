@@ -2,7 +2,6 @@
 # Copyright (C) 2025  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import time
 import asyncio
 from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, select, insert

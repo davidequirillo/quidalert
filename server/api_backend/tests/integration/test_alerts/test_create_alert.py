@@ -32,7 +32,7 @@ def test_create_alert_not_authorized_missing_token(client):
         "latitude": 40.0,
         "longitude": -105.0
     }
-    response = client.post("/api/alert", json=data)
+    response = client.post("/api/alerts", json=data)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_create_alert_not_authorized_invalid_token(client):
@@ -42,7 +42,7 @@ def test_create_alert_not_authorized_invalid_token(client):
         "longitude": -105.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": "Bearer invalidtoken"})
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
@@ -55,7 +55,7 @@ def test_create_alert_invalid_alert_data(client, test_baseuser):
         "address": "Test address"
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Now we try with latidude out of range
@@ -64,7 +64,7 @@ def test_create_alert_invalid_alert_data(client, test_baseuser):
         "latitude": 100.0, # invalid latitude
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Now we try with longitude out of range
@@ -74,7 +74,7 @@ def test_create_alert_invalid_alert_data(client, test_baseuser):
         "longitude": 200.0, # invalid longitude
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # We try with an empty description
@@ -84,7 +84,7 @@ def test_create_alert_invalid_alert_data(client, test_baseuser):
         "longitude": -105.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # We try a radius of 0, which is invalid (must be positive)
@@ -95,7 +95,7 @@ def test_create_alert_invalid_alert_data(client, test_baseuser):
         "radius": 0.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
@@ -113,7 +113,7 @@ def test_create_alert_by_a_user_not_reliable(client, db_session, test_baseuser):
         "longitude": -105.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
@@ -132,7 +132,7 @@ def test_create_alert_by_a_user_with_zero_reliability_score(client, db_session, 
         "longitude": -105.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
@@ -141,7 +141,7 @@ def test_create_alert_by_a_user_with_zero_reliability_score(client, db_session, 
     db_session.add(user)
     db_session.commit()
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
@@ -157,7 +157,7 @@ def test_create_alert_special_type_called_by_user(client, test_baseuser):
         "address": "Test address"
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"].startswith("Only chiefs can create")
@@ -169,7 +169,7 @@ def test_create_alert_special_type_called_by_user(client, test_baseuser):
         "longitude": -105.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"].startswith("Only chiefs can create")
@@ -180,7 +180,7 @@ def test_create_alert_special_type_called_by_user(client, test_baseuser):
         "address": "Test address"
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"].startswith("Only chiefs can create")
@@ -195,7 +195,7 @@ def test_create_alert_with_large_radius_called_by_user(client, test_baseuser):
         "radius": 5.0 # radius greater than 1 km
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"].startswith("Only chiefs can create")
@@ -210,7 +210,7 @@ def test_create_alert_type_general_called_by_chief(client, db_session, test_chie
         "description": description
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     # The response for general alerts is different, because we don't search for nearby users or chiefs to notify.
@@ -246,7 +246,7 @@ def test_create_alert_type_empty_called_by_chief(client, db_session, test_chief)
         "longitude": -105.0
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     # The response for empty alerts is different, because we don't search for nearby users or the chiefs to notify.
@@ -299,7 +299,7 @@ def test_create_alert_similar_local_exists(client, db_session, test_baseuser):
         "longitude": -105.005 # close to the existing alert (less than 1 km away)
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"] == "Similar alert already exists in the area"
@@ -311,7 +311,7 @@ def test_create_alert_similar_local_exists(client, db_session, test_baseuser):
         "longitude": -105.005 # close to the existing alert (less than 1 km away)
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"] == "Similar alert already exists in the area"
@@ -346,7 +346,7 @@ def test_create_alert_similar_general_exists(client, db_session, test_chief):
         "description": "Test general alert in Rome city", # same description as the existing alert
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"] == "Similar general alert already exists"
@@ -375,7 +375,7 @@ def test_create_alert_similar_managed_exists(client, db_session, test_chief):
         "longitude": 12.49641, # close to the existing alert (less than 1 km away)
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"] == "Similar alert already exists in the area"
@@ -406,7 +406,7 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
         "longitude": DENVER_LON + radius_for_closest_chiefs_in_degrees + 10 # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver 
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
@@ -455,7 +455,7 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
         "longitude": DENVER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from Denver, so that no nearby user is found
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
@@ -514,7 +514,7 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
         "radius": RADIUS_KM
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
@@ -569,7 +569,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
         "radius": RADIUS_KM
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
@@ -622,7 +622,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
         "radius": RADIUS_KM / 2 # smaller radius, so that less nearby users are found
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.local.value.capitalize()} alert created, searching for")
@@ -664,7 +664,7 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
         "longitude": DENVER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from Denver, so that no nearby user is found
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.managed.value.capitalize()} alert created, searching for")
@@ -714,7 +714,7 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
         "radius": RADIUS_KM
     }
     response = client.post(
-        "/api/alert", json=data,
+        "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"].startswith(f"{AlertType.managed.capitalize()} alert created, searching for")

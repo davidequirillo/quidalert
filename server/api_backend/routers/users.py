@@ -11,8 +11,8 @@ from models.general import (
     string_as_uuid,
     Alert, 
     EmailListDict,
-    PromotionSchema, User, UserInCompleteProfile, 
-    UserOut, UsersOutPaginated, UserOutWithAlerts,
+    PromotionSchema, User, 
+    UsersOutPaginated, UserOutWithAlerts,
     UserStatus, UserType, UserRole
 )
 from dependencies import get_db_session, get_current_user, get_redis_session
@@ -29,27 +29,6 @@ EMAIL_LIST_MAX_LENGTH_FOR_SEARCH = 10000
 router = APIRouter(
     tags=["Users"]
 )
-
-@router.get("/api/user/profile", response_model=UserOut | None, status_code=http_status.HTTP_200_OK)
-def get_profile(current_user: User = Depends(get_current_user)):
-    return current_user
-
-@router.put("/api/user/profile")
-def update_profile(user_data: UserInCompleteProfile, 
-            current_user: User = Depends(get_current_user), 
-            db_session: Session = Depends(get_db_session)):
-    current_user.firstname = user_data.firstname
-    current_user.surname = user_data.surname
-    current_user.street = user_data.street
-    current_user.postal_code = user_data.postal_code
-    current_user.city = user_data.city
-    current_user.province = user_data.province
-    current_user.country = user_data.country
-    current_user.birthdate = user_data.birthdate
-    current_user.phone = user_data.phone
-    db_session.add(current_user)
-    db_session.commit()
-    return { "message": "Profile updated" }
 
 @router.get("/api/users", response_model=UsersOutPaginated, status_code=http_status.HTTP_200_OK)
 def get_users(
@@ -148,7 +127,7 @@ def get_users_by_emails(
         next_cursor = str(users[-1].id)
     return { 'users': users, 'next_cursor': next_cursor }
     
-@router.get("/api/user/{user_id}", response_model=UserOutWithAlerts, status_code=http_status.HTTP_200_OK)
+@router.get("/api/users/{user_id}", response_model=UserOutWithAlerts, status_code=http_status.HTTP_200_OK)
 def get_user(user_id: str, 
             current_user: User = Depends(get_current_user),
             db_session: Session = Depends(get_db_session)):
@@ -427,4 +406,3 @@ async def promote_users_by_emails(
                 detail="Error updating users in bulk by emails"
             )
         return msg_obj
-    
