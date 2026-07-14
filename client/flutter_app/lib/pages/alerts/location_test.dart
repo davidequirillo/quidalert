@@ -67,6 +67,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
       retMessage = loc.errorPositionNotAvailable;
       retTitle = loc.errorError;
     } catch (e) {
+      debugPrintC("Error fetching location: $e");
       retMessage = loc.errorError;
       retTitle = loc.errorError;
     } finally {
@@ -78,10 +79,11 @@ class _LocationTestBodyState extends State<LocationTestBody> {
 
   String getCoords(Map<String, double>? positionMap) {
     if (positionMap != null) {
-      return gpsCoordinatesAsString(
-        positionMap['latitude']!,
-        positionMap['longitude']!,
+      final coordStr = gpsCoordinatesAsString(
+        positionMap['lat']!,
+        positionMap['long']!,
       );
+      return coordStr;
     } else {
       final loc = AppLocalizations.of(context)!;
       return loc.errorPositionNotAvailable;
