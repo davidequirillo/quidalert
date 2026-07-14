@@ -80,10 +80,7 @@ class _HomeBodyState extends State<HomeBody> {
 
   Future<Map<String, dynamic>> fetchProfile() async {
     final authClient = context.read<AuthClient>();
-    final response = await authClient.doProtectedApiRequest(
-      "get",
-      '/user/profile',
-    );
+    final response = await authClient.doProtectedApiRequest("get", '/profile');
     return json.decode(response.body);
   }
 

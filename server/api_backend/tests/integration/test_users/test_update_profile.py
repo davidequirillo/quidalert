@@ -23,7 +23,7 @@ def test_update_profile_not_authorized_token_missing(client):
         "birthdate": "1990-01-01",
         "phone": "1234567890"
     }
-    response = client.put("/api/user/profile", headers=headers, json=data)
+    response = client.put("/api/profile", headers=headers, json=data)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_update_profile_not_authorized_token_invalid(client):
@@ -42,7 +42,7 @@ def test_update_profile_not_authorized_token_invalid(client):
         "birthdate": "1990-01-01",
         "phone": "1234567890"
     }
-    response = client.put("/api/user/profile", headers=headers, json=data)
+    response = client.put("/api/profile", headers=headers, json=data)
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
@@ -50,7 +50,7 @@ def test_update_profile_incomplete_fields(client, test_baseuser):
     user: User = test_baseuser['user']
     assert user.id is not None
     headers = {"Authorization": f"Bearer {test_baseuser['access_token']}"}
-    response = client.put("/api/user/profile", headers=headers, json={
+    response = client.put("/api/profile", headers=headers, json={
         "firstname": "NewFirstName",
         # "surname" missing,
         "street": "New Street",
@@ -67,7 +67,7 @@ def test_update_profile_successful(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     assert user.id is not None
     headers={"Authorization": f"Bearer {test_baseuser['access_token']}"}
-    response = client.put("/api/user/profile", headers=headers, json={
+    response = client.put("/api/profile", headers=headers, json={
         "firstname": "NewFirstName",
         "surname": "NewSurname",
         "street": "New Street",

@@ -647,7 +647,7 @@ def test_login_returned_access_token_is_ok(client, db_session, not_logged_test_u
     assert atoken_exp <= from_datetime_to_timestamp(now_tz_aware() + timedelta(minutes=ACCESS_TOKEN_TTL_MINUTES))
     # Now we can use the access token to access a protected route (e.g. /api/users/me) to verify that it works
     headers = {"Authorization": f"Bearer {access_token}"}
-    protected_response = client.get("/api/user/profile", headers=headers)
+    protected_response = client.get("/api/profile", headers=headers)
     assert protected_response.status_code == status.HTTP_200_OK
     protected_data = protected_response.json()
     assert protected_data["email"] == user.email

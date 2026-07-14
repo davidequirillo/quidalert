@@ -25,7 +25,7 @@ def test_get_alert_not_authorized_missing_token(client, db_session):
     # There is at least one alert (see setup_alerts_data_and_teardown fixture)
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}")
+    response = client.get(f"/api/alerts/{alert_id}")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_get_alert_not_authorized_invalid_token(client, db_session):
@@ -35,7 +35,7 @@ def test_get_alert_not_authorized_invalid_token(client, db_session):
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/{alert_id}", headers={"Authorization": "Bearer invalidtoken"})
+        f"/api/alerts/{alert_id}", headers={"Authorization": "Bearer invalidtoken"})
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
@@ -51,7 +51,7 @@ def test_get_alert_not_found(client, db_session, test_baseuser):
     # We delete the alert to simulate a not found scenario
     db_session.exec(delete(Alert).where(Alert.id == alert_id))
     db_session.commit()
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == not_found_exception("Alert not found").status_code
     assert "Alert not found" in response.json()["detail"]
 
@@ -71,7 +71,7 @@ def test_get_alert_user_not_found(client, db_session, test_baseuser):
     # We delete the user (the sender) to simulate a not found scenario
     db_session.exec(delete(User).where(User.id == sender_id))
     db_session.commit()
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == not_found_exception("Alert not found").status_code
     assert "Alert not found" in response.json()["detail"]
 
@@ -91,7 +91,7 @@ def test_get_alert_success_but_is_banned(client, db_session, test_baseuser):
     alert.is_banned = True
     db_session.add(alert)
     db_session.commit()
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_obj = response.json()
     assert resp_obj["alert"]["description"] == "[BANNED ALERT]"
@@ -113,7 +113,7 @@ def test_get_alert_success_general_alert(client, db_session, test_baseuser):
     messages = db_session.exec(select(Message).where(Message.alert_id == alert.id)).all()
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_obj = response.json()
     assert resp_obj["alert"]["id"] == alert.id
@@ -159,7 +159,7 @@ def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_obj = response.json()
     assert resp_obj["alert"]["id"] == alert.id
@@ -215,7 +215,7 @@ def test_get_alert_not_created_by_me_and_not_involved(client, db_session, test_b
     # Now we can test the API endpoint to get the alert details
     # The result is a forbidden error
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
  
@@ -244,7 +244,7 @@ def test_get_alert_not_created_by_me_but_involved(client, db_session, test_baseu
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id
@@ -287,7 +287,7 @@ def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, 
     # So, if test_officer calls the API endpoint to get the alert details, 
     # he should receive a forbidden error
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     # But, if the alert sender has been authorized by the test_officer,
     # then test_officer can see the alert details, because the alert sender belongs to his jurisdiction
@@ -300,7 +300,7 @@ def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, 
     db_session.refresh(baseuser)
     # Now, if test_officer calls the API endpoint to get the alert details,
     # he should receive a success response, because the alert sender belongs to his jurisdiction
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id
@@ -343,7 +343,7 @@ def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseus
     # But the caller is a chief, so he can see the alert details anyway, 
     # even if he is not the alert sender and is not an alerted user
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id
@@ -386,7 +386,7 @@ def test_get_alert_called_by_admin(client, db_session, test_admin, test_baseuser
     # But the caller is an admin, so he can see the alert details anyway, 
     # even if he is not the alert sender and is not an alerted user
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id
@@ -452,7 +452,7 @@ def test_get_alert_check_votes_count_and_chief_alerted(client, db_session, test_
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id
@@ -499,7 +499,7 @@ def test_get_alert_the_caller_has_voted(client, db_session, test_baseuser):
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id
@@ -532,7 +532,7 @@ def test_get_alert_the_caller_is_manager(client, db_session, test_chief):
     # Now we can test the API endpoint to get the alert details,
     # and we verify that the results are the same of the results obtained from database
     alert_id = alert.id
-    response = client.get(f"/api/alert/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get(f"/api/alerts/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     resp_data = response.json()
     assert resp_data["alert"]["id"] == alert.id

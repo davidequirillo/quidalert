@@ -123,7 +123,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
     try {
       final response = await authClient.doProtectedApiRequest(
         'PUT',
-        '/user/profile',
+        '/profile',
         body: data,
       );
       final respObj = json.decode(response.body);

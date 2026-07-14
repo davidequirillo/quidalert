@@ -11,7 +11,7 @@ def test_get_profile_not_authorized_token_missing(client):
     headers = {
         # No Authorization header
     }
-    response = client.get("/api/user/profile", headers=headers)
+    response = client.get("/api/profile", headers=headers)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_get_profile_not_authorized_token_invalid(client):
@@ -19,13 +19,13 @@ def test_get_profile_not_authorized_token_invalid(client):
     headers = {
         "Authorization": "Bearer invalid_token"
     }
-    response = client.get("/api/user/profile", headers=headers)
+    response = client.get("/api/profile", headers=headers)
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
 def test_get_profile_successful(client, test_baseuser):
     user: User = test_baseuser['user']
-    response = client.get("/api/user/profile", headers={"Authorization": f"Bearer {test_baseuser['access_token']}"})
+    response = client.get("/api/profile", headers={"Authorization": f"Bearer {test_baseuser['access_token']}"})
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["id"] == str(user.id)

@@ -11,10 +11,8 @@ from core.exceptions import (
     forbidden_exception
 )
 from models.general import (
-    string_as_uuid,
     User, Alert, AlertType, AlertedUser
 )
-from services.security import now_tz_naive
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
@@ -26,7 +24,7 @@ def test_get_alert_with_users_missing_token(client, db_session):
     # There is at least one alert (see setup_alerts_data_and_teardown fixture)
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
-    response = client.get(f"/api/alert/users/{alert_id}")
+    response = client.get(f"/api/alerts/{alert_id}/users")
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_get_alert_not_authorized_invalid_token(client, db_session):
@@ -36,7 +34,7 @@ def test_get_alert_not_authorized_invalid_token(client, db_session):
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": "Bearer invalidtoken"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": "Bearer invalidtoken"})
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
@@ -52,7 +50,7 @@ def test_get_alert_with_users_forbidden(client, db_session, test_baseuser):
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
 
@@ -68,17 +66,18 @@ def test_get_alert_with_users_forbidden_officer(client, db_session, test_officer
     assert alert is not None, "No alert found in the database for testing"
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
 
 def test_get_alert_with_users_not_found(client, db_session, test_chief):
     chief: User = test_chief['user']
+    assert chief is not None
     access_token = test_chief['access_token']
     # Use a non-existing alert_id (assuming 111111 does not exist)
     alert_id = 111111
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == not_found_exception("Alert not found").status_code
     assert "not found" in response.json()["detail"]
     # The same result should be obtained if the alert is present
@@ -93,7 +92,7 @@ def test_get_alert_with_users_not_found(client, db_session, test_chief):
     db_session.exec(statement)
     db_session.commit()
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == not_found_exception("Alert not found").status_code
     assert "not found" in response.json()["detail"]
 
@@ -126,7 +125,7 @@ def test_get_alert_with_users_type_local_or_managed_success(client, db_session, 
     # and we check that the results are the same as the ones in the database
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     # We check alert data against the database values, and we check that sensitive data is not present in the response
@@ -181,7 +180,7 @@ def test_get_alert_with_users_type_general_or_empty_success(client, db_session, 
     # and we check that the results are the same as the ones in the database
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     # We check alert data against the database values, and we check that sensitive data is not present in the response
@@ -218,6 +217,6 @@ def test_get_alert_with_users_success_called_by_admin(client, db_session, test_a
     # We call the endpoint to get the alert with users 
     alert_id = alert.id
     response = client.get(
-        f"/api/alert/users/{alert_id}", headers={"Authorization": f"Bearer {access_token}"})
+        f"/api/alerts/{alert_id}/users", headers={"Authorization": f"Bearer {access_token}"})
     # We check only the successful response, because the logic of the endpoint is already tested in the previous tests
     assert response.status_code == status.HTTP_200_OK

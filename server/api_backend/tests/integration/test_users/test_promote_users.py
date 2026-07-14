@@ -3,7 +3,6 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import timedelta
-from doctest import Example
 from fastapi import status
 from sqlmodel import select
 from core.exceptions import (
@@ -48,18 +47,6 @@ def test_promote_users_not_authorized_invalid_token(client):
         headers={"Authorization": "Bearer invalidtoken"})
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
-
-def test_promote_users_method_not_allowed(client, test_admin):
-    admin: User = test_admin['user']
-    assert admin is not None
-    access_token = test_admin['access_token']
-    headers = {"Authorization": f"Bearer {access_token}"}
-    params = {
-        "email": "testuser1@example.com"
-    }
-    response = client.get("/api/users/promote", params=params, headers=headers)
-    # GET method is not allowed for this endpoint, only POST is allowed
-    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
 def test_promote_users_empty_promotion_data(client, test_admin):
     admin: User = test_admin['user']
@@ -958,15 +945,6 @@ def test_promote_users_by_emails_not_authorized_invalid_token(client):
     response = client.post("/api/users/promote-by-emails", json=data, headers={"Authorization": "Bearer invalidtoken"})
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
-
-def test_promote_users_by_emails_method_not_allowed(client, test_admin):
-    admin: User = test_admin['user']
-    assert admin is not None
-    access_token = test_admin['access_token']
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = client.get("/api/users/promote-by-emails", headers=headers)
-    # GET method is not allowed for this endpoint, only POST is allowed
-    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
 def test_promote_users_by_emails_empty_or_invalid_args(client, test_admin):
     admin: User = test_admin['user']

@@ -172,7 +172,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     try {
       final response = await authClient.doProtectedApiRequest(
         'POST',
-        '/alert',
+        '/alerts',
         body: data,
       );
       final respObj = json.decode(response.body);

@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 from sqlmodel import delete, select
 from core.exceptions import token_not_valid_exception, forbidden_exception, not_found_exception
-from models.general import Alert, User, UserLanguage, UserRole
+from models.general import Alert, User, UserLanguage
 
 @pytest.fixture(autouse=True)
 def setup_and_teardown(db_session):
@@ -54,14 +54,14 @@ def setup_and_teardown(db_session):
 def test_get_user_token_missing(client, db_session):
     statement = select(User).where(User.email == "testuser1@example.com")
     testuser = db_session.exec(statement).first()
-    response = client.get(f"/api/user/{testuser.id}")
+    response = client.get(f"/api/users/{testuser.id}")
     assert response.status_code == 401
 
 def test_get_user_invalid_token(client, db_session):
     statement = select(User).where(User.email == "testuser1@example.com")
     testuser = db_session.exec(statement).first()
     headers = {"Authorization": "Bearer invalidtoken"}
-    response = client.get(f"/api/user/{testuser.id}", headers=headers)
+    response = client.get(f"/api/users/{testuser.id}", headers=headers)
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()['detail'] == token_not_valid_exception().detail
 
@@ -72,7 +72,7 @@ def test_get_user_forbidden(client, db_session, test_baseuser):
     assert user is not None
     access_token = test_baseuser['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
-    response = client.get(f"/api/user/{testuser.id}", headers=headers)
+    response = client.get(f"/api/users/{testuser.id}", headers=headers)
     assert response.status_code == forbidden_exception().status_code
     assert response.json()['detail'] == forbidden_exception().detail
 
@@ -83,7 +83,7 @@ def test_get_user_success(client, db_session, test_admin):
     assert user is not None
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
-    response = client.get(f"/api/user/{testuser.id}", headers=headers)
+    response = client.get(f"/api/users/{testuser.id}", headers=headers)
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     response_user = response_data["user"]
@@ -104,7 +104,7 @@ def test_get_user_success(client, db_session, test_admin):
     # If the user hasn't created any alert... (testuser2 has no alerts)
     statement = select(User).where(User.email == "testuser2@example.com")
     testuser = db_session.exec(statement).first()
-    response = client.get(f"/api/user/{testuser.id}", headers=headers)
+    response = client.get(f"/api/users/{testuser.id}", headers=headers)
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     response_user = response_data["user"]
@@ -130,7 +130,7 @@ def test_get_user_not_found(client, test_admin):
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     non_existent_user_id = "00000000-0000-0000-0000-000000000000"
-    response = client.get(f"/api/user/{non_existent_user_id}", headers=headers)
+    response = client.get(f"/api/users/{non_existent_user_id}", headers=headers)
     assert response.status_code == not_found_exception(detail="User not found").status_code
     assert response.json()['detail'] == not_found_exception(detail="User not found").detail
 
@@ -140,7 +140,7 @@ def test_get_user_invalid_user_id(client, test_admin):
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     invalid_user_id = "invalid-uuid"
-    response = client.get(f"/api/user/{invalid_user_id}", headers=headers)
+    response = client.get(f"/api/users/{invalid_user_id}", headers=headers)
     assert response.status_code == not_found_exception(detail="User id not valid").status_code
     assert response.json()['detail'] == not_found_exception(detail="User id not valid").detail
 
@@ -150,5 +150,13 @@ def test_get_user_blank_user_id(client, test_admin):
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     blank_user_id = ""
-    response = client.get(f"/api/user/{blank_user_id}", headers=headers)
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    response = client.get(f"/api/users/{blank_user_id}", headers=headers)
+    # If the user id is blank, the API call will be "GET /api/users/" which returns many users, 
+    # so we expect a 200 OK with a list of users
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["users"] is not None
+    assert len(response_data["users"]) > 1
+    # We created 3 users in the above setup function, 
+    # plus the test_admin user, so we expect 4 users in total
+    assert len(response_data["users"]) == 4

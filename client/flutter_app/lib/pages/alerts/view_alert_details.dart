@@ -58,7 +58,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "get",
-      '/alert/$id',
+      '/alerts/$id',
     );
     final Map<String, dynamic>? respObj = json.decode(response.body);
     if (respObj == null || respObj.isEmpty) {
@@ -360,7 +360,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           ],
         ),
         SizedBox(height: 20),
-        if (authClient.isChief())
+        if (alertWithInfo.userIsManager)
           InkWell(
             onTap: () {
               _viewExtendAlertPage(context, alertWithInfo.alert.id);
@@ -373,36 +373,39 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
-        Divider(height: 40, thickness: 1),
-        buildSectionTitle(loc.sectionAlertVote),
+        if (alertWithInfo.userIsAlerted) Divider(height: 40, thickness: 1),
+        if (alertWithInfo.userIsAlerted)
+          buildSectionTitle(loc.sectionAlertVote),
         // buttons for voting
-        Row(
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                // Handle positive vote
-              },
-              child: Text(loc.buttonVotePositive),
-            ),
-            SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {
-                // Handle negative vote
-              },
-              child: Text(loc.buttonVoteNegative),
-            ),
-            SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {
-                // Handle neutral vote
-              },
-              child: Text(loc.buttonVoteNeutral),
-            ),
-          ],
-        ),
-        Divider(height: 40, thickness: 1),
-        if (authClient.isChief()) buildSectionTitle(loc.sectionAlertClosing),
-        if (authClient.isChief())
+        if (alertWithInfo.userIsAlerted)
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  // Handle positive vote
+                },
+                child: Text(loc.buttonVotePositive),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  // Handle negative vote
+                },
+                child: Text(loc.buttonVoteNegative),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  // Handle neutral vote
+                },
+                child: Text(loc.buttonVoteNeutral),
+              ),
+            ],
+          ),
+        if (alertWithInfo.userIsManager) Divider(height: 40, thickness: 1),
+        if (alertWithInfo.userIsManager)
+          buildSectionTitle(loc.sectionAlertClosing),
+        if (alertWithInfo.userIsManager)
           Row(
             children: [
               ElevatedButton(
@@ -420,35 +423,36 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ],
           ),
-        SizedBox(height: 20),
-        Row(
-          children: [
-            ElevatedButton(
-              onPressed: () {
-                // Handle close alert
-              },
-              child: Text(loc.buttonClosingNeutral),
-            ),
-            SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: punitiveCloseUnblocked
-                  ? () {
-                      // Handle reopen alert
-                    }
-                  : null,
-              child: Text(loc.buttonClosingPunitive),
-            ),
-            SizedBox(width: 5),
-            Checkbox(
-              value: punitiveCloseUnblocked,
-              onChanged: (value) {
-                setState(() {
-                  punitiveCloseUnblocked = value!;
-                });
-              },
-            ),
-          ],
-        ),
+        if (alertWithInfo.userIsManager) SizedBox(height: 20),
+        if (alertWithInfo.userIsManager)
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  // Handle close alert
+                },
+                child: Text(loc.buttonClosingNeutral),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: punitiveCloseUnblocked
+                    ? () {
+                        // Handle reopen alert
+                      }
+                    : null,
+                child: Text(loc.buttonClosingPunitive),
+              ),
+              SizedBox(width: 5),
+              Checkbox(
+                value: punitiveCloseUnblocked,
+                onChanged: (value) {
+                  setState(() {
+                    punitiveCloseUnblocked = value!;
+                  });
+                },
+              ),
+            ],
+          ),
       ],
     );
   }

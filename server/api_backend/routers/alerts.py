@@ -40,7 +40,7 @@ router = APIRouter(
     tags=["Alerts"]
 )
     
-@router.post("/api/alert")
+@router.post("/api/alerts")
 def create_alert(alert_in: AlertIn,
             request: Request,
             background_tasks: BackgroundTasks,
@@ -151,7 +151,7 @@ def get_recent_alerts(current_user: User = Depends(get_current_user),
 
 # API endpoint used by all users to view general details of a specific alert, 
 # for example: description, gps location, sender name and reliability score, number of alerted users
-@router.get("/api/alert/{alert_id}", response_model=AlertOutWithInfo)
+@router.get("/api/alerts/{alert_id}", response_model=AlertOutWithInfo)
 def get_alert(alert_id: int,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
@@ -237,7 +237,7 @@ def get_alert(alert_id: int,
 
 # API endpoint used by the chief to list all users involved in the specific alert (sender and alerted users),
 # so he can see their personal info and their votes about the alert
-@router.get("/api/alert/users/{alert_id}", response_model=AlertOutWithUsers)
+@router.get("/api/alerts/{alert_id}/users", response_model=AlertOutWithUsers)
 def get_alert_with_users(alert_id: int,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
@@ -274,7 +274,7 @@ def get_alert_with_users(alert_id: int,
     }
     return alert_with_users
 
-@router.post("/api/alert-close")
+@router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,
             request: Request,
             current_user: User = Depends(get_current_user), 
