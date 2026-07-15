@@ -540,6 +540,6 @@ class AlertOutWithInfo(BaseModel):
 
 class AlertOutWithUsers(BaseModel):
     alert: AlertOut
-    sender: UserOutSmall
-    users: List[UserOutSmall]
+    sender: UserOut
+    users: List[UserOut]
     votes_map: dict[uuid.UUID, AlertedUser] # user_id -> vote info (AlertedUser object, with vote and closing_vote)

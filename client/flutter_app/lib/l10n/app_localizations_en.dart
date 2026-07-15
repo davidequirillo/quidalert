@@ -81,6 +81,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertYou => 'You';
 
   @override
+  String get alertedUserVote => 'Vote';
+
+  @override
+  String get alertedUserClosingVote => 'Closing vote';
+
+  @override
+  String get alertedUserManager => 'Chief';
+
+  @override
   String get buttonAccept => 'Accept';
 
   @override

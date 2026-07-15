@@ -81,6 +81,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertYou => 'Tu';
 
   @override
+  String get alertedUserVote => 'Voto';
+
+  @override
+  String get alertedUserClosingVote => 'Voto di chiusura';
+
+  @override
+  String get alertedUserManager => 'Capo';
+
+  @override
   String get buttonAccept => 'Accetta';
 
   @override

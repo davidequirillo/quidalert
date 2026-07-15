@@ -239,6 +239,24 @@ abstract class AppLocalizations {
   /// **'You'**
   String get alertYou;
 
+  /// No description provided for @alertedUserVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote'**
+  String get alertedUserVote;
+
+  /// No description provided for @alertedUserClosingVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing vote'**
+  String get alertedUserClosingVote;
+
+  /// No description provided for @alertedUserManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief'**
+  String get alertedUserManager;
+
   /// No description provided for @buttonAccept.
   ///
   /// In en, this message translates to:

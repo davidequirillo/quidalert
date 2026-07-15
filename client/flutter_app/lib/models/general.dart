@@ -374,6 +374,42 @@ class Alert {
   }
 }
 
+class AlertedUser {
+  final int alertId;
+  final String userId;
+  final bool isManager;
+  final int vote;
+  final int closingVote;
+
+  AlertedUser({
+    required this.alertId,
+    required this.userId,
+    required this.isManager,
+    required this.vote,
+    required this.closingVote,
+  });
+
+  factory AlertedUser.fromJson(Map<String, dynamic> json) {
+    try {
+      final int alertId = json['alert_id'] ?? 0;
+      final String userId = json['user_id'] ?? '';
+      final int vote = json['vote'] ?? 0;
+      final int closingVote = json['closing_vote'] ?? 0;
+      final bool isManager = json['is_manager'] ?? false;
+      return AlertedUser(
+        alertId: alertId,
+        userId: userId,
+        isManager: isManager,
+        vote: vote,
+        closingVote: closingVote,
+      );
+    } catch (e) {
+      debugPrintC("Error parsing AlertedUser from JSON: $e");
+      throw FromJsonObjException();
+    }
+  }
+}
+
 class AlertWithInfo {
   final Alert alert;
   final String senderFirstname;
@@ -431,6 +467,46 @@ class AlertWithInfo {
       );
     } catch (e) {
       debugPrintC("Error parsing AlertWithInfo from JSON: $e");
+      throw FromJsonObjException();
+    }
+  }
+}
+
+class AlertWithUsers {
+  final Alert alert;
+  final User sender;
+  final List<User> users;
+  final Map<String, AlertedUser> votesMap;
+
+  AlertWithUsers({
+    required this.alert,
+    required this.sender,
+    required this.users,
+    required this.votesMap,
+  });
+
+  factory AlertWithUsers.fromJson(Map<String, dynamic> json) {
+    try {
+      final alert = Alert.fromJson(json['alert']);
+      final sender = User.fromJson(json['sender']);
+      final List<User> users = (json['users'] as List)
+          .map((userJson) => User.fromJson(userJson))
+          .toList();
+      final Map<String, AlertedUser> votesMap =
+          (json['votes_map'] as Map<String, dynamic>).map((
+            userId,
+            alertedUserJson,
+          ) {
+            return MapEntry(userId, AlertedUser.fromJson(alertedUserJson));
+          });
+      return AlertWithUsers(
+        alert: alert,
+        sender: sender,
+        users: users,
+        votesMap: votesMap,
+      );
+    } catch (e) {
+      debugPrintC("Error parsing AlertWithUsers from JSON: $e");
       throw FromJsonObjException();
     }
   }
