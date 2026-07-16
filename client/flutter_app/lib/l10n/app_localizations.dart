@@ -245,6 +245,12 @@ abstract class AppLocalizations {
   /// **'Vote'**
   String get alertedUserVote;
 
+  /// No description provided for @alertedUserMyVote.
+  ///
+  /// In en, this message translates to:
+  /// **'My vote'**
+  String get alertedUserMyVote;
+
   /// No description provided for @alertedUserClosingVote.
   ///
   /// In en, this message translates to:
@@ -256,6 +262,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chief'**
   String get alertedUserManager;
+
+  /// No description provided for @alertedUserDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Distance'**
+  String get alertedUserDistance;
+
+  /// No description provided for @alertedUserVotePositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Positive'**
+  String get alertedUserVotePositive;
+
+  /// No description provided for @alertedUserVoteNegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative'**
+  String get alertedUserVoteNegative;
+
+  /// No description provided for @alertedUserVoteNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral'**
+  String get alertedUserVoteNeutral;
+
+  /// No description provided for @alertedUserVotePunitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Punitive'**
+  String get alertedUserVotePunitive;
+
+  /// No description provided for @alertedUserYouHaveNotVoted.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not voted'**
+  String get alertedUserYouHaveNotVoted;
 
   /// No description provided for @buttonAccept.
   ///

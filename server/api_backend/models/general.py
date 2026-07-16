@@ -471,6 +471,7 @@ class AlertedUser(SQLModel, table=True):
         nullable=False, 
         index=True
     )
+    distance: float = Field(default=0, nullable=False) # distance from the alert location, in kilometers
     is_manager: bool = Field(default=False, nullable=False)
     # For all users: -1 = downvote, 0 = no vote, +1 = upvote
     # Chief can do a closing vote: his final vote can be -15, 0, +15;
@@ -523,6 +524,7 @@ class Message(SQLModel, table=True):
 
 class AlertOutWithInfo(BaseModel):
     alert: AlertOut
+    sender: Optional[UserOut] = None
     sender_firstname: str
     sender_surname: str
     sender_reliability_score: int
@@ -538,8 +540,9 @@ class AlertOutWithInfo(BaseModel):
     user_is_manager: bool
     user_vote: int
 
-class AlertOutWithUsers(BaseModel):
-    alert: AlertOut
-    sender: UserOut
-    users: List[UserOut]
-    votes_map: dict[uuid.UUID, AlertedUser] # user_id -> vote info (AlertedUser object, with vote and closing_vote)
+class AlertedUserWithInfo(BaseModel):
+    user: UserOut
+    distance: float # in kilometers
+    is_manager: bool
+    vote: int
+    closing_vote: int

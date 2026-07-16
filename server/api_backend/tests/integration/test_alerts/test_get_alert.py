@@ -124,6 +124,10 @@ def test_get_alert_success_general_alert(client, db_session, test_baseuser):
     assert resp_obj["alert"]["longitude"] <= alert.longitude + 0.0001
     assert resp_obj["alert"]["longitude"] >= alert.longitude - 0.0001
     assert resp_obj["alert"]["created_at"] == alert.created_at.isoformat()
+    # Test_baseuser (the caller) has not high privileges, so he cannot read "sender" object completely.
+    # He can only read sender's firstname, surname and reliability_score, 
+    # but not the other data (for example email, phone, address, etc.)
+    assert resp_obj["sender"] is None
     assert resp_obj["sender_firstname"] == sender.firstname
     assert resp_obj["sender_surname"] == sender.surname
     assert resp_obj["sender_reliability_score"] == sender.reliability_score
@@ -173,7 +177,9 @@ def test_get_alert_local_created_by_me(client, db_session, test_baseuser):
     # Little security check: the user_id of the alert (sender user_id) should not be exposed in the API response 
     # (API returns AlertOut object, not Alert object)
     assert "user_id" not in resp_obj["alert"]
-    # The sender is the caller
+    # The caller (test_baseuser) is the alert sender in this test, 
+    # but the caller has not high privileges, so he cannot read "sender" object completely.
+    assert resp_obj["sender"] is None
     assert resp_obj["sender_firstname"] == caller.firstname
     assert resp_obj["sender_surname"] == caller.surname
     assert resp_obj["sender_reliability_score"] == caller.reliability_score
@@ -250,6 +256,8 @@ def test_get_alert_not_created_by_me_but_involved(client, db_session, test_baseu
     assert resp_data["alert"]["id"] == alert.id
     assert resp_data["alert"]["type"] == alert.type
     assert resp_data["alert"]["description"] == alert.description
+    # The caller (test_baseuser) has not high privileges (he cannot read sender object completely)
+    assert resp_data["sender"] is None
     assert resp_data["sender_firstname"] is not None
     assert resp_data["sender_surname"] is not None
     assert resp_data["sender_reliability_score"] is not None
@@ -306,6 +314,9 @@ def test_get_alert_not_created_by_me_not_involved_but_caller_is_officer(client, 
     assert resp_data["alert"]["id"] == alert.id
     assert resp_data["alert"]["type"] == alert.type
     assert resp_data["alert"]["description"] == alert.description
+    # The caller (test_officer) has not high privileges (he is not a chief or an admin),
+    # so he cannot read "sender" object completely (only firstname, surname and reliability_score are visible)
+    assert resp_data["sender"] is None
     assert resp_data["sender_firstname"] == baseuser.firstname
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
@@ -349,6 +360,19 @@ def test_get_alert_called_by_a_chief(client, db_session, test_chief, test_baseus
     assert resp_data["alert"]["id"] == alert.id
     assert resp_data["alert"]["type"] == alert.type
     assert resp_data["alert"]["description"] == alert.description
+    # The caller (test_chief) has high privileges (he is a chief), 
+    # so he can read "sender" object completely
+    assert resp_data["sender"] is not None
+    resp_data_sender = resp_data["sender"]
+    assert resp_data_sender["id"] == str(baseuser.id)
+    assert resp_data_sender["email"] == baseuser.email
+    assert resp_data_sender["phone"] == baseuser.phone
+    assert resp_data_sender["street"] == baseuser.street
+    assert resp_data_sender["city"] == baseuser.city
+    assert "password" not in resp_data_sender
+    assert "password_hash" not in resp_data_sender
+    assert "activation_token" not in resp_data_sender
+    assert resp_data_sender["birthdate"] == baseuser.birthdate
     assert resp_data["sender_firstname"] == baseuser.firstname
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score
@@ -392,6 +416,19 @@ def test_get_alert_called_by_admin(client, db_session, test_admin, test_baseuser
     assert resp_data["alert"]["id"] == alert.id
     assert resp_data["alert"]["type"] == alert.type
     assert resp_data["alert"]["description"] == alert.description
+    # The caller (test_admin) has high privileges (he is an admin), 
+    # so he can read "sender" object completely
+    assert resp_data["sender"] is not None
+    resp_data_sender = resp_data["sender"]
+    assert resp_data_sender["id"] == str(baseuser.id)
+    assert resp_data_sender["email"] == baseuser.email
+    assert resp_data_sender["phone"] == baseuser.phone
+    assert resp_data_sender["street"] == baseuser.street
+    assert resp_data_sender["city"] == baseuser.city
+    assert resp_data_sender["birthdate"] == baseuser.birthdate
+    assert "password" not in resp_data_sender
+    assert "password_hash" not in resp_data_sender
+    assert "activation_token" not in resp_data_sender
     assert resp_data["sender_firstname"] == baseuser.firstname
     assert resp_data["sender_surname"] == baseuser.surname
     assert resp_data["sender_reliability_score"] == baseuser.reliability_score

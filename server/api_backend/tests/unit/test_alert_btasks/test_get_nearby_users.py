@@ -102,6 +102,7 @@ async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, te
     expected_nearby_user_ids = set([f"user_{i}" for i in range(7, 12)])
     for user in nearby_users:
         assert user["user_id"] in expected_nearby_user_ids
+        assert user["distance_km"] is not None
         assert user["distance_km"] <= test_alert.radius
         location = user["location"]
         assert location["latitude"] < test_alert.latitude + 0.0015
