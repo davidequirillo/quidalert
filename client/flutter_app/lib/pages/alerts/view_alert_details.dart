@@ -81,17 +81,18 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     );
   }
 
-  Future<void> _showAddress(
-    BuildContext context,
-    double latitude,
-    double longitude,
-  ) async {
+  Future<void> _showAddress(BuildContext context, Alert alert) async {
     final loc = AppLocalizations.of(context)!;
-    final locationClient = context.read<LocationClient>();
-    final address = await locationClient.translateToAddress(
-      latitude,
-      longitude,
-    );
+    final String? address;
+    if ((alert.address != null) && (alert.address!.isNotEmpty)) {
+      address = alert.address;
+    } else {
+      final locationClient = context.read<LocationClient>();
+      address = await locationClient.translateToAddress(
+        alert.latitude,
+        alert.longitude,
+      );
+    }
     if (!context.mounted) return;
     showSimpleAlertDialog(
       context,
@@ -122,6 +123,25 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       if (!context.mounted) return;
       showSimpleAlertDialog(context, loc.errorError, loc.errorUnableToOpenMap);
     }
+  }
+
+  void _showSenderInfo(BuildContext context, User? sender) {
+    final loc = AppLocalizations.of(context)!;
+    if (sender == null) {
+      return;
+    }
+    String senderDetailsStr =
+        "${sender.firstname} ${sender.surname}\n${sender.email}";
+    senderDetailsStr += "\n";
+    senderDetailsStr += "\n${loc.userBirthdate}: ${sender.birthDate}";
+    senderDetailsStr += "\n${loc.userPhoneNumber}: ${sender.phone}";
+    senderDetailsStr += "\n";
+    senderDetailsStr += "\n${sender.street}";
+    senderDetailsStr += "\n${sender.postalCode}, ${sender.city}";
+    senderDetailsStr += "\n${sender.province}";
+    senderDetailsStr += "\n${sender.country}";
+    if (!context.mounted) return;
+    showSimpleAlertDialog(context, loc.labelDetails, senderDetailsStr);
   }
 
   void _viewAlertedUsersPage(BuildContext context, int alertId) {
@@ -239,6 +259,26 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     if (alertWithInfo.userIsManager) {
       chiefName += " (${loc.alertYou})";
     }
+    final String? myVote;
+    if (alertWithInfo.userVote > 0) {
+      myVote = loc.alertedUserVotePositive;
+    } else if (alertWithInfo.userVote < 0) {
+      myVote = loc.alertedUserVoteNegative;
+    } else {
+      myVote = loc.alertedUserYouHaveNotVoted;
+    }
+    final String chiefClosingVote;
+    if (alertWithInfo.chiefClosingVote > 0) {
+      chiefClosingVote = loc.alertedUserVotePositive;
+    } else if (alertWithInfo.chiefClosingVote < 0) {
+      if (alertWithInfo.chiefClosingVote <= -100) {
+        chiefClosingVote = loc.alertedUserVotePunitive;
+      } else {
+        chiefClosingVote = loc.alertedUserVoteNegative;
+      }
+    } else {
+      chiefClosingVote = loc.alertedUserVoteNeutral;
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -289,11 +329,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             children: [
               InkWell(
                 onTap: () {
-                  _showAddress(
-                    context,
-                    alertWithInfo.alert.latitude,
-                    alertWithInfo.alert.longitude,
-                  );
+                  _showAddress(context, alertWithInfo.alert);
                 },
                 child: Text(
                   loc.labelShowAddress,
@@ -334,6 +370,19 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         Divider(height: 40, thickness: 1),
         buildSectionTitle(loc.sectionUsers),
         Text('${loc.alertSender}: $senderName'),
+        if (authClient.isChief())
+          InkWell(
+            onTap: () {
+              _showSenderInfo(context, alertWithInfo.sender);
+            },
+            child: Text(
+              loc.buttonView,
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
+              ),
+            ),
+          ),
         Text(
           chiefIsAlerted
               ? '${loc.alertChief}: $chiefName'
@@ -411,6 +460,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           buildSectionTitle(loc.sectionAlertVote),
         // buttons for voting
         if (alertWithInfo.userIsAlerted)
+          Text('${loc.alertedUserMyVote}: $myVote'),
+        if (alertWithInfo.userIsAlerted)
           Row(
             children: [
               ElevatedButton(
@@ -438,6 +489,9 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         if (alertWithInfo.userIsManager) Divider(height: 40, thickness: 1),
         if (alertWithInfo.userIsManager)
           buildSectionTitle(loc.sectionAlertClosing),
+        if (alertWithInfo.userIsManager &&
+            (alertWithInfo.alert.status == AlertStatus.closed.name))
+          Text('${loc.alertedUserClosingVote}: $chiefClosingVote'),
         if (alertWithInfo.userIsManager)
           Row(
             children: [

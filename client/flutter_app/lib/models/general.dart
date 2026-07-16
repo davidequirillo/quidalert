@@ -321,6 +321,7 @@ class Alert {
   final String status;
   final double latitude;
   final double longitude;
+  final String? address;
   final double radius;
   final DateTime createdAt;
 
@@ -331,6 +332,7 @@ class Alert {
     required this.status,
     required this.latitude,
     required this.longitude,
+    required this.address,
     required this.radius,
     required this.createdAt,
   });
@@ -361,12 +363,14 @@ class Alert {
     final double radius = json['radius'] != null
         ? json['radius'].toDouble()
         : 0.0;
+    final String? address = json['address'];
     return Alert(
       id: id,
       type: type,
       description: description,
       latitude: latitude,
       longitude: longitude,
+      address: address,
       radius: radius,
       status: status,
       createdAt: createdAt,
@@ -374,44 +378,9 @@ class Alert {
   }
 }
 
-class AlertedUser {
-  final int alertId;
-  final String userId;
-  final bool isManager;
-  final int vote;
-  final int closingVote;
-
-  AlertedUser({
-    required this.alertId,
-    required this.userId,
-    required this.isManager,
-    required this.vote,
-    required this.closingVote,
-  });
-
-  factory AlertedUser.fromJson(Map<String, dynamic> json) {
-    try {
-      final int alertId = json['alert_id'] ?? 0;
-      final String userId = json['user_id'] ?? '';
-      final int vote = json['vote'] ?? 0;
-      final int closingVote = json['closing_vote'] ?? 0;
-      final bool isManager = json['is_manager'] ?? false;
-      return AlertedUser(
-        alertId: alertId,
-        userId: userId,
-        isManager: isManager,
-        vote: vote,
-        closingVote: closingVote,
-      );
-    } catch (e) {
-      debugPrintC("Error parsing AlertedUser from JSON: $e");
-      throw FromJsonObjException();
-    }
-  }
-}
-
 class AlertWithInfo {
   final Alert alert;
+  final User? sender;
   final String senderFirstname;
   final String senderSurname;
   final String? chiefFirstname;
@@ -429,6 +398,7 @@ class AlertWithInfo {
 
   AlertWithInfo({
     required this.alert,
+    required this.sender,
     required this.senderFirstname,
     required this.senderSurname,
     required this.senderReliabilityScore,
@@ -450,6 +420,7 @@ class AlertWithInfo {
       final alert = Alert.fromJson(json['alert']);
       return AlertWithInfo(
         alert: alert,
+        sender: json['sender'] != null ? User.fromJson(json['sender']) : null,
         senderFirstname: json['sender_firstname'],
         senderSurname: json['sender_surname'],
         senderReliabilityScore: json['sender_reliability_score'],
@@ -472,41 +443,37 @@ class AlertWithInfo {
   }
 }
 
-class AlertWithUsers {
-  final Alert alert;
-  final User sender;
-  final List<User> users;
-  final Map<String, AlertedUser> votesMap;
+class AlertedUserWithInfo {
+  final User user;
+  final double distance; // in kilometers
+  final bool isManager;
+  final int vote;
+  final int closingVote;
 
-  AlertWithUsers({
-    required this.alert,
-    required this.sender,
-    required this.users,
-    required this.votesMap,
+  AlertedUserWithInfo({
+    required this.user,
+    required this.distance,
+    required this.isManager,
+    required this.vote,
+    required this.closingVote,
   });
 
-  factory AlertWithUsers.fromJson(Map<String, dynamic> json) {
+  factory AlertedUserWithInfo.fromJson(Map<String, dynamic> json) {
     try {
-      final alert = Alert.fromJson(json['alert']);
-      final sender = User.fromJson(json['sender']);
-      final List<User> users = (json['users'] as List)
-          .map((userJson) => User.fromJson(userJson))
-          .toList();
-      final Map<String, AlertedUser> votesMap =
-          (json['votes_map'] as Map<String, dynamic>).map((
-            userId,
-            alertedUserJson,
-          ) {
-            return MapEntry(userId, AlertedUser.fromJson(alertedUserJson));
-          });
-      return AlertWithUsers(
-        alert: alert,
-        sender: sender,
-        users: users,
-        votesMap: votesMap,
+      final user = User.fromJson(json['user']);
+      final distance = json['distance'];
+      final isManager = json['is_manager'];
+      final vote = json['vote'];
+      final closingVote = json['closing_vote'];
+      return AlertedUserWithInfo(
+        user: user,
+        distance: distance,
+        isManager: isManager,
+        vote: vote,
+        closingVote: closingVote,
       );
     } catch (e) {
-      debugPrintC("Error parsing AlertWithUsers from JSON: $e");
+      debugPrintC("Error parsing AlertedUserWithInfo from JSON: $e");
       throw FromJsonObjException();
     }
   }

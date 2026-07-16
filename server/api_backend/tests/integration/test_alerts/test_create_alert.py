@@ -403,7 +403,8 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     data = {
         "description": description,
         "latitude": DENVER_LAT - radius_for_closest_chiefs_in_degrees - 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver
-        "longitude": DENVER_LON + radius_for_closest_chiefs_in_degrees + 10 # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver 
+        "longitude": DENVER_LON + radius_for_closest_chiefs_in_degrees + 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver
+        "address": "Far away from Denver"
     }
     response = client.post(
         "/api/alerts", json=data,
@@ -421,6 +422,7 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     assert alert.description == description
     assert alert.latitude == data["latitude"]
     assert alert.longitude == data["longitude"]
+    assert alert.address == data["address"]
     assert alert.radius == 1.0 # set to the default radius
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status 
@@ -479,6 +481,7 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
         AlertedUser.alert_id == alert.id)).all()
     assert len(alerted_users) == 1
     assert alerted_users[0].is_manager == True
+    assert round(alerted_users[0].distance, 1) == 0.0 # the alert manager is the closest chief (we have set the distance to 0.0 for alert managers)
     # The sender is notified with a specific message, from alert notification templates
     language = user.language if user.language in alert_notification_templates else "en"
     message = alert_notification_templates[language]["only_chief_notified"]
@@ -538,6 +541,8 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
     for alerted_user in alerted_users:
         # We have no alert manager (no chief)
         assert alerted_user.is_manager == False
+        assert alerted_user.distance is not None
+        assert alerted_user.distance >= 0.0
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
     message = alert_notification_templates[language]["no_chief_available_but_nearby_users"]
@@ -566,6 +571,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
         "description": description,
         "latitude": DENVER_LAT, 
         "longitude": DENVER_LON,
+        "address": "Denver, CO",
         "radius": RADIUS_KM
     }
     response = client.post(
@@ -585,6 +591,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     assert alert.latitude == data["latitude"]
     assert alert.longitude == data["longitude"]
     assert alert.radius == data["radius"]
+    assert alert.address == data["address"]
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status
     assert alert.is_pending == False

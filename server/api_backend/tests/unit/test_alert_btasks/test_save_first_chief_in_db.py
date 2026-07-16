@@ -52,6 +52,8 @@ async def test_save_first_chief_in_db_success(db_session, redis_session, test_al
         assert len(alerted_users) == 1
         assert alerted_users[0].user_id == string_as_uuid(closest_chiefs[0]["user_id"])
         assert alerted_users[0].alert_id == test_alert.id
+        assert alerted_users[0].distance is not None
+        assert round(alerted_users[0].distance, 1) == 0.0
         assert alerted_users[0].vote == 0  # default value
         assert alerted_users[0].closing_vote == 0  # default value
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
@@ -104,6 +106,7 @@ async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db
         assert len(alerted_users) == 1
         assert alerted_users[0].user_id == string_as_uuid(closest_chiefs[1]["user_id"])
         assert alerted_users[0].alert_id == test_alert.id
+        assert round(alerted_users[0].distance, 1) == 0.0
         assert alerted_users[0].vote == 0  # default value
         assert alerted_users[0].closing_vote == 0  # default value
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
@@ -165,6 +168,7 @@ async def test_save_first_chief_in_db_orphan_is_no_longer_a_chief_in_db(db_sessi
         alerted_users = db_session.exec(statement).all()
         assert len(alerted_users) == 1
         assert alerted_users[0].user_id == string_as_uuid(closest_chiefs[1]["user_id"])
+        assert round(alerted_users[0].distance, 1) == 0.0
         assert alerted_users[0].alert_id == test_alert.id
         assert alerted_users[0].vote == 0  # default value
         assert alerted_users[0].closing_vote == 0  # default value
@@ -225,6 +229,7 @@ async def test_save_first_chief_in_db_found_orphan_with_no_fcm_token(db_session,
         assert len(alerted_users) == 1
         assert alerted_users[0].user_id == string_as_uuid(closest_chiefs[1]["user_id"])
         assert alerted_users[0].alert_id == test_alert.id
+        assert round(alerted_users[0].distance, 1) == 0.0
         assert alerted_users[0].vote == 0  # default value
         assert alerted_users[0].closing_vote == 0  # default value
         assert alerted_users[0].is_manager == True # The first chief is the alert manager

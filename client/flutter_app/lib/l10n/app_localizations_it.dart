@@ -84,10 +84,31 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertedUserVote => 'Voto';
 
   @override
+  String get alertedUserMyVote => 'Il mio voto';
+
+  @override
   String get alertedUserClosingVote => 'Voto di chiusura';
 
   @override
   String get alertedUserManager => 'Capo';
+
+  @override
+  String get alertedUserDistance => 'Distanza';
+
+  @override
+  String get alertedUserVotePositive => 'Positivo';
+
+  @override
+  String get alertedUserVoteNegative => 'Negativo';
+
+  @override
+  String get alertedUserVoteNeutral => 'Neutro';
+
+  @override
+  String get alertedUserVotePunitive => 'Punitivo';
+
+  @override
+  String get alertedUserYouHaveNotVoted => 'Non hai votato';
 
   @override
   String get buttonAccept => 'Accetta';

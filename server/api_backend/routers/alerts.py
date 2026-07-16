@@ -11,7 +11,7 @@ from dependencies import (get_current_user,
             get_db_session, get_redis_session, 
             get_geoposition_token_data,
         )
-from sqlmodel import Session, desc, select, union_all
+from sqlmodel import Session, desc, asc, select, union_all
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from core.exceptions import (
@@ -25,10 +25,11 @@ from core.dbmgr import (
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key)
 from models.general import (
+    User, UserOut,
     Alert, AlertType, AlertIn, 
-    AlertOut, AlertOutWithInfo, AlertOutWithUsers,
+    AlertOut, AlertOutWithInfo, AlertedUserWithInfo,
     AlertedUser, Message,
-    GpsCoordinatesSchema, GpsTokenData, User,
+    GpsCoordinatesSchema, GpsTokenData
     )
 from services.security import (
     now_tz_naive, now_tz_aware)
@@ -169,6 +170,10 @@ def get_alert(alert_id: int,
         raise not_found_exception("Alert not found")
     if alert.is_banned:
         alert.description = "[BANNED ALERT]"
+    if current_user.is_chief or current_user.is_admin:
+        current_user_has_high_priv = True
+    else:
+        current_user_has_high_priv = False
     current_user_is_the_sender = False
     current_user_is_alerted = False
     current_user_vote = 0
@@ -217,7 +222,8 @@ def get_alert(alert_id: int,
         if chief_id:
             chief = db_session.exec(select(User).where(User.id == chief_id)).first()
     alert_with_info = {
-        "alert": alert, 
+        "alert": alert,
+        "sender": sender if current_user_has_high_priv else None,
         "sender_firstname": sender.firstname,
         "sender_surname": sender.surname,
         "sender_reliability_score": sender.reliability_score,
@@ -235,44 +241,39 @@ def get_alert(alert_id: int,
     }
     return alert_with_info
 
-# API endpoint used by the chief to list all users involved in the specific alert (sender and alerted users),
-# so he can see their personal info and their votes about the alert
-@router.get("/api/alerts/{alert_id}/users", response_model=AlertOutWithUsers)
-def get_alert_with_users(alert_id: int,
+# API endpoint used by chiefs to list all alerted users related to a specific alert,
+# so they can see their personal info and their votes about the alert
+@router.get("/api/alerts/{alert_id}/alerted-users", response_model=list[AlertedUserWithInfo])
+def get_alerted_users(alert_id: int,
+                offset: int = 0,
+                limit: int = 100,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_chief):
         raise forbidden_exception()
-    statement = (select(Alert, User)
-        .join(User, Alert.user_id == User.id) # type: ignore
-        .where(Alert.id == alert_id))
-    result = db_session.exec(statement).first()
-    if result:
-        alert = result[0]
-        sender = result[1]
-    else:
-        alert = None
-        sender = None
-    if (not alert) or (not sender):
-        raise not_found_exception("Alert not found")
+    if offset < 0:
+        offset = 0
+    if limit not in [10, 100, 1000]:
+        limit = 100
     statement = (select(User, AlertedUser)
         .join(AlertedUser, User.id == AlertedUser.user_id) # type: ignore
-        .where(AlertedUser.alert_id == alert.id))
+        .where(AlertedUser.alert_id == alert_id))
+    statement = statement.order_by(asc(AlertedUser.distance))
+    statement = statement.offset(offset).limit(limit)
     results = db_session.exec(statement).all()
-    users = []
-    votes_map = {}
+    output_users = []
     for r in results:
         user = r[0]
         alerted_user = r[1]
-        users.append(user)
-        votes_map[user.id] = alerted_user
-    alert_with_users = { 
-        "alert": alert, 
-        "sender": sender, 
-        "users": users, 
-        "votes_map": votes_map 
-    }
-    return alert_with_users
+        output_user = AlertedUserWithInfo(
+            user=user,
+            distance=alerted_user.distance,
+            is_manager=alerted_user.is_manager,
+            vote=alerted_user.vote,
+            closing_vote=alerted_user.closing_vote
+        )
+        output_users.append(output_user)
+    return output_users
 
 @router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,

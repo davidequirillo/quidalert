@@ -60,6 +60,8 @@ async def test_save_nearby_users_in_db_success(db_session, redis_session, test_a
             assert str(alerted_user.user_id) in fcm_tokens_map
             assert alerted_user.alert_id == test_alert.id
             assert alerted_user.vote == 0  # default value
+            assert alerted_user.distance is not None
+            assert alerted_user.distance >= 0.0
             assert alerted_user.closing_vote == 0  # default value
             assert alerted_user.is_manager == False  # default value for nearby users
             assert fcm_token == fcm_tokens_map[str(alerted_user.user_id)]
@@ -162,6 +164,8 @@ async def test_save_nearby_users_some_orphans_with_null_fcm_tokens(db_session, r
     for alerted_user, fcm_token in results:
         assert str(alerted_user.user_id) in fcm_tokens_map
         assert alerted_user.alert_id == test_alert.id
+        assert alerted_user.distance is not None
+        assert alerted_user.distance >= 0.0
         assert alerted_user.vote == 0  # default value
         assert alerted_user.closing_vote == 0  # default value
         assert alerted_user.is_manager == False  # default value for nearby users

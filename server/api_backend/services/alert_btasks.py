@@ -344,6 +344,7 @@ def save_first_chief_in_db(alert, closest_chiefs, request_info, db_engine):
                 stmt = insert(AlertedUser).values(
                     alert_id=alert.id,
                     user_id=chief_uuid,
+                    distance=0.0,
                     is_manager=True,
                     vote=0,
                     closing_vote=0
@@ -373,14 +374,16 @@ def save_nearby_users_in_db(alert, users, request_info, db_engine):
     if not users:
         return {}
     ids_as_uuid = []
+    users_to_distances = {}
+    users_to_tokens = {}
     for u in users:
         try:
             uuid = string_as_uuid(u["user_id"])
             ids_as_uuid.append(uuid)
+            users_to_distances[str(uuid)] = u["distance_km"]
         except Exception as e:
             log_alert_error_checking_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
             continue
-    users_to_tokens = {}
     with Session(db_engine) as db_session:
         statement = (select(User.id, RefreshToken.fcm_token)
             .join(RefreshToken, RefreshToken.user_id == User.id) # type: ignore
@@ -405,12 +408,14 @@ def save_nearby_users_in_db(alert, users, request_info, db_engine):
                 for u_id in existing_ids_in_db:
                     try:
                         user_uuid = string_as_uuid(u_id)
+                        user_distance = users_to_distances.get(u_id, 0.0)
                     except Exception as e:
                         log_alert_error_saving_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
                         continue
                     valid_data_for_db_bulk_insert.append({
                         "alert_id": alert.id,
                         "user_id": user_uuid,
+                        "distance": user_distance,
                         "is_manager": False,
                         "vote": 0,
                         "closing_vote": 0
