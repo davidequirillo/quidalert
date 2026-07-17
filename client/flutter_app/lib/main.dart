@@ -173,7 +173,7 @@ class QuidalertWidget extends StatelessWidget {
                 builder: (_) => const AlertDetailsPage(),
                 settings: settings,
               );
-            case '/alerts/view-alert-users':
+            case '/alerts/view-alerted-users':
               return MaterialPageRoute(
                 builder: (_) => const AlertedUsersPage(),
                 settings: settings,

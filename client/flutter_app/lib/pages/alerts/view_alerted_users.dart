@@ -30,32 +30,52 @@ class AlertedUsersPage extends StatelessWidget {
   }
 }
 
-class AlertedUsersBody extends StatelessWidget {
+class AlertedUsersBody extends StatefulWidget {
   const AlertedUsersBody({super.key});
 
-  Future<List<AlertedUserWithInfo>> _getAlertedUsers(
-    BuildContext context,
-    String id,
-  ) async {
-    final authClient = context.read<AuthClient>();
-    final response = await authClient.doProtectedApiRequest(
-      "get",
-      '/alerts/$id/alerted-users',
-    );
-    final Map<String, dynamic>? respObj = json.decode(response.body);
-    if (respObj == null || respObj.isEmpty) {
-      throw NotFoundException();
-    }
-    final alertedUsers = (respObj as List)
-        .map((userJson) => AlertedUserWithInfo.fromJson(userJson))
-        .toList();
-    return alertedUsers;
+  @override
+  State<AlertedUsersBody> createState() => _AlertedUsersBodyState();
+}
+
+class _AlertedUsersBodyState extends State<AlertedUsersBody> {
+  List<AlertedUser> _alertedUsers = [];
+  int _alertedUsersCount = 0;
+  int? _currentCursor;
+  bool _isLoadingPage = false;
+  bool _hasMore = true;
+  final int _limit = 100;
+  bool _hasSearched = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 200) {
+        _loadPage();
+      }
+    });
   }
 
-  Future<void> _showUserDetails(
-    BuildContext context,
-    AlertedUserWithInfo alertedUser,
-  ) async {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _startNewSearch() {
+    setState(() {
+      _alertedUsers = [];
+      _alertedUsersCount = 0;
+      _currentCursor = null;
+      _hasMore = true;
+      _hasSearched = true;
+    });
+    _loadPage();
+  }
+
+  Future<void> _showUserDetails(AlertedUser alertedUser) async {
     final loc = AppLocalizations.of(context)!;
     String userDetailsStr =
         "${alertedUser.user.firstname} ${alertedUser.user.surname}\n${alertedUser.user.email}";
@@ -68,76 +88,147 @@ class AlertedUsersBody extends StatelessWidget {
         "\n${alertedUser.user.postalCode}, ${alertedUser.user.city}";
     userDetailsStr += "\n${alertedUser.user.province}";
     userDetailsStr += "\n${alertedUser.user.country}";
+    userDetailsStr += "\n";
+    userDetailsStr += "\n${loc.userStatus}: ${alertedUser.user.status}";
+    userDetailsStr +=
+        "\n${loc.userReliabilityScore}: ${alertedUser.user.reliabilityScore}";
+    userDetailsStr += "\n";
+    userDetailsStr += "\n${loc.userRole}: ${alertedUser.user.role}";
     if (!context.mounted) return;
     showSimpleAlertDialog(context, loc.labelDetails, userDetailsStr);
   }
 
+  Future<List<AlertedUser>> _getAlertedUsers() async {
+    final authClient = context.read<AuthClient>();
+    final id = ModalRoute.of(context)!.settings.arguments as String;
+    final String offsetStr = (_currentCursor != null)
+        ? "offset=$_currentCursor&limit=$_limit"
+        : "offset=0&limit=$_limit";
+    final response = await authClient.doProtectedApiRequest(
+      "get",
+      '/alerts/$id/alerted-users?$offsetStr',
+    );
+    final Map<String, dynamic>? respObj = json.decode(response.body);
+    if (respObj == null || respObj.isEmpty) {
+      throw NotFoundException();
+    }
+    final alertedUsers = (respObj['alerted_users'] as List)
+        .map((userJson) => AlertedUser.fromJson(userJson))
+        .toList();
+    return alertedUsers;
+  }
+
+  Future<void> _loadPage() async {
+    String? retMessage;
+    bool newLoginRequired = false;
+    final loc = AppLocalizations.of(context)!;
+    if (_isLoadingPage || !_hasMore) return;
+    setState(() {
+      _isLoadingPage = true;
+    });
+    try {
+      List<AlertedUser> pageAlertedUsers = await _getAlertedUsers();
+      setState(() {
+        _alertedUsers.addAll(pageAlertedUsers);
+        if ((pageAlertedUsers.length < _limit) || (_currentCursor == null)) {
+          _hasMore = false;
+        }
+        _alertedUsersCount = _alertedUsersCount + pageAlertedUsers.length;
+      });
+    } catch (e) {
+      final exceptionName = e.runtimeType.toString();
+      if (exceptionName == "GenericNotAuthorizedException") {
+        newLoginRequired = true;
+      }
+      final locAttribute = "exception$exceptionName".replaceAll(
+        "Exception",
+        "",
+      );
+      retMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingPage = false;
+        });
+      }
+      if (retMessage != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(retMessage),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      if (newLoginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final id = ModalRoute.of(context)!.settings.arguments as String;
+    if (mounted && !_hasSearched) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startNewSearch();
+      });
+    }
     final loc = AppLocalizations.of(context)!;
-    return FutureBuilder<List<AlertedUserWithInfo>>(
-      future: _getAlertedUsers(context, id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          debugPrint("Error fetching alerted users: ${snapshot.error}");
-          final exceptionName = snapshot.error.runtimeType.toString();
-          final locAttribute = "exception$exceptionName".replaceAll(
-            "Exception",
-            "",
-          );
-          final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
-          if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
-            goToLoginPagePostFrameCallback(context);
-          }
-          return Center(child: Text(errorMessage));
-        }
-        if (snapshot.hasData) {
-          final alertedUsers = snapshot.data!;
-          return alertedUsersList(context, alertedUsers);
-        }
-        return Center(child: Text(loc.errorGeneric));
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: !_hasSearched
+              ? Center(child: Text(loc.labelWaitPlease))
+              : _alertedUsers.isEmpty && _isLoadingPage
+              ? Center(child: CircularProgressIndicator())
+              : _alertedUsers.isEmpty
+              ? Center(child: Text(loc.errorNoEntryFound))
+              : ListView.separated(
+                  controller: _scrollController,
+                  itemCount: _alertedUsersCount + (_hasMore ? 1 : 0),
+                  separatorBuilder: (_, _) => const Divider(),
+                  itemBuilder: (context, index) {
+                    if (index < _alertedUsersCount) {
+                      final alertedUser = _alertedUsers[index];
+                      return buildAlertedUserTile(alertedUser);
+                    } else {
+                      // Loading spinner at the bottom of the list
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                  },
+                ),
+        ),
+      ],
     );
   }
 
-  Widget alertedUsersList(
-    BuildContext context,
-    List<AlertedUserWithInfo> alertedUsers,
-  ) {
+  Widget buildAlertedUserTile(AlertedUser alertedUser) {
     final loc = AppLocalizations.of(context)!;
-    return ListView.builder(
-      itemCount: alertedUsers.length,
-      itemBuilder: (context, index) {
-        final alertedUser = alertedUsers[index];
-        String name =
-            "${alertedUser.user.firstname} ${alertedUser.user.surname}";
-        if (alertedUser.isManager) {
-          name = "$name (${loc.alertChief})";
-        }
-        String voteStr = "";
-        voteStr = "${loc.alertedUserVote}: ${alertedUser.vote}";
-        if (alertedUser.isManager) {
-          voteStr +=
-              " (${loc.alertedUserClosingVote}) ${alertedUser.closingVote}";
-        }
-        return ListTile(
-          title: Text(name),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${alertedUser.user.email}, ${alertedUser.user.phone}'),
-              Text(voteStr),
-            ],
-          ),
-          leading: Icon(Icons.person),
-          trailing: Text("${alertedUser.distance.toStringAsFixed(3)} km"),
-          onTap: () => {_showUserDetails(context, alertedUser)},
-        );
-      },
+    String name = "${alertedUser.user.firstname} ${alertedUser.user.surname}";
+    if (alertedUser.isManager) {
+      name = "$name (${loc.alertChief})";
+    }
+    String voteStr = "";
+    voteStr = "${loc.alertedUserVote}: ${alertedUser.vote}";
+    if (alertedUser.isManager) {
+      voteStr += ", ${loc.alertedUserClosingVote}: ${alertedUser.closingVote}";
+    }
+    return ListTile(
+      title: Text(name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${alertedUser.user.email}, ${alertedUser.user.phone}'),
+          Text(voteStr),
+        ],
+      ),
+      leading: Icon(Icons.person),
+      trailing: Text("${alertedUser.distance.toStringAsFixed(3)} km"),
+      onTap: () => {_showUserDetails(alertedUser)},
     );
   }
 }

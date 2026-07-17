@@ -61,9 +61,13 @@ def test_get_recent_alerts(client, db_session, test_baseuser):
     created_at_from_api = [alert["created_at"] for alert in alerts]
     assert created_at_from_api == sorted(created_at_from_api, reverse=True)
     # We check that the alerts returned are only a part of all alerts in the database
-    all_alerts_stmt = select(Alert)
-    all_alerts = db_session.exec(all_alerts_stmt).all()
-    assert len(alerts) < len(all_alerts)
+    all_alerts_from_db_stmt = select(Alert)
+    all_alerts_from_db = db_session.exec(all_alerts_from_db_stmt).all()
+    assert len(alerts) < len(all_alerts_from_db)
+    # We check that the alerts returned don't contain the "user_id" field,
+    # because it's not included in the AlertOut model, which is used as response_model for the API endpoint
+    for alert in alerts:
+        assert "user_id" not in alert
 
 def test_get_recent_alerts_some_are_expired(client, db_session, test_baseuser):
     user: User = test_baseuser['user']

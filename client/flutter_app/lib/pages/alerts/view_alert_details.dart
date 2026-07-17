@@ -140,6 +140,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     senderDetailsStr += "\n${sender.postalCode}, ${sender.city}";
     senderDetailsStr += "\n${sender.province}";
     senderDetailsStr += "\n${sender.country}";
+    senderDetailsStr += "\n";
+    senderDetailsStr += "\n${loc.userStatus}: ${sender.status}";
+    senderDetailsStr += "\n${loc.userReliability}: ${sender.reliabilityScore}";
+    senderDetailsStr += "\n";
+    senderDetailsStr += "\n${loc.userRole}: ${sender.role}";
     if (!context.mounted) return;
     showSimpleAlertDialog(context, loc.labelDetails, senderDetailsStr);
   }
@@ -147,7 +152,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   void _viewAlertedUsersPage(BuildContext context, int alertId) {
     Navigator.pushNamed(
       context,
-      '/alerts/view-alert-users',
+      '/alerts/view-alerted-users',
       arguments: alertId.toString(),
     );
     return;
@@ -259,25 +264,25 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     if (alertWithInfo.userIsManager) {
       chiefName += " (${loc.alertYou})";
     }
-    final String? myVote;
+    final String myVoteStr;
     if (alertWithInfo.userVote > 0) {
-      myVote = loc.alertedUserVotePositive;
+      myVoteStr = loc.alertedUserVotePositive;
     } else if (alertWithInfo.userVote < 0) {
-      myVote = loc.alertedUserVoteNegative;
+      myVoteStr = loc.alertedUserVoteNegative;
     } else {
-      myVote = loc.alertedUserYouHaveNotVoted;
+      myVoteStr = loc.alertedUserYouHaveNotVoted;
     }
-    final String chiefClosingVote;
+    final String chiefClosingVoteStr;
     if (alertWithInfo.chiefClosingVote > 0) {
-      chiefClosingVote = loc.alertedUserVotePositive;
+      chiefClosingVoteStr = loc.alertedUserVotePositive;
     } else if (alertWithInfo.chiefClosingVote < 0) {
       if (alertWithInfo.chiefClosingVote <= -100) {
-        chiefClosingVote = loc.alertedUserVotePunitive;
+        chiefClosingVoteStr = loc.alertedUserVotePunitive;
       } else {
-        chiefClosingVote = loc.alertedUserVoteNegative;
+        chiefClosingVoteStr = loc.alertedUserVoteNegative;
       }
     } else {
-      chiefClosingVote = loc.alertedUserVoteNeutral;
+      chiefClosingVoteStr = loc.alertedUserVoteNeutral;
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +375,9 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         Divider(height: 40, thickness: 1),
         buildSectionTitle(loc.sectionUsers),
         Text('${loc.alertSender}: $senderName'),
-        if (authClient.isChief())
+        // if the user is a chief or admin, show a link to view all sender details
+        // (note: any chief or admin can view sender details, not only the chief manager of the alert)
+        if (authClient.isChief() || authClient.isAdmin())
           InkWell(
             onTap: () {
               _showSenderInfo(context, alertWithInfo.sender);
@@ -384,6 +391,9 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             ),
           ),
         Text(
+          '${loc.userReliabilityScore}: ${alertWithInfo.senderReliabilityScore}',
+        ),
+        Text(
           chiefIsAlerted
               ? '${loc.alertChief}: $chiefName'
               : '${loc.alertChief}: N/A',
@@ -391,9 +401,12 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         SizedBox(height: 20),
         if (!alertIsGeneral)
           Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
+        // if the alert is not general, and there are alerted users,
+        // and the user is a chief or admin, show a link to view all alerted users
+        // (note: any chief or admin can view alerted users, not only the chief manager of the alert)
         if (!alertIsGeneral &&
             (alertWithInfo.alertedUsersNum > 0) &&
-            authClient.isChief())
+            (authClient.isChief() || authClient.isAdmin()))
           InkWell(
             onTap: () {
               _viewAlertedUsersPage(context, alertWithInfo.alert.id);
@@ -442,6 +455,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           ],
         ),
         SizedBox(height: 20),
+        // Only the chief alert manager can extend an alert
         if (alertWithInfo.userIsManager)
           InkWell(
             onTap: () {
@@ -455,12 +469,16 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
+        // If the alert is closed, show the chief closing vote
+        if (alertWithInfo.alert.status == AlertStatus.closed.name)
+          Text('${loc.alertedUserClosingVote}: $chiefClosingVoteStr'),
+        // If the user is alerted, show their vote and buttons to vote
         if (alertWithInfo.userIsAlerted) Divider(height: 40, thickness: 1),
         if (alertWithInfo.userIsAlerted)
           buildSectionTitle(loc.sectionAlertVote),
-        // buttons for voting
         if (alertWithInfo.userIsAlerted)
-          Text('${loc.alertedUserMyVote}: $myVote'),
+          Text('${loc.alertedUserMyVote}: ${myVoteStr.toLowerCase()}'),
+        if (alertWithInfo.userIsAlerted) SizedBox(height: 10),
         if (alertWithInfo.userIsAlerted)
           Row(
             children: [
@@ -486,12 +504,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ],
           ),
+        // If the user is a chief manager, show buttons to do a closing vote and close the alert
         if (alertWithInfo.userIsManager) Divider(height: 40, thickness: 1),
         if (alertWithInfo.userIsManager)
           buildSectionTitle(loc.sectionAlertClosing),
-        if (alertWithInfo.userIsManager &&
-            (alertWithInfo.alert.status == AlertStatus.closed.name))
-          Text('${loc.alertedUserClosingVote}: $chiefClosingVote'),
         if (alertWithInfo.userIsManager)
           Row(
             children: [

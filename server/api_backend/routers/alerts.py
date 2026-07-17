@@ -7,13 +7,14 @@ from fastapi import (
     APIRouter, Depends, 
     HTTPException, 
     Request, BackgroundTasks)
-from dependencies import (get_current_user, 
-            get_db_session, get_redis_session, 
-            get_geoposition_token_data,
-        )
 from sqlmodel import Session, desc, asc, select, union_all
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
+from dependencies import (
+    get_current_user, 
+    get_db_session, get_redis_session, 
+    get_geoposition_token_data,
+)
 from core.exceptions import (
     forbidden_exception,
     not_found_exception
@@ -23,16 +24,17 @@ from core.dbmgr import (
     get_redis_chief_locations_key, 
     get_redis_user_locations_key, 
     get_redis_location_last_updates_key,
-    get_redis_chief_demotions_key)
+    get_redis_chief_demotions_key
+)
 from models.general import (
-    User, UserOut,
-    Alert, AlertType, AlertIn, 
-    AlertOut, AlertOutWithInfo, AlertedUserWithInfo,
-    AlertedUser, Message,
-    GpsCoordinatesSchema, GpsTokenData
-    )
+    User, Alert, AlertOut, 
+    AlertType, AlertIn, AlertOutWithInfo, 
+    AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
+    Message, GpsCoordinatesSchema, GpsTokenData
+)
 from services.security import (
-    now_tz_naive, now_tz_aware)
+    now_tz_naive, now_tz_aware
+)
 from services.alert_btasks import (
     task_alert_search_and_notify
 )
@@ -111,7 +113,7 @@ def create_alert(alert_in: AlertIn,
         # No need to search for chiefs or users to notify for this type of alert
         return {"message": f"{alert.type.capitalize()} alert created, no need to search for nearby users or chiefs to notify"}
     # For managed alerts, we need to search for nearby users and notify them
-    # For local alerts, we need to search for nearby chiefs and users and notify them
+    # For local alerts, we need to search for the closest chief and nearby users and notify them
     # so... we must go on with the search and notification process, but we do it in background to avoid making the current user wait for it
     alert_copy = Alert.model_validate(alert)
     curr_user_copy = User.model_validate(current_user)
@@ -150,12 +152,12 @@ def get_recent_alerts(current_user: User = Depends(get_current_user),
             alert.description = "[BANNED ALERT]"
     return alerts
 
-# API endpoint used by all users to view general details of a specific alert, 
-# for example: description, gps location, sender name and reliability score, number of alerted users
 @router.get("/api/alerts/{alert_id}", response_model=AlertOutWithInfo)
 def get_alert(alert_id: int,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
+    # API endpoint used by clients to view general details about an alert, 
+    # for example: description, gps location, sender name and reliability score, etc.
     statement = (select(Alert, User)
         .join(User, Alert.user_id == User.id) # type: ignore
         .where(Alert.id == alert_id))   
@@ -223,6 +225,11 @@ def get_alert(alert_id: int,
             chief = db_session.exec(select(User).where(User.id == chief_id)).first()
     alert_with_info = {
         "alert": alert,
+        # We return the complete sender object only 
+        # if the caller (current_user) is a chief or an admin, 
+        # otherwise we return None for the sender object.
+        # In other words: any chief or admin can view personal info about the alert sender
+        # (not only the chief alert manager, but any chief or admin)
         "sender": sender if current_user_has_high_priv else None,
         "sender_firstname": sender.firstname,
         "sender_surname": sender.surname,
@@ -241,14 +248,15 @@ def get_alert(alert_id: int,
     }
     return alert_with_info
 
-# API endpoint used by chiefs to list all alerted users related to a specific alert,
-# so they can see their personal info and their votes about the alert
-@router.get("/api/alerts/{alert_id}/alerted-users", response_model=list[AlertedUserWithInfo])
+@router.get("/api/alerts/{alert_id}/alerted-users", response_model=AlertedUserJoinedPaginated)
 def get_alerted_users(alert_id: int,
                 offset: int = 0,
                 limit: int = 100,
                 current_user: User = Depends(get_current_user), 
                 db_session: Session = Depends(get_db_session)):
+    # API endpoint used by chiefs to list all alerted users related to a specific alert,
+    # so they can see their personal info and their votes about the alert
+    # Any chief or admin can see the list of alerted users with their info (not only the chief alert manager)
     if (not current_user.is_admin) and (not current_user.is_chief):
         raise forbidden_exception()
     if offset < 0:
@@ -261,23 +269,30 @@ def get_alerted_users(alert_id: int,
     statement = statement.order_by(asc(AlertedUser.distance))
     statement = statement.offset(offset).limit(limit)
     results = db_session.exec(statement).all()
-    output_users = []
+    out_alerted_users = []
     for r in results:
         user = r[0]
         alerted_user = r[1]
-        output_user = AlertedUserWithInfo(
+        joined_user = AlertedUserJoined(
             user=user,
+            alert_id=alert_id,
             distance=alerted_user.distance,
             is_manager=alerted_user.is_manager,
             vote=alerted_user.vote,
             closing_vote=alerted_user.closing_vote
         )
-        output_users.append(output_user)
-    return output_users
+        out_alerted_users.append(joined_user)
+    if len(out_alerted_users) == limit:
+        next_cursor = offset + limit
+    else:
+        next_cursor = None
+    return {
+        "alerted_users": out_alerted_users, 
+        "next_cursor": next_cursor
+    }
 
 @router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,
-            request: Request,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_chief):
@@ -285,6 +300,9 @@ def close_alert(alert_id: int,
     alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
     if alert is None:
         raise not_found_exception("Alert not found")
+    if alert.is_closed:
+        return {"message": "Alert already closed"}
+    # todo: only the chief alert manager can close an alert, not any other chief or admin
     alert.is_closed = True
     db_session.add(alert)
     db_session.commit()
