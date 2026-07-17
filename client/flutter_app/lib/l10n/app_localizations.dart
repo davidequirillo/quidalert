@@ -143,6 +143,12 @@ abstract class AppLocalizations {
   /// **'Chief'**
   String get alertChief;
 
+  /// No description provided for @alertManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get alertManager;
+
   /// No description provided for @alertDescription.
   ///
   /// In en, this message translates to:
@@ -1378,6 +1384,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get userStatus;
+
+  /// No description provided for @userStatusOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ok'**
+  String get userStatusOk;
+
+  /// No description provided for @userStatusUnreliable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreliable'**
+  String get userStatusUnreliable;
+
+  /// No description provided for @userStatusBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get userStatusBlocked;
 
   /// No description provided for @userLastRefreshAt.
   ///

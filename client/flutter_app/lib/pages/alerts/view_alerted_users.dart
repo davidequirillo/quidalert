@@ -1,5 +1,5 @@
 // Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
-// Copyright (C) 2025  Davide Quirillo
+// Copyright (C) 2026  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 //
 // Additional permission under GNU GPL version 3 section 7:
@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
@@ -53,6 +54,9 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
+        debugPrintC(
+          "Reached bottom of the list, loading more alerted users...",
+        );
         _loadPage();
       }
     });
@@ -77,28 +81,42 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
 
   Future<void> _showUserDetails(AlertedUser alertedUser) async {
     final loc = AppLocalizations.of(context)!;
-    String userDetailsStr =
-        "${alertedUser.user.firstname} ${alertedUser.user.surname}\n${alertedUser.user.email}";
-    userDetailsStr += "\n";
-    userDetailsStr += "\n${loc.userBirthdate}: ${alertedUser.user.birthDate}";
+    String userDetailsStr = alertedUser.user.email;
     userDetailsStr += "\n${loc.userPhoneNumber}: ${alertedUser.user.phone}";
     userDetailsStr += "\n";
-    userDetailsStr += "\n${alertedUser.user.street}";
-    userDetailsStr +=
-        "\n${alertedUser.user.postalCode}, ${alertedUser.user.city}";
-    userDetailsStr += "\n${alertedUser.user.province}";
-    userDetailsStr += "\n${alertedUser.user.country}";
+    if (alertedUser.user.street.isNotEmpty) {
+      userDetailsStr += "\n${alertedUser.user.street}";
+    }
+    if (alertedUser.user.postalCode.isNotEmpty) {
+      userDetailsStr += "\n${alertedUser.user.postalCode}, ";
+    }
+    if (alertedUser.user.city.isNotEmpty) {
+      userDetailsStr += "${alertedUser.user.city}, ";
+    }
+    if (alertedUser.user.province.isNotEmpty) {
+      userDetailsStr += alertedUser.user.province;
+    }
+    if (alertedUser.user.country.isNotEmpty) {
+      userDetailsStr += "\n${alertedUser.user.country}";
+    }
     userDetailsStr += "\n";
+    userDetailsStr += "\n${loc.userType}: ${alertedUser.user.type}";
     userDetailsStr += "\n${loc.userStatus}: ${alertedUser.user.status}";
     userDetailsStr +=
         "\n${loc.userReliabilityScore}: ${alertedUser.user.reliabilityScore}";
     userDetailsStr += "\n";
+    userDetailsStr += "\n${loc.userBirthdate}: ${alertedUser.user.birthDate}";
     userDetailsStr += "\n${loc.userRole}: ${alertedUser.user.role}";
     if (!context.mounted) return;
-    showSimpleAlertDialog(context, loc.labelDetails, userDetailsStr);
+    showSimpleAlertDialog(
+      context,
+      "${alertedUser.user.firstname} ${alertedUser.user.surname}",
+      userDetailsStr,
+    );
   }
 
   Future<List<AlertedUser>> _getAlertedUsers() async {
+    debugPrintC("Fetching alerted users from the server...");
     final authClient = context.read<AuthClient>();
     final id = ModalRoute.of(context)!.settings.arguments as String;
     final String offsetStr = (_currentCursor != null)
@@ -115,6 +133,7 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
     final alertedUsers = (respObj['alerted_users'] as List)
         .map((userJson) => AlertedUser.fromJson(userJson))
         .toList();
+    _currentCursor = respObj['next_cursor'] as int?;
     return alertedUsers;
   }
 
@@ -209,13 +228,16 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
   Widget buildAlertedUserTile(AlertedUser alertedUser) {
     final loc = AppLocalizations.of(context)!;
     String name = "${alertedUser.user.firstname} ${alertedUser.user.surname}";
-    if (alertedUser.isManager) {
-      name = "$name (${loc.alertChief})";
-    }
     String voteStr = "";
     voteStr = "${loc.alertedUserVote}: ${alertedUser.vote}";
     if (alertedUser.isManager) {
       voteStr += ", ${loc.alertedUserClosingVote}: ${alertedUser.closingVote}";
+    }
+    String distanceStr;
+    if (alertedUser.isManager) {
+      distanceStr = loc.alertManager;
+    } else {
+      distanceStr = "${alertedUser.distance.toStringAsFixed(3)} km";
     }
     return ListTile(
       title: Text(name),
@@ -227,7 +249,7 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
         ],
       ),
       leading: Icon(Icons.person),
-      trailing: Text("${alertedUser.distance.toStringAsFixed(3)} km"),
+      trailing: Text(distanceStr),
       onTap: () => {_showUserDetails(alertedUser)},
     );
   }

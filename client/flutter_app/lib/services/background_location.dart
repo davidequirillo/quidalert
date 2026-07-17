@@ -1,5 +1,5 @@
 // Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
-// Copyright (C) 2025  Davide Quirillo
+// Copyright (C) 2026  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 //
 // Additional permission under GNU GPL version 3 section 7:
@@ -229,7 +229,7 @@ class BackgroundLocationService {
       desiredAccuracy:
           10, // 10 meters accuracy for foreground location fetches, since it's used for user-initiated actions that require more precision
       maximumAge:
-          15000, // if a cached location is available and is not older than 15 seconds, it will be returned
+          15000, // (in milliseconds) if a cached location is available and is not older than 15 seconds, it will be returned
       timeout: 60, // Max time (in seconds) to wait for a location fix
       extras: {"reason": "foreground location"},
     );

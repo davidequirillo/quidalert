@@ -8,6 +8,7 @@
   "addressCountry": "Country",
   "alertSender": "Sender",
   "alertChief": "Chief",
+  "alertManager": "Manager",
   "alertDescription": "Description",
   "alertInvolvedUsers": "Alerted users",
   "alertAlertedUsers": "Alerted users",

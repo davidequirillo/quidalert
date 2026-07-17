@@ -33,6 +33,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertChief => 'Capo';
 
   @override
+  String get alertManager => 'Manager';
+
+  @override
   String get alertDescription => 'Descrizione';
 
   @override
@@ -649,6 +652,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get userStatus => 'Status';
+
+  @override
+  String get userStatusOk => 'Ok';
+
+  @override
+  String get userStatusUnreliable => 'Inaffidabile';
+
+  @override
+  String get userStatusBlocked => 'Bloccato';
 
   @override
   String get userLastRefreshAt => 'Data dell\'ultima refresh';

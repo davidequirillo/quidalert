@@ -1,5 +1,5 @@
 // Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
-// Copyright (C) 2025  Davide Quirillo
+// Copyright (C) 2026  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 //
 // Additional permission under GNU GPL version 3 section 7:
@@ -85,9 +85,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     final loc = AppLocalizations.of(context)!;
     final String? address;
     if ((alert.address != null) && (alert.address!.isNotEmpty)) {
+      debugPrintC("Using address coming from backend for alert ${alert.id}");
       address = alert.address;
     } else {
       final locationClient = context.read<LocationClient>();
+      debugPrintC("Translating coordinates to address for alert ${alert.id}");
       address = await locationClient.translateToAddress(
         alert.latitude,
         alert.longitude,
@@ -130,23 +132,37 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     if (sender == null) {
       return;
     }
-    String senderDetailsStr =
-        "${sender.firstname} ${sender.surname}\n${sender.email}";
-    senderDetailsStr += "\n";
-    senderDetailsStr += "\n${loc.userBirthdate}: ${sender.birthDate}";
+    String senderDetailsStr = sender.email;
     senderDetailsStr += "\n${loc.userPhoneNumber}: ${sender.phone}";
     senderDetailsStr += "\n";
-    senderDetailsStr += "\n${sender.street}";
-    senderDetailsStr += "\n${sender.postalCode}, ${sender.city}";
-    senderDetailsStr += "\n${sender.province}";
-    senderDetailsStr += "\n${sender.country}";
+    if (sender.street.isNotEmpty) {
+      senderDetailsStr += "\n${sender.street}";
+    }
+    if (sender.postalCode.isNotEmpty) {
+      senderDetailsStr += "\n${sender.postalCode}, ";
+    }
+    if (sender.city.isNotEmpty) {
+      senderDetailsStr += "${sender.city}, ";
+    }
+    if (sender.province.isNotEmpty) {
+      senderDetailsStr += sender.province;
+    }
+    if (sender.country.isNotEmpty) {
+      senderDetailsStr += "\n${sender.country}";
+    }
     senderDetailsStr += "\n";
+    senderDetailsStr += "\n${loc.userType}: ${sender.type}";
     senderDetailsStr += "\n${loc.userStatus}: ${sender.status}";
     senderDetailsStr += "\n${loc.userReliability}: ${sender.reliabilityScore}";
     senderDetailsStr += "\n";
+    senderDetailsStr += "\n${loc.userBirthdate}: ${sender.birthDate}";
     senderDetailsStr += "\n${loc.userRole}: ${sender.role}";
     if (!context.mounted) return;
-    showSimpleAlertDialog(context, loc.labelDetails, senderDetailsStr);
+    showSimpleAlertDialog(
+      context,
+      "${sender.firstname} ${sender.surname}",
+      senderDetailsStr,
+    );
   }
 
   void _viewAlertedUsersPage(BuildContext context, int alertId) {
@@ -181,10 +197,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     final loc = AppLocalizations.of(context)!;
     final id = ModalRoute.of(context)!.settings.arguments as String;
     if (alertWithInfo != null) {
-      debugPrintC("Using cached alert details for id: $id");
+      debugPrintC("Using cached alert details for alert $id");
       return scrollableAlertDetails(context, alertWithInfo!);
     } else {
-      debugPrintC("Fetching alert details for id: $id");
+      debugPrintC("Fetching alert details for alert $id");
       return FutureBuilder<AlertWithInfo>(
         future: _getAlertDetails(context, id),
         builder: (context, snapshot) {
@@ -254,35 +270,41 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     String senderName =
         "${alertWithInfo.senderFirstname} ${alertWithInfo.senderSurname}";
     if (!alertIsLocal) {
-      senderName += " (${loc.alertChief})";
+      senderName += " (${loc.alertManager.toLowerCase()})";
     }
     if (alertWithInfo.userIsSender) {
-      senderName += " (${loc.alertYou})";
+      senderName += " (${loc.alertYou.toLowerCase()})";
     }
     String chiefName =
         "${alertWithInfo.chiefFirstname} ${alertWithInfo.chiefSurname}";
     if (alertWithInfo.userIsManager) {
-      chiefName += " (${loc.alertYou})";
+      chiefName += " (${loc.alertYou.toLowerCase()})";
     }
     final String myVoteStr;
     if (alertWithInfo.userVote > 0) {
-      myVoteStr = loc.alertedUserVotePositive;
+      myVoteStr =
+          "+${alertWithInfo.userVote.abs()} (${loc.alertedUserVotePositive})";
     } else if (alertWithInfo.userVote < 0) {
-      myVoteStr = loc.alertedUserVoteNegative;
+      myVoteStr =
+          "-${alertWithInfo.userVote.abs()} (${loc.alertedUserVoteNegative})";
     } else {
-      myVoteStr = loc.alertedUserYouHaveNotVoted;
+      myVoteStr =
+          "0 (${loc.alertedUserVoteNeutral}, ${loc.alertedUserYouHaveNotVoted})";
     }
     final String chiefClosingVoteStr;
     if (alertWithInfo.chiefClosingVote > 0) {
-      chiefClosingVoteStr = loc.alertedUserVotePositive;
+      chiefClosingVoteStr =
+          "+${alertWithInfo.chiefClosingVote.abs()} (${loc.alertedUserVotePositive})";
     } else if (alertWithInfo.chiefClosingVote < 0) {
       if (alertWithInfo.chiefClosingVote <= -100) {
-        chiefClosingVoteStr = loc.alertedUserVotePunitive;
+        chiefClosingVoteStr =
+            "-${alertWithInfo.chiefClosingVote.abs()} (${loc.alertedUserVotePunitive})";
       } else {
-        chiefClosingVoteStr = loc.alertedUserVoteNegative;
+        chiefClosingVoteStr =
+            "-${alertWithInfo.chiefClosingVote.abs()} (${loc.alertedUserVoteNegative})";
       }
     } else {
-      chiefClosingVoteStr = loc.alertedUserVoteNeutral;
+      chiefClosingVoteStr = "0 (${loc.alertedUserVoteNeutral})";
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,14 +412,16 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
-        Text(
-          '${loc.userReliabilityScore}: ${alertWithInfo.senderReliabilityScore}',
-        ),
-        Text(
-          chiefIsAlerted
-              ? '${loc.alertChief}: $chiefName'
-              : '${loc.alertChief}: N/A',
-        ),
+        if (alertIsLocal)
+          Text(
+            '${loc.userReliabilityScore}: ${alertWithInfo.senderReliabilityScore}',
+          ),
+        if (alertIsLocal)
+          Text(
+            chiefIsAlerted
+                ? '${loc.alertChief} ${loc.alertManager.toLowerCase()}: $chiefName'
+                : '${loc.alertChief} ${loc.alertManager.toLowerCase()}: N/A',
+          ),
         SizedBox(height: 20),
         if (!alertIsGeneral)
           Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
@@ -471,7 +495,9 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           ),
         // If the alert is closed, show the chief closing vote
         if (alertWithInfo.alert.status == AlertStatus.closed.name)
-          Text('${loc.alertedUserClosingVote}: $chiefClosingVoteStr'),
+          Text(
+            '${loc.alertedUserClosingVote}: ${chiefClosingVoteStr.toLowerCase()}',
+          ),
         // If the user is alerted, show their vote and buttons to vote
         if (alertWithInfo.userIsAlerted) Divider(height: 40, thickness: 1),
         if (alertWithInfo.userIsAlerted)

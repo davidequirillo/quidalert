@@ -1,5 +1,5 @@
 // Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
-// Copyright (C) 2025  Davide Quirillo
+// Copyright (C) 2026  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 //
 // Additional permission under GNU GPL version 3 section 7:
@@ -22,7 +22,10 @@ Future<void> showGotoIfAlertDialog(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
-      content: SingleChildScrollView(child: Text(content)),
+      content: Scrollbar(
+        thumbVisibility: true,
+        child: SingleChildScrollView(child: Text(content)),
+      ),
       actions: [
         TextButton(
           onPressed: () {
@@ -49,7 +52,10 @@ Future<void> showSimpleAlertDialog(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
-      content: SingleChildScrollView(child: Text(content)),
+      content: Scrollbar(
+        thumbVisibility: true,
+        child: SingleChildScrollView(child: Text(content)),
+      ),
       actions: [
         TextButton(
           onPressed: () {
@@ -71,7 +77,10 @@ Future<bool?> showTwoWayAlertDialog(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(title),
-      content: SingleChildScrollView(child: Text(content)),
+      content: Scrollbar(
+        thumbVisibility: true,
+        child: SingleChildScrollView(child: Text(content)),
+      ),
       actions: [
         TextButton(
           onPressed: () {
