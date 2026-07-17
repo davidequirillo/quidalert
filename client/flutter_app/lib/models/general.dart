@@ -443,37 +443,42 @@ class AlertWithInfo {
   }
 }
 
-class AlertedUserWithInfo {
+class AlertedUser {
+  // Note: the related backend model is "AlertedUserJoined"
   final User user;
+  final int alertId;
   final double distance; // in kilometers
   final bool isManager;
   final int vote;
   final int closingVote;
 
-  AlertedUserWithInfo({
+  AlertedUser({
     required this.user,
+    required this.alertId,
     required this.distance,
     required this.isManager,
     required this.vote,
     required this.closingVote,
   });
 
-  factory AlertedUserWithInfo.fromJson(Map<String, dynamic> json) {
+  factory AlertedUser.fromJson(Map<String, dynamic> json) {
     try {
       final user = User.fromJson(json['user']);
+      final alertId = json['alert_id'];
       final distance = json['distance'];
       final isManager = json['is_manager'];
       final vote = json['vote'];
       final closingVote = json['closing_vote'];
-      return AlertedUserWithInfo(
+      return AlertedUser(
         user: user,
+        alertId: alertId,
         distance: distance,
         isManager: isManager,
         vote: vote,
         closingVote: closingVote,
       );
     } catch (e) {
-      debugPrintC("Error parsing AlertedUserWithInfo from JSON: $e");
+      debugPrintC("Error parsing AlertedUser from JSON: $e");
       throw FromJsonObjException();
     }
   }

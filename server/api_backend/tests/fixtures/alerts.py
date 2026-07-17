@@ -257,7 +257,7 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             continue # generale alerts have no alerted users
         if (alert.type == AlertType.empty.value):
             continue # empty alerts have no alerted users
-        for i in range(0, 10):
+        for i in range(0, 15):
             user_candidate = user_candidates[i % len(user_candidates)]
             alerted_user = AlertedUser(
                 alert_id=alert.id,

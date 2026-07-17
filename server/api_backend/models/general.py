@@ -540,9 +540,16 @@ class AlertOutWithInfo(BaseModel):
     user_is_manager: bool
     user_vote: int
 
-class AlertedUserWithInfo(BaseModel):
+class AlertedUserJoined(BaseModel):
+    # This model is used to return the alerted users 
+    # joined with their related user info
     user: UserOut
-    distance: float # in kilometers
+    alert_id: int
+    distance: float # distance from the alert center in kilometers
     is_manager: bool
     vote: int
     closing_vote: int
+
+class AlertedUserJoinedPaginated(BaseModel):
+    alerted_users: List[AlertedUserJoined]
+    next_cursor: Optional[int] = None

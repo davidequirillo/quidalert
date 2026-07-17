@@ -79,7 +79,9 @@ def test_get_alerted_users_alert_not_exists(client, db_session, test_chief):
         f"/api/alerts/{alert_id}/alerted-users", headers={"Authorization": f"Bearer {access_token}"})
     # The response is 200 because the endpoint returns an empty list of alerted users if the alert does not exist
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == []
+    response_data = response.json()
+    assert response_data["alerted_users"] == []
+    assert response_data["next_cursor"] is None
 
 def test_get_alerted_users_of_local_or_managed_alert(client, db_session, test_chief):
     chief: User = test_chief['user']
@@ -111,9 +113,10 @@ def test_get_alerted_users_of_local_or_managed_alert(client, db_session, test_ch
     response = client.get(
         f"/api/alerts/{alert_id}/alerted-users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    resp_users = response.json()
-    for au in resp_users:
+    resp_data = response.json()
+    for au in resp_data["alerted_users"]:
         user_id = str(au["user"]["id"])
+        assert au["alert_id"] == alert_id
         assert "password" not in au["user"], "password should not be present in the alerted user data"
         assert "password_hash" not in au["user"], "password_hash should not be present in the alerted user data"
         assert "activation_code" not in au["user"], "activation_code should not be present in the alerted user data"
@@ -124,6 +127,9 @@ def test_get_alerted_users_of_local_or_managed_alert(client, db_session, test_ch
         assert au["closing_vote"] == votes_map[user_id].closing_vote, f"Closing vote for user {user_id} mismatch"
         assert au["is_manager"] == votes_map[user_id].is_manager, f"is_manager for user {user_id} mismatch"
         assert au["distance"] == votes_map[user_id].distance, f"Distance for user {user_id} mismatch"
+    # Next cursor should be None, because we are returning all alerted users for the alert, in a single page 
+    # (the default limit is 100, and we have less than 100 alerted users for the alert)
+    assert resp_data["next_cursor"] is None
 
 def test_get_alerted_users_type_general_or_empty_success(client, db_session, test_chief):
     chief: User = test_chief['user']
@@ -145,9 +151,10 @@ def test_get_alerted_users_type_general_or_empty_success(client, db_session, tes
     response = client.get(
         f"/api/alerts/{alert_id}/alerted-users", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
-    resp_users = response.json()
+    resp_data = response.json()
     # The list returned should be empty for general or empty alerts
-    assert len(resp_users) == 0
+    assert resp_data["alerted_users"] == []
+    assert resp_data["next_cursor"] is None
 
 def test_get_alerted_users_success_called_by_admin(client, db_session, test_admin):
     admin: User = test_admin['user']
@@ -166,3 +173,65 @@ def test_get_alerted_users_success_called_by_admin(client, db_session, test_admi
         f"/api/alerts/{alert_id}/alerted-users", headers={"Authorization": f"Bearer {access_token}"})
     # We check only the successful response, because the logic of the endpoint is already tested in the previous tests
     assert response.status_code == status.HTTP_200_OK
+
+def test_get_alerted_users_success_paginated(client, db_session, test_chief):
+    chief: User = test_chief['user']
+    assert chief is not None
+    access_token = test_chief['access_token']
+    statement = select(Alert).where(Alert.type == AlertType.local.value)
+    # We take a random local alert from the test database
+    alerts = db_session.exec(statement).all()
+    alerts_num = len(alerts)
+    assert alerts_num > 0
+    alert = random.choice(alerts)
+    assert alert is not None
+    # We call the endpoint to get the alerted users with pagination
+    alert_id = alert.id
+    # The default limit is 100, but we can set a lower allowed limit to test pagination
+    limit = 10
+    offset = 0
+    response = client.get(
+        f"/api/alerts/{alert_id}/alerted-users?limit={limit}&offset={offset}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    # The list returned is the first page, and it should have at most 'limit' number of alerted users
+    assert len(resp_data["alerted_users"]) <= limit
+    if len(resp_data["alerted_users"]) == limit:
+        assert resp_data["next_cursor"] == offset + limit
+        # If we recall the endpoint with offset+limit, we should get the next page of alerted users (the second page)
+        response = client.get(
+            f"/api/alerts/{alert_id}/alerted-users?limit={limit}&offset={offset+limit}", headers={"Authorization": f"Bearer {access_token}"})
+        assert response.status_code == status.HTTP_200_OK
+        resp_data = response.json()
+        # The list returned should have at most 'limit' number of alerted users
+        # and the next_cursor should be None because there are no more alerted users beyond the second page
+        # (see setup_alerts_data_and_teardown fixture, which creates 15 alerted users for each local alert, 
+        # plus sometimes an additional alerted user, so maximum two pages if the page limit is 10)
+        assert len(resp_data["alerted_users"]) <= limit
+        assert resp_data["next_cursor"] is None
+    else:
+        assert resp_data["next_cursor"] is None
+
+def test_get_alerted_users_success_paginated_offset_too_far(client, db_session, test_chief):
+    chief: User = test_chief['user']
+    assert chief is not None
+    access_token = test_chief['access_token']
+    statement = select(Alert).where(Alert.type == AlertType.local.value)
+    # We take a random local alert from the test database
+    alerts = db_session.exec(statement).all()
+    alerts_num = len(alerts)
+    assert alerts_num > 0
+    alert = random.choice(alerts)
+    assert alert is not None
+    # We call the endpoint to get the alerted users with pagination, but with an offset that is too far
+    # (see setup_alerts_data_and_teardown fixture, which creates 15 or 16 alerted users for each local alert)
+    alert_id = alert.id
+    limit = 10
+    offset = 1000
+    response = client.get(
+        f"/api/alerts/{alert_id}/alerted-users?limit={limit}&offset={offset}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    # The list returned should be empty because the offset is beyond the number of alerted users for the alert
+    assert len(resp_data["alerted_users"]) == 0
+    assert resp_data["next_cursor"] is None
