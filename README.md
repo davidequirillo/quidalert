@@ -61,7 +61,7 @@ User personal data, during registration and use of the software, will be collect
 ## ⚖️ License & Commercial Dependencies
 
 This project is licensed under the **GNU GPL v3** with a specific exception for hardware-optimized location tracking. See the LICENSE file for details.  
-Copyright (C) 2025 Davide Quirillo
+Copyright (C) 2025-2026 Davide Quirillo
 
 ### The "Flutter Background Geolocation" Exception
 This application utilizes the [flutter_background_geolocation](https://github.com/transistorsoft/flutter-background-geolocation) plugin by Transistor Software. 
