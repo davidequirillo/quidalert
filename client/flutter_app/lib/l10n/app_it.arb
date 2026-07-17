@@ -8,6 +8,7 @@
   "addressCountry": "Nazione",
   "alertSender": "Mittente",
   "alertChief": "Capo",
+  "alertManager": "Manager",
   "alertDescription": "Descrizione",
   "alertInvolvedUsers": "Utenti allertati",
   "alertAlertedUsers": "Utenti allertati",

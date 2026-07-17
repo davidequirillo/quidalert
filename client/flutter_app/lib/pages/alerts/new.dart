@@ -1,5 +1,5 @@
 // Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
-// Copyright (C) 2025  Davide Quirillo
+// Copyright (C) 2025-2026  Davide Quirillo
 // Licensed under the GNU GPL v3 or later. See LICENSE for details.
 //
 // Additional permission under GNU GPL version 3 section 7:
@@ -90,8 +90,13 @@ class _NewAlertBodyState extends State<NewAlertBody> {
           final latitude = double.tryParse(coordsArray[0].trim());
           final longitude = double.tryParse(coordsArray[1].trim());
           if (latitude != null && longitude != null) {
+            final address = await locationClient.translateToAddress(
+              latitude,
+              longitude,
+            );
             fields["latitude"] = latitude;
             fields["longitude"] = longitude;
+            fields["address"] = address;
           } else {
             return;
           }

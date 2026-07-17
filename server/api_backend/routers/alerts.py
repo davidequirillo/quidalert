@@ -1,5 +1,5 @@
 # Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
-# Copyright (C) 2025  Davide Quirillo
+# Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import timedelta
@@ -67,10 +67,11 @@ def create_alert(alert_in: AlertIn,
     recent_alerts = db_session.exec(
         select(Alert).where(
             Alert.created_at > (now - timedelta(hours=1)),
-            Alert.latitude > lat_min, # type:ignore
-            Alert.latitude < lat_max, # type:ignore
-            Alert.longitude > long_min, # type:ignore
-            Alert.longitude < long_max # type:ignore
+            Alert.latitude > lat_min,
+            Alert.latitude < lat_max,
+            Alert.longitude > long_min,
+            Alert.longitude < long_max,
+            Alert.is_closed == False
         )
     ).all()
     for rec_alert in recent_alerts:
