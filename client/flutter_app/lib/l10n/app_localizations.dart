@@ -167,6 +167,18 @@ abstract class AppLocalizations {
   /// **'Alerted users'**
   String get alertAlertedUsers;
 
+  /// No description provided for @alertPositiveVotesNum.
+  ///
+  /// In en, this message translates to:
+  /// **'n. confirmation votes'**
+  String get alertPositiveVotesNum;
+
+  /// No description provided for @alertNegativeVotesNum.
+  ///
+  /// In en, this message translates to:
+  /// **'n. denial votes'**
+  String get alertNegativeVotesNum;
+
   /// No description provided for @alertMessages.
   ///
   /// In en, this message translates to:
@@ -298,6 +310,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Punitive'**
   String get alertedUserVotePunitive;
+
+  /// No description provided for @alertedUserVoteNeutralInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'If you want you can still vote to confirm or deny the alert'**
+  String get alertedUserVoteNeutralInfo;
 
   /// No description provided for @alertedUserYouHaveNotVoted.
   ///
@@ -1258,6 +1276,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'General alert created. It\'s visible to all'**
   String get successAlertCreatedGeneral;
+
+  /// No description provided for @successAlertVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Vote sent succesfully'**
+  String get successAlertVote;
 
   /// No description provided for @successDeviceRegisteredForPushNotifications.
   ///
