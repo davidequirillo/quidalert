@@ -1,6 +1,4 @@
-# Advice
-
-## Technical advice
+# Technical advice
 
 - It is recommended to refresh at least once every 6 months to maintain the session, thus avoiding the needing of login, typing email and password.
 
@@ -10,11 +8,10 @@
 
 - To stop the background position tracking process and to not receive any notification anymore, you don't need to uninstall the app, but a "logout" is sufficient. However, doing so, you will no longer be able to receive or send any alerts, until a next eventual "login".
 
-## Advice regarding alerts
+# Advice regarding alerts
 
-- Remember to complete your profile so that chiefs can contact you if necessary, during an alert. Note: Your address, email, phone number, and date of birth will not be visible to regular users, but only to chiefs and users with administrative privileges.
+- Remember to complete your profile so that chiefs can contact you if necessary, during an alert. Note: your address, email, phone number, and date of birth will not be visible to regular users, but only to chiefs and users with administrative privileges.
 
-- To send an alert, you must fill in only the description field. The app uses built-in geopositioning systems to automatically get your location and associate it to the alert. However, for safety and comparison purposes, 
-it's better to give some information about the place where you are, if possible. What the user enters in the form will be visible to all alerted users (chief and nearby users)
+- To send an alert, you must fill in only the description field. The app uses built-in geopositioning systems to automatically get your location and associate it to the alert. However, to address some rare cases of inaccuracy and to make you easier to find, it would be better to give some information about the place where you are, if possible, adding it in the description. What the user enters in the form will be visible to all alerted users (chief and nearby users).
 
 - The user, after sending an alert, will be able to write additional messages in the "messages" section (reachable on alert details page). So, don't worry if you accidentally forget to write something in the "description" field of the alert form. These messages will be visible to all alerted users (chief and nearby users). The alert chief can also post messages in the same section to provide alerted users with any helpful instructions.

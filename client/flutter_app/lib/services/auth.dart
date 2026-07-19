@@ -502,7 +502,7 @@ class AuthClient extends ChangeNotifier {
         throw NotFoundException('Not found');
       } else if (!isExpired &&
           (resp.statusCode < 200 ||
-              ((resp.statusCode >= 300) && (resp.statusCode <= 500)))) {
+              ((resp.statusCode >= 300) && (resp.statusCode < 500)))) {
         final badRequestMsg = respMessage.isNotEmpty
             ? respMessage
             : 'Bad request';

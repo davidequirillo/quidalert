@@ -564,7 +564,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuWhiteList => 'White list per registrazione';
 
   @override
-  String get sectionAlertVote => 'Vote';
+  String get sectionAlertVote => 'Voto';
 
   @override
   String get sectionAlertClosing => 'Chiusura allerta';
