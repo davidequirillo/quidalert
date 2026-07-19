@@ -305,15 +305,15 @@ def do_alerts_cleanup(db_engine):
     log_cleanup_old_alerts_started(detail=f"Starting cleanup of alerts older than {ALERT_TTL_DAYS} days")
     with Session(db_engine) as db_session:
         try:
-            # We close all local open alerts in bulk (that are older than some days)
+            # We close all open alerts in bulk (that are older than some days)
             statement = (update(Alert)
                 .where(Alert.is_closed == False) # type: ignore
                 .where(Alert.created_at < (now - timedelta(days=ALERT_TTSO_DAYS))) # type: ignore
-                .where(Alert.type == AlertType.local) # type: ignore
                 .values(is_closed=True))
             closed_count = db_session.exec(statement).rowcount
-            # We delete very old alerts in bulk, leaving to the dbms the responsibility of handling foreign key constraints and cascading deletions defined (see models/general.py)
-            statement = delete(Alert).where(Alert.created_at < (now - timedelta(days=ALERT_TTL_DAYS))) # type: ignore
+            # We delete very old closed alerts in bulk, leaving to the dbms the responsibility of handling foreign key constraints and cascading deletions defined (see models/general.py)
+            statement = (delete(Alert).where(Alert.created_at < (now - timedelta(days=ALERT_TTL_DAYS))) # type: ignore
+                        .where(Alert.is_closed == True)) # type: ignore
             deleted_count = db_session.exec(statement).rowcount
             db_session.commit()
         except Exception as e:

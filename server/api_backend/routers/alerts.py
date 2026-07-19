@@ -17,7 +17,8 @@ from dependencies import (
 )
 from core.exceptions import (
     forbidden_exception,
-    not_found_exception
+    not_found_exception,
+    invalid_request_exception,
 )
 from core.logging import get_request_info
 from core.dbmgr import (
@@ -30,7 +31,8 @@ from models.general import (
     User, Alert, AlertOut, 
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
-    Message, GpsCoordinatesSchema, GpsTokenData
+    Message, GpsCoordinatesSchema, GpsTokenData,
+    VotingSchema
 )
 from services.security import (
     now_tz_naive, now_tz_aware
@@ -179,8 +181,9 @@ def get_alert(alert_id: int,
         current_user_has_high_priv = False
     current_user_is_the_sender = False
     current_user_is_alerted = False
+    current_user_is_the_manager = False
     current_user_vote = 0
-    chief_id = None
+    alerted_manager_id = None
     chief = None
     chief_closing_vote = 0
     alerted_users_num = 0
@@ -195,7 +198,7 @@ def get_alert(alert_id: int,
             current_user_is_alerted = True
             current_user_vote = au.vote
         if au.is_manager:
-            chief_id = au.user_id
+            alerted_manager_id = au.user_id
             chief_closing_vote = au.closing_vote
         if au.vote > 0:
             votes_up_num += 1
@@ -221,9 +224,13 @@ def get_alert(alert_id: int,
     messages_num = len(message_ids)
     if alert.type != AlertType.local.value:
         chief = sender
+        if current_user_is_the_sender:
+            current_user_is_the_manager = True
     else:
-        if chief_id:
-            chief = db_session.exec(select(User).where(User.id == chief_id)).first()
+        if alerted_manager_id:
+            chief = db_session.exec(select(User).where(User.id == alerted_manager_id)).first()
+            if current_user.id == alerted_manager_id:
+                current_user_is_the_manager = True
     alert_with_info = {
         "alert": alert,
         # We return the complete sender object only 
@@ -244,7 +251,7 @@ def get_alert(alert_id: int,
         "messages_num": messages_num,
         "user_is_sender": current_user_is_the_sender,
         "user_is_alerted": current_user_is_alerted,
-        "user_is_manager": (chief_id is not None) and (current_user.id == chief_id),
+        "user_is_manager": current_user_is_the_manager,
         "user_vote": current_user_vote
     }
     return alert_with_info
@@ -291,6 +298,39 @@ def get_alerted_users(alert_id: int,
         "alerted_users": out_alerted_users, 
         "next_cursor": next_cursor
     }
+
+@router.post("/api/alerts/{alert_id}/vote")
+def vote_alert(alert_id: int,
+            vote_schema: VotingSchema,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    # API endpoint used by alerted users to vote on an alert. 
+    # Upvote (+1) to confirm the alert, downvote (-1) to deny the alert. See VoteSchema model
+    vote = vote_schema.vote
+    if (not current_user.is_reliable) or (current_user.reliability_score <= 0):
+        raise forbidden_exception("You are not a reliable user, you can't vote for this alert")
+    # If the current user is not an alerted user for this alert, we can't vote.
+    # Also, if the alert is closed, we can't vote anymore.
+    statement = (select(AlertedUser, Alert)
+        .join(Alert, AlertedUser.alert_id == Alert.id) # type: ignore
+        .where(AlertedUser.alert_id == alert_id, AlertedUser.user_id == current_user.id))
+    result = db_session.exec(statement).first()
+    if not result:
+        raise not_found_exception("Alert not found, or you are not an alerted user for this alert")
+    alerted_user, alert = result
+    if (not alerted_user) or (not alert):
+        raise not_found_exception("Alert not found, or you are not an alerted user for this alert")
+    if alert.type != AlertType.local.value:
+        raise forbidden_exception("You can only vote for local alerts")
+    if alert.is_closed:
+        raise forbidden_exception("Alert is closed, voting is not allowed anymore")
+    # If the alerted user (current_user) has already voted about this alert, we can't update the vote
+    if alerted_user.vote != 0:
+        raise forbidden_exception("You have already voted for this alert, you can't change your vote")
+    alerted_user.vote = vote
+    db_session.add(alerted_user)
+    db_session.commit()
+    return {"message": "Vote registered successfully", "vote": vote}
 
 @router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,

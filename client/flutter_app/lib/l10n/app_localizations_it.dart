@@ -45,6 +45,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertAlertedUsers => 'Utenti allertati';
 
   @override
+  String get alertPositiveVotesNum => 'n. voti di conferma';
+
+  @override
+  String get alertNegativeVotesNum => 'n. voti di smentita';
+
+  @override
   String get alertMessages => 'Messaggi';
 
   @override
@@ -109,6 +115,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get alertedUserVotePunitive => 'Punitivo';
+
+  @override
+  String get alertedUserVoteNeutralInfo => 'Se vuoi puoi ancora votare per confermare o negare l\'allerta';
 
   @override
   String get alertedUserYouHaveNotVoted => 'Non hai votato';
@@ -589,6 +598,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get successAlertCreatedGeneral => 'Allerta generale creata. Essa è visibile a tutti';
+
+  @override
+  String get successAlertVote => 'Voto inviato con successo';
 
   @override
   String get successDeviceRegisteredForPushNotifications => 'Dispositivo registrato per le notifiche push';

@@ -145,7 +145,7 @@ def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session):
     # and all alerts initially are in open status (is_closed=False)
     assert alerts_num > 0
     assert all(not alert.is_closed for alert in alerts)
-    # We set some local alert to be older than ALERT_TTSO_DAYS (to be closed) 
+    # We set some alert to be older than ALERT_TTSO_DAYS (to be closed) 
     # and some alerts to be older than ALERT_TTL_DAYS (to be deleted)
     alerts_to_close_ids = []
     alerts_to_close_num = 0
@@ -161,7 +161,7 @@ def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session):
             alert.is_closed = True
         elif i % 3 == 1:
             alert.created_at = now - timedelta(days=ALERT_TTSO_DAYS + 1)
-            if (alert.type == AlertType.local.value) and (not alert.is_closed):
+            if (not alert.is_closed):
                 alerts_to_close_ids.append(alert.id)
                 alerts_to_close_num += 1
         else:

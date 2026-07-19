@@ -192,6 +192,56 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     return;
   }
 
+  Future<void> _voteAlert(int alertId, int vote) async {
+    String retMessage = "";
+    String retTitle = "";
+    bool newLoginRequired = false;
+    int respVote = 0;
+    final authClient = context.read<AuthClient>();
+    final loc = AppLocalizations.of(context)!;
+    try {
+      final response = await authClient.doProtectedApiRequest(
+        "post",
+        '/alerts/$alertId/vote',
+        body: {"vote": vote},
+      );
+      final Map<String, dynamic>? respObj = json.decode(response.body);
+      if (respObj == null || respObj.isEmpty) {
+        throw NotFoundException();
+      }
+      retTitle = loc.successGeneric;
+      retMessage = loc.successAlertVote;
+      respVote = respObj["vote"];
+    } catch (e) {
+      final exceptionName = e.runtimeType.toString();
+      if (exceptionName == "GenericNotAuthorizedException") {
+        newLoginRequired = true;
+      }
+      final locAttribute = "exception$exceptionName".replaceAll(
+        "Exception",
+        "",
+      );
+      retTitle = loc.errorError;
+      retMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+    } finally {
+      if (mounted) {
+        await showSimpleAlertDialog(context, retTitle, retMessage);
+      }
+      if (newLoginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
+    }
+    if ((alertWithInfo != null) && (respVote != 0)) {
+      setState(() {
+        alertWithInfo!.positiveVotesNum += (respVote > 0) ? 1 : 0;
+        alertWithInfo!.negativeVotesNum += (respVote < 0) ? 1 : 0;
+        alertWithInfo!.userVote = respVote;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -260,6 +310,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     final alertIsGeneral = (alertWithInfo.alert.type == AlertType.general.name)
         ? true
         : false;
+    final alertIsClosed =
+        (alertWithInfo.alert.status == AlertStatus.closed.name) ? true : false;
     final chiefIsAlerted =
         (alertWithInfo.chiefFirstname != null &&
             alertWithInfo.chiefFirstname!.isNotEmpty &&
@@ -425,6 +477,14 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         SizedBox(height: 20),
         if (!alertIsGeneral)
           Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
+        if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
+          Text(
+            '${loc.alertPositiveVotesNum}: ${alertWithInfo.positiveVotesNum}',
+          ),
+        if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
+          Text(
+            '${loc.alertNegativeVotesNum}: ${alertWithInfo.negativeVotesNum}',
+          ),
         // if the alert is not general, and there are alerted users,
         // and the user is a chief or admin, show a link to view all alerted users
         // (note: any chief or admin can view alerted users, not only the chief manager of the alert)
@@ -461,9 +521,12 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                 ),
               ),
             if ((alertWithInfo.messagesNum > 0) &&
-                ((alertWithInfo.userIsSender) || (alertWithInfo.userIsManager)))
+                ((alertWithInfo.userIsSender) ||
+                    (alertWithInfo.userIsManager)) &&
+                alertWithInfo.alert.status != AlertStatus.closed.name)
               SizedBox(width: 20),
-            if ((alertWithInfo.userIsSender) || (alertWithInfo.userIsManager))
+            if ((alertWithInfo.userIsSender || alertWithInfo.userIsManager) &&
+                alertWithInfo.alert.status != AlertStatus.closed.name)
               InkWell(
                 onTap: () {
                   _viewMessagesPage(context, alertWithInfo.alert.id);
@@ -480,7 +543,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         ),
         SizedBox(height: 20),
         // Only the chief alert manager can extend an alert
-        if (alertWithInfo.userIsManager)
+        if (alertWithInfo.userIsManager && !alertIsGeneral && !alertIsClosed)
           InkWell(
             onTap: () {
               _viewExtendAlertPage(context, alertWithInfo.alert.id);
@@ -494,80 +557,90 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             ),
           ),
         // If the alert is closed, show the chief closing vote
-        if (alertWithInfo.alert.status == AlertStatus.closed.name)
+        if (alertIsLocal && alertIsClosed)
           Text(
             '${loc.alertedUserClosingVote}: ${chiefClosingVoteStr.toLowerCase()}',
           ),
         // If the user is alerted, show their vote and buttons to vote
-        if (alertWithInfo.userIsAlerted) Divider(height: 40, thickness: 1),
-        if (alertWithInfo.userIsAlerted)
+        if (alertWithInfo.userIsAlerted && alertIsLocal)
+          Divider(height: 40, thickness: 1),
+        if (alertWithInfo.userIsAlerted && alertIsLocal)
           buildSectionTitle(loc.sectionAlertVote),
-        if (alertWithInfo.userIsAlerted)
+        if ((alertWithInfo.userIsAlerted) && alertIsLocal)
           Text('${loc.alertedUserMyVote}: ${myVoteStr.toLowerCase()}'),
-        if (alertWithInfo.userIsAlerted) SizedBox(height: 10),
-        if (alertWithInfo.userIsAlerted)
+        if (alertWithInfo.userIsAlerted && alertIsLocal && !alertIsClosed)
+          SizedBox(height: 10),
+        if (alertWithInfo.userIsAlerted &&
+            alertIsLocal &&
+            !alertIsClosed &&
+            (alertWithInfo.userVote == 0))
           Row(
             children: [
               ElevatedButton(
                 onPressed: () {
-                  // Handle positive vote
+                  _voteAlert(alertWithInfo.alert.id, 1);
                 },
                 child: Text(loc.buttonVotePositive),
               ),
               SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
-                  // Handle negative vote
+                  _voteAlert(alertWithInfo.alert.id, -1);
                 },
                 child: Text(loc.buttonVoteNegative),
               ),
               SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
-                  // Handle neutral vote
+                  showSimpleAlertDialog(
+                    context,
+                    loc.labelOK,
+                    loc.alertedUserVoteNeutralInfo,
+                  );
                 },
                 child: Text(loc.buttonVoteNeutral),
               ),
             ],
           ),
         // If the user is a chief manager, show buttons to do a closing vote and close the alert
-        if (alertWithInfo.userIsManager) Divider(height: 40, thickness: 1),
-        if (alertWithInfo.userIsManager)
+        if (alertWithInfo.userIsManager && !alertIsClosed)
+          Divider(height: 40, thickness: 1),
+        if (alertWithInfo.userIsManager && !alertIsClosed)
           buildSectionTitle(loc.sectionAlertClosing),
-        if (alertWithInfo.userIsManager)
+        if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
           Row(
             children: [
               ElevatedButton(
                 onPressed: () {
-                  // Handle chief closing vote
+                  // Handle alert closing with positive vote
                 },
                 child: Text(loc.buttonClosingPositive),
               ),
               SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
-                  // Handle chief closing vote
+                  // Handle alert closing with negative vote
                 },
                 child: Text(loc.buttonClosingNegative),
               ),
             ],
           ),
-        if (alertWithInfo.userIsManager) SizedBox(height: 20),
-        if (alertWithInfo.userIsManager)
+        if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 20),
+        if (alertWithInfo.userIsManager && !alertIsClosed)
           ElevatedButton(
             onPressed: () {
-              // Handle close alert
+              // Handle alert closing with neutral vote
             },
             child: Text(loc.buttonClosingNeutral),
           ),
         SizedBox(height: 20),
-        if (alertWithInfo.userIsManager)
+        if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
           Row(
             children: [
               ElevatedButton(
                 onPressed: punitiveCloseUnblocked
                     ? () {
-                        // Handle reopen alert
+                        // Handle alert closing with punitive vote
                       }
                     : null,
                 child: Text(loc.buttonClosingPunitive),

@@ -387,14 +387,14 @@ class AlertWithInfo {
   final String? chiefSurname;
   final int senderReliabilityScore;
   final int alertedUsersNum;
-  final int positiveVotesNum;
-  final int negativeVotesNum;
+  int positiveVotesNum;
+  int negativeVotesNum;
   final int chiefClosingVote;
   final int messagesNum;
   final bool userIsSender;
   final bool userIsAlerted;
   final bool userIsManager;
-  final int userVote;
+  int userVote;
 
   AlertWithInfo({
     required this.alert,

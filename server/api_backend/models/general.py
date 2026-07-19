@@ -553,3 +553,16 @@ class AlertedUserJoined(BaseModel):
 class AlertedUserJoinedPaginated(BaseModel):
     alerted_users: List[AlertedUserJoined]
     next_cursor: Optional[int] = None
+
+class VotingSchema(BaseModel):
+    vote: int = Field(ge=-1, le=+1) # -1 = downvote, +1 = upvote
+
+    @field_validator("vote")
+    @classmethod
+    def validate_vote(cls, v):
+        if v not in [-1, 1]:
+            raise ValueError("Vote must be either -1 (downvote) or +1 (upvote)")
+        return v
+    
+class ClosingSchema(BaseModel):
+    pass
