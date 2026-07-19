@@ -358,13 +358,19 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     } else {
       chiefClosingVoteStr = "0 (${loc.alertedUserVoteNeutral})";
     }
+    final String alertTypeStr = loc.getString(
+      "alertType${alertWithInfo.alert.type[0].toUpperCase()}${alertWithInfo.alert.type.substring(1)}",
+    )!;
+    final String alertStatusStr = loc.getString(
+      "alertStatus${alertWithInfo.alert.status[0].toUpperCase()}${alertWithInfo.alert.status.substring(1)}",
+    )!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildSectionTitle("Alert Info"),
         Text('${loc.labelDatetime}: $createdAt'),
-        Text('${loc.labelType}: ${alertWithInfo.alert.type}'),
-        Text('${loc.labelStatus}: ${alertWithInfo.alert.status}'),
+        Text('${loc.labelType}: ${alertTypeStr.toLowerCase()}'),
+        Text('${loc.labelStatus}: ${alertStatusStr.toLowerCase()}'),
         if (alertWithInfo.alert.status == AlertStatus.pending.name)
           InkWell(
             onTap: () {
