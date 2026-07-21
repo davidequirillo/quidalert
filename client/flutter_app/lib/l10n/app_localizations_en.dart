@@ -660,7 +660,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userType => 'Type';
 
   @override
+  String get userTypeChief => 'Chief';
+
+  @override
+  String get userTypeOfficer => 'Officer';
+
+  @override
+  String get userTypeAdmin => 'Admin';
+
+  @override
+  String get userTypeBase => 'Base';
+
+  @override
   String get userRole => 'Role';
+
+  @override
+  String get userRoleFirefighter => 'Firefighter';
+
+  @override
+  String get userRoleWateroperator => 'Wateroperator';
+
+  @override
+  String get userRoleUsar => 'Usar';
+
+  @override
+  String get userRoleAlpinerescuer => 'Alpinerescuer';
+
+  @override
+  String get userRoleMedic => 'Medic';
+
+  @override
+  String get userRoleMilitary => 'Military';
+
+  @override
+  String get userRolePoliceman => 'Policeman';
+
+  @override
+  String get userRoleVolunteer => 'Volunteer';
+
+  @override
+  String get userRoleCitizen => 'Citizen';
 
   @override
   String get userStatus => 'Status';

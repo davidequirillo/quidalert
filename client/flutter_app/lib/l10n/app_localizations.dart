@@ -1397,11 +1397,89 @@ abstract class AppLocalizations {
   /// **'Type'**
   String get userType;
 
+  /// No description provided for @userTypeChief.
+  ///
+  /// In en, this message translates to:
+  /// **'Chief'**
+  String get userTypeChief;
+
+  /// No description provided for @userTypeOfficer.
+  ///
+  /// In en, this message translates to:
+  /// **'Officer'**
+  String get userTypeOfficer;
+
+  /// No description provided for @userTypeAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin'**
+  String get userTypeAdmin;
+
+  /// No description provided for @userTypeBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base'**
+  String get userTypeBase;
+
   /// No description provided for @userRole.
   ///
   /// In en, this message translates to:
   /// **'Role'**
   String get userRole;
+
+  /// No description provided for @userRoleFirefighter.
+  ///
+  /// In en, this message translates to:
+  /// **'Firefighter'**
+  String get userRoleFirefighter;
+
+  /// No description provided for @userRoleWateroperator.
+  ///
+  /// In en, this message translates to:
+  /// **'Wateroperator'**
+  String get userRoleWateroperator;
+
+  /// No description provided for @userRoleUsar.
+  ///
+  /// In en, this message translates to:
+  /// **'Usar'**
+  String get userRoleUsar;
+
+  /// No description provided for @userRoleAlpinerescuer.
+  ///
+  /// In en, this message translates to:
+  /// **'Alpinerescuer'**
+  String get userRoleAlpinerescuer;
+
+  /// No description provided for @userRoleMedic.
+  ///
+  /// In en, this message translates to:
+  /// **'Medic'**
+  String get userRoleMedic;
+
+  /// No description provided for @userRoleMilitary.
+  ///
+  /// In en, this message translates to:
+  /// **'Military'**
+  String get userRoleMilitary;
+
+  /// No description provided for @userRolePoliceman.
+  ///
+  /// In en, this message translates to:
+  /// **'Policeman'**
+  String get userRolePoliceman;
+
+  /// No description provided for @userRoleVolunteer.
+  ///
+  /// In en, this message translates to:
+  /// **'Volunteer'**
+  String get userRoleVolunteer;
+
+  /// No description provided for @userRoleCitizen.
+  ///
+  /// In en, this message translates to:
+  /// **'Citizen'**
+  String get userRoleCitizen;
 
   /// No description provided for @userStatus.
   ///

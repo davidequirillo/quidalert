@@ -101,11 +101,8 @@ class _HomeBodyState extends State<HomeBody> {
     } catch (e) {
       debugPrintC("Error submitting dismiss account request: $e");
       final exceptionName = e.runtimeType.toString();
-      final locAttribute = "exception$exceptionName".replaceAll(
-        "Exception",
-        "",
-      );
-      final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+      final errorMessage =
+          loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
       retTitle = loc.errorGeneric;
       retMessage = errorMessage;
     } finally {

@@ -100,13 +100,16 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
       userDetailsStr += "\n${alertedUser.user.country}";
     }
     userDetailsStr += "\n";
-    userDetailsStr += "\n${loc.userType}: ${alertedUser.user.type}";
-    userDetailsStr += "\n${loc.userStatus}: ${alertedUser.user.status}";
+    userDetailsStr +=
+        "\n${loc.userType}: ${loc.getUserTypeString(alertedUser.user.type).toLowerCase()}";
+    userDetailsStr +=
+        "\n${loc.userStatus}: ${loc.getUserStatusString(alertedUser.user.status).toLowerCase()}";
     userDetailsStr +=
         "\n${loc.userReliabilityScore}: ${alertedUser.user.reliabilityScore}";
     userDetailsStr += "\n";
     userDetailsStr += "\n${loc.userBirthdate}: ${alertedUser.user.birthDate}";
-    userDetailsStr += "\n${loc.userRole}: ${alertedUser.user.role}";
+    userDetailsStr +=
+        "\n${loc.userRole}: ${loc.getUserRoleString(alertedUser.user.role).toLowerCase()}";
     if (!context.mounted) return;
     showSimpleAlertDialog(
       context,
@@ -159,11 +162,7 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
       if (exceptionName == "GenericNotAuthorizedException") {
         newLoginRequired = true;
       }
-      final locAttribute = "exception$exceptionName".replaceAll(
-        "Exception",
-        "",
-      );
-      retMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+      retMessage = loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
     } finally {
       if (mounted) {
         setState(() {
