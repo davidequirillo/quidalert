@@ -151,12 +151,15 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       senderDetailsStr += "\n${sender.country}";
     }
     senderDetailsStr += "\n";
-    senderDetailsStr += "\n${loc.userType}: ${sender.type}";
-    senderDetailsStr += "\n${loc.userStatus}: ${sender.status}";
+    senderDetailsStr +=
+        "\n${loc.userType}: ${loc.getUserTypeString(sender.type).toLowerCase()}";
+    senderDetailsStr +=
+        "\n${loc.userStatus}: ${loc.getUserStatusString(sender.status).toLowerCase()}";
     senderDetailsStr += "\n${loc.userReliability}: ${sender.reliabilityScore}";
     senderDetailsStr += "\n";
     senderDetailsStr += "\n${loc.userBirthdate}: ${sender.birthDate}";
-    senderDetailsStr += "\n${loc.userRole}: ${sender.role}";
+    senderDetailsStr +=
+        "\n${loc.userRole}: ${loc.getUserRoleString(sender.role).toLowerCase()}";
     if (!context.mounted) return;
     showSimpleAlertDialog(
       context,
@@ -217,12 +220,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       if (exceptionName == "GenericNotAuthorizedException") {
         newLoginRequired = true;
       }
-      final locAttribute = "exception$exceptionName".replaceAll(
-        "Exception",
-        "",
-      );
       retTitle = loc.errorError;
-      retMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+      retMessage = loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
     } finally {
       if (mounted) {
         await showSimpleAlertDialog(context, retTitle, retMessage);
@@ -260,12 +259,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           if (snapshot.hasError) {
             debugPrint("Error fetching recent alerts: ${snapshot.error}");
             final exceptionName = snapshot.error.runtimeType.toString();
-            final locAttribute = "exception$exceptionName".replaceAll(
-              "Exception",
-              "",
-            );
             final errorMessage =
-                loc.getString(locAttribute) ?? loc.errorGeneric;
+                loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
             if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
               goToLoginPagePostFrameCallback(context);
             }
@@ -358,11 +353,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     } else {
       chiefClosingVoteStr = "0 (${loc.alertedUserVoteNeutral})";
     }
-    final String alertTypeStr = loc.getString(
-      "alertType${alertWithInfo.alert.type[0].toUpperCase()}${alertWithInfo.alert.type.substring(1)}",
+    final String alertTypeStr = loc.getAlertTypeString(
+      alertWithInfo.alert.type,
     )!;
-    final String alertStatusStr = loc.getString(
-      "alertStatus${alertWithInfo.alert.status[0].toUpperCase()}${alertWithInfo.alert.status.substring(1)}",
+    final String alertStatusStr = loc.getAlertStatusString(
+      alertWithInfo.alert.status,
     )!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,14 +478,6 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         SizedBox(height: 20),
         if (!alertIsGeneral)
           Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
-        if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
-          Text(
-            '${loc.alertPositiveVotesNum}: ${alertWithInfo.positiveVotesNum}',
-          ),
-        if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
-          Text(
-            '${loc.alertNegativeVotesNum}: ${alertWithInfo.negativeVotesNum}',
-          ),
         // if the alert is not general, and there are alerted users,
         // and the user is a chief or admin, show a link to view all alerted users
         // (note: any chief or admin can view alerted users, not only the chief manager of the alert)
@@ -508,6 +495,14 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                 color: Colors.blue,
               ),
             ),
+          ),
+        if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
+          Text(
+            '${loc.alertPositiveVotesNum}: ${alertWithInfo.positiveVotesNum}',
+          ),
+        if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
+          Text(
+            '${loc.alertNegativeVotesNum}: ${alertWithInfo.negativeVotesNum}',
           ),
         SizedBox(height: 20),
         Text('${loc.alertMessages}: (${alertWithInfo.messagesNum})'),

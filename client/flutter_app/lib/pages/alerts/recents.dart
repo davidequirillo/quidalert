@@ -60,11 +60,8 @@ class RecentAlertsBody extends StatelessWidget {
         if (snapshot.hasError) {
           debugPrint("Error fetching recent alerts: ${snapshot.error}");
           final exceptionName = snapshot.error.runtimeType.toString();
-          final locAttribute = "exception$exceptionName".replaceAll(
-            "Exception",
-            "",
-          );
-          final errorMessage = loc.getString(locAttribute) ?? loc.errorGeneric;
+          final errorMessage =
+              loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
           if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
             goToLoginPagePostFrameCallback(context);
           }
@@ -94,10 +91,8 @@ class RecentAlertsBody extends StatelessWidget {
             separatorBuilder: (context, index) => Divider(),
             itemBuilder: (context, index) {
               final alert = alerts[index];
-              final alertTypeKey =
-                  'alertType${alert.type[0].toUpperCase()}${alert.type.substring(1)}';
-              final alertStatusKey =
-                  'alertStatus${alert.status[0].toUpperCase()}${alert.status.substring(1)}';
+              final alertTypeKey = alert.type;
+              final alertStatusKey = alert.status;
               final description =
                   alert.description.substring(
                     0,
@@ -114,7 +109,7 @@ class RecentAlertsBody extends StatelessWidget {
               return ListTile(
                 title: Text(description),
                 subtitle: Text(
-                  "${loc.labelType}: ${loc.getString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getString(alertStatusKey)}",
+                  "${loc.labelType}: ${loc.getAlertTypeString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getAlertStatusString(alertStatusKey)}",
                 ),
                 trailing: Text(alertDateTimeStr),
                 onTap: () {

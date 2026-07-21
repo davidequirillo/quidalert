@@ -11,38 +11,112 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 extension AppLocalizationsExtension on AppLocalizations {
   String? getString(String key) {
     switch (key) {
-      case 'exceptionBadRequest':
-        return exceptionBadRequest;
-      case 'exceptionForbiddenRequest':
-        return exceptionForbiddenRequest;
-      case 'exceptionGenericNotAuthorized':
-        return exceptionGenericNotAuthorized;
-      case 'exceptionNetwork':
-        return exceptionNetwork;
-      case 'exceptionServer':
-        return exceptionServer;
-      case 'exceptionNotFound':
-        return exceptionNotFound;
-      case 'exceptionFromJsonObj':
-        return exceptionFromJsonObj;
-      case 'exceptionUnknown':
-        return exceptionUnknown;
-      case 'alertTypeGeneral':
-        return alertTypeGeneral;
-      case 'alertTypeLocal':
-        return alertTypeLocal;
-      case 'alertTypeManaged':
-        return alertTypeManaged;
-      case 'alertTypeEmpty':
-        return alertTypeEmpty;
-      case 'alertStatusOpen':
-        return alertStatusOpen;
-      case 'alertStatusClosed':
-        return alertStatusClosed;
-      case 'alertStatusPending':
-        return alertStatusPending;
       default:
         return null;
+    }
+  }
+
+  String? getExceptionString(String key) {
+    switch (key) {
+      case 'BadRequestException':
+        return exceptionBadRequest;
+      case 'ForbiddenRequestException':
+        return exceptionForbiddenRequest;
+      case 'GenericNotAuthorizedException':
+        return exceptionGenericNotAuthorized;
+      case 'NetworkException':
+        return exceptionNetwork;
+      case 'ServerException':
+        return exceptionServer;
+      case 'NotFoundException':
+        return exceptionNotFound;
+      case 'FromJsonObjException':
+        return exceptionFromJsonObj;
+      case 'UnknownException':
+        return exceptionUnknown;
+      default:
+        return null;
+    }
+  }
+
+  String getAlertTypeString(String key) {
+    switch (key) {
+      case 'general':
+        return alertTypeGeneral;
+      case 'local':
+        return alertTypeLocal;
+      case 'managed':
+        return alertTypeManaged;
+      case 'empty':
+        return alertTypeEmpty;
+      default:
+        return '';
+    }
+  }
+
+  String getAlertStatusString(String key) {
+    switch (key) {
+      case 'open':
+        return alertStatusOpen;
+      case 'closed':
+        return alertStatusClosed;
+      case 'pending':
+        return alertStatusPending;
+      default:
+        return '';
+    }
+  }
+
+  String getUserRoleString(String key) {
+    switch (key) {
+      case 'firefighter':
+        return userRoleFirefighter;
+      case 'wateroperator':
+        return userRoleWateroperator;
+      case 'usar':
+        return userRoleUsar;
+      case 'alpinerescuer':
+        return userRoleAlpinerescuer;
+      case 'medic':
+        return userRoleMedic;
+      case 'military':
+        return userRoleMilitary;
+      case 'policeman':
+        return userRolePoliceman;
+      case 'volunteer':
+        return userRoleVolunteer;
+      case 'citizen':
+        return userRoleCitizen;
+      default:
+        return '';
+    }
+  }
+
+  String getUserStatusString(String key) {
+    switch (key) {
+      case 'ok':
+        return userStatusOk;
+      case 'unreliable':
+        return userStatusUnreliable;
+      case 'blocked':
+        return userStatusBlocked;
+      default:
+        return '';
+    }
+  }
+
+  String getUserTypeString(String key) {
+    switch (key) {
+      case 'chief':
+        return userTypeChief;
+      case 'officer':
+        return userTypeOfficer;
+      case 'admin':
+        return userTypeAdmin;
+      case 'base':
+        return userTypeBase;
+      default:
+        return '';
     }
   }
 
