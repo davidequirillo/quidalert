@@ -122,6 +122,7 @@ class UserOut(UserBase, table=False):
     # it's quite hard to reach very high values or very low values, and in case we can easily change the type to a bigger integer
     reliability_score: int = Field(default=100, nullable=False)
     last_reliability_score_at: Optional[datetime] = Field(default=None)
+    hero_score: int = Field(default=0, nullable=False) # The hero score is only used for gamification purposes, and it can only increase, never decrease.
     is_blocked: bool = Field(default=False, nullable=False)
     is_active: bool = Field(default=False, nullable=False)
     activation_expires_at: Optional[datetime] = Field(default=None)
@@ -185,8 +186,8 @@ class UsersOutPaginated(BaseModel):
     users: List[UserOutSmall]
     next_cursor: Optional[uuid.UUID] = None
 
-USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS = 180
-USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE = 15
+USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS = 180
+USER_RELIABILITY_SCORE_INC_VALUE = 15
 
 class User(UserOut, table=True):
     __tablename__: str = 'users'
@@ -563,6 +564,19 @@ class VotingSchema(BaseModel):
         if v not in [-1, 1]:
             raise ValueError("Vote must be either -1 (downvote) or +1 (upvote)")
         return v
-    
+
+class ClosingType(str, Enum):
+    positive = "positive"
+    negative = "negative"
+    neutral = "neutral"
+    punitive = "punitive"
+
 class ClosingSchema(BaseModel):
-    pass
+    type: str = Field(default=ClosingType.neutral.value)
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, s):
+        if not s in [t.value for t in ClosingType]:
+            raise ValueError("Wrong closing type")
+        return s

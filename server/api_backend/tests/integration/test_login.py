@@ -7,8 +7,8 @@ from fastapi import status
 from sqlmodel import select
 from models.general import (
     User, RefreshToken,
-    USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS,
-    USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE,
+    USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS,
+    USER_RELIABILITY_SCORE_INC_VALUE,
     UserLanguage
 )
 from services.security import (
@@ -731,15 +731,16 @@ def test_login_returned_refresh_token_is_ok(client, db_session, not_logged_test_
     assert rtoken_jti is not None
     assert rtoken_raw is not None
 
-def test_login_with_reset_reliability_score(client, db_session, not_logged_test_user):
+def test_login_with_negative_reliability_score_for_too_long(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
     user.password_hash = valid_password_hash
     # Set the last reliability score time in the past, so that it's not in cooldown anymore, and the reliability score should be reset to the default value on login
-    user.reliability_score = -50 # Set a negative reliability score to check that it will be reset
-    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS + 1)
+    # Set a negative reliability score to check that it will be reset to a default minimum value on login, because it's been too long since the last reliability score update
+    user.reliability_score = -50
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS + 1)
     db_session.commit() # Ensure the updated password hash is saved to the database
     # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
     login_token = create_login_token(str(user.id)) 
@@ -749,20 +750,21 @@ def test_login_with_reset_reliability_score(client, db_session, not_logged_test_
     db_session.refresh(user)
     assert user.last_login_done_at is not None
     assert user.last_refresh_at is not None
-    assert user.reliability_score == USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+    assert user.reliability_score == USER_RELIABILITY_SCORE_INC_VALUE
     # After login, the last_reliability_score_at should be updated to now, 
     # because the reliability score has been reset due to the cooldown expired
     assert user.last_reliability_score_at is not None
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
 
-def test_login_with_reliability_score_in_cooldown(client, db_session, not_logged_test_user):
+def test_login_with_negative_reliability_score_in_cooldown(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
     valid_password_hash = get_password_hash(valid_password)
     user.password_hash = valid_password_hash
     # Set the last reliability score time to 10 minutes ago, so that it's in cooldown, and the reliability score should not be reset on login
-    user.reliability_score = -50 # Set a negative reliability score to check that it will not be reset
+    # Set a negative reliability score to check that it will not be reset
+    user.reliability_score = -50
     user.last_reliability_score_at = now_tz_naive() - timedelta(minutes=10) # Set it to 10 minutes ago, so it's within the cooldown period
     db_session.commit() # Ensure the updated password hash is saved to the database
     # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
@@ -777,6 +779,137 @@ def test_login_with_reliability_score_in_cooldown(client, db_session, not_logged
     assert user.reliability_score == -50 
     assert user.last_reliability_score_at is not None
     # The last_reliability_score_at should be unchanged, because the reliability score should not be reset due to cooldown
+    # It should be unchanged, so it should still be the old timestamp, which is 10 minutes ago
+    assert user.last_reliability_score_at < now_tz_naive() - timedelta(minutes=5)
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=15)
+
+def test_login_with_low_reliability_score_for_too_long(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # Set the last reliability score time in the past, so that it's not in cooldown anymore, and the reliability score should be reset to the default value on login
+    # Set a low reliability score to check that it will increase on login, because it's been too long since the last reliability score update
+    user.reliability_score = 10
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS + 1)
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The reliability score should be increased, to 10 + USER_RELIABILITY_SCORE_INC_VALUE
+    assert user.reliability_score == 10 + USER_RELIABILITY_SCORE_INC_VALUE
+    # After login, the last_reliability_score_at should be updated to now, 
+    # because the reliability score has been increased due to the cooldown expired
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
+
+def test_login_with_low_reliability_score_in_cooldown(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # Set the last reliability score time to 10 minutes ago, so that it's in cooldown, and the reliability score should not be increased on login
+    # Set a low reliability score to check that it will not be increased
+    user.reliability_score = 10
+    user.last_reliability_score_at = now_tz_naive() - timedelta(minutes=10) # Set it to 10 minutes ago, so it's within the cooldown period
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The reliability score should not be increased because it's in cooldown
+    assert user.reliability_score == 10 
+    assert user.last_reliability_score_at is not None
+    # The last_reliability_score_at should be unchanged, because the reliability score should not be increased due to cooldown
+    # It should be unchanged, so it should still be the old timestamp, which is 10 minutes ago
+    assert user.last_reliability_score_at < now_tz_naive() - timedelta(minutes=5)
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=15)
+
+def test_login_with_low_reliability_score_and_null_timestamp(client, db_session, not_logged_test_user):
+    # If reliability score is low but last_reliability_score_at is None (null timestamp), 
+    # we don't increase reliability_score
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # Set the last reliability score time to None
+    # Set a low reliability score to check that it will not be increased
+    user.reliability_score = 10
+    user.last_reliability_score_at = None
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The reliability score should not be increased because it's in cooldown
+    assert user.reliability_score == 10 
+    assert user.last_reliability_score_at is None
+
+def test_login_with_reliability_score_near_maximum_for_too_long(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # Set the last reliability score time in the past, so that it's not in cooldown anymore, and the reliability score should be reset to the default value on login
+    # Set a reliability score near the maximum to check that it will be reset to the maximum value on login, because it's been too long since the last reliability score update
+    user.reliability_score = 90
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS + 1)
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The reliability score should be reset to the maximum value, because it's been too long since the last reliability score update
+    assert user.reliability_score == min(90 + USER_RELIABILITY_SCORE_INC_VALUE, 100)
+    # After login, the last_reliability_score_at should be updated to now, 
+    # because the reliability score has been increased due to the cooldown expired
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
+
+def test_login_with_reliability_score_near_maximum_in_cooldown(client, db_session, not_logged_test_user):
+    user: User = not_logged_test_user
+    # Set a know valid password for the user
+    valid_password = "ValidPass123!"
+    valid_password_hash = get_password_hash(valid_password)
+    user.password_hash = valid_password_hash
+    # Set the last reliability score time to 10 minutes ago, so that it's in cooldown, and the reliability score should not be increased on login
+    # Set a reliability score near the maximum to check that it will not be increased
+    user.reliability_score = 90
+    user.last_reliability_score_at = now_tz_naive() - timedelta(minutes=10) # Set it to 10 minutes ago, so it's within the cooldown period
+    db_session.commit() # Ensure the updated password hash is saved to the database
+    # We skip login request and 2fa for convenience, and we directly generate a login token for the user, simulating that the user has already passed 2FA and has a valid login token
+    login_token = create_login_token(str(user.id)) 
+    payload = {"email": user.email, "password": valid_password, "login_token": login_token}
+    response = client.post("/api/auth/login", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.last_login_done_at is not None
+    assert user.last_refresh_at is not None
+    # The reliability score should not be increased because it's in cooldown
+    assert user.reliability_score == 90 
+    assert user.last_reliability_score_at is not None
+    # The last_reliability_score_at should be unchanged, because the reliability score should not be increased due to cooldown
     # It should be unchanged, so it should still be the old timestamp, which is 10 minutes ago
     assert user.last_reliability_score_at < now_tz_naive() - timedelta(minutes=5)
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=15)

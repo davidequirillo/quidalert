@@ -23,8 +23,8 @@ from core import api_events, security_events
 import services.localization as i18n
 from models.general import (string_as_uuid, 
     UserIn, User, UserOut, UserLanguage, UserInCompleteProfile,
-    USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE,
-    USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS, 
+    USER_RELIABILITY_SCORE_INC_VALUE,
+    USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
     WhiteListEntry
@@ -266,10 +266,15 @@ def refresh_auth_tokens(
     rtoken.ip_address=get_client_ip()
     rtoken.updated_at=now
     user.last_refresh_at=now
-    # If user has reliability score <= 0, we check if we can reset it based on the last score update time and the TTL defined for negative scores
-    if (user.reliability_score <= 0):
-        if (user.last_reliability_score_at is None) or (user.last_reliability_score_at < (now - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS))):
-            user.reliability_score = USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+    # If user has reliability score < 100, we check if we can increase it based on the last score update time and the time defined for score increase
+    if (user.reliability_score < 100):
+        if (user.last_reliability_score_at) and (user.last_reliability_score_at < (now - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS))):
+            if user.reliability_score < 0:
+                user.reliability_score = USER_RELIABILITY_SCORE_INC_VALUE
+            else:
+                user.reliability_score += USER_RELIABILITY_SCORE_INC_VALUE
+            if user.reliability_score > 100:
+                user.reliability_score = 100
             user.last_reliability_score_at = now
     if user.pending_delete_since is not None:
         user.pending_delete_since = None # no more in pending delete status after an eventual dismissal, because the user has changed idea (he has refreshed the auth tokens, so he wants to keep the account active)
@@ -442,10 +447,15 @@ def login(data: LoginSchema,
         user.language = data.language
     user.last_login_done_at = now
     user.last_refresh_at = now
-    # If user has reliability score <= 0, we check if we can reset it based on the last score update time and the TTL defined for negative scores
-    if (user.reliability_score <= 0):
-        if (user.last_reliability_score_at is None) or (user.last_reliability_score_at < (now - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS))):
-            user.reliability_score = USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+    # If user has reliability score < 100, we check if we can increase it based on the last score update time and the time defined for score increase
+    if (user.reliability_score < 100):
+        if (user.last_reliability_score_at) and (user.last_reliability_score_at < (now - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS))):
+            if user.reliability_score < 0:
+                user.reliability_score = USER_RELIABILITY_SCORE_INC_VALUE
+            else:
+                user.reliability_score += USER_RELIABILITY_SCORE_INC_VALUE
+            if user.reliability_score > 100:
+                user.reliability_score = 100
             user.last_reliability_score_at = now 
     # Cooldown check to avoid potential DoS attacks to the mail service
     can_send = ((not user.last_login_mail_confirmation_at) or 

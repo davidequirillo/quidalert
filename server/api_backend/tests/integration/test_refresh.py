@@ -11,8 +11,8 @@ from core.exceptions import (
 )
 from models.general import (
     User, RefreshToken, string_as_uuid,
-    USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS,
-    USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+    USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS,
+    USER_RELIABILITY_SCORE_INC_VALUE
 )
 from services.security import (
     now_tz_naive, now_tz_aware,
@@ -191,32 +191,33 @@ def test_refresh_token_user_is_active(client, db_session, test_baseuser):
     assert "refresh_token" in response.json()
     assert "gps_token" in response.json()
 
-def test_refresh_token_user_with_expired_reliability_score(client, db_session, test_baseuser):
+def test_refresh_token_user_with_negative_reliability_score_for_too_long(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
-    # so that it's not in cooldown anymore, and the reliability score should be reset to the default value on refresh
-    user.reliability_score = -50 # Set a negative reliability score to check that it will be reset
-    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS + 1)
+    # so that it's not in cooldown anymore, and the reliability score should be reset to a minimal positive value on refresh
+    # We simulate a negative reliability score for a long time, so that it should be reset to a minimal positive value on refresh
+    user.reliability_score = -50
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS + 1)
     refresh_token = test_baseuser['refresh_token']
     payload = {"refresh_token": refresh_token}
     # Now we call refresh api, which should refresh the token and also reset the reliability score because the cooldown has expired
     response = client.post("/api/auth/refresh", json=payload)
     assert response.status_code == status.HTTP_200_OK
     db_session.refresh(user) # Refresh the user instance to get the updated reliability score and last_reliability_score_at
-    assert user.reliability_score == USER_NEGATIVE_RELIABILITY_SCORE_RESET_VALUE
+    assert user.reliability_score == USER_RELIABILITY_SCORE_INC_VALUE
     # After refresh, the last_reliability_score_at should be updated to now, 
     # because the reliability score has been reset due to the cooldown expired
     assert user.last_reliability_score_at is not None
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
 
-def test_refresh_token_with_reliability_score_in_cooldown(client, db_session, test_baseuser):
+def test_refresh_token_with_negative_reliability_score_in_cooldown(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # but not enough to expire the cooldown, so the reliability score should not be reset on refresh
     # Set a negative reliability score to check that it will not be reset
     user.reliability_score = -50
     # Set the last reliability score time to just before the cooldown expires
-    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS - 1) 
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 1) 
     refresh_token = test_baseuser['refresh_token']
     payload = {"refresh_token": refresh_token}
     # Now we call refresh api, which should refresh the token but should not reset the reliability score because the cooldown has not expired yet
@@ -226,8 +227,106 @@ def test_refresh_token_with_reliability_score_in_cooldown(client, db_session, te
     assert user.reliability_score == -50 # The reliability score should not be reset because the cooldown has not expired yet
     # After refresh, the last_reliability_score_at should not be updated because the reliability score has not been reset due to the cooldown has not expired yet
     assert user.last_reliability_score_at is not None
-    assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS - 2)
-    assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_NEGATIVE_RELIABILITY_SCORE_TTL_DAYS)
+    assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 2)
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS)
+
+def test_refresh_token_with_low_reliability_score_for_too_long(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    # Set the last reliability score time in the past,
+    # so that it's not in cooldown anymore, and the reliability score should be increased on refresh
+    # We simulate a low reliability score for a long time, so that it should be increased on refresh
+    user.reliability_score = 50
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS + 1)
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    # Now we call refresh api, which should refresh the token and also increase the reliability score because the cooldown has expired
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated reliability score and last_reliability_score_at
+    # The reliability score should be increased by USER_RELIABILITY_SCORE_INC_VALUE
+    assert user.reliability_score == 50 + USER_RELIABILITY_SCORE_INC_VALUE 
+    # After refresh, the last_reliability_score_at should be updated to now, 
+    # because the reliability score has been increased due to the cooldown expired
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
+
+def test_refresh_token_with_low_reliability_score_in_cooldown(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    # Set the last reliability score time in the past,
+    # but not enough to expire the cooldown, so the reliability score should not be increased on refresh
+    # Set a low reliability score to check that it will not be increased
+    user.reliability_score = 50
+    # Set the last reliability score time to just before the cooldown expires
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 1) 
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    # Now we call refresh api, which should refresh the token but should not increase the reliability score because the cooldown has not expired yet
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated reliability score and last_reliability_score_at
+    # The reliability score should not be increased because the cooldown has not expired yet
+    assert user.reliability_score == 50
+    # After refresh, the last_reliability_score_at should not be updated because the reliability score has not been increased due to the cooldown has not expired yet
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 2)
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS)
+
+def test_refresh_token_with_low_reliability_score_and_null_timestamp(client, db_session, test_baseuser):
+    # If reliability_score is low, but the last_reliability_score_at is None (null timestamp), 
+    # we don't increase the reliability score
+    user: User = test_baseuser['user']
+    user.reliability_score = 50
+    user.last_reliability_score_at = None
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated reliability score and last_reliability_score_at
+    # The reliability score should not be increased because the last_reliability_score_at is None
+    assert user.reliability_score == 50
+    assert user.last_reliability_score_at is None
+
+def test_refresh_token_with_reliability_score_near_maximum_for_too_long(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    # Set the last reliability score time in the past,
+    # so that it's not in cooldown anymore, and the reliability score should be increased on refresh
+    # We simulate a reliability score near maximum for a long time, so that it should be increased on refresh
+    user.reliability_score = 90
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS + 1)
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    # Now we call refresh api, which should refresh the token and also increase the reliability score because the cooldown has expired
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated reliability score and last_reliability_score_at
+    # The reliability score should be increased by USER_RELIABILITY_SCORE_INC_VALUE, but not exceed 100
+    expected_reliability_score = min(90 + USER_RELIABILITY_SCORE_INC_VALUE, 100)
+    assert user.reliability_score == expected_reliability_score 
+    # After refresh, the last_reliability_score_at should be updated to now, 
+    # because the reliability score has been increased due to the cooldown expired
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
+
+def test_refresh_token_with_reliability_score_near_maximum_in_cooldown(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    # Set the last reliability score time in the past,
+    # but not enough to expire the cooldown, so the reliability score should not be increased on refresh
+    # Set a reliability score near maximum to check that it will not be increased
+    user.reliability_score = 90
+    # Set the last reliability score time to just before the cooldown expires
+    user.last_reliability_score_at = now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 1) 
+    refresh_token = test_baseuser['refresh_token']
+    payload = {"refresh_token": refresh_token}
+    # Now we call refresh api, which should refresh the token but should not increase the reliability score because the cooldown has not expired yet
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated reliability score and last_reliability_score_at
+    # The reliability score should not be increased because the cooldown has not expired yet
+    assert user.reliability_score == 90
+    # After refresh, the last_reliability_score_at should not be updated because the reliability score has not been increased due to the cooldown has not expired yet
+    assert user.last_reliability_score_at is not None
+    assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 2)
+    assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS)
 
 def test_refresh_token_with_pending_delete_status(client, db_session, test_baseuser):
     user: User = test_baseuser['user']

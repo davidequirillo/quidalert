@@ -18,7 +18,7 @@ from dependencies import (
 from core.exceptions import (
     forbidden_exception,
     not_found_exception,
-    invalid_request_exception,
+    invalid_request_exception
 )
 from core.logging import get_request_info
 from core.dbmgr import (
@@ -32,7 +32,7 @@ from models.general import (
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
     Message, GpsCoordinatesSchema, GpsTokenData,
-    VotingSchema
+    VotingSchema, ClosingSchema, ClosingType
 )
 from services.security import (
     now_tz_naive, now_tz_aware
@@ -101,6 +101,7 @@ def create_alert(alert_in: AlertIn,
         user_id = current_user.id,
         is_pending = True if (alert_in.type != AlertType.general.value) and (alert_in.type != AlertType.empty.value) else False # general and empty alerts are not pending, because we don't have to perform background tasks for this type of alert
     )
+    # For local alerts, we adjust the radius proportionally based on the reliability score of the user
     if (alert.type == AlertType.local.value):
         rel_score = current_user.reliability_score 
         alert.radius = min(max(rel_score, 0), 100) / 100 * alert.radius
@@ -334,21 +335,92 @@ def vote_alert(alert_id: int,
 
 @router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,
+            closing_schema: ClosingSchema,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
-    if (not current_user.is_admin) and (not current_user.is_chief):
-        raise forbidden_exception()
+    if (not current_user.is_chief):
+        raise forbidden_exception("Only chiefs can close alerts")
     alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
     if alert is None:
         raise not_found_exception("Alert not found")
     if alert.is_closed:
         return {"message": "Alert already closed"}
-    # todo: only the chief alert manager can close an alert, not any other chief or admin
+    closing_vote = 0
+    if alert.type == AlertType.local.value:
+        # Only the chief alert manager can close an alert, not any other chief
+        statement = (select(AlertedUser)
+            .where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)
+            .where(AlertedUser.is_manager == True))
+        alerted_user = db_session.exec(statement).first()
+        if not alerted_user:
+            raise forbidden_exception("Only the chief alert manager can close this alert")
+        match closing_schema.type:
+            case ClosingType.positive.value:
+                closing_vote = +30
+            case ClosingType.negative.value:
+                closing_vote = -30
+            case ClosingType.neutral.value:
+                closing_vote = 0
+            case ClosingType.punitive.value:
+                closing_vote = -100
+            case _:
+                raise invalid_request_exception("Invalid closing type")
+        sender_stmt = select(User).where(User.id == alert.user_id)
+        sender = db_session.exec(sender_stmt).first()
+        if not sender:
+            raise not_found_exception("Alert sender not found")
+        alerted_users_stmt = (select(AlertedUser, User).join(User, User.id == AlertedUser.user_id) # type: ignore
+                .where(AlertedUser.alert_id == alert.id))
+        alerted_users_joined = db_session.exec(alerted_users_stmt).all()
+        if closing_schema.type != ClosingType.neutral.value:
+            # If the alert is closed in a non-neutral way, 
+            # we update the reliability score of the alert sender
+            sender.reliability_score += closing_vote
+            if sender.reliability_score < 0:
+                sender.reliability_score = 0
+            elif sender.reliability_score > 100:
+                sender.reliability_score = 100
+            if closing_schema.type == ClosingType.positive.value:
+                sender.hero_score += 20
+            db_session.add(sender)
+            # We also update the reliability score of all alerted users (except the chief who closed the alert).
+            # We increase the reliability score of alerted users that voted in the same way as the chief manager,
+            # and we decrease the reliability score of alerted users that voted in the opposite way of the chief manager
+            for au_joined in alerted_users_joined:
+                au = au_joined[0]
+                user = au_joined[1]
+                if au.user_id != current_user.id: 
+                    au_vote = au.vote
+                    if au_vote == 0:
+                        continue
+                    if (au_vote > 0 and closing_vote > 0) or (au_vote < 0 and closing_vote < 0):
+                        user.reliability_score += abs(int(closing_vote/2))
+                        user.hero_score += 5
+                    else:
+                        user.reliability_score -= abs(int(closing_vote/2))
+                    if user.reliability_score < 0:
+                        user.reliability_score = 0
+                    elif user.reliability_score > 100:
+                        user.reliability_score = 100
+                    db_session.add(user)
+    else:
+        # For non-local alerts, the chief alert manager is the chief alert sender,
+        # and he is the only one who can close the alert
+        if (current_user.id != alert.user_id):
+            raise forbidden_exception("Only the chief alert sender (manager) can close this alert")
+        if (closing_schema.type != ClosingType.neutral.value):
+            raise invalid_request_exception("Non-local alerts can be closed only in a neutral way")
+        # For non-local alerts, the closure is always neutral (a normal close),
+        # because the alert sender (a chief) is trusted, and alerted users don't vote
+        closing_vote = 0
     alert.is_closed = True
     db_session.add(alert)
     db_session.commit()
-    db_session.refresh(alert)
-    return {"message": "Alert closed"}
+    return {
+        "message": "Alert closed", 
+        "closing_type": closing_schema.type, 
+        "closing_vote": closing_vote
+    }
 
 @router.post("/api/update-gps-position")
 async def update_gps_position(

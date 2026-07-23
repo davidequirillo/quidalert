@@ -216,6 +216,7 @@
   "userActive": "Active",
   "userReliability": "Reliability",
   "userReliabilityScore": "Reliability score",
+  "userHeroScore": "Hero score",
   "userType": "Type",
   "userTypeChief": "Chief",
   "userTypeOfficer": "Officer",
