@@ -1391,6 +1391,12 @@ abstract class AppLocalizations {
   /// **'Reliability score'**
   String get userReliabilityScore;
 
+  /// No description provided for @userHeroScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Hero score'**
+  String get userHeroScore;
+
   /// No description provided for @userType.
   ///
   /// In en, this message translates to:

@@ -162,6 +162,7 @@ class User {
   final String role;
   final String status;
   final int reliabilityScore;
+  final int heroScore;
   final bool isActive;
   final DateTime? resetLockedUntil;
   final DateTime? lastResetDoneAt;
@@ -192,6 +193,7 @@ class User {
     required this.role,
     required this.status,
     required this.reliabilityScore,
+    required this.heroScore,
     required this.isActive,
     required this.resetLockedUntil,
     required this.lastResetDoneAt,
@@ -246,6 +248,7 @@ class User {
       s = UserStatusExtended.ok.name;
     }
     final int reliabilityScore = json['reliability_score'] ?? 0;
+    final int heroScore = json['hero_score'] ?? 0;
     final bool isActive = json['is_active'] ?? false;
     final DateTime? resetLockedUntil = json['reset_locked_until'] != null
         ? DateTime.parse("${json['reset_locked_until']}Z")
@@ -291,6 +294,7 @@ class User {
       role: role,
       status: s,
       reliabilityScore: reliabilityScore,
+      heroScore: heroScore,
       isActive: isActive,
       resetLockedUntil: resetLockedUntil,
       lastResetDoneAt: lastResetDoneAt,
