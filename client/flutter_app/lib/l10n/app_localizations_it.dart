@@ -657,7 +657,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get userReliabilityScore => 'Punteggio di affidabilità';
 
   @override
-  String get userHeroScore => 'Punteggio dell\'eroe';
+  String get userHeroScore => 'Punteggio eroe';
 
   @override
   String get userType => 'Tipo';

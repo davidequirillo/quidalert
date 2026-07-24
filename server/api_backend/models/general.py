@@ -479,7 +479,7 @@ class AlertedUser(SQLModel, table=True):
     # We will think about the algorythm to use, 
     # to modify reliability score of involved users (alert sender and alerted users)
     vote: int = Field(default=0, ge=-1, le=+1, nullable=False)
-    closing_vote: int = Field(default=0, ge=-15, le=+15, nullable=False)
+    closing_vote: int = Field(default=0, ge=-100, le=+30, nullable=False)
 
 class GpsTokenData(BaseModel):
     user_id: str # here we use a string instead of UUID

@@ -117,7 +117,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertedUserVotePunitive => 'Punitive';
 
   @override
-  String get alertedUserVoteNeutralInfo => 'If you want you can still vote to confirm or deny the alert';
+  String get alertedUserVoteNeutralInfo =>
+      'If you want you can still vote to confirm or deny the alert';
 
   @override
   String get alertedUserYouHaveNotVoted => 'You have not voted';
@@ -222,10 +223,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorAddressNotFound => 'Address not found';
 
   @override
-  String get errorAlertSimilarInZone => 'A similar alert already exists in this zone';
+  String get errorAlertSimilarInZone =>
+      'A similar alert already exists in this zone';
 
   @override
-  String get errorAlertSimilarInGeneral => 'A similar general alert already exists';
+  String get errorAlertSimilarInGeneral =>
+      'A similar general alert already exists';
 
   @override
   String get errorBadRequest => 'Bad request';
@@ -267,19 +270,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoading => 'Loading error';
 
   @override
-  String get errorLocationServicesDisabled => 'Location services are disabled, go to settings and enable gps and location services';
+  String get errorLocationServicesDisabled =>
+      'Location services are disabled, go to settings and enable gps and location services';
 
   @override
-  String get errorLocationPermissionDenied => 'Location permissions are denied, go to settings to enable them';
+  String get errorLocationPermissionDenied =>
+      'Location permissions are denied, go to settings to enable them';
 
   @override
-  String get errorLocationPermissionDeniedForever => 'You have permanently denied location permissions, go to settings and enable them';
+  String get errorLocationPermissionDeniedForever =>
+      'You have permanently denied location permissions, go to settings and enable them';
 
   @override
-  String get errorLocationFetchTimeout => 'Timeout error, I fetched the last know position';
+  String get errorLocationFetchTimeout =>
+      'Timeout error, I fetched the last know position';
 
   @override
-  String get errorLoginLocked => 'Too many attempts, login is locked for 24 hours';
+  String get errorLoginLocked =>
+      'Too many attempts, login is locked for 24 hours';
 
   @override
   String get errorNoEntryToAdd => 'No entry to add';
@@ -297,25 +305,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotAuthorizedDoLogin => 'Not authorized, retry login';
 
   @override
-  String get errorOpDeniedYouAreNotReliable => 'Operation denied: you have been judged as not realiable';
+  String get errorOpDeniedYouAreNotReliable =>
+      'Operation denied: you have been judged as not realiable';
 
   @override
-  String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
+  String get errorRegNotAuthorized =>
+      'Registration not authorized: ask to competent territorial authority';
 
   @override
   String get errorPasswordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get errorPasswordMissingUppercase => 'Password must contain at least an uppercase character';
+  String get errorPasswordMissingUppercase =>
+      'Password must contain at least an uppercase character';
 
   @override
-  String get errorPasswordMissingLowercase => 'Password must contain at least a lowercase character';
+  String get errorPasswordMissingLowercase =>
+      'Password must contain at least a lowercase character';
 
   @override
-  String get errorPasswordMissingDigit => 'Password must contain at least a digit';
+  String get errorPasswordMissingDigit =>
+      'Password must contain at least a digit';
 
   @override
-  String get errorPasswordMissingSpecial => 'Password must contain at least a special character';
+  String get errorPasswordMissingSpecial =>
+      'Password must contain at least a special character';
 
   @override
   String get errorPermissionsNotValid => 'Permissions not valid';
@@ -324,10 +338,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorPositionNotAvailable => 'Position not available';
 
   @override
-  String get errorRegisteringDeviceForPushNotifications => 'Failed to register device for push notification';
+  String get errorRegisteringDeviceForPushNotifications =>
+      'Failed to register device for push notification';
 
   @override
-  String get errorSearchParamsNotSufficientToProceed => 'Query parameters not sufficient to proceed';
+  String get errorSearchParamsNotSufficientToProceed =>
+      'Query parameters not sufficient to proceed';
 
   @override
   String get errorServer => 'Server error';
@@ -423,13 +439,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelClickToSelectFile => 'Click to select file';
 
   @override
-  String get labelClickSearchToLoadEntries => 'Click a search button to get entries';
+  String get labelClickSearchToLoadEntries =>
+      'Click a search button to get entries';
 
   @override
   String get labelCompetenceTerritory => 'Competence territory';
 
   @override
-  String get labelCompileToChangeAuthorizer => 'Compile only if you need to change the authorizer';
+  String get labelCompileToChangeAuthorizer =>
+      'Compile only if you need to change the authorizer';
 
   @override
   String get labelConfirmPassword => 'Confirm password';
@@ -450,7 +468,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelDetails => 'Details';
 
   @override
-  String get labelDismissAccountConfirmation => 'Note: only in case you want to delete your account, type DELETE here and press ok';
+  String get labelDismissAccountConfirmation =>
+      'Note: only in case you want to delete your account, type DELETE here and press ok';
 
   @override
   String get labelDoNotHaveAccount => 'Don\'t have an account? Sign Up';
@@ -462,7 +481,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelEmailsMany => 'Many email addresses';
 
   @override
-  String get labelEnterVerificationMailCode => 'Enter the verification code just sent to you by email';
+  String get labelEnterVerificationMailCode =>
+      'Enter the verification code just sent to you by email';
 
   @override
   String get labelFileSelected => 'File selected';
@@ -483,7 +503,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelPasswordForgotten => 'Forgot password?';
 
   @override
-  String get labelPressButtonToObtainPosition => 'Press button to obtain the position';
+  String get labelPressButtonToObtainPosition =>
+      'Press button to obtain the position';
 
   @override
   String get labelQueryUsers => 'Query users';
@@ -582,28 +603,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sectionUsers => 'Users';
 
   @override
-  String get successAccountDismissed => 'Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active';
+  String get successAccountDismissed =>
+      'Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active';
 
   @override
   String get successAlertCreated => 'Alert created successfully';
 
   @override
-  String get successAlertCreatedLocal => 'Alert created successfully. Searching for nearby users and the chief';
+  String get successAlertCreatedLocal =>
+      'Alert created successfully. Searching for nearby users and the chief';
 
   @override
-  String get successAlertCreatedManaged => 'Managed alert created. Searching for users near the target zone';
+  String get successAlertCreatedManaged =>
+      'Managed alert created. Searching for users near the target zone';
 
   @override
-  String get successAlertCreatedEmpty => 'Empty alert created. No need to search for any users to alert at the moment';
+  String get successAlertCreatedEmpty =>
+      'Empty alert created. No need to search for any users to alert at the moment';
 
   @override
-  String get successAlertCreatedGeneral => 'General alert created. It\'s visible to all';
+  String get successAlertCreatedGeneral =>
+      'General alert created. It\'s visible to all';
 
   @override
   String get successAlertVote => 'Vote sent succesfully';
 
   @override
-  String get successDeviceRegisteredForPushNotifications => 'Device registered for push notification';
+  String get successDeviceRegisteredForPushNotifications =>
+      'Device registered for push notification';
 
   @override
   String get successEntryAdded => 'Entry added';
@@ -612,13 +639,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get successLogin => 'Login successful';
 
   @override
-  String get successLoginAdvice => 'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of login)';
+  String get successLoginAdvice =>
+      'It is recommended to refresh at least once every 6 months to maintain the session (thus avoiding the needing of login)';
 
   @override
-  String get successRegistration => 'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority';
+  String get successRegistration =>
+      'If email address is valid, you will receive an activation mail message. If you don\'t receive it, ask to the competent territorial authority';
 
   @override
-  String get successResetRequest => 'If email address is valid, you will receive a verification code to your email address. The code must be inserted here with the new password';
+  String get successResetRequest =>
+      'If email address is valid, you will receive a verification code to your email address. The code must be inserted here with the new password';
 
   @override
   String get successPasswordChanged => 'Password changed successfully';
