@@ -7,7 +7,7 @@ from fastapi import (
     APIRouter, Depends, 
     HTTPException, 
     Request, BackgroundTasks)
-from sqlmodel import Session, desc, asc, select, union_all
+from sqlmodel import Session, desc, asc, select, union_all, update
 from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from dependencies import (
@@ -364,17 +364,23 @@ def close_alert(alert_id: int,
             case ClosingType.punitive.value:
                 closing_vote = -100
             case _:
+                # This should never happen, because the Pydantic model already validates the closing type 
+                # (returning 422 if it's invalid), but we add this check just in case
                 raise invalid_request_exception("Invalid closing type")
         sender_stmt = select(User).where(User.id == alert.user_id)
         sender = db_session.exec(sender_stmt).first()
         if not sender:
             raise not_found_exception("Alert sender not found")
-        alerted_users_stmt = (select(AlertedUser, User).join(User, User.id == AlertedUser.user_id) # type: ignore
-                .where(AlertedUser.alert_id == alert.id))
-        alerted_users_joined = db_session.exec(alerted_users_stmt).all()
         if closing_schema.type != ClosingType.neutral.value:
+            alerted_users_stmt = (select(AlertedUser, User)
+                    .join(User, User.id == AlertedUser.user_id) # type: ignore
+                    .where(AlertedUser.alert_id == alert.id))
+            alerted_users_ext = db_session.exec(alerted_users_stmt).all()
             # If the alert is closed in a non-neutral way, 
-            # we update the reliability score of the alert sender
+            # we update the reliability score of the alert sender, according to the closing vote of the chief alert manager. 
+            # We increase the hero score of the alert sender if the alert is closed in a positive way.
+            # Note: the hero score is similar to the reliability score, but it's only a game mechanic,
+            # it's only a way to symbolically reward users that created alerts that were closed in a positive way by the chief alert manager.
             sender.reliability_score += closing_vote
             if sender.reliability_score < 0:
                 sender.reliability_score = 0
@@ -385,10 +391,13 @@ def close_alert(alert_id: int,
             db_session.add(sender)
             # We also update the reliability score of all alerted users (except the chief who closed the alert).
             # We increase the reliability score of alerted users that voted in the same way as the chief manager,
-            # and we decrease the reliability score of alerted users that voted in the opposite way of the chief manager
-            for au_joined in alerted_users_joined:
-                au = au_joined[0]
-                user = au_joined[1]
+            # and we decrease the reliability score of alerted users that voted in the opposite way of the chief manager.
+            # We increase the hero score of alerted users that voted in the same way as the chief manager. 
+            # Note: the hero score is only a game mechanic, it doesn't have any real meaning in the real world,  
+            # it's just a way to symbolically reward users that voted in the same way as the chief manager.
+            for au_ext in alerted_users_ext:
+                au = au_ext[0]
+                user = au_ext[1]
                 if au.user_id != current_user.id: 
                     au_vote = au.vote
                     if au_vote == 0:
@@ -403,6 +412,9 @@ def close_alert(alert_id: int,
                     elif user.reliability_score > 100:
                         user.reliability_score = 100
                     db_session.add(user)
+            if closing_schema.type == ClosingType.punitive.value:
+                alert.is_banned = True
+                update(Message).where(Message.alert_id == alert.id).values(is_banned=True) # type: ignore
     else:
         # For non-local alerts, the chief alert manager is the chief alert sender,
         # and he is the only one who can close the alert
@@ -417,7 +429,7 @@ def close_alert(alert_id: int,
     db_session.add(alert)
     db_session.commit()
     return {
-        "message": "Alert closed", 
+        "message": "Alert closed successfully", 
         "closing_type": closing_schema.type, 
         "closing_vote": closing_vote
     }
