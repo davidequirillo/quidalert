@@ -202,6 +202,21 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     int respVote = 0;
     final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
+    final dialogTitle = (vote > 0)
+        ? loc.buttonVotePositive
+        : (vote < 0)
+        ? loc.buttonVoteNegative
+        : loc.buttonVoteNeutral;
+    final bool result =
+        await showTwoWayAlertDialog(
+          context,
+          dialogTitle,
+          loc.labelAreYouSure,
+        ) ??
+        false;
+    if (result == false) {
+      return;
+    }
     try {
       final response = await authClient.doProtectedApiRequest(
         "post",
@@ -307,6 +322,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         : false;
     final alertIsClosed =
         (alertWithInfo.alert.status == AlertStatus.closed.name) ? true : false;
+    final alertIsExpanded = alertWithInfo.alert.isExpanded;
     final chiefIsAlerted =
         (alertWithInfo.chiefFirstname != null &&
             alertWithInfo.chiefFirstname!.isNotEmpty &&
@@ -557,6 +573,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
+        if (alertIsExpanded) Text('Info: ${loc.alertIsExtendedInfo}'),
         // If the alert is closed, show the chief closing vote
         if (alertIsLocal && alertIsClosed)
           Text(
@@ -569,11 +586,15 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           buildSectionTitle(loc.sectionAlertVote),
         if ((alertWithInfo.userIsAlerted) && alertIsLocal)
           Text('${loc.alertedUserMyVote}: ${myVoteStr.toLowerCase()}'),
-        if (alertWithInfo.userIsAlerted && alertIsLocal && !alertIsClosed)
+        if (alertWithInfo.userIsAlerted &&
+            alertIsLocal &&
+            !alertIsClosed &&
+            !alertIsExpanded)
           SizedBox(height: 10),
         if (alertWithInfo.userIsAlerted &&
             alertIsLocal &&
             !alertIsClosed &&
+            !alertIsExpanded &&
             (alertWithInfo.userVote == 0))
           Row(
             children: [

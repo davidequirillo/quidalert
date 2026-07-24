@@ -323,6 +323,7 @@ class Alert {
   final String type;
   final String description;
   final String status;
+  final bool isExpanded;
   final double latitude;
   final double longitude;
   final String? address;
@@ -334,6 +335,7 @@ class Alert {
     required this.type,
     required this.description,
     required this.status,
+    required this.isExpanded,
     required this.latitude,
     required this.longitude,
     required this.address,
@@ -345,6 +347,7 @@ class Alert {
     final int id = json['id'] ?? 0;
     final bool isClosed = json['is_closed'] ?? false;
     final bool isPending = json['is_pending'] ?? true;
+    final bool isExpanded = json['is_expanded'] ?? false;
     String status;
     if (isClosed) {
       status = AlertStatus.closed.name;
@@ -377,6 +380,7 @@ class Alert {
       address: address,
       radius: radius,
       status: status,
+      isExpanded: isExpanded,
       createdAt: createdAt,
     );
   }

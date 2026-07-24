@@ -239,6 +239,12 @@ abstract class AppLocalizations {
   /// **'Extend alert'**
   String get alertExtend;
 
+  /// No description provided for @alertIsExtendedInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'This alert has been enlarged'**
+  String get alertIsExtendedInfo;
+
   /// No description provided for @alertNew.
   ///
   /// In en, this message translates to:

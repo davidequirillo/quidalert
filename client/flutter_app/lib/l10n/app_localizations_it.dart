@@ -81,6 +81,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertExtend => 'Estendi allerta';
 
   @override
+  String get alertIsExtendedInfo => 'Questa allerta è stata ingrandita';
+
+  @override
   String get alertNew => 'Nuova allerta';
 
   @override
