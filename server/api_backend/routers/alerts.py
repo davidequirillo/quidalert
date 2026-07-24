@@ -61,7 +61,7 @@ def create_alert(alert_in: AlertIn,
             raise forbidden_exception("Only chiefs can create special alerts")
     else:
         if (not current_user.is_reliable) or (current_user.reliability_score <= 0):
-            raise forbidden_exception()
+            raise forbidden_exception("You are not a reliable user, you can't create local alerts")
     if (alert_in.radius > 1):
         if not current_user.is_chief:
             raise forbidden_exception("Only chiefs can create alerts with radius greater than 1")

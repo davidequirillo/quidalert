@@ -231,6 +231,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorAlertSimilarInGeneral => 'A similar general alert already exists';
 
   @override
+  String get errorAlertIsClosed => 'Alert is closed';
+
+  @override
+  String get errorAlertHasBeenExtended => 'Alert has been extended';
+
+  @override
+  String get errorAlertedUserNotReliable => 'User not reliable';
+
+  @override
   String get errorBadRequest => 'Bad request';
 
   @override
@@ -603,7 +612,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get successAlertCreatedGeneral => 'General alert created. It\'s visible to all';
 
   @override
-  String get successAlertVote => 'Vote sent succesfully';
+  String get successAlertVoted => 'Vote sent succesfully';
+
+  @override
+  String get successAlertClosed => 'Alert closed successfully';
 
   @override
   String get successDeviceRegisteredForPushNotifications => 'Device registered for push notification';

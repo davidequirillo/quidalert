@@ -44,6 +44,9 @@ class AlertDetailsBody extends StatefulWidget {
 
 class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   AlertWithInfo? alertWithInfo;
+  bool positiveCloseUnblocked = false; // state for the checkbox
+  bool negativeCloseUnblocked = false; // state for the checkbox
+  bool neutralCloseUnblocked = false; // state for the checkbox
   bool punitiveCloseUnblocked = false; // state for the checkbox
 
   @override
@@ -228,7 +231,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         throw NotFoundException();
       }
       retTitle = loc.successGeneric;
-      retMessage = loc.successAlertVote;
+      retMessage = loc.successAlertVoted;
       respVote = respObj["vote"];
     } catch (e) {
       final exceptionName = e.runtimeType.toString();
@@ -237,6 +240,13 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       }
       retTitle = loc.errorError;
       retMessage = loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
+      if (e.toString().contains("Alert is closed")) {
+        retMessage += ": ${loc.errorAlertIsClosed.toLowerCase()}";
+      } else if (e.toString().contains("Alert has been expanded")) {
+        retMessage += ": ${loc.errorAlertHasBeenExtended.toLowerCase()}";
+      } else if (e.toString().contains("You are not a reliable user")) {
+        retMessage += ": ${loc.errorAlertedUserNotReliable.toLowerCase()}";
+      }
     } finally {
       if (mounted) {
         await showSimpleAlertDialog(context, retTitle, retMessage);
@@ -254,6 +264,60 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         alertWithInfo!.userVote = respVote;
       });
     }
+  }
+
+  Future<void> _closeAlert(int alertId, String closingType) async {
+    String retMessage = "";
+    String retTitle = "";
+    bool newLoginRequired = false;
+    final authClient = context.read<AuthClient>();
+    final loc = AppLocalizations.of(context)!;
+    final String dialogTitle = loc.getClosingTypeButtonString(closingType);
+    final bool result =
+        await showTwoWayAlertDialog(
+          context,
+          dialogTitle,
+          loc.labelAreYouSure,
+        ) ??
+        false;
+    if (result == false) {
+      return;
+    }
+    try {
+      final response = await authClient.doProtectedApiRequest(
+        "post",
+        '/alerts/$alertId/close',
+        body: {"type": closingType},
+      );
+      final Map<String, dynamic>? respObj = json.decode(response.body);
+      if (respObj == null || respObj.isEmpty) {
+        throw NotFoundException();
+      }
+      retTitle = loc.successGeneric;
+      retMessage = loc.successAlertClosed;
+    } catch (e) {
+      final exceptionName = e.runtimeType.toString();
+      if (exceptionName == "GenericNotAuthorizedException") {
+        newLoginRequired = true;
+      }
+      retTitle = loc.errorError;
+      retMessage = loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
+    } finally {
+      if (mounted) {
+        await showSimpleAlertDialog(context, retTitle, retMessage);
+      }
+      if (newLoginRequired) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
+    }
+    if (mounted) {
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+      Navigator.of(context).pushNamed("/alerts/recents");
+    }
+    return;
   }
 
   @override
@@ -633,36 +697,78 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           Row(
             children: [
               ElevatedButton(
-                onPressed: () {
-                  // Handle alert closing with positive vote
-                },
+                onPressed: positiveCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "positive");
+                      }
+                    : null,
                 child: Text(loc.buttonClosingPositive),
               ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  // Handle alert closing with negative vote
+              SizedBox(width: 2),
+              Checkbox(
+                value: positiveCloseUnblocked,
+                onChanged: (value) {
+                  setState(() {
+                    positiveCloseUnblocked = value!;
+                  });
                 },
-                child: Text(loc.buttonClosingNegative),
               ),
             ],
           ),
-        if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 20),
-        if (alertWithInfo.userIsManager && !alertIsClosed)
-          ElevatedButton(
-            onPressed: () {
-              // Handle alert closing with neutral vote
-            },
-            child: Text(loc.buttonClosingNeutral),
+        if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 10),
+        if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: negativeCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "negative");
+                      }
+                    : null,
+                child: Text(loc.buttonClosingNegative),
+              ),
+              SizedBox(width: 2),
+              Checkbox(
+                value: negativeCloseUnblocked,
+                onChanged: (value) {
+                  setState(() {
+                    negativeCloseUnblocked = value!;
+                  });
+                },
+              ),
+            ],
           ),
-        SizedBox(height: 20),
+        if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 10),
+        if (alertWithInfo.userIsManager && !alertIsClosed)
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: neutralCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "neutral");
+                      }
+                    : null,
+                child: Text(loc.buttonClosingNeutral),
+              ),
+              SizedBox(width: 2),
+              Checkbox(
+                value: neutralCloseUnblocked,
+                onChanged: (value) {
+                  setState(() {
+                    neutralCloseUnblocked = value!;
+                  });
+                },
+              ),
+            ],
+          ),
+        if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 10),
         if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
           Row(
             children: [
               ElevatedButton(
                 onPressed: punitiveCloseUnblocked
                     ? () {
-                        // Handle alert closing with punitive vote
+                        _closeAlert(alertWithInfo.alert.id, "punitive");
                       }
                     : null,
                 child: Text(loc.buttonClosingPunitive),

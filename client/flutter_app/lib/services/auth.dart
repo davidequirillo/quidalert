@@ -497,7 +497,10 @@ class AuthClient extends ChangeNotifier {
       if ((!isExpired) && (isNotAuthorized)) {
         throw InvalidTokenException('Access token not valid');
       } else if (isForbidden) {
-        throw ForbiddenRequestException('Forbidden request');
+        final forbiddenRequestMsg = respMessage.isNotEmpty
+            ? respMessage
+            : 'Forbidden request';
+        throw ForbiddenRequestException(forbiddenRequestMsg);
       } else if (isNotFound) {
         throw NotFoundException('Not found');
       } else if (!isExpired &&
