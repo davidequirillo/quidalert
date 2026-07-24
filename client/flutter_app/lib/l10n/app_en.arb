@@ -24,6 +24,7 @@
   "alertTypeEmpty": "Empty",
   "alertTypeManaged": "Managed",
   "alertExtend": "Extend alert",
+  "alertIsExtendedInfo": "This alert has been enlarged",
   "alertNew": "New alert",
   "alertRecents": "Recent alerts",
   "alertYou": "You",

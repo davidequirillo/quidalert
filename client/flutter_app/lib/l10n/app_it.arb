@@ -24,6 +24,7 @@
   "alertTypeEmpty": "Vuota",
   "alertTypeManaged": "Gestita",
   "alertExtend": "Estendi allerta",
+  "alertIsExtendedInfo": "Questa allerta è stata ingrandita",
   "alertNew": "Nuova allerta",
   "alertRecents": "Allerte recenti",
   "alertYou": "Tu",

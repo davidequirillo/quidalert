@@ -32,7 +32,11 @@ from models.general import (
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
     Message, GpsCoordinatesSchema, GpsTokenData,
-    VotingSchema, ClosingSchema, ClosingType
+    VotingSchema, ClosingSchema, ClosingType,
+    CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
+    CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,  
+    HERO_SCORE_INC_VALUE_TO_ALERT_SENDER,
+    HERO_SCORE_INC_VALUE_TO_ALERTED_USERS
 )
 from services.security import (
     now_tz_naive, now_tz_aware
@@ -325,6 +329,8 @@ def vote_alert(alert_id: int,
         raise forbidden_exception("You can only vote for local alerts")
     if alert.is_closed:
         raise forbidden_exception("Alert is closed, voting is not allowed anymore")
+    if alert.is_expanded:
+        raise forbidden_exception("Alert has been expanded by the chief manager, voting is not allowed anymore")
     # If the alerted user (current_user) has already voted about this alert, we can't update the vote
     if alerted_user.vote != 0:
         raise forbidden_exception("You have already voted for this alert, you can't change your vote")
@@ -356,17 +362,19 @@ def close_alert(alert_id: int,
             raise forbidden_exception("Only the chief alert manager can close this alert")
         match closing_schema.type:
             case ClosingType.positive.value:
-                closing_vote = +30
+                closing_vote = CLOSING_VOTE_POSITIVE
             case ClosingType.negative.value:
-                closing_vote = -30
+                closing_vote = CLOSING_VOTE_NEGATIVE
             case ClosingType.neutral.value:
-                closing_vote = 0
+                closing_vote = CLOSING_VOTE_NEUTRAL
             case ClosingType.punitive.value:
-                closing_vote = -100
+                closing_vote = CLOSING_VOTE_PUNITIVE
             case _:
                 # This should never happen, because the Pydantic model already validates the closing type 
                 # (returning 422 if it's invalid), but we add this check just in case
                 raise invalid_request_exception("Invalid closing type")
+        alerted_user.closing_vote = closing_vote
+        db_session.add(alerted_user)
         sender_stmt = select(User).where(User.id == alert.user_id)
         sender = db_session.exec(sender_stmt).first()
         if not sender:
@@ -387,14 +395,16 @@ def close_alert(alert_id: int,
             elif sender.reliability_score > 100:
                 sender.reliability_score = 100
             if closing_schema.type == ClosingType.positive.value:
-                sender.hero_score += 20
+                sender.hero_score += HERO_SCORE_INC_VALUE_TO_ALERT_SENDER
+            elif closing_schema.type == ClosingType.punitive.value:
+                sender.hero_score = 0
             db_session.add(sender)
             # We also update the reliability score of all alerted users (except the chief who closed the alert).
-            # We increase the reliability score of alerted users that voted in the same way as the chief manager,
-            # and we decrease the reliability score of alerted users that voted in the opposite way of the chief manager.
-            # We increase the hero score of alerted users that voted in the same way as the chief manager. 
+            # We increase the reliability score of alerted users that voted in the same way as the chief manager closing type,
+            # and we decrease the reliability score of alerted users that voted in the opposite way of the chief manager closing type.
+            # We increase the hero score of alerted users that voted in the same way as the chief manager closing type 
             # Note: the hero score is only a game mechanic, it doesn't have any real meaning in the real world,  
-            # it's just a way to symbolically reward users that voted in the same way as the chief manager.
+            # it's just a way to symbolically reward users that voted in the same way as the chief manager closing type
             for au_ext in alerted_users_ext:
                 au = au_ext[0]
                 user = au_ext[1]
@@ -404,9 +414,11 @@ def close_alert(alert_id: int,
                         continue
                     if (au_vote > 0 and closing_vote > 0) or (au_vote < 0 and closing_vote < 0):
                         user.reliability_score += abs(int(closing_vote/2))
-                        user.hero_score += 5
+                        user.hero_score += HERO_SCORE_INC_VALUE_TO_ALERTED_USERS
                     else:
                         user.reliability_score -= abs(int(closing_vote/2))
+                        if closing_schema.type == ClosingType.punitive.value:
+                            user.hero_score = 0
                     if user.reliability_score < 0:
                         user.reliability_score = 0
                     elif user.reliability_score > 100:
@@ -414,7 +426,9 @@ def close_alert(alert_id: int,
                     db_session.add(user)
             if closing_schema.type == ClosingType.punitive.value:
                 alert.is_banned = True
-                update(Message).where(Message.alert_id == alert.id).values(is_banned=True) # type: ignore
+                db_session.add(alert)
+                upd_stmt = update(Message).where(Message.alert_id == alert.id).values(is_banned=True) # type: ignore
+                db_session.exec(upd_stmt)
     else:
         # For non-local alerts, the chief alert manager is the chief alert sender,
         # and he is the only one who can close the alert

@@ -122,7 +122,7 @@ def test_vote_alert_not_local(client, db_session, test_baseuser):
     assert response.status_code == forbidden_exception().status_code
     assert "you can only vote for local alerts" in response.json()["detail"].lower()
 
-def test_vote_alert_closed(client, db_session, test_baseuser):
+def test_vote_alert_already_closed(client, db_session, test_baseuser):
     caller: User = test_baseuser["user"]
     access_token = test_baseuser["access_token"]
     # We select an alert from the database, where the API caller (test_baseuser) is an alerted user
@@ -146,6 +146,35 @@ def test_vote_alert_closed(client, db_session, test_baseuser):
         f"/api/alerts/{alert.id}/vote", json={"vote": 1}, headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
     assert "alert is closed" in response.json()["detail"].lower()
+
+def test_vote_alert_has_been_expanded(client, db_session, test_baseuser):
+    caller: User = test_baseuser["user"]
+    access_token = test_baseuser["access_token"]
+    # We select an alert from the database, where the API caller (test_baseuser) is an alerted user
+    statement = (select(Alert).join(AlertedUser, AlertedUser.alert_id == Alert.id) # type: ignore
+            .where(AlertedUser.user_id == caller.id)
+            .where(Alert.type==AlertType.local.value))
+    alerts = db_session.exec(statement).all()
+    # There are for sure some alerts in the database where the API caller (test_baseuser) is an alerted user, 
+    # because of the fixture setup_alerts_data_and_teardown
+    # These alerts are open and not expanded
+    assert len(alerts) > 0
+    for alert in alerts:
+        assert alert.is_closed == False
+        assert alert.is_expanded == False
+    # Now we pick one of these alerts and we simulate that it has been expanded by setting is_expanded to True
+    alert = random.choice(alerts)
+    alert.is_expanded = True
+    db_session.add(alert)
+    db_session.commit()
+    db_session.refresh(alert)
+    # We call the API endpoint to vote for this expanded alert, 
+    # and we expect a forbidden response because the alert has been expanded by the chief manager, 
+    # and voting is not allowed anymore    
+    response = client.post(
+        f"/api/alerts/{alert.id}/vote", json={"vote": 1}, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == forbidden_exception().status_code
+    assert "alert has been expanded" in response.json()["detail"].lower()
 
 def test_vote_alert_alerted_user_not_found(client, db_session, test_baseuser, test_chief):
     # We select an alert from the database, where the API caller (test_baseuser) is not an alerted user

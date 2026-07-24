@@ -364,6 +364,7 @@ def set_alert_as_not_pending_anymore(alert_id, request_info, db_engine):
             alert = db_session.exec(statement).first()
             if alert:
                 alert.is_pending = False
+                alert.spread_count += 1
                 db_session.add(alert)
                 db_session.commit()
         except Exception as e:

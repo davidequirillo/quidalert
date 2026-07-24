@@ -207,6 +207,7 @@ def test_create_alert_out_with_defaults():
     assert alert.spread_count == 0
     assert alert.is_banned == False
     assert alert.is_closed == False
+    assert alert.is_expanded == False
     assert alert.is_pending == True
 
 def test_create_alert_out_with_wrong_spread_count():

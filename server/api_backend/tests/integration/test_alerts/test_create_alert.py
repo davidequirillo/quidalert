@@ -227,6 +227,7 @@ def test_create_alert_type_general_called_by_chief(client, db_session, test_chie
     # For general alerts, pending status is set to False immediately, 
     # because we don't have to perform background tasks for this type of alert
     assert alert.is_pending == False
+    assert alert.spread_count == 0
     assert alert.is_closed == False
     assert alert.radius == 1.0 # not considered for general alerts
     # No alerted users are created
@@ -267,6 +268,7 @@ def test_create_alert_type_empty_called_by_chief(client, db_session, test_chief)
     # For empty alerts, pending status is set to False immediately, 
     # because we don't have to perform background tasks for this type of alert
     assert alert.is_pending == False
+    assert alert.spread_count == 0
     assert alert.is_closed == False
     # Nearby users are not inserted (because it's an empty alert)
     # No alert manager is inserted in alerted_users table (the alert sender is the "alert manager")
@@ -427,6 +429,7 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status 
     assert alert.is_pending == False
+    assert alert.spread_count == 1
     # No nearby users or chiefs should be found, so, no alerted users
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -476,6 +479,7 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status
     assert alert.is_pending == False
+    assert alert.spread_count == 1
     # The first chief should be found (the alert manager), from the list of closest chiefs
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -595,6 +599,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status
     assert alert.is_pending == False
+    assert alert.spread_count == 1
     # The first chief should be found (the alert manager), from the list of closest chiefs, and nearby users should be found
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()
@@ -690,6 +695,7 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status
     assert alert.is_pending == False
+    assert alert.spread_count == 1
     # No nearby users should be found, 
     # so, no alerted users and no alert manager is saved (because it's a managed alert, the alert sender is a chief and he is the "alert manager")
     alerted_users = db_session.exec(select(AlertedUser).where(
@@ -740,6 +746,7 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
     assert alert.is_closed == False
     # After the background task, the alert is no longer in pending status
     assert alert.is_pending == False
+    assert alert.spread_count == 1
     # Nearby users should be found, and the closest chief is the alert sender (because the alert type is "managed")
     alerted_users = db_session.exec(select(AlertedUser).where(
         AlertedUser.alert_id == alert.id)).all()

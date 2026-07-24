@@ -424,8 +424,9 @@ class AlertOut(AlertIn, table=False):
     severity: int = Field(default=10, ge=0, le=10, nullable=False) # not used at the moment, but we can use it in the future to indicate the severity of the alert (0 = low, 10 = high)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     is_pending: bool = Field(default=True, nullable=False) # "pending" means that the alert has been created but it's in processing phase (background task is running to spread the alert to nearby users)
-    spread_count: int = Field(default=0, ge=0, le=3, nullable=False) # number of times the alert can spread to nearby users (adding new users to the alerted users list), max 3 spreads (initial alert + 3 spreads = max 4 "generations" of alerted users)
     is_banned: bool = Field(default=False, nullable=False)
+    is_expanded: bool = Field(default=False, nullable=False) # "expanded" means that the alert has been extended at least 1 time (except the initial spread), adding new users to the alerted users list, in other words "a new generation" of alerted users)
+    spread_count: int = Field(default=0, ge=0, le=4, nullable=False) # number of times the alert has been spread to nearby users (adding new users to the alerted users list), max 4 spreads (initial alert + 3 expansions = max 4 "generations" of alerted users)
     is_closed: bool = Field(default=False, nullable=False)
 
 class Alert(AlertOut, table=True):
@@ -570,6 +571,13 @@ class ClosingType(str, Enum):
     negative = "negative"
     neutral = "neutral"
     punitive = "punitive"
+
+CLOSING_VOTE_POSITIVE = 30
+CLOSING_VOTE_NEGATIVE = -30
+CLOSING_VOTE_NEUTRAL = 0
+CLOSING_VOTE_PUNITIVE = -100
+HERO_SCORE_INC_VALUE_TO_ALERTED_USERS = 5
+HERO_SCORE_INC_VALUE_TO_ALERT_SENDER = 20
 
 class ClosingSchema(BaseModel):
     type: str = Field(default=ClosingType.neutral.value)
