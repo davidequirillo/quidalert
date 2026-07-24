@@ -539,6 +539,24 @@ abstract class AppLocalizations {
   /// **'A similar general alert already exists'**
   String get errorAlertSimilarInGeneral;
 
+  /// No description provided for @errorAlertIsClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert is closed'**
+  String get errorAlertIsClosed;
+
+  /// No description provided for @errorAlertHasBeenExtended.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert has been extended'**
+  String get errorAlertHasBeenExtended;
+
+  /// No description provided for @errorAlertedUserNotReliable.
+  ///
+  /// In en, this message translates to:
+  /// **'User not reliable'**
+  String get errorAlertedUserNotReliable;
+
   /// No description provided for @errorBadRequest.
   ///
   /// In en, this message translates to:
@@ -1283,11 +1301,17 @@ abstract class AppLocalizations {
   /// **'General alert created. It\'s visible to all'**
   String get successAlertCreatedGeneral;
 
-  /// No description provided for @successAlertVote.
+  /// No description provided for @successAlertVoted.
   ///
   /// In en, this message translates to:
   /// **'Vote sent succesfully'**
-  String get successAlertVote;
+  String get successAlertVoted;
+
+  /// No description provided for @successAlertClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert closed successfully'**
+  String get successAlertClosed;
 
   /// No description provided for @successDeviceRegisteredForPushNotifications.
   ///

@@ -322,7 +322,7 @@ class Alert {
   final int id;
   final String type;
   final String description;
-  final String status;
+  String status; // it can be updated without reloading the whole object
   final bool isExpanded;
   final double latitude;
   final double longitude;
@@ -395,14 +395,14 @@ class AlertWithInfo {
   final String? chiefSurname;
   final int senderReliabilityScore;
   final int alertedUsersNum;
-  int positiveVotesNum;
-  int negativeVotesNum;
-  final int chiefClosingVote;
+  int positiveVotesNum; // it can be updated without reloading the whole object
+  int negativeVotesNum; // it can be updated without reloading the whole object
+  int chiefClosingVote; // it can be updated without reloading the whole object
   final int messagesNum;
   final bool userIsSender;
   final bool userIsAlerted;
   final bool userIsManager;
-  int userVote;
+  int userVote; // it can be updated without reloading the whole object
 
   AlertWithInfo({
     required this.alert,

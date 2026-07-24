@@ -120,5 +120,20 @@ extension AppLocalizationsExtension on AppLocalizations {
     }
   }
 
+  String getClosingTypeButtonString(String key) {
+    switch (key) {
+      case 'positive':
+        return buttonClosingPositive;
+      case 'negative':
+        return buttonClosingNegative;
+      case 'neutral':
+        return buttonClosingNeutral;
+      case 'punitive':
+        return buttonClosingPunitive;
+      default:
+        return '';
+    }
+  }
+
   String? operator [](String key) => getString(key);
 }
