@@ -515,12 +515,6 @@ abstract class AppLocalizations {
   /// **'Nessuna voce trovata'**
   String get entriesNotFound;
 
-  /// No description provided for @errorAccountBlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Account blocked'**
-  String get errorAccountBlocked;
-
   /// No description provided for @errorAddressNotFound.
   ///
   /// In en, this message translates to:
@@ -554,7 +548,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorAlertedUserNotReliable.
   ///
   /// In en, this message translates to:
-  /// **'User not reliable'**
+  /// **'User is not reliable'**
   String get errorAlertedUserNotReliable;
 
   /// No description provided for @errorBadRequest.
@@ -695,12 +689,6 @@ abstract class AppLocalizations {
   /// **'Not authorized, retry login'**
   String get errorNotAuthorizedDoLogin;
 
-  /// No description provided for @errorOpDeniedYouAreNotReliable.
-  ///
-  /// In en, this message translates to:
-  /// **'Operation denied: you have been judged as not realiable'**
-  String get errorOpDeniedYouAreNotReliable;
-
   /// No description provided for @errorRegNotAuthorized.
   ///
   /// In en, this message translates to:
@@ -808,6 +796,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to open map'**
   String get errorUnableToOpenMap;
+
+  /// No description provided for @errorUserNotReliable.
+  ///
+  /// In en, this message translates to:
+  /// **'User is not reliable'**
+  String get errorUserNotReliable;
+
+  /// No description provided for @errorUserBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Account blocked'**
+  String get errorUserBlocked;
 
   /// No description provided for @exceptionBadRequest.
   ///

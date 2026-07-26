@@ -322,7 +322,7 @@ class Alert {
   final int id;
   final String type;
   final String description;
-  String status; // it can be updated without reloading the whole object
+  final String status;
   final bool isExpanded;
   final double latitude;
   final double longitude;

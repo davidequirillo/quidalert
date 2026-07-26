@@ -13,7 +13,7 @@ from sqlalchemy.engine import Engine # Useful for sqlalchemy event.listener
 from sqlalchemy import event # Useful for sqlalchemy event.listener
 from fakeredis.aioredis import FakeRedis
 from models.general import (
-    User, UserRole, UserLanguage, 
+    User, UserLanguage, 
     RefreshToken,
     WhiteListEntry
 )

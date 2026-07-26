@@ -115,7 +115,7 @@ class _TwoFABodyState extends State<TwoFABody> {
           endMessage = loc.errorLoginLocked;
           break;
         case 'Forbidden request':
-          endMessage = loc.errorAccountBlocked;
+          endMessage = loc.errorUserBlocked;
           break;
         default:
           endMessage = loc.errorBadRequest;

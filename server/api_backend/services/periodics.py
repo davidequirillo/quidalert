@@ -9,8 +9,7 @@ from fakeredis.aioredis import FakeRedis
 from models.general import (
     WhiteListEntry,
     User, UserLanguage,
-    Alert, AlertType,
-    Message
+    Alert, Message
 )
 from services.security import (
     now_tz_aware,
@@ -31,7 +30,9 @@ from core.periodic_events import (
     log_cleanup_dismissed_users_completed,
     log_cleanup_old_alerts_started,
     log_cleanup_old_alerts_error,
-    log_cleanup_old_alerts_completed
+    log_cleanup_old_alerts_completed,
+    log_cleanup_dismissed_users_in_cooldown,
+    log_cleanup_old_alerts_in_cooldown,
     )
 from core.dbmgr import (
     redis, cluster, RedisHandleTypeError,
@@ -43,6 +44,10 @@ from core.dbmgr import (
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT,
     REDIS_COOLDOWN_DEMOTIONS_CLEANUP_KEY,
     REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT,
+    REDIS_COOLDOWN_USERS_CLEANUP_KEY,
+    REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT,
+    REDIS_COOLDOWN_ALERTS_CLEANUP_KEY,
+    REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT,
     REDIS_TOTAL_SHARDS)
 
 LOCATIONS_TTL_HOURS = 48
@@ -81,11 +86,11 @@ async def cleanup_expired_locations(redis_client):
     total_deleted = 0
     lock_key = REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY
     lock_timeout = REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT
-    # nx=True (Set if Not Exists)
+    # nx=True (set if not exists)
     # ex=lock_timeout (expiry, cooldown)
     lock_acquired = await redis_client.set(lock_key, "active", ex=lock_timeout, nx=True)
     if not lock_acquired:
-        # if we cannot acquire the lock, it means that another periodic cleanup task is currently running 
+        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock, (or recently ran and is in cooldown),
         # (or recently ran and is in cooldown), so we skip the execution
         log_cleanup_expired_locations_in_cooldown(
             detail=f"Skipping cleanup, waiting for cooldown"
@@ -156,11 +161,11 @@ async def cleanup_expired_demotions(redis_client):
     total_deleted = 0
     lock_key = REDIS_COOLDOWN_DEMOTIONS_CLEANUP_KEY
     lock_timeout = REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT
-    # nx=True (Set if Not Exists)
+    # nx=True (set if not exists)
     # ex=lock_timeout (expiry, cooldown)
     lock_acquired = await redis_client.set(lock_key, "active", ex=lock_timeout, nx=True)
     if not lock_acquired:
-        # if we cannot acquire the lock, it means that another periodic cleanup task is currently running 
+        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
         # (or recently ran and is in cooldown), so we skip the execution
         log_cleanup_expired_demotions_in_cooldown(
             detail=f"Skipping cleanup, waiting for cooldown"
@@ -208,7 +213,7 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client,
         await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
 
-def do_users_cleanup(db_engine):
+def do_users_cleanup(db_engine, redis_client):
     """
     This function is called periodically to clean up accounts that have been pending deletion for too long.
     It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
@@ -216,6 +221,18 @@ def do_users_cleanup(db_engine):
     If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is wiped completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
     If the period is longer than 2 years, the deactivated user is destroyed completely from the database with all his related data (alerts, messages, and whitelists entries)
     """
+    lock_key = REDIS_COOLDOWN_USERS_CLEANUP_KEY
+    lock_timeout = REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT
+    # nx=True (set if not exists)
+    # ex=lock_timeout (expiry, cooldown)
+    lock_acquired = asyncio.run(redis_client.set(lock_key, "active", ex=lock_timeout, nx=True))
+    if not lock_acquired:
+        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
+        # (or recently ran and is in cooldown), so we skip the execution
+        log_cleanup_dismissed_users_in_cooldown(
+            detail=f"Skipping cleanup, waiting for cooldown"
+        )
+        return 0, 0
     now = now_tz_aware()
     deactivation_timedelta = timedelta(days=USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS)
     destruction_timedelta = timedelta(days=USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS)
@@ -297,10 +314,22 @@ def deactivate_user(user, db_session):
     anonymous_addr = "Unknown address"
     db_session.exec(update(Alert).where(Alert.user_id == user.id).values(description=anonymous_desc, address=anonymous_addr))
 
-def do_alerts_cleanup(db_engine):
+def do_alerts_cleanup(db_engine, redis_client):
     """
     This function is called periodically to clean up old alerts.
     """
+    lock_key = REDIS_COOLDOWN_ALERTS_CLEANUP_KEY
+    lock_timeout = REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT
+    # nx=True (set if not exists)
+    # ex=lock_timeout (expiry, cooldown)
+    lock_acquired = asyncio.run(redis_client.set(lock_key, "active", ex=lock_timeout, nx=True))
+    if not lock_acquired:
+        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
+        # (or recently ran and is in cooldown), so we skip the execution
+        log_cleanup_old_alerts_in_cooldown(
+            detail=f"Skipping cleanup, waiting for cooldown"
+        )
+        return 0, 0
     now = now_tz_aware()
     log_cleanup_old_alerts_started(detail=f"Starting cleanup of alerts older than {ALERT_TTL_DAYS} days")
     with Session(db_engine) as db_session:

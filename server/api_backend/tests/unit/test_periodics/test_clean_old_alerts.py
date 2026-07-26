@@ -4,7 +4,11 @@
 
 from datetime import timedelta
 from sqlmodel import Session, select, delete
-from models.general import Alert, AlertType, AlertedUser, Message
+from fakeredis.aioredis import FakeRedis
+from models.general import Alert, AlertedUser, Message
+from core.dbmgr import (
+    REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT
+)
 from services.periodics import (
     ALERT_TTL_DAYS,
     ALERT_TTSO_DAYS,
@@ -16,7 +20,7 @@ from tests.fixtures.alerts import (
     setup_alerts_data_and_teardown # required (fixture automatically called)
 )
 
-def test_clean_old_alerts_one_old_alert_in_db(db_session: Session):
+def test_clean_old_alerts_one_old_alert_in_db(db_session: Session, redis_session: FakeRedis):
     now = now_tz_naive()
     statement = select(Alert)
     # We get the first alert from the database (see setup_alerts_data fixture)
@@ -44,7 +48,7 @@ def test_clean_old_alerts_one_old_alert_in_db(db_session: Session):
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
     alert_id = alert.id   
-    _, deleted_count = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine, redis_session)
     # Check if the alert has been deleted
     assert deleted_count == 1
     alerts_after_cleanup = db_session.exec(statement).all()
@@ -60,7 +64,7 @@ def test_clean_old_alerts_one_old_alert_in_db(db_session: Session):
     alerted_users_after_cleanup = db_session.exec(statement).all()
     assert len(alerted_users_after_cleanup) == 0
 
-def test_clean_old_alerts_no_old_alerts_in_db(db_session: Session):
+def test_clean_old_alerts_no_old_alerts_in_db(db_session: Session, redis_session: FakeRedis):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)
@@ -80,11 +84,11 @@ def test_clean_old_alerts_no_old_alerts_in_db(db_session: Session):
     db_session.commit()
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
-    _, deleted_count = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine, redis_session)
     # Check that no alert has been deleted
     assert deleted_count == 0
 
-def test_clean_old_alerts_empty_table(db_session: Session):
+def test_clean_old_alerts_empty_table(db_session: Session, redis_session: FakeRedis):
     # We manually delete all alerts from the database
     # so, we simulate the case where there are no alerts in the database
     db_session.exec(delete(Alert))
@@ -95,11 +99,11 @@ def test_clean_old_alerts_empty_table(db_session: Session):
     assert alerts_num_after_cleanup == 0
     db_engine = db_session.get_bind()
     # Now we call the do_alerts_cleanup function (periodic task)
-    _, deleted_count = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine, redis_session)
     # Check that no alert has been deleted, because there are no alerts in the database
     assert deleted_count == 0
 
-def test_clean_old_alerts_some_old_alerts_in_db(db_session: Session):
+def test_clean_old_alerts_some_old_alerts_in_db(db_session: Session, redis_session: FakeRedis):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)
@@ -119,7 +123,7 @@ def test_clean_old_alerts_some_old_alerts_in_db(db_session: Session):
     db_session.commit()
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
-    _, deleted_count = do_alerts_cleanup(db_engine)
+    _, deleted_count = do_alerts_cleanup(db_engine, redis_session)
     assert deleted_count == alerts_num // 2
     # We check that the remaining alerts in the database are all newer than ALERT_TTL_DAYS
     remaining_alerts = db_session.exec(statement).all()
@@ -135,7 +139,7 @@ def test_clean_old_alerts_some_old_alerts_in_db(db_session: Session):
         alerted_users_after_cleanup = db_session.exec(statement).all()
         assert len(alerted_users_after_cleanup) == 0
 
-def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session):
+def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session, redis_session: FakeRedis):
     now = now_tz_naive()
     statement = select(Alert)
     # We get alerts from the database (see setup_alerts_data fixture)
@@ -173,7 +177,7 @@ def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session):
     db_engine = db_session.get_bind()
     # Call the do_alerts_cleanup function (periodic task)
     # We verify the results with the results coming from db
-    closed_num, deleted_num = do_alerts_cleanup(db_engine)
+    closed_num, deleted_num = do_alerts_cleanup(db_engine, redis_session)
     assert deleted_num > 0
     assert closed_num > 0
     assert closed_num == alerts_to_close_num
@@ -185,3 +189,39 @@ def test_clean_old_alerts_close_and_delete_some_alerts(db_session: Session):
     for alert_id in alerts_to_delete_ids:
         alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
         assert alert is None
+
+def test_clean_old_alerts_lock_already_acquired(db_session: Session, redis_session: FakeRedis, frozen_now):
+    now = now_tz_naive()
+    statement = select(Alert)
+    # We get alerts from the database (see setup_alerts_data fixture)
+    alerts = db_session.exec(statement).all()
+    alerts_num = len(alerts)
+    # There is at least one alert in the database (see setup_alerts_data fixture)
+    assert alerts_num > 0
+    # We set the alert's created_at to be older than ALERT_TTSO_DAYS, so it must be closed
+    alert = alerts[0]
+    alert.created_at = now - timedelta(days=ALERT_TTSO_DAYS + 1)
+    db_session.add(alert)
+    db_session.commit()
+    db_engine = db_session.get_bind()
+    # Call the do_alerts_cleanup function (periodic task) for the first time,
+    # and it should acquire the lock and execute the cleanup
+    closed_num, _ = do_alerts_cleanup(db_engine, redis_session)
+    assert closed_num == 1
+    # No we re-open the alert, so that it can be closed again in the next cleanup
+    alert.is_closed = False
+    alert.created_at = now - timedelta(days=ALERT_TTSO_DAYS + 1)
+    db_session.add(alert)
+    db_session.commit()
+    # Now we call the do_alerts_cleanup function (periodic task) for the second time,
+    # and it should not acquire the lock, because it's already acquired by the first call,
+    # so the cleanup is skipped
+    closed_num, _ = do_alerts_cleanup(db_engine, redis_session)
+    assert closed_num == 0
+    # Now, we try to simulate the time passing, so that the lock is released and the cleanup can be executed again
+    frozen_now.tick(delta=timedelta(seconds=REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT + 1))
+    # Now we call the do_alerts_cleanup function (periodic task) for the third time,
+    # and it should acquire the lock, because the lock is no longer in cooldown,
+    # so the cleanup is executed again
+    closed_num, _ = do_alerts_cleanup(db_engine, redis_session)
+    assert closed_num == 1

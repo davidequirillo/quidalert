@@ -116,7 +116,7 @@ def test_create_alert_by_a_user_not_reliable(client, db_session, test_baseuser):
         "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
-    assert response.json()["detail"] == forbidden_exception().detail
+    assert "You are not a reliable user" in response.json()["detail"]
 
 def test_create_alert_by_a_user_with_zero_reliability_score(client, db_session, test_baseuser):
     user = test_baseuser['user']
@@ -135,7 +135,7 @@ def test_create_alert_by_a_user_with_zero_reliability_score(client, db_session, 
         "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
-    assert response.json()["detail"] == forbidden_exception().detail
+    assert "You are not a reliable user" in response.json()["detail"]
     # Another example with reliability score negative
     user.reliability_score = -10
     db_session.add(user)
@@ -144,7 +144,7 @@ def test_create_alert_by_a_user_with_zero_reliability_score(client, db_session, 
         "/api/alerts", json=data,
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == forbidden_exception().status_code
-    assert response.json()["detail"] == forbidden_exception().detail
+    assert "You are not a reliable user" in response.json()["detail"]
 
 def test_create_alert_special_type_called_by_user(client, test_baseuser):
     # This test checks that a user cannot create a special alert (general, empty, managed)
