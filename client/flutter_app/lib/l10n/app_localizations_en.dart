@@ -219,9 +219,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get entriesNotFound => 'Nessuna voce trovata';
 
   @override
-  String get errorAccountBlocked => 'Account blocked';
-
-  @override
   String get errorAddressNotFound => 'Address not found';
 
   @override
@@ -237,7 +234,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorAlertHasBeenExtended => 'Alert has been extended';
 
   @override
-  String get errorAlertedUserNotReliable => 'User not reliable';
+  String get errorAlertedUserNotReliable => 'User is not reliable';
 
   @override
   String get errorBadRequest => 'Bad request';
@@ -309,9 +306,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotAuthorizedDoLogin => 'Not authorized, retry login';
 
   @override
-  String get errorOpDeniedYouAreNotReliable => 'Operation denied: you have been judged as not realiable';
-
-  @override
   String get errorRegNotAuthorized => 'Registration not authorized: ask to competent territorial authority';
 
   @override
@@ -364,6 +358,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorUnableToOpenMap => 'Unable to open map';
+
+  @override
+  String get errorUserNotReliable => 'User is not reliable';
+
+  @override
+  String get errorUserBlocked => 'Account blocked';
 
   @override
   String get exceptionBadRequest => 'Bad request';

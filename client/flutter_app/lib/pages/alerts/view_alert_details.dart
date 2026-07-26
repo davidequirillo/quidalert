@@ -313,9 +313,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       }
     }
     if (mounted) {
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
+      goToHomePage(context);
       Navigator.of(context).pushNamed("/alerts/recents");
+      Navigator.of(
+        context,
+      ).pushNamed("/alerts/view-alert-details", arguments: alertId.toString());
     }
     return;
   }

@@ -198,9 +198,12 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       } else {
         retMessage = loc.successAlertCreated;
       }
-    } on ForbiddenRequestException catch (_) {
+    } on ForbiddenRequestException catch (e) {
       retTitle = loc.errorError;
-      retMessage = loc.errorOpDeniedYouAreNotReliable;
+      retMessage = loc.exceptionForbiddenRequest;
+      if (e.toString().contains("You are not a reliable user")) {
+        retMessage += ": ${loc.errorUserNotReliable.toLowerCase()}";
+      }
       error = true;
     } on BadRequestException catch (_) {
       retTitle = loc.errorError;
