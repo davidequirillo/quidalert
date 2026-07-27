@@ -17,8 +17,7 @@ def test_set_alert_as_not_pending_success(db_session, test_alert, test_request_i
     assert test_alert.user_id is not None
     # We check that the alert is in pending status (default status)
     assert test_alert.is_pending == True
-    db_engine = db_session.get_bind()
-    set_alert_as_not_pending_anymore(test_alert.id, test_request_info, db_engine)
+    set_alert_as_not_pending_anymore(test_alert.id, test_request_info, db_session)
     db_session.refresh(test_alert) # Refresh the test_alert object to get the updated state from the database
     # After the function call, the alert should be set as not pending anymore
     assert test_alert.is_pending == False

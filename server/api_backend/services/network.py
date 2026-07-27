@@ -3,11 +3,9 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import smtplib
-import asyncio
-from fastapi.concurrency import run_in_threadpool
 from email.message import EmailMessage
 from firebase_admin import messaging as firebase_messaging
-from sqlmodel import Session, select, update
+from sqlmodel import select, update
 from models.general import string_as_uuid, RefreshToken
 from core.settings import settings
 from services.localization import (langmap, 
@@ -78,7 +76,7 @@ def send_login_code_mail(email: str, code: str, lang: str):
 def notify_single_client(
         user_id, fcm_token, 
         msg_title: str, msg_body: str, msg_data: dict, 
-        request_info, db_engine):
+        request_info, db_session):
     push_msg = firebase_messaging.Message(
         notification=firebase_messaging.Notification(
             title=msg_title,
@@ -93,12 +91,12 @@ def notify_single_client(
         return response
     except firebase_messaging.UnregisteredError as e:
         log_notify_single_client_unregistered_error(request_info, detail=f"FCM token associated with user_id {user_id} is unregistered, deleting it...")
-        with Session(db_engine) as db_session:
-            # We clean unregistered FCM token from database
-            try:
-                user_id_as_uuid = string_as_uuid(user_id)
-            except Exception as e:
-                raise Exception(f"Error converting user_id string to UUID: {e}")
+        # We clean unregistered FCM token from database
+        try:
+            user_id_as_uuid = string_as_uuid(user_id)
+        except Exception as e_sub:
+            log_notify_single_client_unregistered_error(request_info, detail=f"Error converting user_id {user_id} from database: {e_sub}")
+        try:
             statement = select(RefreshToken).where(
                 RefreshToken.user_id == user_id_as_uuid).where(
                     RefreshToken.fcm_token == fcm_token)
@@ -109,30 +107,22 @@ def notify_single_client(
                 db_session.add(rtoken)
                 db_session.commit()
                 log_notify_single_client_unregistered_error(request_info, detail=f"FCM token associated with user_id {user_id} deleted from database")
+        except Exception as e_sub:
+            db_session.rollback()
+            log_notify_single_client_unregistered_error(request_info, detail=f"Error deleting FCM token associated with user_id {user_id} from database: {e_sub}")
         raise(e)
     except Exception as e:
         log_notify_single_client_error(request_info, detail=f"Error notifying single client: {e}")
         raise(e)
-    
-def clean_unregistered_fcm_tokens(tokens_to_delete_by_uuids, tokens_to_delete, db_engine):
-    with Session(db_engine) as db_session:
-        # We clean unregistered FCM tokens (by ids in...) from database
-        statement = update(RefreshToken).where(
-        RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
-            ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
-            ).values(
-            fcm_token=None, fcm_token_updated_at=None)
-        db_session.exec(statement)
-        db_session.commit()
 
-async def notify_many_clients(
+def notify_many_clients(
         user_ids, fcm_tokens, 
         msg_title: str, msg_body: str, msg_data: dict, 
-        request_info, db_engine):
+        request_info, db_session):
     success_count = 0
     failure_count = 0
-    # Note: chunk size can 500 at max, but we use smaller chunks with async pauses to avoid hitting FCM rate limits
-    chunk_size = 10 if settings.app_mode == 'development' else 100
+    # Note: chunk size can be 500 at max
+    chunk_size = 10 if settings.app_mode == 'development' else 500
     for i in range(0, len(fcm_tokens), chunk_size):
         chunk_tokens = fcm_tokens[i:i+chunk_size]
         chunk_user_ids = user_ids[i:i+chunk_size]
@@ -145,7 +135,7 @@ async def notify_many_clients(
             tokens=chunk_tokens
         )
         try:
-            response = await run_in_threadpool(firebase_messaging.send_each_for_multicast, push_msg)
+            response = firebase_messaging.send_each_for_multicast(push_msg)
             if response.failure_count > 0:
                 tokens_to_delete_by_ids = []
                 tokens_to_delete = []
@@ -160,13 +150,24 @@ async def notify_many_clients(
                     for uid in tokens_to_delete_by_ids:
                         try:
                             tokens_to_delete_by_uuids.append(string_as_uuid(uid))
-                        except Exception as e:
-                            log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: Error converting user_id string to UUID: {e}")
-                    await run_in_threadpool(clean_unregistered_fcm_tokens, tokens_to_delete_by_uuids, tokens_to_delete, db_engine)
-                    log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: {len(tokens_to_delete)} wrong fcm tokens deleted from database")
+                        except Exception as e_sub:
+                            log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: Error converting user_id string to UUID: {e_sub}")
+                    try:
+                        # We clean unregistered FCM tokens (by ids in...) from database
+                        statement = update(RefreshToken).where(
+                        RefreshToken.user_id.in_(tokens_to_delete_by_uuids) # type:ignore
+                            ).where(RefreshToken.fcm_token.in_(tokens_to_delete) # type:ignore
+                            ).values(
+                            fcm_token=None, fcm_token_updated_at=None)
+                        db_session.exec(statement)
+                        db_session.commit()
+                        log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: {len(tokens_to_delete)} wrong fcm tokens deleted from database")
+                    except Exception as e_sub:
+                        db_session.rollback()
+                        log_notify_many_clients_unregistered_warning(request_info, detail=f"Chunk {i // chunk_size + 1}: error deleting wrong fcm tokens from database: {e_sub}")
+            log_notify_many_clients_info(request_info, detail=f"Chunk {i // chunk_size + 1}: {response.success_count} success, {response.failure_count} failures")
             success_count += response.success_count
             failure_count += response.failure_count
-            await asyncio.sleep(0.5) # in seconds, to avoid hitting FCM rate limits
         except Exception as e:
             log_notify_many_clients_error(request_info, detail=f"Chunk {i // chunk_size + 1}: error notifying clients: {e}")
             failure_count += len(chunk_tokens)

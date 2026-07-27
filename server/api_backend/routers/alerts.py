@@ -42,7 +42,8 @@ from services.security import (
     now_tz_naive, now_tz_aware
 )
 from services.alert_btasks import (
-    task_alert_search_and_notify
+    task_alert_search_and_notify,
+    task_alert_notify_after_closure
 )
 
 router = APIRouter(
@@ -341,6 +342,8 @@ def vote_alert(alert_id: int,
 
 @router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,
+            request: Request,
+            background_tasks: BackgroundTasks,
             closing_schema: ClosingSchema,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
@@ -442,6 +445,17 @@ def close_alert(alert_id: int,
     alert.is_closed = True
     db_session.add(alert)
     db_session.commit()
+    if (alert.type == AlertType.local.value) or (alert.type == AlertType.managed.value):
+        alert_copy = Alert.model_validate(alert)
+        curr_user_copy = User.model_validate(current_user)
+        req_info = get_request_info(str(current_user.id))
+        background_tasks.add_task(
+            task_alert_notify_after_closure, 
+            alert_copy, 
+            curr_user_copy, 
+            request_info=req_info,
+            db_engine=request.app.state.db_engine,
+            redis_handle=request.app.state.redis_handle)
     return {
         "message": "Alert closed successfully", 
         "closing_type": closing_schema.type, 

@@ -23,20 +23,20 @@ from tests.fixtures.alerts import (
     setup_alerts_data_and_teardown # required (fixture automatically called)
 )
 
-def test_clean_old_users_empty_table(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_empty_table(db_session: Session, redis_session: FakeRedis):
     # To simulate an empty users table, we delete all users from the database
     statement = delete(User)
     db_session.exec(statement)
     db_session.commit()
     # Now we call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Since there are no users in the database, 
     # the deactivated_num and del_num should be 0
     assert deact_num == 0
     assert del_num == 0
 
-def test_clean_old_users_no_users_in_pending_deletion(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_no_users_in_pending_deletion(db_session: Session, redis_session: FakeRedis):
     users = db_session.exec(select(User)).all()
     # See setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
     assert len(users) > 0
@@ -47,12 +47,12 @@ def test_clean_old_users_no_users_in_pending_deletion(db_session: Session, redis
         assert user.is_active == True
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Since there are no users in pending deletion in the database, the deactivated_num and del_num should be 0
     assert deact_num == 0
     assert del_num == 0
 
-def test_clean_old_users_one_user_in_recent_pending_deletion(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_one_user_in_recent_pending_deletion(db_session: Session, redis_session: FakeRedis):
     users = db_session.exec(select(User).where(User.is_admin==False, User.is_officer==False)).all()
     # See setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
     assert len(users) > 0
@@ -67,11 +67,11 @@ def test_clean_old_users_one_user_in_recent_pending_deletion(db_session: Session
     db_session.refresh(user)
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     assert deact_num == 0
     assert del_num == 0
 
-def test_clean_old_users_one_user_in_pending_deletion_since_enough_time(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_one_user_in_pending_deletion_since_enough_time(db_session: Session, redis_session: FakeRedis):
     users = db_session.exec(select(User).where(User.is_admin==False, User.is_officer==False)).all()
     # See setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
     assert len(users) > 0
@@ -84,7 +84,7 @@ def test_clean_old_users_one_user_in_pending_deletion_since_enough_time(db_sessi
     db_session.refresh(user)
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Deactivated_num should be 1 and del_num should be 0.
     # Pending deletion state remains, and the user is deactivated, but not yet deleted
     assert deact_num == 1
@@ -111,7 +111,7 @@ def test_clean_old_users_one_user_in_pending_deletion_since_enough_time(db_sessi
     users_after_cleanup = db_session.exec(statement).all()
     assert len(users_after_cleanup) == len(users)
 
-def test_clean_old_users_one_user_in_pending_deletion_but_already_not_active(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_one_user_in_pending_deletion_but_already_not_active(db_session: Session, redis_session: FakeRedis):
     users = db_session.exec(select(User).where(User.is_admin==False, User.is_officer==False)).all()
     # See setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
     assert len(users) > 0
@@ -126,13 +126,13 @@ def test_clean_old_users_one_user_in_pending_deletion_but_already_not_active(db_
     db_session.refresh(user)
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # The user is in pending deletion since enough time in the database, 
     # but the user is already inactive, so the deactivated_num should be 0 and del_num should be 0.
     assert deact_num == 0
     assert del_num == 0
 
-def test_clean_old_users_some_users_in_pending_deletion(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_some_users_in_pending_deletion(db_session: Session, redis_session: FakeRedis):
     # We select user ids of users that posted alert or alert messages,
     # so at the end of the test we can check that the anonymization 
     # of alerts and messages related to the deactivated users has been performed correctly
@@ -157,7 +157,7 @@ def test_clean_old_users_some_users_in_pending_deletion(db_session: Session, red
     db_session.commit()
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Deactivated_num should be equal to the number of users in pending deletion since enough time, and del_num should be 0,
     # because the system doesn't delete them at this stage (only deactivate them)
     assert deact_num == len(users_to_deact)
@@ -182,7 +182,7 @@ def test_clean_old_users_some_users_in_pending_deletion(db_session: Session, red
         for message in messages:
             assert "removed" in message.content
 
-def test_clean_old_users_one_user_to_destroy(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_one_user_to_destroy(db_session: Session, redis_session: FakeRedis):
     statement = select(User).where(User.is_admin == False, User.is_officer == False)
     users = db_session.exec(statement).all()
     # See setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
@@ -208,7 +208,7 @@ def test_clean_old_users_one_user_to_destroy(db_session: Session, redis_session:
     db_session.commit()   
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Deactivated_num should be 0 and del_num should be 1, 
     # so the user has been destroyed from the database because it was too old
     assert deact_num == 0
@@ -230,7 +230,7 @@ def test_clean_old_users_one_user_to_destroy(db_session: Session, redis_session:
     users_after_cleanup = db_session.exec(select(User).where(User.is_admin == False, User.is_officer == False)).all()
     assert len(users_after_cleanup) == len(users) - 1
 
-def test_clean_old_users_some_users_to_destroy(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_some_users_to_destroy(db_session: Session, redis_session: FakeRedis):
     users = db_session.exec(select(User)).all()
     # see setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
     assert len(users) > 0
@@ -269,7 +269,7 @@ def test_clean_old_users_some_users_to_destroy(db_session: Session, redis_sessio
     db_session.commit()
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Deactivated_num should be 0 and del_num should be equal to the number of users in pending deletion since too much time
     assert deact_num == 0
     assert del_num == len(users_to_destroy)
@@ -294,7 +294,7 @@ def test_clean_old_users_some_users_to_destroy(db_session: Session, redis_sessio
     users_after_cleanup = db_session.exec(select(User)).all()
     assert len(users_after_cleanup) == len(users) - len(users_to_destroy)
 
-def test_clean_old_users_one_user_to_deactivate_and_one_to_destroy(db_session: Session, redis_session: FakeRedis):
+async def test_clean_old_users_one_user_to_deactivate_and_one_to_destroy(db_session: Session, redis_session: FakeRedis):
     users = db_session.exec(select(User).where(User.is_admin == False, User.is_officer == False)).all()
     # see setup_users_data fixture from tests/fixtures/alerts.py, which creates some users in the database for testing
     assert len(users) > 0
@@ -316,7 +316,7 @@ def test_clean_old_users_one_user_to_deactivate_and_one_to_destroy(db_session: S
     user_to_destroy_email = user_to_destroy.email
     # We call the do_users_cleanup function (periodic task)
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     # Deactivated_num should be 1 and del_num should be 1
     assert deact_num == 1
     assert del_num == 1
@@ -356,7 +356,7 @@ def test_clean_old_users_one_user_to_deactivate_and_one_to_destroy(db_session: S
     whitelist_entries_after_cleanup = db_session.exec(statement).all()
     assert len(whitelist_entries_after_cleanup) == 0
 
-def test_clean_old_users_lock_already_acquired(db_session: Session, redis_session: FakeRedis, frozen_now):
+async def test_clean_old_users_lock_already_acquired(db_session: Session, redis_session: FakeRedis, frozen_now):
     # We simulate that some users in the database are in pending deletion since enough time,
     # so that they will be deactivated by the cleanup function
     users = db_session.exec(select(User).where(User.is_admin == False, User.is_officer == False)).all()
@@ -368,7 +368,7 @@ def test_clean_old_users_lock_already_acquired(db_session: Session, redis_sessio
     # Now we call the do_users_cleanup function (periodic task) for the first time, 
     # and it should acquire the lock and perform the cleanup
     db_engine = db_session.get_bind()
-    deact_num, _ = do_users_cleanup(db_engine, redis_session)
+    deact_num, _ = await do_users_cleanup(db_engine, redis_session)
     assert deact_num > 0
     # Now we reset the active status of the same users to re-activate them (to make them eligible for deactivation)
     # and we set pending delete status of the same users to True
@@ -381,7 +381,7 @@ def test_clean_old_users_lock_already_acquired(db_session: Session, redis_sessio
     # and it should not acquire the lock, because the lock is in cooldown (already acquired by the first call), 
     # so the cleanup is not executed
     db_engine = db_session.get_bind()
-    deact_num, del_num = do_users_cleanup(db_engine, redis_session)
+    deact_num, del_num = await do_users_cleanup(db_engine, redis_session)
     assert deact_num == 0
     assert del_num == 0
     # Now, we try to simulate the time passing, so that the lock is released and the cleanup can be executed again
@@ -390,5 +390,5 @@ def test_clean_old_users_lock_already_acquired(db_session: Session, redis_sessio
     # and it should acquire the lock, because the lock is no longer in cooldown,
     # so the cleanup is executed again
     db_engine = db_session.get_bind()
-    deact_num, _ = do_users_cleanup(db_engine, redis_session)
+    deact_num, _ = await do_users_cleanup(db_engine, redis_session)
     assert deact_num > 0

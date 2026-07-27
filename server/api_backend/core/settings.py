@@ -5,7 +5,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import config 
 
-# Note: Settings priority: docker environment variables > .env file > default values in the code
+## IMPORTANT, settings are read in the following priority: 
+# docker environment variables > .env file > default values in config.py > default values at codebase level (in this file).
 
 class Settings(BaseSettings):
     # App conf
@@ -33,6 +34,7 @@ class Settings(BaseSettings):
     db_name : str = config.DB_NAME
     db_pool_size: int = config.DB_POOL_SIZE
     db_max_overflow: int = config.DB_MAX_OVERFLOW
+    db_pool_timeout: int = config.DB_POOL_TIMEOUT
     db_pool_recycle: int = config.DB_POOL_RECYCLE
     db_engine_log_enabled: str = config.DB_ENGINE_LOG_ENABLED
     # Redis conf

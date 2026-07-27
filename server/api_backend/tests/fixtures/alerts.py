@@ -118,7 +118,7 @@ async def assign_redis_data_to_users(db_session, redis_session):
 
 @pytest.fixture(autouse=True)
 def setup_fake_functions(mocker):
-    async def fake_notify_nearby_users(alert, user_ids, fcm_tokens, message: str, request_info, db_engine):
+    def fake_notify_nearby_users(alert, user_ids, fcm_tokens, message: str, request_info, db_engine):
         return len(user_ids)
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)
     notify_chief_mocked = mocker.patch("services.alert_btasks.notify_chief", return_value=True)
