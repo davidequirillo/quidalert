@@ -26,6 +26,11 @@ def log_cleanup_expired_locations_shard(detail: str = ""):
         f"cleanup_expired_locations_shard, detail={detail}"
     )
 
+def log_cleanup_expired_locations_shard_error(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_locations_shard_error, detail={detail}"
+    )
+
 def log_cleanup_expired_locations_completed(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_completed, detail={detail}"
@@ -46,9 +51,14 @@ def log_cleanup_expired_demotions_started(detail: str = ""):
         f"cleanup_expired_demotions_started, detail={detail}"
     )
 
-def log_cleanup_chief_demotions_shard(detail: str = ""):
+def log_cleanup_expired_demotions_shard(detail: str = ""):
     logger.info(
-        f"cleanup_chief_demotions_shard, detail={detail}"
+        f"cleanup_expired_demotions_shard, detail={detail}"
+    )
+
+def log_cleanup_expired_demotions_shard_error(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_demotions_shard_error, detail={detail}"
     )
 
 def log_cleanup_expired_demotions_completed(detail: str = ""):

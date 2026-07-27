@@ -46,6 +46,9 @@ def get_redis_pool() -> redis.ConnectionPool:
         settings.redis_url, 
         max_connections=settings.redis_max_connections,
         socket_connect_timeout=5,  # seconds
+        # Note: socket_timeout is very long because of some periodic tasks 
+        # (that may take a long time to complete in the worst case, e.g., some cleanup tasks)
+        socket_timeout=1200,  # seconds
         health_check_interval=60,  # seconds
         decode_responses=True)
     return redis_pool
@@ -60,6 +63,9 @@ def get_redis_cluster_client() -> cluster.RedisCluster:
         "startup_nodes": startup_nodes,
         "max_connections": settings.redis_max_connections_per_node,
         "socket_connect_timeout": 5,  # seconds
+        # Note: socket_timeout is very long because of some periodic tasks 
+        # (that may take a long time to complete in the worst case, e.g., some cleanup tasks)
+        "socket_timeout": 1200,  # seconds
         "health_check_interval": 60,  # seconds
         "decode_responses": True,
     }
@@ -97,6 +103,9 @@ async def shutdown_redis_handle(handle: RedisHandle):
 ## REDIS data management: logic sharding, 
 # useful to distribute data across multiple keys and avoid bottlenecks.
 
+# Note: ideally the cluster size (number of nodes) should be equal to REDIS_TOTAL_SHARDS,
+# but it works fine even in a cluster with fewer nodes (or even in Redis single mode), 
+# as the shards will be distributed across the available nodes.
 REDIS_TOTAL_SHARDS = 16
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"

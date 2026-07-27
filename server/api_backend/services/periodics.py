@@ -19,11 +19,13 @@ from core.periodic_events import (
     log_cleanup_expired_locations_error,
     log_cleanup_expired_locations_completed,
     log_cleanup_expired_locations_started,
-    log_cleanup_expired_demotions_error,
-    log_cleanup_expired_demotions_started,
-    log_cleanup_chief_demotions_shard,
     log_cleanup_expired_locations_shard,
+    log_cleanup_expired_locations_shard_error,
+    log_cleanup_expired_demotions_error,
     log_cleanup_expired_demotions_completed,
+    log_cleanup_expired_demotions_started,
+    log_cleanup_expired_demotions_shard,
+    log_cleanup_expired_demotions_shard_error,
     log_cleanup_expired_locations_in_cooldown,
     log_cleanup_expired_demotions_in_cooldown,
     log_cleanup_dismissed_users_started,
@@ -91,7 +93,7 @@ async def cleanup_expired_locations(redis_client):
     # ex=lock_timeout (expiry, cooldown)
     lock_acquired = await redis_client.set(lock_key, "active", ex=lock_timeout, nx=True)
     if not lock_acquired:
-        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock, (or recently ran and is in cooldown),
+        # If we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock, (or recently ran and is in cooldown),
         # (or recently ran and is in cooldown), so we skip the execution
         log_cleanup_expired_locations_in_cooldown(
             detail=f"Skipping cleanup, waiting for cooldown"
@@ -120,25 +122,28 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client,
     uloc_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
     chiefloc_key = REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
     log_cleanup_expired_locations_shard(detail=f"Cleaning expired locations for shard {shard_index}")
-    while True:
-        expired_user_ids = await redis_client.zrange(
-            last_upd_key, 
-            start = "-inf", 
-            end = exp_int_ts, # inclusive range
-            byscore=True,
-            offset=0,
-            num=batch_size
-        )
-        if not expired_user_ids:
-            break
-        # Potential race condition here, but it's not a big issue for consistency (the client will just have to update the location again)
-        async with redis_client.pipeline(transaction=True) as pipe:
-            pipe.zrem(chiefloc_key, *expired_user_ids)
-            pipe.zrem(uloc_key, *expired_user_ids)
-            pipe.zrem(last_upd_key, *expired_user_ids)
-            await pipe.execute()
-        deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
+    try:
+        while True:
+            expired_user_ids = await redis_client.zrange(
+                last_upd_key, 
+                start = "-inf", 
+                end = exp_int_ts, # inclusive range
+                byscore=True,
+                offset=0,
+                num=batch_size
+            )
+            if not expired_user_ids:
+                break
+            # Potential race condition here, but it's not a big issue for consistency (the client will just have to update the location again)
+            async with redis_client.pipeline(transaction=True) as pipe:
+                pipe.zrem(chiefloc_key, *expired_user_ids)
+                pipe.zrem(uloc_key, *expired_user_ids)
+                pipe.zrem(last_upd_key, *expired_user_ids)
+                await pipe.execute()
+            deleted_in_shard += len(expired_user_ids)
+            await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
+    except Exception as e:
+        log_cleanup_expired_locations_shard_error(detail=f"Shard {shard_index}: {str(e)}")
     return deleted_in_shard
 
 async def do_demotions_cleanup(redis_handle):
@@ -166,7 +171,7 @@ async def cleanup_expired_demotions(redis_client):
     # ex=lock_timeout (expiry, cooldown)
     lock_acquired = await redis_client.set(lock_key, "active", ex=lock_timeout, nx=True)
     if not lock_acquired:
-        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
+        # If we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
         # (or recently ran and is in cooldown), so we skip the execution
         log_cleanup_expired_demotions_in_cooldown(
             detail=f"Skipping cleanup, waiting for cooldown"
@@ -192,53 +197,72 @@ async def cleanup_expired_demotions(redis_client):
 async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client, batch_size=1000):
     deleted_in_shard = 0
     demotions_key = REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
-    log_cleanup_chief_demotions_shard(detail=f"Cleaning chief demotions for shard {shard_index}")
-    while True:
-        expired_user_ids = await redis_client.zrange(
-            demotions_key, 
-            start = "-inf", 
-            end = exp_int_ts, # inclusive range
-            byscore=True, 
-            offset=0, 
-            num=batch_size
-        )
-        if not expired_user_ids:
-            break
-        # Potential race condition here, but it's not a big issue for consistency 
-        # because if a chief is demoted again during the cleanup (and the cleanup will accidentally delete the new demotion), 
-        # the client meanwhile will have received a "not chief" status by a new gps token (via refresh api or login)
-        async with redis_client.pipeline(transaction=True) as pipe:
-            pipe.zrem(demotions_key, *expired_user_ids)
-            await pipe.execute()
-        deleted_in_shard += len(expired_user_ids)
-        await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
+    log_cleanup_expired_demotions_shard(detail=f"Cleaning chief demotions for shard {shard_index}")
+    try:
+        while True:
+            expired_user_ids = await redis_client.zrange(
+                demotions_key, 
+                start = "-inf", 
+                end = exp_int_ts, # inclusive range
+                byscore=True, 
+                offset=0, 
+                num=batch_size
+            )
+            if not expired_user_ids:
+                break
+            # Potential race condition here, but it's not a big issue for consistency 
+            # because if a chief is demoted again during the cleanup (and the cleanup will accidentally delete the new demotion), 
+            # the client meanwhile will have received a "not chief" status by a new gps token (via refresh api or login)
+            async with redis_client.pipeline(transaction=True) as pipe:
+                pipe.zrem(demotions_key, *expired_user_ids)
+                await pipe.execute()
+            deleted_in_shard += len(expired_user_ids)
+            await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
+    except Exception as e:
+        log_cleanup_expired_demotions_shard_error(detail=f"Shard {shard_index}: {str(e)}")
     return deleted_in_shard
 
 async def do_users_cleanup(db_engine, redis_handle):
     """
-    This function is called periodically by api scheduler to clean up old inactive users.
+    This function (do_users_cleanup) is called periodically by api scheduler to clean up old inactive users.
     It uses a redis lock to avoid concurrent executions of the same cleanup task by other fastapi instances, 
     and it runs the cleanup in a separate thread to avoid blocking the event loop.
     """
-    lock_key = REDIS_COOLDOWN_USERS_CLEANUP_KEY
-    lock_timeout = REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT
-    if isinstance(redis_handle, cluster.RedisCluster):
+    async def is_lock_acquired(redis_handle):
+        lock_key = REDIS_COOLDOWN_USERS_CLEANUP_KEY
+        lock_timeout = REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT
         lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
-        deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine, lock_acquired)
+        if not lock_acquired:
+            # If we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
+            # (or recently ran and is in cooldown), so we skip the execution
+            log_cleanup_dismissed_users_in_cooldown(
+                detail=f"Skipping cleanup, waiting for cooldown"
+            )
+            return False
+        return True
+    if isinstance(redis_handle, cluster.RedisCluster):
+        lock_acquired = await is_lock_acquired(redis_handle)
+        if not lock_acquired:
+            return 0, 0
+        deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine)
         return deactivated_count, deleted_count
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
-            lock_acquired = await redis_session.set(lock_key, "active", ex=lock_timeout, nx=True)
-            deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine, lock_acquired)
+            lock_acquired = await is_lock_acquired(redis_session)
+            if not lock_acquired:
+                return 0, 0
+            deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine)
         return deactivated_count, deleted_count
     elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
-        lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
-        deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine, lock_acquired)
+        lock_acquired = await is_lock_acquired(redis_handle)
+        if not lock_acquired:
+            return 0, 0
+        deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine)
         return deactivated_count, deleted_count
     else:
         raise RedisHandleTypeError(redis_handle)
 
-def cleanup_old_users(db_engine, lock_acquired):
+def cleanup_old_users(db_engine):
     """
     This function is called by do_cleanup_old_users to clean up accounts that have been pending deletion for too long.
     It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
@@ -246,13 +270,6 @@ def cleanup_old_users(db_engine, lock_acquired):
     If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is wiped completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
     If the period is longer than 2 years, the deactivated user is destroyed completely from the database with all his related data (alerts, messages, and whitelists entries)
     """
-    if not lock_acquired:
-        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
-        # (or recently ran and is in cooldown), so we skip the execution
-        log_cleanup_dismissed_users_in_cooldown(
-            detail=f"Skipping cleanup, waiting for cooldown"
-        )
-        return 0, 0
     now = now_tz_aware()
     deactivation_timedelta = timedelta(days=USER_DEACTIVATION_AFTER_PENDING_DELETE_DAYS)
     destruction_timedelta = timedelta(days=USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS)
@@ -336,41 +353,50 @@ def deactivate_user(user, db_session):
 
 async def do_alerts_cleanup(db_engine, redis_handle):
     """
-    This function is called periodically by api scheduler to clean up old alerts.
+    This function (do_alerts_cleanup) is called periodically by api scheduler to clean up old alerts.
     It uses a redis lock to avoid concurrent executions of the same cleanup task by other fastapi instances, 
     and it runs the cleanup in a separate thread to avoid blocking the event loop.
     """
-    lock_key = REDIS_COOLDOWN_ALERTS_CLEANUP_KEY
-    lock_timeout = REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT
-    if isinstance(redis_handle, cluster.RedisCluster):
+    async def is_lock_acquired(redis_handle):
+        lock_key = REDIS_COOLDOWN_ALERTS_CLEANUP_KEY
+        lock_timeout = REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT
         lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
-        closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine, lock_acquired)
+        if not lock_acquired:
+            # If we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
+            # (or recently ran and is in cooldown), so we skip the execution
+            log_cleanup_old_alerts_in_cooldown(
+                detail=f"Skipping cleanup, waiting for cooldown"
+            )
+            return False
+        return True
+    if isinstance(redis_handle, cluster.RedisCluster):
+        lock_acquired = await is_lock_acquired(redis_handle)
+        if not lock_acquired:
+            return 0, 0
+        closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine)
         return closed_count, deleted_count
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
-            lock_acquired = await redis_session.set(lock_key, "active", ex=lock_timeout, nx=True)
-            closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine, lock_acquired)
+            lock_acquired = await is_lock_acquired(redis_session)
+            if not lock_acquired:
+                return 0, 0
+            closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine)
         return closed_count, deleted_count
     elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
-        lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
-        closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine, lock_acquired)
+        lock_acquired = await is_lock_acquired(redis_handle)
+        if not lock_acquired:
+            return 0, 0
+        closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine)
         return closed_count, deleted_count
     else:
         raise RedisHandleTypeError(redis_handle)
 
-def cleanup_old_alerts(db_engine, lock_acquired):
+def cleanup_old_alerts(db_engine):
     """
     This function is called by do_alerts_cleanup to clean up old alerts.
     It closes all open alerts that are older than ALERT_TTSO_DAYS (30 days), 
     and deletes all closed alerts that are older than ALERT_TTL_DAYS (approximately 18 months).
     """
-    if not lock_acquired:
-        # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
-        # (or recently ran and is in cooldown), so we skip the execution
-        log_cleanup_old_alerts_in_cooldown(
-            detail=f"Skipping cleanup, waiting for cooldown"
-        )
-        return 0, 0
     now = now_tz_aware()
     log_cleanup_old_alerts_started(detail=f"Starting cleanup of alerts older than {ALERT_TTL_DAYS} days")
     with Session(db_engine) as db_session:
