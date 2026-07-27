@@ -23,10 +23,8 @@ def test_get_sender_fcm_token_is_none(db_session, test_alert, test_request_info)
     db_session.add(refresh_token)
     db_session.commit()
     assert refresh_token.fcm_token is None
-    db_engine = db_session.get_bind()
-    assert db_engine is not None
     # We check that the function returns None if the user has no FCM token in the database (fcm token null)
-    sender_fcm_token = get_sender_fcm_token(test_alert, user, test_request_info, db_engine)
+    sender_fcm_token = get_sender_fcm_token(test_alert, user, test_request_info, db_session)
     assert sender_fcm_token is None
 
 def test_get_sender_fcm_token_success(db_session, test_alert, test_request_info):
@@ -43,8 +41,6 @@ def test_get_sender_fcm_token_success(db_session, test_alert, test_request_info)
     refresh_token.fcm_token = "test_fcm_token"
     db_session.add(refresh_token)
     db_session.commit()
-    db_engine = db_session.get_bind()
-    assert db_engine is not None
     # We check that the function returns the FCM token we set in the database
-    sender_fcm_token = get_sender_fcm_token(test_alert, user, test_request_info, db_engine)
+    sender_fcm_token = get_sender_fcm_token(test_alert, user, test_request_info, db_session)
     assert sender_fcm_token == "test_fcm_token"

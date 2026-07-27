@@ -250,8 +250,8 @@ async def promote_users(
             updated_count = result.rowcount
         return critical_updated_rows, {"message": "Operation completed", "updated_count": updated_count}
     if current_user.is_admin and promotion_schema.type:
-        # we use a redis lock to avoid concurrent updates 
-        # to user roles, that could cause inconsistencies 
+        # We use a redis lock to avoid concurrent updates 
+        # to user type (e.g., chief), that could cause inconsistencies 
         # in the chief locations list in redis
         async with redis_client.lock( 
             REDIS_MUTEX_CHIEF_UPDATE_KEY,
@@ -361,8 +361,8 @@ async def promote_users_by_emails(
             updated_count = result.rowcount
         return critical_updated_rows, {"message": "Operation completed", "updated_count": updated_count}
     if current_user.is_admin and update_fields.type:
-        # we use a redis lock to avoid concurrent updates 
-        # to user roles, that could cause inconsistencies 
+        # We use a redis lock to avoid concurrent updates 
+        # to user type (e.g., chief), that could cause inconsistencies 
         # in the chief locations list in redis
         async with redis_client.lock( 
             REDIS_MUTEX_CHIEF_UPDATE_KEY,

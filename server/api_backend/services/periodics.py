@@ -4,6 +4,7 @@
 
 import asyncio
 from datetime import timedelta
+from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, select, update, delete
 from fakeredis.aioredis import FakeRedis
 from models.general import (
@@ -213,19 +214,38 @@ async def cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_client,
         await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     return deleted_in_shard
 
-def do_users_cleanup(db_engine, redis_client):
+async def do_users_cleanup(db_engine, redis_handle):
     """
-    This function is called periodically to clean up accounts that have been pending deletion for too long.
+    This function is called periodically by api scheduler to clean up old inactive users.
+    It uses a redis lock to avoid concurrent executions of the same cleanup task by other fastapi instances, 
+    and it runs the cleanup in a separate thread to avoid blocking the event loop.
+    """
+    lock_key = REDIS_COOLDOWN_USERS_CLEANUP_KEY
+    lock_timeout = REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT
+    if isinstance(redis_handle, cluster.RedisCluster):
+        lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
+        deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine, lock_acquired)
+        return deactivated_count, deleted_count
+    elif isinstance(redis_handle, redis.ConnectionPool):
+        async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
+            lock_acquired = await redis_session.set(lock_key, "active", ex=lock_timeout, nx=True)
+            deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine, lock_acquired)
+        return deactivated_count, deleted_count
+    elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
+        lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
+        deactivated_count, deleted_count = await run_in_threadpool(cleanup_old_users, db_engine, lock_acquired)
+        return deactivated_count, deleted_count
+    else:
+        raise RedisHandleTypeError(redis_handle)
+
+def cleanup_old_users(db_engine, lock_acquired):
+    """
+    This function is called by do_cleanup_old_users to clean up accounts that have been pending deletion for too long.
     It checks the 'pending_delete_since' field of users and deletes those who have been pending deletion for more than a certain threshold.
     If the period is less than 30 days, nothing happens, and the user can re-login if he changes his mind and wants to keep the account active.
     If the period is 30 days or more (max 2 years), the user is not destroyed from the database, but is deactivated, and his personal data is wiped completely (except the email address), so he becomes "unknown", anonymous, virtually a "deleted" user.
     If the period is longer than 2 years, the deactivated user is destroyed completely from the database with all his related data (alerts, messages, and whitelists entries)
     """
-    lock_key = REDIS_COOLDOWN_USERS_CLEANUP_KEY
-    lock_timeout = REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT
-    # nx=True (set if not exists)
-    # ex=lock_timeout (expiry, cooldown)
-    lock_acquired = asyncio.run(redis_client.set(lock_key, "active", ex=lock_timeout, nx=True))
     if not lock_acquired:
         # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
         # (or recently ran and is in cooldown), so we skip the execution
@@ -276,8 +296,8 @@ def do_users_cleanup(db_engine, redis_client):
                 db_session.commit()
                 deleted_count = len(users_to_destroy_ids)
             except Exception as e:
-                log_cleanup_dismissed_users_error(detail=str(e))
                 db_session.rollback()
+                log_cleanup_dismissed_users_error(detail=str(e))
     log_cleanup_dismissed_users_completed(detail=f"Cleanup completed: {deleted_count} users destroyed, {deactivated_count} users deactivated")
     return deactivated_count, deleted_count
 
@@ -314,15 +334,36 @@ def deactivate_user(user, db_session):
     anonymous_addr = "Unknown address"
     db_session.exec(update(Alert).where(Alert.user_id == user.id).values(description=anonymous_desc, address=anonymous_addr))
 
-def do_alerts_cleanup(db_engine, redis_client):
+async def do_alerts_cleanup(db_engine, redis_handle):
     """
-    This function is called periodically to clean up old alerts.
+    This function is called periodically by api scheduler to clean up old alerts.
+    It uses a redis lock to avoid concurrent executions of the same cleanup task by other fastapi instances, 
+    and it runs the cleanup in a separate thread to avoid blocking the event loop.
     """
     lock_key = REDIS_COOLDOWN_ALERTS_CLEANUP_KEY
     lock_timeout = REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT
-    # nx=True (set if not exists)
-    # ex=lock_timeout (expiry, cooldown)
-    lock_acquired = asyncio.run(redis_client.set(lock_key, "active", ex=lock_timeout, nx=True))
+    if isinstance(redis_handle, cluster.RedisCluster):
+        lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
+        closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine, lock_acquired)
+        return closed_count, deleted_count
+    elif isinstance(redis_handle, redis.ConnectionPool):
+        async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
+            lock_acquired = await redis_session.set(lock_key, "active", ex=lock_timeout, nx=True)
+            closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine, lock_acquired)
+        return closed_count, deleted_count
+    elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
+        lock_acquired = await redis_handle.set(lock_key, "active", ex=lock_timeout, nx=True)
+        closed_count, deleted_count = await run_in_threadpool(cleanup_old_alerts, db_engine, lock_acquired)
+        return closed_count, deleted_count
+    else:
+        raise RedisHandleTypeError(redis_handle)
+
+def cleanup_old_alerts(db_engine, lock_acquired):
+    """
+    This function is called by do_alerts_cleanup to clean up old alerts.
+    It closes all open alerts that are older than ALERT_TTSO_DAYS (30 days), 
+    and deletes all closed alerts that are older than ALERT_TTL_DAYS (approximately 18 months).
+    """
     if not lock_acquired:
         # if we cannot acquire the lock, it means that another periodic cleanup task has acquired the same lock,
         # (or recently ran and is in cooldown), so we skip the execution
@@ -346,6 +387,7 @@ def do_alerts_cleanup(db_engine, redis_client):
             deleted_count = db_session.exec(statement).rowcount
             db_session.commit()
         except Exception as e:
+            db_session.rollback()
             log_cleanup_old_alerts_error(detail=str(e))
             return 0, 0
     log_cleanup_old_alerts_completed(detail=f"Cleanup completed: {closed_count} alerts closed, {deleted_count} alerts destroyed")

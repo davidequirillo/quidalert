@@ -9,12 +9,14 @@ import redis.asyncio as redis
 import redis.asyncio.cluster as cluster
 from core.settings import settings
 
+## DBMS engine and session management
+
 def get_engine():
     engine = create_engine(settings.db_url, 
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,
+        pool_timeout=settings.db_pool_timeout,
         pool_recycle=settings.db_pool_recycle,
-        # this is needed to avoid "psql connection has gone away" errors after some time of inactivity
         pool_pre_ping=True,
         echo=settings.db_engine_echo)
     return engine
@@ -22,6 +24,8 @@ def get_engine():
 def get_yielded_session(engine):
     with Session(engine) as session:
         yield session
+
+## REDIS connection management (asyncio version)
 
 RedisHandle: TypeAlias = Union[redis.ConnectionPool, cluster.RedisCluster]
 RedisConnection: TypeAlias = Union[redis.Redis, cluster.RedisCluster]
@@ -39,9 +43,11 @@ def get_redis_handle() -> RedisHandle:
 
 def get_redis_pool() -> redis.ConnectionPool:
     redis_pool: redis.ConnectionPool = redis.ConnectionPool.from_url(
-    settings.redis_url, 
-    max_connections=settings.redis_max_connections, 
-    decode_responses=True)
+        settings.redis_url, 
+        max_connections=settings.redis_max_connections,
+        socket_connect_timeout=5,  # seconds
+        health_check_interval=60,  # seconds
+        decode_responses=True)
     return redis_pool
     
 def get_redis_cluster_client() -> cluster.RedisCluster:
@@ -53,6 +59,8 @@ def get_redis_cluster_client() -> cluster.RedisCluster:
     options = {
         "startup_nodes": startup_nodes,
         "max_connections": settings.redis_max_connections_per_node,
+        "socket_connect_timeout": 5,  # seconds
+        "health_check_interval": 60,  # seconds
         "decode_responses": True,
     }
     return cluster.RedisCluster(**options)
@@ -85,7 +93,10 @@ async def shutdown_redis_handle(handle: RedisHandle):
         await handle.disconnect()
     else:
         raise RedisHandleTypeError(handle)
-    
+
+## REDIS data management: logic sharding, 
+# useful to distribute data across multiple keys and avoid bottlenecks.
+
 REDIS_TOTAL_SHARDS = 16
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
@@ -108,6 +119,7 @@ REDIS_CHIEF_DEMOTIONS_KEY = "{{shard:{i}}}:demotions:chiefs"
 #   specific slot, allowing parallel distribution across multiple nodes.
 # - In SINGLE mode: All shards coexist in the same instance. The logic remains 
 #   identical, ensuring the code works without modifications regardless of scale.
+
 def get_redis_user_locations_key(uuid: str) -> str:
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
