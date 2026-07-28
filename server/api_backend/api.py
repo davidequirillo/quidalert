@@ -24,7 +24,8 @@ import services.localization as i18n
 from models.general import (string_as_uuid, 
     UserIn, User, UserOut, UserLanguage, UserInCompleteProfile,
     USER_RELIABILITY_SCORE_INC_VALUE,
-    USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS,
+    USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS, 
+    UserType, UserRole,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
     WhiteListEntry
@@ -497,16 +498,21 @@ def register_device_for_push_notifications(
     db_session.commit()
     return {"message": "Device registered for push notifications"}
 
-# USER REGISTRATION ENDPOINTS (registration, activation, password change).
+# USER REGISTRATION ENDPOINTS (registration, activation, password change, get profile).
 @app.post("/api/register")
 def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db_session)):
     # We will return a unique registration message for almost all cases, for security
     reg_message = "If email address is valid, you will receive an activation mail message"
     is_an_admin = False
     is_the_superuser = False
-    is_in_whitelist = False 
-    auth_by = None # authorized by
-    auth_at = None # authorized at
+    is_an_officer = False
+    is_a_chief = False
+    is_in_whitelist = False
+    whitelist_entry = None
+    auth_by = None # authorized by (from whitelist entry)
+    auth_at = None # authorized at (from whitelist entry)
+    reg_type = None # registration type (from whitelist entry)
+    reg_role = None # registration role (from whitelist entry)
     now = now_tz_naive()
     if user_in.email and user_in.email.strip() != "":
         email_lowercase = user_in.email.strip().lower()
@@ -526,6 +532,8 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         else:
             if (existing_user.activation_expires_at and 
                     (existing_user.activation_expires_at < now)):
+                # For security reasons, we keep the block status and reliability status of the existing user, 
+                # to prevent dismiss and re-registration to bypass eventual blocks existing on the user.
                 is_blocked = existing_user.is_blocked
                 is_reliable = existing_user.is_reliable
                 reliability_score = existing_user.reliability_score
@@ -547,9 +555,20 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         if whitelist_entry:
             auth_by = whitelist_entry.created_by
             auth_at = whitelist_entry.created_at
+            reg_type = whitelist_entry.registration_type
+            reg_role = whitelist_entry.registration_role
             is_in_whitelist = True
     if (not is_in_whitelist) and (not is_the_superuser):
         return { "message": reg_message }
+    match reg_type:
+        case UserType.admin.value:
+            is_an_admin = True
+        case UserType.officer.value:
+            is_an_officer = True
+        case UserType.chief.value:
+            is_a_chief = True
+        case _:
+            pass
     password_hashed = get_password_hash(user_in.password)
     act_token = generate_activation_token()
     act_expires_at = activation_expiry()
@@ -561,6 +580,9 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         password_hash=password_hashed,
         is_superuser=is_the_superuser,
         is_admin=is_an_admin,
+        is_officer=is_an_officer,
+        is_chief=is_a_chief,
+        role=reg_role,
         is_active=False,
         activation_code=act_token,
         activation_expires_at=act_expires_at,
@@ -578,6 +600,13 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
         if last_reliability_score_at is not None:
             user.last_reliability_score_at = last_reliability_score_at
     db_session.add(user)
+    # For security reasons, we reset "registration type" and "registration role" to null in the whitelist entry,  
+    # to prevent an eventual demoted user to regain high privileges by dismissing his registration and re-registering again later.
+    if whitelist_entry:
+        whitelist_entry.registration_type = None
+        whitelist_entry.registration_role = None
+        whitelist_entry.user_is_registered = True
+        db_session.add(whitelist_entry)
     db_session.commit()
     db_session.refresh(user)
     if existing_user_deleted:

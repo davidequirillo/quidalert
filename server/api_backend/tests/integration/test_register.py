@@ -4,7 +4,7 @@
 
 from datetime import timedelta
 from sqlmodel import select
-from models.general import User, UserLanguage
+from models.general import User, UserLanguage, UserType, UserRole
 from core.settings import settings
 from services.security import now_tz_naive, ACTIVATION_TOKEN_TTL_HOURS
 
@@ -409,3 +409,51 @@ def test_register_overwrite_but_not_whitelisted_anymore(client, db_session, supe
     user_in_db = results[0]
     assert user_in_db.firstname == "John" # the old firstname
     assert user_in_db.surname == "Doe" # the old surname, so it was not overwritten
+
+def test_register_privileges_fetched_from_whitelist(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    # Now, we simulate a whitelist entry with specific privileges for that email, 
+    # for example, if in whitelist we have: type=chief and role=volunteer, 
+    # the new user should inherit these privileges from the whitelist entry.
+    whitelist_entry.registration_type = UserType.chief
+    whitelist_entry.registration_role = UserRole.volunteer
+    db_session.add(whitelist_entry)
+    db_session.commit()
+    db_session.refresh(whitelist_entry)
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": whitelist_entry.email,
+        "password": "MyValidPassword123!"
+    }
+    # 1st registration attempt with the email in the whitelist
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the user was created with the email in the whitelist
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    user_in_db = results[0]
+    assert user_in_db.email == whitelist_entry.email
+    assert user_in_db.firstname == payload["firstname"]
+    assert user_in_db.surname == payload["surname"]
+    assert user_in_db.is_superuser == False
+    assert user_in_db.is_admin == False
+    # The user should be authorized by the creator of the whitelist entry
+    assert user_in_db.authorized_by == whitelist_entry.created_by
+    # The privileges of the new user should be set according to the whitelist entry
+    assert user_in_db.is_chief == True
+    assert user_in_db.role == UserRole.volunteer
+    db_session.refresh(whitelist_entry)
+    # The field "user_is_registered" in the whitelist entry should be set to True, 
+    # because the user has registered with that email. 
+    # Finally, registration_type and registration_role should be reset to None, 
+    # for security reasons.
+    assert whitelist_entry.user_is_registered == True
+    assert whitelist_entry.registration_type == None
+    assert whitelist_entry.registration_role == None

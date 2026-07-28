@@ -5,7 +5,7 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, delete, desc
 from core.exceptions import forbidden_exception, invalid_request_exception
-from models.general import User, WhiteListEntry, EmailListDict
+from models.general import User, WhiteListEntry, EmailListWithPrivileges
 from dependencies import get_db_session, get_current_user
 
 EMAIL_LIST_MAX_LENGTH_FOR_ADD = 100000
@@ -51,25 +51,29 @@ def get_whitelist_entries(
 
 @router.post("/api/whitelist-entries")
 def add_whitelist_entries(
-                dict: EmailListDict,
+                reqdata: EmailListWithPrivileges,
                 current_user: User = Depends(get_current_user),
                 db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
-        raise forbidden_exception()    
+        raise forbidden_exception()
+    if (reqdata.type) and (not current_user.is_admin): # officers cannot set registration type
+        raise forbidden_exception(detail="Type can be set only by admins")
     failed_emails = []
     added_count = 0
     existing_count = 0
     skipped_count = 0
-    if len(dict.emails) > EMAIL_LIST_MAX_LENGTH_FOR_ADD:
+    if len(reqdata.emails) > EMAIL_LIST_MAX_LENGTH_FOR_ADD:
         raise invalid_request_exception(detail=f"Email list too long. Maximum allowed length is {EMAIL_LIST_MAX_LENGTH_FOR_ADD}")
-    for e in dict.emails:
+    for e in reqdata.emails:
         try:
             if (e is None) or (e.strip() == ""):
                 skipped_count += 1
                 continue
             entry = WhiteListEntry.model_validate({
                 "email": e.strip().lower(), 
-                "created_by": current_user.email
+                "created_by": current_user.email,
+                "registration_type": reqdata.type,
+                "registration_role": reqdata.role
             })
             if db_session.exec(
                 select(WhiteListEntry).where(WhiteListEntry.email == entry.email)
@@ -94,7 +98,7 @@ def add_whitelist_entries(
             db_session.rollback()
     return {
         "message": "Entries processed",
-        "total_count": len(dict.emails),
+        "total_count": len(reqdata.emails),
         "skipped_count": skipped_count,
         "added_count": added_count,
         "existing_count": existing_count,
@@ -129,7 +133,7 @@ def delete_whitelist_entries(
         total_count = deleted_count
         db_session.commit()
     elif mode == "all":
-        if not current_user.is_admin: # officers cannot delete all entries
+        if not current_user.is_admin: # officers cannot delete all entries, but only their owned entries
             raise forbidden_exception()
         statement = delete(WhiteListEntry)
         result = db_session.exec(statement)

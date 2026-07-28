@@ -16,7 +16,7 @@ class UserRole(str, Enum):
     firefighter = "firefighter"
     wateroperator = "wateroperator"
     usar = "usar"
-    alpinrescuer = "alpinerescuer"
+    alpinerescuer = "alpinerescuer"
     medic = "medic"
     military = "military"
     policeman = "policeman"
@@ -42,6 +42,8 @@ class AlertType(str, Enum):
     managed = "managed" # A managed alert is like a local alert, but it's created only by a chief, with custom gps location, and can be managed by him (he becomes the "alert manager")
     general = "general" # A general alert is an alert without coordinates and radius (coordinates and radius not considered), that can only be created by chiefs, and is meant to be used for general information that is not related to a specific location, but it's globally relevant
     empty = "empty" # An empty alert is a special type of alert without radius (radius not considered, but gps location considered), that can be created by chiefs. Alert is created without including or notifying nearby users. It's useful to create empty alerts to be expanded later by the chief
+
+## USER MODELS
 
 class UserBase(SQLModel, table=False):
     firstname: str = Field(nullable=False, min_length=2, max_length=64)
@@ -240,6 +242,55 @@ class User(UserOut, table=True):
         ),
     )
 
+class PromotionSchema(BaseModel):
+    type: Optional[str] = None
+    role: Optional[str] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+    authorizer: Optional[EmailStr] = None
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, s):
+        if not s in [t.value for t in UserType]:
+            raise ValueError("Wrong type")
+        return s
+    
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, s):
+        admitted_values = [t.value for t in UserRole] + ["citizen"]
+        if (s is not None) and (s not in admitted_values):
+            raise ValueError("Wrong role")
+        return s
+    
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, s):
+        if not s in [t.value for t in UserStatus]:
+            raise ValueError("Wrong status")
+        return s
+    
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, s):
+        if (s is not None) and (len(s) > 256):
+            raise ValueError("Notes must be at most 256 characters")
+        return s
+    
+    @model_validator(mode="after")
+    def check_not_empty(self):
+        if ((self.type is None) and (self.role is None) and
+            (self.status is None) and (self.notes is None) and
+            (self.authorizer is None)):
+                raise ValueError("Promotion schema is empty")
+        return self
+
+class EmailListSchema(BaseModel):
+    emails: List[str]
+
+## AUTH TOKEN MODELS (login, refresh, password reset, fcm_token)
+
 class PasswordResetRequest(BaseModel):
     email: EmailStr
 
@@ -314,6 +365,8 @@ class RefreshTokenWrapper(BaseModel):
 
 class FcmTokenWrapper(BaseModel):
     fcm_token: str
+
+## WHITE LIST MODELS
     
 class WhiteListEntry(SQLModel, table=True):
     __tablename__: str = 'whitelist_entries'
@@ -321,67 +374,73 @@ class WhiteListEntry(SQLModel, table=True):
     email: EmailStr = Field(nullable=False, index=True, unique=True, min_length=3, max_length=128)
     created_by: EmailStr = Field(nullable=False, min_length=3, max_length=128)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+    registration_type: Optional[str] = Field(default=None, nullable=True, min_length=1, max_length=32)
+    registration_role: Optional[str] = Field(default=None, nullable=True, min_length=1, max_length=32)
+    user_is_registered: bool = Field(default=False, nullable=False)
 
     __table_args__ = (
         Index("ixc_whitelist_entries_created_by_id", "created_by", "id"),
     )
 
-class EmailListDict(BaseModel):
-    emails: List[str]
+    @field_validator("registration_type")
+    @classmethod
+    def validate_registration_type(cls, s):
+        if (s is not None) and (s not in [t.value for t in UserType]):
+            raise ValueError("Wrong type")
+        return s
 
-class PromotionSchema(BaseModel):
+    @field_validator("registration_role")
+    @classmethod
+    def validate_registration_role(cls, s):
+        if (s is not None) and (s not in [t.value for t in UserRole]):
+            raise ValueError("Wrong role")
+        return s
+
+class EmailListWithPrivileges(BaseModel):
+    emails: List[str]
     type: Optional[str] = None
     role: Optional[str] = None
-    status: Optional[str] = None
-    notes: Optional[str] = None
-    authorizer: Optional[EmailStr] = None
 
     @field_validator("type")
     @classmethod
     def validate_type(cls, s):
-        if not s in [t.value for t in UserType]:
+        if (s is not None) and (s not in [t.value for t in UserType]):
             raise ValueError("Wrong type")
         return s
-    
+
     @field_validator("role")
     @classmethod
     def validate_role(cls, s):
-        admitted_values = [t.value for t in UserRole] + ["citizen"]
-        if (s is not None) and (s not in admitted_values):
+        if (s is not None) and (s not in [t.value for t in UserRole]):
             raise ValueError("Wrong role")
         return s
-    
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, s):
-        if not s in [t.value for t in UserStatus]:
-            raise ValueError("Wrong status")
-        return s
-    
-    @field_validator("notes")
-    @classmethod
-    def validate_notes(cls, s):
-        if (s is not None) and (len(s) > 256):
-            raise ValueError("Notes must be at most 256 characters")
-        return s
-    
-    @model_validator(mode="after")
-    def check_not_empty(self):
-        if ((self.type is None) and (self.role is None) and
-            (self.status is None) and (self.notes is None) and
-            (self.authorizer is None)):
-                raise ValueError("Promotion schema is empty")
-        return self
 
-class ChangeStatusSchema(BaseModel):
-    status: str
+## GPS LOCATION UPDATE MODELS
 
-    @field_validator("status")
+class GpsTokenData(BaseModel):
+    user_id: str # here we use a string instead of UUID
+    user_is_chief: bool
+    user_role: str
+
+class GpsCoordinatesSchema(BaseModel):
+    latitude: float
+    longitude: float
+
+    @field_validator("latitude")
     @classmethod
-    def validate_status(cls, s):
-        if not s in [t.value for t in UserStatus]:
-            raise ValueError("Wrong status")
-        return s
+    def validate_latitude(cls, v):
+        if not (-90 <= v <= 90):
+            raise ValueError("Latitude must be between -90 and 90")
+        return v
+
+    @field_validator("longitude")
+    @classmethod
+    def validate_longitude(cls, v):
+        if not (-180 <= v <= 180):
+            raise ValueError("Longitude must be between -180 and 180")
+        return v
+
+## ALERT MODELS
 
 class AlertIn(SQLModel, table=False):
     type: str = Field(default=AlertType.local.value, nullable=False)
@@ -482,30 +541,7 @@ class AlertedUser(SQLModel, table=True):
     vote: int = Field(default=0, ge=-1, le=+1, nullable=False)
     closing_vote: int = Field(default=0, ge=-100, le=+30, nullable=False)
 
-class GpsTokenData(BaseModel):
-    user_id: str # here we use a string instead of UUID
-    user_is_chief: bool
-    user_role: str
-
-class GpsCoordinatesSchema(BaseModel):
-    latitude: float
-    longitude: float
-
-    @field_validator("latitude")
-    @classmethod
-    def validate_latitude(cls, v):
-        if not (-90 <= v <= 90):
-            raise ValueError("Latitude must be between -90 and 90")
-        return v
-
-    @field_validator("longitude")
-    @classmethod
-    def validate_longitude(cls, v):
-        if not (-180 <= v <= 180):
-            raise ValueError("Longitude must be between -180 and 180")
-        return v
-
-class Message(SQLModel, table=True):
+class Message(SQLModel, table=True): # alert message sent by a user, either the sender or the alert manager
     __tablename__: str = "messages"
     id: Optional[int] = Field(default=None, primary_key=True)
     alert_id: int = Field(
