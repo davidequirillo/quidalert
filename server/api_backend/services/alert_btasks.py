@@ -550,12 +550,13 @@ def task_alert_notify_about_closure(
         # We prepare the notification message
         # Note: # as language we use the caller's (current_user) language for simplicity 
         # (we could use the language of each receiving user, in a future improvement of the system, if possible)
+        closing_type_label = alert_notification_templates[current_user.language].get(f"close_alert_{closing_type}_closure", closing_type)
         msg_type = "close_alert"
         msg_title = alert_notification_templates[current_user.language]["close_alert_title"]
         msg_body = alert_notification_templates[current_user.language]["close_alert_text"].format(
             date=alert.created_at.strftime("%Y-%m-%d"),
             hour=alert.created_at.strftime("%H:%M"),
-            closing_type=closing_type
+            closing_type=closing_type_label.lower()
         )
         # We notify users in parallel, using the notify_many_clients function (multicast)
         if users_to_notify_ids and users_to_notify_fcm_tokens:
