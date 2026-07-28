@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import random
+from unittest.mock import ANY
 from fastapi import status
 from sqlmodel import select
 from core.exceptions import (
@@ -12,17 +13,22 @@ from core.exceptions import (
     invalid_request_exception
 )
 from models.general import (
-    User, Alert, AlertType, ClosingType, AlertedUser,
+    User, RefreshToken, 
+    Alert, AlertType, ClosingType, AlertedUser,
     CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
     CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,
     HERO_SCORE_INC_VALUE_TO_ALERT_SENDER,
     HERO_SCORE_INC_VALUE_TO_ALERTED_USERS,
     Message
 )
+from services.alert_btasks import (
+    alert_notification_templates
+)
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
     create_test_alert, # required fixture (manually called as argument in test functions when needed)
+    setup_fake_functions, # required (fixture automatically called)
 )
 
 def test_close_alert_not_authorized_missing_token(client, test_alert):
@@ -695,3 +701,207 @@ def test_close_alert_local_punitive_messages_banned(client, db_session, test_chi
     messages = db_session.exec(messages_stmt).all()
     for message in messages:
         assert message.is_banned == True
+
+def test_close_alert_notifications_for_type_general(client, db_session, test_chief, setup_fake_functions):
+    caller: User = test_chief["user"]
+    assert caller is not None
+    access_token: str = test_chief["access_token"]
+    # We select a general alert created by test_chief (the sender)
+    statement = (select(Alert).where(Alert.type == AlertType.general.value)
+            .where(Alert.user_id == caller.id))
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    # We call the close alert api endpoint with a neutral closing type, which should be allowed
+    alert_id = alert.id
+    closing_type = ClosingType.neutral.value
+    response = client.post(
+        f"/api/alerts/{alert_id}/close", json={"type": closing_type}, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert "alert closed successfully" in response.json()["message"].lower()
+    # For general alerts, there should be no notification sent to the sender or any user, 
+    # because general alerts are not associated with any alerted users.
+    # (the background task is not called for general or empty alerts)
+    setup_fake_functions["mock_notify_about_closure"].assert_not_called()
+
+def test_close_alert_notifications_for_type_empty(client, db_session, test_chief, setup_fake_functions):
+    caller: User = test_chief["user"]
+    assert caller is not None
+    access_token: str = test_chief["access_token"]
+    # We select an empty alert created by test_chief (the sender)
+    statement = (select(Alert).where(Alert.type == AlertType.empty.value)
+            .where(Alert.user_id == caller.id))
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    # We call the close alert api endpoint with a neutral closing type, which should be allowed
+    alert_id = alert.id
+    closing_type = ClosingType.neutral.value
+    response = client.post(
+        f"/api/alerts/{alert_id}/close", json={"type": closing_type}, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert "alert closed successfully" in response.json()["message"].lower()
+    # For empty alerts, there should be no notification sent to the sender or any user, 
+    # because empty alerts are not associated with any alerted users.
+    # (the background task is not called for general or empty alerts)
+    setup_fake_functions["mock_notify_about_closure"].assert_not_called()
+
+def test_close_alert_notifications_for_type_local(client, db_session, test_chief, setup_fake_functions):
+    caller: User = test_chief["user"]
+    assert caller is not None
+    access_token: str = test_chief["access_token"]
+    # We select a local alert in which test_chief is an alerted user
+    statement = (select(AlertedUser, Alert).join(Alert, AlertedUser.alert_id == Alert.id) # type: ignore
+            .where(Alert.type == AlertType.local.value)
+            .where(AlertedUser.user_id == caller.id))
+    result = db_session.exec(statement).first()
+    alerted_user = result[0]
+    alert = result[1]
+    # The local alert is open and has been created by another user,
+    # and test_chief is an alerted user for this alert.
+    # We simulate that test_chief is the alert manager (an alerted user with is_manager=True),
+    # so test_chief (who is also the api caller) can close it.
+    assert alert.user_id != caller.id
+    assert alert.is_closed == False
+    assert alerted_user.user_id == caller.id
+    alerted_user.is_manager = True
+    db_session.add(alerted_user)
+    db_session.commit()
+    db_session.refresh(alerted_user)
+    # We select the alert sender (joined with refresh token)
+    # The sender has a refresh token with fcm_token not None 
+    # (see setup_users_data_and_teardown fixture, which creates a refresh token with fcm_token for each user)
+    statement = (select(User, RefreshToken).join(
+        RefreshToken, RefreshToken.user_id == User.id)  # type: ignore
+        .where(User.id == alert.user_id)
+        .where(RefreshToken.fcm_token != None))
+    result = db_session.exec(statement).first()
+    sender = result[0]
+    sender_refresh_token = result[1]
+    assert sender is not None
+    assert sender_refresh_token is not None
+    assert sender_refresh_token.fcm_token is not None
+    # We also select all alerted users (joined with refresh tokens) for this alert
+    statement = (select(AlertedUser, RefreshToken).join(
+        RefreshToken, RefreshToken.user_id == AlertedUser.user_id)  # type: ignore
+        .where(AlertedUser.alert_id == alert.id)
+        .where(RefreshToken.fcm_token != None))
+    results = db_session.exec(statement).all()
+    alerted_users = []
+    refresh_tokens = []
+    # The implementation excludes the alert manager from the list of alerted users to notify, 
+    # so we simulate this scenario by filtering out the alert manager (test_chief) from the list of alerted users to notify.
+    for res in results:
+        if (res[0].is_manager == False):
+            alerted_users.append(res[0])
+            refresh_tokens.append(res[1])
+    # There should be at least one alerted user (except the alert manager) with fcm_token not None
+    # (see setup_alerts_data_and_teardown fixture and setup_users_data_and_teardown fixture, 
+    # which creates a local alert with at least one alerted user with fcm_token)
+    assert len(alerted_users) > 0
+    assert len(refresh_tokens) > 0
+    for rt in refresh_tokens:
+        assert rt.fcm_token is not None
+    # The sender and all alerted users (except the manager) will be notified about the closure of the alert
+    users_to_notify_ids = [au.user_id for au in alerted_users]
+    users_to_notify_ids.insert(0, sender.id)
+    users_to_notify_fcm_tokens = [rt.fcm_token for rt in refresh_tokens]
+    users_to_notify_fcm_tokens.insert(0, sender_refresh_token.fcm_token)
+    # We call the close alert api endpoint with a neutral closing type, which should be allowed
+    alert_id = alert.id
+    closing_type = ClosingType.neutral.value
+    response = client.post(
+        f"/api/alerts/{alert_id}/close", json={"type": closing_type}, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert "alert closed successfully" in response.json()["message"].lower()
+    db_session.refresh(alert)
+    # For local alerts, there should be a notification sent to the sender and all alerted users
+    # (the background task is called for local alerts)
+    # Note: in the implementation of alert notifications, we use the caller's language for simplicity
+    # (we could use the language of each receiving user, in a future improvement of the system, if possible)
+    language = caller.language
+    msg_type = "close_alert"
+    msg_title = alert_notification_templates[language]["close_alert_title"]
+    msg_body = alert_notification_templates[language]["close_alert_text"].format(
+        date=alert.created_at.strftime("%Y-%m-%d"),
+        hour=alert.created_at.strftime("%H:%M"),
+        closing_type=closing_type
+    )
+    setup_fake_functions["mock_notify_about_closure"].assert_called_once()
+    args, kwargs = setup_fake_functions["mock_notify_about_closure"].call_args
+    print("Number of notified user ids: ", len(args[1]), "fcm_tokens: ", len(args[2]))
+    # We check that the notified user ids and fcm tokens 
+    # (used inside the mock_notify_about_closure call) 
+    # match the alerted users (plus the sender) for this local alert, 
+    # and message type, title and body are correct
+    for id in users_to_notify_ids:
+        assert str(id) in args[1]
+    for fcm_token in users_to_notify_fcm_tokens:
+        assert fcm_token in args[2]
+    assert kwargs["type"] == msg_type
+    assert kwargs["title"] == msg_title
+    assert kwargs["content"] == msg_body
+
+def test_close_alert_notifications_for_type_managed(client, db_session, test_chief, setup_fake_functions):
+    caller: User = test_chief["user"]
+    assert caller is not None
+    access_token: str = test_chief["access_token"]
+    # We select a managed alert created by test_chief (the sender)
+    statement = (select(Alert).where(Alert.type == AlertType.managed.value)
+            .where(Alert.user_id == caller.id))
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    # We select all alerted users (joined with refresh tokens) for this alert
+    statement = (select(AlertedUser, RefreshToken).join(
+        RefreshToken, RefreshToken.user_id == AlertedUser.user_id)  # type: ignore
+        .where(AlertedUser.alert_id == alert.id)
+        .where(RefreshToken.fcm_token != None))
+    results = db_session.exec(statement).all()
+    alerted_users = []
+    refresh_tokens = []
+    for res in results:
+        alerted_users.append(res[0])
+        refresh_tokens.append(res[1])
+    # There are for sure some alerted users for this managed alert 
+    # (see setup_alerts_data_and_teardown fixture)
+    assert len(alerted_users) > 0
+    assert len(refresh_tokens) > 0
+    # There is no alerted manager because the alert is managed, 
+    # so the alert manager is the alert sender (test_chief)
+    for alerted_user in alerted_users:
+        assert alerted_user.is_manager == False
+    alerted_user_ids = [au.user_id for au in alerted_users]
+    alerted_user_fcm_tokens = [rt.fcm_token for rt in refresh_tokens]
+    for fcm_token in alerted_user_fcm_tokens:
+        assert fcm_token is not None
+    # We call the close alert api endpoint with a neutral closing type, which should be allowed
+    alert_id = alert.id
+    closing_type = ClosingType.neutral.value
+    # For managed alerts, there should be a notification sent to all alerted users
+    # (the background task is called for managed alerts)
+    # Note: in the implementation of alert notifications, we use the caller's language for simplicity
+    # (we could use the language of each receiving user, in a future improvement of the system, if possible)
+    language = caller.language
+    msg_type = "close_alert"
+    msg_title = alert_notification_templates[language]["close_alert_title"]
+    msg_body = alert_notification_templates[language]["close_alert_text"].format(
+            date=alert.created_at.strftime("%Y-%m-%d"),
+            hour=alert.created_at.strftime("%H:%M"),
+            closing_type=closing_type
+        )
+    response = client.post(
+        f"/api/alerts/{alert_id}/close", json={"type": closing_type}, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert "alert closed successfully" in response.json()["message"].lower()
+    db_session.refresh(alert)
+    setup_fake_functions["mock_notify_about_closure"].assert_called_once()
+    args, kwargs = setup_fake_functions["mock_notify_about_closure"].call_args
+    # We check that the notified user ids and fcm tokens 
+    # (used inside the mock_notify_about_closure call) 
+    # match the alerted users for this managed alert,
+    # and message type, title and body are correct
+    for id in alerted_user_ids:
+        assert str(id) in args[1]
+    for fcm_token in alerted_user_fcm_tokens:
+        assert fcm_token in args[2]
+    assert kwargs["type"] == msg_type
+    assert kwargs["title"] == msg_title
+    assert kwargs["content"] == msg_body

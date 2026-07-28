@@ -6,6 +6,8 @@ from core.logging import get_tasks_logger
 
 logger = get_tasks_logger()
 
+## ALERT CREATE events logging
+
 def log_alert_search_closest_chiefs_done(alert_id: str, request_info: dict, detail: str = ""):
     logger.info(
         f"alert_search_closest_chiefs_done, alert_id={alert_id}, detail={detail}",
@@ -117,5 +119,19 @@ def log_alert_error_notifying_sender(alert_id: str, request_info: dict, detail: 
 def log_alert_notify_sender(alert_id: str, request_info: dict, detail: str = ""):
     logger.info(
         f"alert_notify_sender, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+## ALERT CLOSE events logging
+
+def log_alert_notify_about_closure(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_notify_about_closure, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_notifying_about_closure(alert_id: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"alert_error_notifying_about_closure, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )

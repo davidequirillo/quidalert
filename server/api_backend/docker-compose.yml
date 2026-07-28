@@ -27,6 +27,7 @@ services:
       - redis-node-2
       - redis-node-3
       - minio
+  
   # --- Relational DBMS ---
   db:
     image: postgres:17-alpine
@@ -44,7 +45,7 @@ services:
     networks:
       - redis-cluster-net
 
-  # --- DBMS for speedy operations ---
+  # --- DBMS for speedy operations (Redis single) ---
   redis:
     image: redis:7.4-alpine
     container_name: redis_cache
@@ -56,6 +57,7 @@ services:
     networks:
       - redis-cluster-net
 
+  # --- DBMS for speedy operations (Redis cluster) ---
   redis-node-1:
     image: redis:7.4-alpine
     container_name: redis-node-1
@@ -109,7 +111,7 @@ services:
     networks:
       - redis-cluster-net
 
-# --- SERVER SMTP for testing (MAILPIT) ---
+  # --- SERVER SMTP for testing (MAILPIT) ---
   mailpit:
     image: axllent/mailpit:v1.28.4
     container_name: mailpit_server

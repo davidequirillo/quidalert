@@ -118,15 +118,23 @@ async def assign_redis_data_to_users(db_session, redis_session):
 
 @pytest.fixture(autouse=True)
 def setup_fake_functions(mocker):
-    def fake_notify_nearby_users(alert, user_ids, fcm_tokens, message: str, request_info, db_engine):
+    def fake_notify_nearby_users(alert, user_ids, fcm_tokens, 
+            type:str, title:str, content:str, 
+            request_info, db_session):
+        return len(user_ids)
+    def fake_notify_about_closure(alert, user_ids, fcm_tokens, 
+            type:str, title:str, content:str, 
+            request_info, db_session):
         return len(user_ids)
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)
     notify_chief_mocked = mocker.patch("services.alert_btasks.notify_chief", return_value=True)
     notify_nearby_users_mocked = mocker.patch("services.alert_btasks.notify_nearby_users", side_effect=fake_notify_nearby_users)
+    notify_about_closure_mocked = mocker.patch("services.alert_btasks.notify_about_closure", side_effect=fake_notify_about_closure)
     yield {
         "mock_notify_sender": notify_sender_mocked,
         "mock_notify_chief": notify_chief_mocked,
-        "mock_notify_nearby_users": notify_nearby_users_mocked
+        "mock_notify_nearby_users": notify_nearby_users_mocked,
+        "mock_notify_about_closure": notify_about_closure_mocked
     }
 
 @pytest.fixture(autouse=True, name="test_alert_users_data")
