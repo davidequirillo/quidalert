@@ -437,10 +437,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     }
     final String alertTypeStr = loc.getAlertTypeString(
       alertWithInfo.alert.type,
-    )!;
+    );
     final String alertStatusStr = loc.getAlertStatusString(
       alertWithInfo.alert.status,
-    )!;
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -142,9 +142,13 @@ class NotificationProvider extends ChangeNotifier {
         debugPrintC(
           'Notification: received a message while in the foreground: ${message.messageId}',
         );
+        final String messageType = message.data['type'] ?? '';
+        if (messageType.isEmpty) {
+          return;
+        }
         AppKeys.snackbarKey.currentState?.showSnackBar(
           SnackBar(
-            content: Text(message.data['type']),
+            content: Text(message.notification?.title ?? messageType),
             action: SnackBarAction(
               label: "View",
               onPressed: () {
@@ -222,7 +226,10 @@ class NotificationProvider extends ChangeNotifier {
       case 'new_alert':
         _navigateToAlertDetails(messageData);
         break;
-      case 'alert_update':
+      case 'update_alert':
+        _navigateToAlertDetails(messageData);
+        break;
+      case 'close_alert':
         _navigateToAlertDetails(messageData);
         break;
       default:

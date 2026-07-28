@@ -43,7 +43,7 @@ from services.security import (
 )
 from services.alert_btasks import (
     task_alert_search_and_notify,
-    task_alert_notify_after_closure
+    task_alert_notify_about_closure
 )
 
 router = APIRouter(
@@ -450,12 +450,12 @@ def close_alert(alert_id: int,
         curr_user_copy = User.model_validate(current_user)
         req_info = get_request_info(str(current_user.id))
         background_tasks.add_task(
-            task_alert_notify_after_closure, 
-            alert_copy, 
+            task_alert_notify_about_closure,
+            alert_copy,
+            closing_schema.type, 
             curr_user_copy, 
             request_info=req_info,
-            db_engine=request.app.state.db_engine,
-            redis_handle=request.app.state.redis_handle)
+            db_engine=request.app.state.db_engine)
     return {
         "message": "Alert closed successfully", 
         "closing_type": closing_schema.type, 
