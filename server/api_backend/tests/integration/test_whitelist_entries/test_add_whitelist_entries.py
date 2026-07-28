@@ -4,7 +4,7 @@
 
 from fastapi import status
 from sqlmodel import select
-from models.general import WhiteListEntry, User
+from models.general import WhiteListEntry, User, UserType, UserRole
 from core.exceptions import (
     forbidden_exception, token_not_valid_exception,
     invalid_request_exception
@@ -297,3 +297,111 @@ def test_add_whitelist_entries_with_many_emails_plus_failed(client, db_session, 
     statement = select(WhiteListEntry)
     results = db_session.exec(statement).all()
     assert len(results) == response_data["added_count"] + len(existing_emails)
+
+def test_add_whitelist_entries_with_type_and_role(client, db_session, test_admin):
+    admin: User = test_admin["user"]
+    assert admin is not None
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    emails = ["user1@example.com", "user2@example.com"]
+    data = {
+        "emails": emails,
+        "type": UserType.admin.value,
+        "role": UserRole.volunteer.value
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["total_count"] == len(data["emails"])
+    assert response_data["added_count"] == len(data["emails"])
+    assert response_data["existing_count"] == 0
+    assert response_data["skipped_count"] == 0
+    assert response_data["failed_count"] == 0
+    statement = select(WhiteListEntry).where(WhiteListEntry.email.in_(emails)) # type: ignore
+    results = db_session.exec(statement).all()
+    assert len(results) == len(emails)
+    for entry in results:
+        assert entry.registration_type == data["type"]
+        assert entry.registration_role == data["role"]
+
+def test_add_whitelist_entries_with_invalid_type_and_role(client, db_session, test_admin):
+    admin: User = test_admin["user"]
+    assert admin is not None
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    data = {
+        "emails": ["user1@example.com", "user2@example.com"],
+        "type": "invalid_type",
+        "role": "invalid_role"
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+def test_add_whitelist_entries_with_role_none(client, db_session, test_admin):
+    admin: User = test_admin["user"]
+    assert admin is not None
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    emails = ["user1@example.com", "user2@example.com"]
+    data = {
+        "emails": emails,
+        "type": UserType.admin.value,
+        "role": None
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["total_count"] == len(data["emails"])
+    assert response_data["added_count"] == len(data["emails"])
+    assert response_data["existing_count"] == 0
+    assert response_data["skipped_count"] == 0
+    assert response_data["failed_count"] == 0
+    statement = select(WhiteListEntry).where(WhiteListEntry.email.in_(emails)) # type: ignore
+    results = db_session.exec(statement).all()
+    assert len(results) == len(data["emails"])
+    for entry in results:
+        assert entry.registration_type == data["type"]
+        assert entry.registration_role == None
+
+def test_add_whitelist_entries_with_type_by_officer(client, db_session, test_officer):
+    officer: User = test_officer["user"]
+    assert officer is not None
+    headers = {
+        "Authorization": f"Bearer {test_officer['access_token']}"
+    }
+    data = {
+        "emails": ["user1@example.com", "user2@example.com"],
+        "type": UserType.admin.value, # officers cannot set type
+        "role": UserRole.volunteer.value
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == forbidden_exception().status_code
+    assert "can be set only by admins" in response.json()["detail"]
+
+def test_add_whitelist_entries_with_role_by_officer(client, db_session, test_officer):
+    officer: User = test_officer["user"]
+    assert officer is not None
+    headers = {
+        "Authorization": f"Bearer {test_officer['access_token']}"
+    }
+    emails = ["user1@example.com", "user2@example.com"]
+    data = {
+        "emails": emails,
+        "role": UserRole.volunteer.value
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["total_count"] == len(data["emails"])
+    assert response_data["added_count"] == len(data["emails"])
+    assert response_data["existing_count"] == 0
+    assert response_data["skipped_count"] == 0
+    assert response_data["failed_count"] == 0
+    statement = select(WhiteListEntry).where(WhiteListEntry.email.in_(emails)) # type: ignore
+    results = db_session.exec(statement).all()
+    assert len(results) == len(data["emails"])
+    for entry in results:
+        assert entry.registration_role == data["role"]

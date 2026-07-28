@@ -180,7 +180,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       "post",
       requestStr,
       body: {
-        "email_list": {"emails": emails},
+        "email_list_obj": {"emails": emails},
         "update_fields": updateFields,
       },
     );

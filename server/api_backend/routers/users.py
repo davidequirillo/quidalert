@@ -10,7 +10,7 @@ from starlette.exceptions import HTTPException
 from models.general import (
     string_as_uuid,
     Alert, 
-    EmailListDict,
+    EmailListSchema,
     PromotionSchema, User, 
     UsersOutPaginated, UserOutWithAlerts,
     UserStatus, UserType, UserRole
@@ -100,19 +100,19 @@ def get_users(
 
 @router.post("/api/users/get-by-emails", response_model=UsersOutPaginated, status_code=http_status.HTTP_200_OK)
 def get_users_by_emails(
-            email_list: EmailListDict,
+            email_list_obj: EmailListSchema,
             last_seen_id: str | None = None,
             limit: int = 100,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if len(email_list.emails) > EMAIL_LIST_MAX_LENGTH_FOR_SEARCH:
+    if len(email_list_obj.emails) > EMAIL_LIST_MAX_LENGTH_FOR_SEARCH:
         raise invalid_request_exception(detail=f"Email list too long. Maximum allowed length is {EMAIL_LIST_MAX_LENGTH_FOR_SEARCH}")
     if limit not in [10, 100, 1000]:
         limit = 100
     next_cursor = None
-    emails = [email.lower() for email in email_list.emails]
+    emails = [email.lower() for email in email_list_obj.emails]
     statement = select(User)
     statement = statement.where(User.email.in_(emails)) # type:ignore
     if (last_seen_id):
@@ -298,18 +298,18 @@ async def promote_users(
 
 @router.post("/api/users/promote-by-emails") # promote/demote users in bulk (by a list of emails)
 async def promote_users_by_emails(
-            email_list: EmailListDict,
+            email_list_obj: EmailListSchema,
             update_fields: PromotionSchema,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session),
             redis_client = Depends(get_redis_session)):
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
-    if len(email_list.emails) > EMAIL_LIST_MAX_LENGTH_FOR_SEARCH:
+    if len(email_list_obj.emails) > EMAIL_LIST_MAX_LENGTH_FOR_SEARCH:
         raise invalid_request_exception(detail=f"Email list too long. Maximum allowed length is {EMAIL_LIST_MAX_LENGTH_FOR_SEARCH}")
     if (update_fields.type) and (not current_user.is_admin): # officers cannot change users type
         raise forbidden_exception()
-    emails = [email.lower() for email in email_list.emails]
+    emails = [email.lower() for email in email_list_obj.emails]
     def db_update_logic(): 
         if len(emails) == 0:
             return None, {"message": "No emails provided", "updated_count": 0}

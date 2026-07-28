@@ -931,7 +931,7 @@ async def test_promote_users_modify_type_called_by_admin(client, db_session, red
 
 def test_promote_users_by_emails_not_authorized_missing_token(client):
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data)
@@ -939,7 +939,7 @@ def test_promote_users_by_emails_not_authorized_missing_token(client):
 
 def test_promote_users_by_emails_not_authorized_invalid_token(client):
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"role": UserRole.volunteer.value} 
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers={"Authorization": "Bearer invalidtoken"})
@@ -960,35 +960,35 @@ def test_promote_users_by_emails_empty_or_invalid_args(client, test_admin):
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Missing update_fields
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
         # no update_fields
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Email list with a none email
     data = {
-        "email_list": {"emails": ["testuser1@example.com", None]},
+        "email_list_obj": {"emails": ["testuser1@example.com", None]},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Empty update fields
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
         "update_fields": {}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Invalid role value in update fields
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
         "update_fields": {"role": "invalid_role"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Empty email list
     data = {
-        "email_list": {"emails": []},
+        "email_list_obj": {"emails": []},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -997,7 +997,7 @@ def test_promote_users_by_emails_empty_or_invalid_args(client, test_admin):
     assert response_data["updated_count"] == 0
     # Invalid email in email list
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "invalidemail"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "invalidemail"]},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1011,7 +1011,7 @@ def test_promote_users_by_emails_forbidden_called_by_baseuser(client, test_baseu
     access_token = test_baseuser['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1025,7 +1025,7 @@ def test_promote_users_by_emails_forbidden_called_by_chief(client, test_chief):
     access_token = test_chief['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1042,7 +1042,7 @@ def test_promote_users_by_emails_too_many_input_emails(client, test_admin):
     max_size = EMAIL_LIST_MAX_LENGTH_FOR_SEARCH
     email_list = [f"testuser{i}@example.com" for i in range(max_size + 1)]
     data = {
-        "email_list": {"emails": email_list},
+        "email_list_obj": {"emails": email_list},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1058,7 +1058,7 @@ def test_promote_users_by_emails_many_input_emails(client, test_admin):
     max_size = EMAIL_LIST_MAX_LENGTH_FOR_SEARCH
     email_list = [f"testuser{i}@example.com" for i in range(max_size)]
     data = {
-        "email_list": {"emails": email_list},
+        "email_list_obj": {"emails": email_list},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1073,7 +1073,7 @@ def test_promote_users_by_emails_officer_cannot_modify_the_type(client, test_off
     access_token = test_officer['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"type": UserType.chief.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1087,7 +1087,7 @@ def test_promote_users_by_emails_called_by_officer(client, db_session, test_offi
     headers = {"Authorization": f"Bearer {access_token}"}
     # We try to promote 2 users that are not authorized by test_officer, so the update should not be applied
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"role": UserRole.volunteer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1117,8 +1117,8 @@ def test_promote_users_by_emails_called_by_officer(client, db_session, test_offi
     assert testuser1.updated_by != user.email
     # Now we try to promote both users, one authorized by test_officer and one not authorized by test_officer
     data = {
-        "email_list": {"emails": ["authorizeduser@example.com", "testuser1@example.com"]},
-        "update_fields": {"role": UserRole.alpinrescuer.value}
+        "email_list_obj": {"emails": ["authorizeduser@example.com", "testuser1@example.com"]},
+        "update_fields": {"role": UserRole.alpinerescuer.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_200_OK
@@ -1126,7 +1126,7 @@ def test_promote_users_by_emails_called_by_officer(client, db_session, test_offi
     assert response_data["updated_count"] == 1
     # We verify that the authorized user has been updated
     db_session.refresh(user_owned)
-    assert user_owned.role == UserRole.alpinrescuer.value
+    assert user_owned.role == UserRole.alpinerescuer.value
     assert user_owned.updated_by == user.email
     assert user_owned.updated_at is not None
     assert user_owned.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
@@ -1134,7 +1134,7 @@ def test_promote_users_by_emails_called_by_officer(client, db_session, test_offi
     assert testuser1.updated_by != user.email
     # Another similar example
     data = {
-        "email_list": {"emails": ["authorizeduser@example.com", "testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["authorizeduser@example.com", "testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"status": UserStatus.blocked.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1163,8 +1163,8 @@ def test_promote_users_by_emails_called_by_admin(client, db_session, test_admin)
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
-        "update_fields": {"role": UserRole.alpinrescuer.value, "status": UserStatus.blocked.value}
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "update_fields": {"role": UserRole.alpinerescuer.value, "status": UserStatus.blocked.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_200_OK
@@ -1173,14 +1173,14 @@ def test_promote_users_by_emails_called_by_admin(client, db_session, test_admin)
     assert response_data["updated_count"] == 2
     statement = select(User).where(User.email=="testuser1@example.com")
     testuser1 = db_session.exec(statement).first()
-    assert testuser1.role == UserRole.alpinrescuer.value
+    assert testuser1.role == UserRole.alpinerescuer.value
     assert testuser1.is_blocked == True
     assert testuser1.is_reliable == False
     assert testuser1.authorized_by != user.email
     assert testuser1.updated_by == user.email
     statement = select(User).where(User.email=="testuser2@example.com")
     testuser2 = db_session.exec(statement).first()
-    assert testuser2.role == UserRole.alpinrescuer.value
+    assert testuser2.role == UserRole.alpinerescuer.value
     assert testuser2.is_blocked == True
     assert testuser2.is_reliable == False
     assert testuser2.authorized_by != user.email
@@ -1192,8 +1192,8 @@ def test_promote_users_by_emails_modify_role_and_notes(client, db_session, test_
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
-        "update_fields": {"role": UserRole.alpinrescuer.value, "notes": "Updated by admin"}
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
+        "update_fields": {"role": UserRole.alpinerescuer.value, "notes": "Updated by admin"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
     assert response.status_code == status.HTTP_200_OK
@@ -1201,14 +1201,14 @@ def test_promote_users_by_emails_modify_role_and_notes(client, db_session, test_
     assert response_data["updated_count"] == 1
     statement = select(User).where(User.email=="testuser1@example.com")
     testuser1 = db_session.exec(statement).first()
-    assert testuser1.role == UserRole.alpinrescuer.value
+    assert testuser1.role == UserRole.alpinerescuer.value
     assert testuser1.notes == "Updated by admin"
     assert testuser1.updated_by == user.email
     assert testuser1.updated_at is not None
     assert testuser1.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
     # We try to update 2 users
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"role": UserRole.usar.value, "notes": "Updated by admin for testing purposes"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1237,7 +1237,7 @@ def test_promote_users_by_emails_modify_status(client, db_session, test_admin):
     headers = {"Authorization": f"Bearer {access_token}"}
     # We try to block 2 users by email
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"status": UserStatus.blocked.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1260,7 +1260,7 @@ def test_promote_users_by_emails_modify_status(client, db_session, test_admin):
     assert testuser2.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
     # Now we try to change the status of those users to "unreliable"
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"status": UserStatus.unreliable.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1281,7 +1281,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_officer(client, db_
     headers = {"Authorization": f"Bearer {access_token}"}
     # We try to change the authorizer of 2 users, but since those users are not authorized by test_officer, the update should not be applied
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"authorizer": user.email}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1312,7 +1312,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_officer(client, db_
     db_session.commit()
     # We call the endpoint with a list of 2 emails, one authorized by test_officer and one not authorized by test_officer
     data = {
-        "email_list": {"emails": ["testowneduser@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testowneduser@example.com", "testuser2@example.com"]},
         "update_fields": {"authorizer": user.email}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1333,7 +1333,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_officer(client, db_
     # "testowneduser" is authorized by test_officer
     # We want to change the authorizer of "testowneduser" from test_officer@example.com to "admin1@example.com"
     data = {
-        "email_list": {"emails": ["testowneduser@example.com"]},
+        "email_list_obj": {"emails": ["testowneduser@example.com"]},
         "update_fields": {"authorizer": "admin1@example.com"}
     }
     # Before the update, the authorizer of "testowneduser" should be testofficer
@@ -1353,7 +1353,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_officer(client, db_
     # Now we try to use a non existing authorizer
     # Obviously, the update should not be applied, because the authorizer must be an existing user
     data = {
-        "email_list": {"emails": ["testowneduser@example.com"]},
+        "email_list_obj": {"emails": ["testowneduser@example.com"]},
         "update_fields": {"authorizer": "nonexistent@example.com"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1365,7 +1365,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_officer(client, db_
     # The authorizer must be an "officer" or an "admin", 
     # so if we use a normal user (or a chief) as new authorizer, the update should not be applied
     data = {
-        "email_list": {"emails": ["testowneduser@example.com"]},
+        "email_list_obj": {"emails": ["testowneduser@example.com"]},
         "update_fields": {"authorizer": "chief1@example.com"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1383,7 +1383,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_admin(client, db_se
     # We try to change the authorizer of 2 users by email, 
     # and since admin can update any user, the update should be applied to both users
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"authorizer": "admin1@example.com"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1402,7 +1402,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_admin(client, db_se
     assert testuser2.updated_by == user.email
     # Now we try to change the authorizer to a non existing user, so the update should not be applied
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"authorizer": "nonexistent@example.com"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1420,7 +1420,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_admin(client, db_se
     # The authorizer (see "authorized_by" field) must be an "officer" or an "admin", 
     # so if we use a normal user (or a chief) as new authorizer, the update should not be applied
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"authorizer": "chief1@example.com"}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1437,7 +1437,7 @@ def test_promote_users_by_emails_modify_authorizer_called_by_admin(client, db_se
     assert testuser2.authorized_by == "admin1@example.com"
     # Now we try to change the authorizer, using test_admin email as new authorizer
     data = {
-        "email_list": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com", "testuser2@example.com"]},
         "update_fields": {"authorizer": user.email}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1457,7 +1457,7 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     access_token = test_admin['access_token']
     headers = {"Authorization": f"Bearer {access_token}"}
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
         "update_fields": {"type": UserType.chief.value}
     }
     statement = select(User).where(User.email=="testuser1@example.com")
@@ -1497,7 +1497,7 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     # Now we try to demote the same user back to normal type, to see what happens with the Redis cache when a chief user is demoted to normal type, 
     # the chief location should be removed from Redis and the user should be added to the chief demoted zset in Redis
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
         "update_fields": {"type": UserType.base.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1524,7 +1524,7 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     assert all(p is None for p in positions)
     # Now we try to promote the same user back to chief type
     data = {
-        "email_list": {"emails": ["testuser1@example.com"]},
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
         "update_fields": {"type": UserType.chief.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
@@ -1570,7 +1570,7 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     assert all(p is not None for p in positions2) # chief2 should have a location in Redis before the update
     # Now call the api, to effectively demote chief1 and chief2 to normal type
     data = {
-        "email_list": {"emails": ["chief1@example.com", "chief2@example.com"]},
+        "email_list_obj": {"emails": ["chief1@example.com", "chief2@example.com"]},
         "update_fields": {"type": UserType.base.value}
     }
     response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
