@@ -241,12 +241,25 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                     if (index < _entriesCount) {
                       return ListTile(
                         title: Text(_entries[index].email),
-                        subtitle: Text(
-                          "Authorized by: ${_entries[index].createdBy}",
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Authorized by: ${_entries[index].createdBy}"),
+                            Text(
+                              "Registration type: ${_entries[index].registrationType}",
+                            ),
+                            Text(
+                              "Registration role: ${_entries[index].registrationRole}",
+                            ),
+                            Text(
+                              "User is registered: ${_entries[index].userIsRegistered ? 'yes' : 'no'}",
+                            ),
+                          ],
                         ),
                         trailing: Text(
                           datetimeAsStringWithoutMicroseconds(
                             _entries[index].createdAt,
+                            includeTimezone: false,
                           ),
                         ),
                       );
