@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
@@ -40,13 +41,17 @@ class WhiteListAddBody extends StatefulWidget {
 }
 
 class _WhiteListAddBodyState extends State<WhiteListAddBody> {
+  final _scrollController = ScrollController();
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  UserTypeExtended? selectedType;
+  UserRoleExtended? selectedRole;
   PlatformFile? _pickedFile;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -91,13 +96,24 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final String? registrationType = selectedType?.name;
+    final String? registrationRole = selectedRole?.name;
     String email = _emailController.text.trim().toLowerCase();
     emailsToAdd.add(email);
+    final Map<String, dynamic> fields = {"emails": emailsToAdd};
+    if (registrationType != null &&
+        registrationType != UserTypeExtended.base.name) {
+      fields["type"] = registrationType;
+    }
+    if (registrationRole != null &&
+        registrationRole != UserRoleExtended.citizen.name) {
+      fields["role"] = registrationRole;
+    }
     try {
       final response = await authClient.doProtectedApiRequest(
         "post",
         '/whitelist-entries',
-        body: {"emails": emailsToAdd},
+        body: fields,
       );
       final Map<String, dynamic> respObj = json.decode(response.body);
       final List<String> emailsNotAdded = List<String>.from(
@@ -168,10 +184,21 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
     }
     try {
       if (emailsToAdd.isNotEmpty) {
+        final String? registrationType = selectedType?.name;
+        final String? registrationRole = selectedRole?.name;
+        final Map<String, dynamic> fields = {"emails": emailsToAdd};
+        if (registrationType != null &&
+            registrationType != UserTypeExtended.base.name) {
+          fields["type"] = registrationType;
+        }
+        if (registrationRole != null &&
+            registrationRole != UserRoleExtended.citizen.name) {
+          fields["role"] = registrationRole;
+        }
         final response = await authClient.doProtectedApiRequest(
           "post",
           '/whitelist-entries',
-          body: {"emails": emailsToAdd},
+          body: fields,
         );
         final Map<String, dynamic> respObj = json.decode(response.body);
         final List<String> emailsNotAdded = List<String>.from(
@@ -235,79 +262,122 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          buildSectionTitle(
-            '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
-          ),
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 5),
-                TextFormField(
-                  keyboardType: TextInputType.emailAddress,
-                  controller: _emailController,
+    final authClient = context.read<AuthClient>();
+    return Scrollbar(
+      thumbVisibility: true,
+      controller: _scrollController,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              if (authClient.isAdmin())
+                DropdownButtonFormField<UserTypeExtended>(
                   decoration: InputDecoration(
-                    labelText: "Email",
+                    labelText: loc.userType,
                     border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category),
                   ),
-                  maxLength: 128,
-                  validator: (value) {
-                    return validateEmail(context, value);
+                  initialValue: null,
+                  items: UserTypeExtended.values.map((UserTypeExtended type) {
+                    return DropdownMenuItem<UserTypeExtended>(
+                      value: type,
+                      child: Text(
+                        type.name[0].toUpperCase() + type.name.substring(1),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (newValue) {
+                    selectedType = newValue;
                   },
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        submitSingle();
-                      },
-                      child: Text(loc.buttonAdd),
-                    ),
-                    const SizedBox(width: 15),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(loc.buttonBack),
-                    ),
-                  ],
+              const SizedBox(height: 10),
+              DropdownButtonFormField<UserRoleExtended>(
+                decoration: InputDecoration(
+                  labelText: loc.userRole,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
-                const SizedBox(height: 15),
-                Divider(),
-                const SizedBox(height: 15),
-                buildSectionTitle(
-                  '${loc.buttonAdd} ${loc.labelEmailsMany.toLowerCase()}',
+                initialValue: null,
+                items: UserRoleExtended.values.map((UserRoleExtended role) {
+                  return DropdownMenuItem<UserRoleExtended>(
+                    value: role,
+                    child: Text(
+                      role.name[0].toUpperCase() + role.name.substring(1),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  selectedRole = newValue;
+                },
+              ),
+              const SizedBox(height: 20),
+              buildSectionTitle(
+                '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
+              ),
+              const SizedBox(height: 5),
+              TextFormField(
+                keyboardType: TextInputType.emailAddress,
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: "Email",
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 10),
-                ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
-                if (_pickedFile != null) ...[
-                  const SizedBox(height: 10),
-                  Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
+                maxLength: 128,
+                validator: (value) {
+                  return validateEmail(context, value);
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      submitSingle();
+                    },
+                    child: Text(loc.buttonAdd),
+                  ),
+                  const SizedBox(width: 15),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(loc.buttonBack),
+                  ),
                 ],
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        submitMany();
-                      },
-                      child: Text(loc.buttonAdd),
-                    ),
-                    const SizedBox(width: 15),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(loc.buttonBack),
-                    ),
-                  ],
-                ),
+              ),
+              const SizedBox(height: 15),
+              Divider(),
+              const SizedBox(height: 15),
+              buildSectionTitle(
+                '${loc.buttonAdd} ${loc.labelEmailsMany.toLowerCase()}',
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
+              if (_pickedFile != null) ...[
+                const SizedBox(height: 10),
+                Text('${loc.labelFileSelected}: ${_pickedFile!.name}'),
               ],
-            ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      submitMany();
+                    },
+                    child: Text(loc.buttonAdd),
+                  ),
+                  const SizedBox(width: 15),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(loc.buttonBack),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

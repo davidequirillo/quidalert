@@ -420,6 +420,7 @@ def test_register_privileges_fetched_from_whitelist(client, db_session, superuse
     # Now, we simulate a whitelist entry with specific privileges for that email, 
     # for example, if in whitelist we have: type=chief and role=volunteer, 
     # the new user should inherit these privileges from the whitelist entry.
+    assert whitelist_entry.user_is_registered == False
     whitelist_entry.registration_type = UserType.chief
     whitelist_entry.registration_role = UserRole.volunteer
     db_session.add(whitelist_entry)
@@ -431,7 +432,7 @@ def test_register_privileges_fetched_from_whitelist(client, db_session, superuse
         "email": whitelist_entry.email,
         "password": "MyValidPassword123!"
     }
-    # 1st registration attempt with the email in the whitelist
+    # We call the registration API with the email in the whitelist
     response = client.post("/api/register", json=payload)
     assert response.status_code in [200, 201, 202]
     # Check the database to ensure that the user was created with the email in the whitelist
