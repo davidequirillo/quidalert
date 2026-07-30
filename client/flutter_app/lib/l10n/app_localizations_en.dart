@@ -489,6 +489,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelNotes => 'Notes';
 
   @override
+  String get labelNote => 'Note';
+
+  @override
   String get labelOK => 'OK';
 
   @override
@@ -592,6 +595,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionUsers => 'Users';
+
+  @override
+  String get sectionWhitelistAddSingleEntry => 'Add single email address';
+
+  @override
+  String get sectionWhitelistAddManyEntries => 'Add many email addresses';
+
+  @override
+  String get sectionWhitelistAddInfoForAdmin => 'For both entry modes, it\'s possible to select type and role';
+
+  @override
+  String get sectionWhitelistAddInfoForOfficer => 'For both entry modes, it\'s possible to select the role';
 
   @override
   String get successAccountDismissed => 'Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active';
@@ -747,14 +762,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userCompleteProfile => 'Complete profile';
 
   @override
-  String get whiteListEntryAuthorizedBy => 'Authorized by';
+  String get whitelistEntryAuthorizedBy => 'Authorized by';
 
   @override
-  String get whiteListEntryPendingType => 'Pending type';
+  String get whitelistEntryPendingType => 'Pending type';
 
   @override
-  String get whiteListEntryPendingRole => 'Pending role';
+  String get whitelistEntryPendingRole => 'Pending role';
 
   @override
-  String get whiteListEntryUserIsRegistered => 'User is registered';
+  String get whitelistEntryUserIsRegistered => 'User is registered';
 }

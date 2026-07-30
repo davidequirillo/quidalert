@@ -246,18 +246,18 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "${loc.whiteListEntryAuthorizedBy}: ${_entries[index].createdBy}",
+                              "${loc.whitelistEntryAuthorizedBy}: ${_entries[index].createdBy}",
                             ),
                             if (!userIsReg)
                               Text(
-                                "${loc.whiteListEntryPendingType}: ${_entries[index].registrationType}",
+                                "${loc.whitelistEntryPendingType}: ${_entries[index].registrationType}",
                               ),
                             if (!userIsReg)
                               Text(
-                                "${loc.whiteListEntryPendingRole}: ${_entries[index].registrationRole}",
+                                "${loc.whitelistEntryPendingRole}: ${_entries[index].registrationRole}",
                               ),
                             Text(
-                              "${loc.whiteListEntryUserIsRegistered}: ${_entries[index].userIsRegistered ? 'yes' : 'no'}",
+                              "${loc.whitelistEntryUserIsRegistered}: ${_entries[index].userIsRegistered ? 'yes' : 'no'}",
                             ),
                           ],
                         ),

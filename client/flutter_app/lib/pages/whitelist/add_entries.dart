@@ -274,6 +274,15 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
           child: Column(
             children: [
               if (authClient.isAdmin())
+                Text(
+                  '${loc.labelNote}: ${loc.sectionWhitelistAddInfoForAdmin.toLowerCase()}',
+                ),
+              if (!authClient.isAdmin())
+                Text(
+                  '${loc.labelNote}: ${loc.sectionWhitelistAddInfoForOfficer.toLowerCase()}',
+                ),
+              const SizedBox(height: 10),
+              if (authClient.isAdmin())
                 DropdownButtonFormField<UserTypeExtended>(
                   decoration: InputDecoration(
                     labelText: loc.userType,
@@ -314,9 +323,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
                 },
               ),
               const SizedBox(height: 20),
-              buildSectionTitle(
-                '${loc.buttonAdd} ${loc.labelEmailSingle.toLowerCase()}',
-              ),
+              buildSectionTitle(loc.sectionWhitelistAddSingleEntry),
               const SizedBox(height: 5),
               TextFormField(
                 keyboardType: TextInputType.emailAddress,
@@ -363,9 +370,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
               const SizedBox(height: 15),
               Divider(),
               const SizedBox(height: 15),
-              buildSectionTitle(
-                '${loc.buttonAdd} ${loc.labelEmailsMany.toLowerCase()}',
-              ),
+              buildSectionTitle(loc.sectionWhitelistAddManyEntries),
               const SizedBox(height: 10),
               ElevatedButton(onPressed: _pickFile, child: Text("File CSV")),
               if (_pickedFile != null) ...[

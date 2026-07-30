@@ -18,8 +18,8 @@ class FromJsonObjException implements Exception {
 class WhiteListEntry {
   final int id;
   final String email;
-  final String? registrationType;
-  final String? registrationRole;
+  final String registrationType;
+  final String registrationRole;
   final bool userIsRegistered;
   final String createdBy;
   final DateTime createdAt;
@@ -40,11 +40,11 @@ class WhiteListEntry {
         : DateTime(0);
     final createdBy = json['created_by'] ?? '';
     final userIsRegistered = json['user_is_registered'] ?? false;
-    String? registrationType;
-    String? registrationRole;
+    String registrationType;
+    String registrationRole;
     if (userIsRegistered) {
-      registrationType = null;
-      registrationRole = null;
+      registrationType = "";
+      registrationRole = "";
     } else {
       registrationType =
           json['registration_type'] ?? UserTypeExtended.base.name;

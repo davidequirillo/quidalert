@@ -10,7 +10,7 @@ SERVER_NAME = "myservername" # the server name (publicly accessible, for example
 SERVER_PORT = 8080 # the server port (publicly accessible) 
 APP_LOG_LEVEL = 'warning' # 'info', 'warning'
 
-# The database connection URL and db engine logging
+## The database connection URL and db engine logging
 DB_NAME = "quidalert_db"
 DB_PORT = 5432
 DB_HOST = "localhost"
@@ -20,26 +20,33 @@ DB_MAX_OVERFLOW = 20
 DB_POOL_TIMEOUT = 30
 DB_POOL_RECYCLE = 1800
 
-# Redis DBMS
+## Redis DBMS (redis mode can be "single" or "cluster")
+# Important note about cluster mode: the number of cluster nodes 
+# must be less or equal than the number of logical shards.
+# An equal number is recommended (redis nodes number = logical shards number)
 REDIS_MODE = "single" # "single" or "cluster"
 REDIS_URL="redis://localhost:6379/0"
 REDIS_CLUSTER_NODES="redis-node-1:7001,redis-node-2:7002,redis-node-3:7003"
 REDIS_MAX_CONNECTIONS = 200
 REDIS_MAX_CONNECTIONS_PER_NODE = 32 # in cluster mode
+# REDIS_LOGICAL_SHARDS_NUM: don't change this value, 
+# because at the moment it's the recommended value.
+# But, in theory, values ​​from 16 up to 128 should not represent a problem.
+REDIS_LOGICAL_SHARDS_NUM = 16
 
-# Mail sender configuration
+## Mail sender configuration
 SMTP_HOST = "mailserver" # to send activation mail messages to clients
 SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
 
-# Firebase configuration
+## Firebase configuration
 FIREBASE_POOL_SIZE = 10 # the maximum number of concurrent connections to Firebase, default is 10
 
-# S3 conf (for file uploads storage)
+## S3 conf (for file uploads storage)
 S3_ENDPOINT="http://localhost:9000"
 S3_BUCKET_NAME="quidalert-uploads"
 
-# IMPORTANT note about security configurations.
+## IMPORTANT note about security configurations.
 # The following variables are critical for security and should not be hardcoded in the codebase. The application will not start if any of these variables is missing or empty.
 # They must be set as environment variables in the system, container (for production), or in a ".env" file (for development).
 # 

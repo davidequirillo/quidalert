@@ -10,21 +10,23 @@ Obviously chief manager and nearby users will be able to see the alert gps coord
 
 For this reasons, this project is mainly intended for the public entities/governements (municipalities, states, regions, countries), which can install the server-side components on a real cluster infrastructure, and can compile and offer the client app to end users.
 
-For simple testing, the server-side system can also be installed on a single generic machine that simulates a cluster architecture, to which all clients will connect (just set the server name in the client configuration file before compiling and installing the client on a mobile device).
+For simple testing, the server-side system can also be installed on a single generic machine that simulates a cluster architecture, to which all clients will connect (in the client source code, in config.dart), just set the server name (or more precisely, API base url) before compiling and installing the client on a mobile device.
 
-## 💡 Concepts
+## 💡 Interesting features
 
 User account registration will be admitted using a white list prepared in advance by admins and by officers.  
 The whitelist, in addition to preventing spam or other similar abuses, is useful for preventing users outside the system territorial jurisdiction from registering and sending alerts, or more generally, it prevents fake alerts.
 
-In addition, an algorithm has been implemented to punish fake alerts, using a voting mechanism whereby users who post fake alerts are punished (their reliability score is lowered, and when it reaches zero, they are no longer able to issue any alerts for a long type). Furthermore, alerted users who vote about an alert, are rewarded or punished based on the chief manager's closing vote (for example, if they confirm a fake alert, and the chief manager on the contrary deny it, their reliability score is lowered too).
+In addition, an algorithm has been implemented to punish fake alerts, using a voting mechanism whereby users who post fake alerts are punished by the chief manager (their reliability score is lowered, and when it reaches zero, they are no longer able to issue any alerts for a long type). Furthermore, alerted users who vote about an alert, are rewarded or punished based on the chief manager's closing vote (for example, if they confirm a fake alert, and the chief manager on the contrary deny it, their reliability score is lowered too).
 
 Admin and officers can define users having specific roles, for example, medics, firefighters, policemen, alpinerescuers, etc. 
-A little note about officers: unlike admins, who can edit everyone, officers have less privileges, for example they can only modify their users, that is, the users they have whitelisted (in other words, the users they have authorized). Furthermore, officers can't promote other users to "admin", to "officer", or to "chief" (not even those authorized by them).
+A little note about officers: unlike admins, who can edit everyone, officers have less privileges, for example they can only modify their own users, that is, the users they have whitelisted (in other words, the users they have authorized). Furthermore, officers can't promote other users to "admin", to "officer", or to "chief" (not even those authorized by them).
 
 To put it simply, the fastest way to populate the database with a large number of users is the following: 
-the administrator define the officers (for example the municipalities) adding their email to the white list. After that, officers can register their account using the app, and each of them can separately define their own citizens, medics, firefighter, etc.
-Administrator also define the chiefs (for example the "rescue operators" or "emergency workers"), white-listing them.
+the administrator define the officers (for example the municipalities) adding their email to the white list, in bulk mode (using a simple CSV file), or adding them one by one. After that, officers can register their account using the app, and each of them can separately define their own citizens, medics, firefighter, etc. etc., white-listing them in bulk (CSV file) or one by one.  
+This way, white-listed users can register their account whenever they want to login to the system.  
+Administrator also define the chiefs (for example the "rescue operators" or "emergency workers"), white-listing them in the same way.  
+Note: CSV file, used to add many emails in the whitelist in bulk, can be very simple, for example only one column, and many rows, where each row is the email address to insert in the whitelist. More complex CSV files are supported: the important thing is that one email address is present in each row.
 
 Do you remember? Chief users are those who manage the alerts: when a generic user sends an alert, the server search the closest chief in the territory, and the nearby users residing in a certain radius (1 km) from the alert sender location.  
 A note: chief users can also create general alerts or managed alerts with custom gps location (writing the alert gps coordinates manually, to target a specific area, to notify nearby users who are within that area).
