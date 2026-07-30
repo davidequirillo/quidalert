@@ -435,12 +435,13 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
         AlertedUser.alert_id == alert.id)).all()
     assert len(alerted_users) == 0
     # The sender is notified with a specific message, from alert notification templates
+    # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
+    # for all notifications (sender, chief, nearby users)
     language = user.language if user.language in alert_notification_templates else "en"
-    msg_type = "new_alert"
-    msg_title = alert_notification_templates[language]["new_alert_title"]
     message = alert_notification_templates[language]["no_chief_available_no_nearby_users"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once()
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
-        ANY, str(user.id), ANY, msg_type, msg_title, message, ANY, ANY)
+            str(user.id), ANY, language=language, alert=ANY, content=message, request_info=ANY, db_session=ANY)
     # No chief is notified, because no chief is found
     setup_fake_functions["mock_notify_chief"].assert_not_called()
     # No nearby user is notified, because no nearby user is found
@@ -489,15 +490,17 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     assert alerted_users[0].is_manager == True
     assert round(alerted_users[0].distance, 1) == 0.0 # the alert manager is the closest chief (we have set the distance to 0.0 for alert managers)
     # The sender is notified with a specific message, from alert notification templates
+    # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
+    # for all notifications (sender, chief, nearby users)
     language = user.language if user.language in alert_notification_templates else "en"
-    msg_type = "new_alert"
-    msg_title = alert_notification_templates[language]["new_alert_title"]
-    message = alert_notification_templates[language]["only_chief_notified"]
+    message_for_sender = alert_notification_templates[language]["only_chief_notified"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once()
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
-        ANY, str(user.id), ANY, msg_type, msg_title, message, ANY, ANY)
+        str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # The chief is notified, because a chief is found
+    setup_fake_functions["mock_notify_chief"].assert_called_once()
     setup_fake_functions["mock_notify_chief"].assert_called_once_with(
-        ANY, str(alerted_users[0].user_id), ANY, msg_type, msg_title, ANY, ANY, ANY)
+        str(alerted_users[0].user_id), ANY, language=language, alert=ANY, content=ANY, request_info=ANY, db_session=ANY)
     # No nearby user is notified, because no nearby user is found
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
@@ -553,17 +556,18 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
         assert alerted_user.distance >= 0.0
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
-    msg_type = "new_alert"
-    msg_title = alert_notification_templates[language]["new_alert_title"]
-    message = alert_notification_templates[language]["no_chief_available_but_nearby_users"]
+    # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
+    # for all notifications (sender, chief, nearby users)
+    message_for_sender = alert_notification_templates[language]["no_chief_available_but_nearby_users"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once()
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
-        ANY, str(user.id), ANY, msg_type, msg_title, message, ANY, ANY)
+        str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because no chief is found
     setup_fake_functions["mock_notify_chief"].assert_not_called()
     # Nearby users are notified, because nearby users are found
     setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
     args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
-    notified_nearby_user_ids = args[1] # the second argument is the list of notified user ids
+    notified_nearby_user_ids = args[0] # the first argument is the list of notified user ids
     print("Number of notified nearby user ids:", len(notified_nearby_user_ids))
     for alerted_user in alerted_users:
         assert str(alerted_user.user_id) in notified_nearby_user_ids
@@ -617,17 +621,20 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     assert len(alerted_nearby_users) == len(alerted_users) - len(alerted_managers)
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
-    msg_type = "new_alert"
-    msg_title = alert_notification_templates[language]["new_alert_title"]
-    message = alert_notification_templates[language]["chief_and_nearby_users_notified"]
+    # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
+    # for all notifications (sender, chief, nearby users), because the sender is the one who created the alert and he/she should understand the notifications
+    message_for_sender = alert_notification_templates[language]["chief_and_nearby_users_notified"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once()
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
-        ANY, str(user.id), ANY, msg_type, msg_title, message, ANY, ANY)
+        str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # Alert manager (the closest chief) is notified
     setup_fake_functions["mock_notify_chief"].assert_called_once()
+    setup_fake_functions["mock_notify_chief"].assert_called_once_with(
+        str(alerted_managers[0].user_id), ANY, language=language, alert=ANY, content=ANY, request_info=ANY, db_session=ANY)
     # Nearby users are notified
     setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
     args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
-    notified_nearby_user_ids = args[1] # the second argument is the list of notified user ids
+    notified_nearby_user_ids = args[0] # the first argument is the list of notified user ids
     print("Number of notified nearby user ids:", len(notified_nearby_user_ids))
     for alerted_user in alerted_nearby_users:
         assert str(alerted_user.user_id) in notified_nearby_user_ids
@@ -712,11 +719,12 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     # Now we check the notifications
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
-    msg_type = "new_alert"
-    msg_title = alert_notification_templates[language]["new_alert_title"]
-    message = alert_notification_templates[language]["no_nearby_users_available"]
+    # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
+    # for all notifications (to sender, to chief, to nearby users)
+    message_for_sender = alert_notification_templates[language]["no_nearby_users_available"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once()
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
-        ANY, str(user.id), ANY, msg_type, msg_title, message, ANY, ANY)
+        str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because it's a managed alert, and the sender (a chief) is the alert manager
     setup_fake_functions["mock_notify_chief"].assert_not_called()
     # No nearby user is notified, because no nearby user is found
@@ -769,17 +777,18 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
     assert len(alerted_nearby_users) == len(alerted_users) - len(alerted_managers)
     language = user.language if user.language in alert_notification_templates else "en"
     # The sender is notified with a specific message, from alert notification templates
-    msg_type = "new_alert"
-    msg_title = alert_notification_templates[language]["new_alert_title"]
-    message = alert_notification_templates[language]["nearby_users_notified"]
+    # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
+    # for all notifications (to sender, to chief, to nearby users)
+    message_for_sender = alert_notification_templates[language]["nearby_users_notified"]
+    setup_fake_functions["mock_notify_sender"].assert_called_once()
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
-        ANY, str(user.id), ANY, msg_type, msg_title, message, ANY, ANY)
+        str(user.id), ANY, language=user.language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because it's a managed alert, and the sender is the alert manager
     setup_fake_functions["mock_notify_chief"].assert_not_called()
     # Nearby users are notified, because nearby users are found
     setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
     args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
-    notified_nearby_user_ids = args[1] # the second argument is the list of notified user ids
+    notified_nearby_user_ids = args[0] # the first argument is the list of notified user ids
     print("Number of notified nearby user ids:", len(notified_nearby_user_ids))
     for alerted_user in alerted_nearby_users:
         assert str(alerted_user.user_id) in notified_nearby_user_ids

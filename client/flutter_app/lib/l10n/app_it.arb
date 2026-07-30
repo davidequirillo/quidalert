@@ -245,5 +245,9 @@
   "userBirthdate": "Data di nascita",
   "userPhoneNumber": "Telefono",
   "userLanguage": "Lingua",
-  "userCompleteProfile": "Completa profilo"
+  "userCompleteProfile": "Completa profilo",
+  "whiteListEntryAuthorizedBy": "Autorizzato da",
+  "whiteListEntryPendingType": "Tipo (in attesa)",
+  "whiteListEntryPendingRole": "Ruolo (in attesa)",
+  "whiteListEntryUserIsRegistered": "L'utente è registrato"
 }

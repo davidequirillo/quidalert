@@ -10,7 +10,7 @@ from fakeredis.aioredis import FakeRedis
 from models.general import (
     string_as_uuid,
     RefreshToken, User, 
-    Alert, AlertType, AlertedUser, ClosingType)
+    Alert, AlertType, AlertedUser)
 from services.network import (
     notify_single_client,
     notify_many_clients
@@ -49,6 +49,7 @@ alert_notification_templates = {
     "en": {
         "new_alert_title": "New alert",
         "new_alert_prefix": "{name} has created a new alert:",
+        "new_alert_action_label": "View",
         "no_chief_available_but_nearby_users": "No chief is available, but there are other users nearby who have been notified. Contact emergency services by phone if the situation is serious.",
         "no_chief_available_no_nearby_users": "No chief is available and there are no other users nearby to notify. Contact emergency services by phone if the situation is serious.",
         "chief_and_nearby_users_notified": "The closest chief and nearby users have been notified about the new alert.",
@@ -57,14 +58,20 @@ alert_notification_templates = {
         "no_nearby_users_available": "There are no nearby users to notify about the new alert.",
         "close_alert_title": "Alert closed",
         "close_alert_text": "The alert created on date {date} hour {hour}, has been closed by the chief manager. Closure type: {closing_type}",
+        "close_alert_action_label": "View",
         "close_alert_positive_closure": "Positive",
         "close_alert_negative_closure": "Negative",
         "close_alert_neutral_closure": "Neutral",
-        "close_alert_punitive_closure": "Punitive"
+        "close_alert_punitive_closure": "Punitive",
+        "expand_alert_title": "Alert expanded",
+        "expand_alert_to_role_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to role: {role}, with radius: {radius}",
+        "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}",
+        "expand_alert_action_label": "View"
     },
     "it": {
         "new_alert_title": "Nuova allerta",
         "new_alert_prefix": "{name} ha creato una nuova allerta:",
+        "new_alert_action_label": "Vedi",
         "no_chief_available_but_nearby_users": "Nessun capo è disponibile, ma ci sono altri utenti nelle vicinanze che sono stati notificati. Contatta telefonicamente i soccorsi se la situazione è grave.",
         "no_chief_available_no_nearby_users": "Nessun capo è disponibile e non ci sono altri utenti nelle vicinanze da notificare. Contatta telefonicamente i soccorsi se la situazione è grave.",
         "chief_and_nearby_users_notified": "Il capo più vicino e gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
@@ -73,10 +80,15 @@ alert_notification_templates = {
         "no_nearby_users_available": "Non ci sono utenti nelle vicinanze da notificare riguardo alla nuova allerta.",
         "close_alert_title": "Allerta chiusa",
         "close_alert_text": "L'allerta creata in data {date} ora {hour}, è stata chiusa dal capo responsabile. Tipo di chiusura: {closing_type}",
+        "close_alert_action_label": "Vedi",
         "close_alert_positive_closure": "Positiva",
         "close_alert_negative_closure": "Negativa",
         "close_alert_neutral_closure": "Neutrale",
-        "close_alert_punitive_closure": "Punitiva"
+        "close_alert_punitive_closure": "Punitiva",
+        "expand_alert_title": "Allerta espansa",
+        "expand_alert_to_role_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) al ruolo {role}, con raggio: {radius}",
+        "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}",
+        "expand_alert_action_label": "Vedi"
     }
 }
 
@@ -86,20 +98,20 @@ GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 10000
 
 ## CREATE ALERT BTASK: This is the main function that will be executed as a background task when a new alert is created.
 async def task_alert_search_and_notify(
-            alert: Alert, user: User, request_info: dict,
+            alert: Alert, current_user: User, request_info: dict,
             db_engine, redis_handle):    
     if (alert.id is None) or (alert.is_closed):
         return
     nearby_users_can_be_notified = False
     chief_can_be_notified = False
     # The alert sender is the user who created the alert 
-    # ("user" argument of this function)
+    # (the "current_user", the one who called the API endpoint to create the alert)
     sender_can_be_notified = False
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(alert, request_info, redis_handle)
     with Session(db_engine) as db_session:
         sender_fcm_token = await run_in_threadpool(
             get_sender_fcm_token, 
-            alert, user, request_info, db_session)
+            alert, current_user, request_info, db_session)
         # For local alerts, we keep the first closest chief as alert manager and save him to database (table alerted_users)
         # For non-local alerts, the user who created the alert is the alert manager, so we don't need to search for a chief or save him to database as alert manager
         if (alert.type == AlertType.local.value):
@@ -108,7 +120,7 @@ async def task_alert_search_and_notify(
                 alert, closest_chiefs, request_info, db_session)
         else:
             chief, chief_fcm_token = {
-                "user_id": user.id,
+                "user_id": current_user.id,
                 "distance_km": 0.0,
                 "location": {
                     "latitude": alert.latitude,
@@ -143,21 +155,21 @@ async def task_alert_search_and_notify(
         await run_in_threadpool(
             set_alert_as_not_pending_anymore, 
             alert.id, request_info, db_session)
-        message_type = "new_alert"
-        message_title = alert_notification_templates[user.language]["new_alert_title"]
         if (chief_can_be_notified) or (nearby_users_can_be_notified):
+            # We prepare the message to be sent to chief and nearby users
+            # Note: as language we use the caller's (current_user) language for simplicity, not the language of each client receiving the notification. 
             description = alert.description if (len(alert.description) <= 100) else (alert.description[:100] + "...")
-            message_prefix = alert_notification_templates[user.language]["new_alert_prefix"].format(
-                name=user.firstname + " " + user.surname)
+            message_prefix = alert_notification_templates[current_user.language]["new_alert_prefix"].format(
+                name=current_user.firstname + " " + current_user.surname)
             message = message_prefix + " " + description
             if chief and chief_can_be_notified:
                 try:
                     chief_id = chief["user_id"]
                     await run_in_threadpool(
                         notify_chief, 
-                        alert, chief_id, chief_fcm_token, 
-                        message_type, message_title, message, 
-                        request_info, db_session)
+                        chief_id, chief_fcm_token, 
+                        language=current_user.language, alert=alert, content=message, 
+                        request_info=request_info, db_session=db_session)
                     log_alert_notify_closest_chief(str(alert.id), request_info, detail=f"Closest chief {chief_id} notified successfully")
                 except Exception as e:
                     chief_can_be_notified = False
@@ -168,9 +180,9 @@ async def task_alert_search_and_notify(
                     fcm_tokens = list(nearby_users_to_fcm_tokens.values())
                     notification_count = await run_in_threadpool(
                         notify_nearby_users,
-                        alert, user_ids, fcm_tokens,
-                        message_type, message_title, message, 
-                        request_info, db_session)
+                        user_ids, fcm_tokens,
+                        language=current_user.language, alert=alert, content=message, 
+                        request_info=request_info, db_session=db_session)
                     if notification_count <= 0:
                         nearby_users_can_be_notified = False
                     log_alert_notify_nearby_users(str(alert.id), request_info, detail=f"Nearby users notified successfully, {notification_count} out of {len(user_ids)} users notified on alert creation")
@@ -178,29 +190,30 @@ async def task_alert_search_and_notify(
                     nearby_users_can_be_notified = False
                     log_alert_error_notifying_nearby_users(str(alert.id), request_info, detail=str(e))
         if sender_can_be_notified:
+            msg_for_sender = ""
             if alert.type == AlertType.local.value:
                 if not chief_can_be_notified:
                     if nearby_users_can_be_notified:
-                        msg_for_sender = alert_notification_templates[user.language]["no_chief_available_but_nearby_users"]
+                        msg_for_sender = alert_notification_templates[current_user.language]["no_chief_available_but_nearby_users"]
                     else:
-                        msg_for_sender = alert_notification_templates[user.language]["no_chief_available_no_nearby_users"]
+                        msg_for_sender = alert_notification_templates[current_user.language]["no_chief_available_no_nearby_users"]
                 else:
                     if nearby_users_can_be_notified:
-                        msg_for_sender = alert_notification_templates[user.language]["chief_and_nearby_users_notified"]
+                        msg_for_sender = alert_notification_templates[current_user.language]["chief_and_nearby_users_notified"]
                     else:
-                        msg_for_sender = alert_notification_templates[user.language]["only_chief_notified"]
+                        msg_for_sender = alert_notification_templates[current_user.language]["only_chief_notified"]
             else:
                 if nearby_users_can_be_notified:
-                    msg_for_sender = alert_notification_templates[user.language]["nearby_users_notified"]
+                    msg_for_sender = alert_notification_templates[current_user.language]["nearby_users_notified"]
                 else:
-                    msg_for_sender = alert_notification_templates[user.language]["no_nearby_users_available"]
+                    msg_for_sender = alert_notification_templates[current_user.language]["no_nearby_users_available"]
             try:
                 await run_in_threadpool(
                     notify_sender, 
-                    alert, str(user.id), sender_fcm_token, 
-                    message_type, message_title, msg_for_sender, 
-                    request_info, db_session) # notify the user who created the alert
-                log_alert_notify_sender(str(alert.id), request_info, detail=f"Sender {user.id} notified successfully")
+                    str(current_user.id), sender_fcm_token, 
+                    language=current_user.language, alert=alert, content=msg_for_sender, 
+                    request_info=request_info, db_session=db_session) # notify the user who created the alert
+                log_alert_notify_sender(str(alert.id), request_info, detail=f"Sender {current_user.id} notified successfully")
             except Exception as e:
                 log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
     return
@@ -473,13 +486,16 @@ def get_sender_fcm_token(alert, sender, request_info, db_session):
     return fcm_token
     
 def notify_nearby_users(
-        alert, user_ids, fcm_tokens, 
-        type: str, title: str, content: str, 
-        request_info, db_session):
-    msg_title = title
+        user_ids, fcm_tokens,
+        language: str, alert: Alert, content: str, 
+        request_info, db_session):        
+    action_label = alert_notification_templates[language]["new_alert_action_label"]
+    msg_title = alert_notification_templates[language]["new_alert_title"]
     msg_body = content
     msg_data = {
-        "type": type,
+        "origin": "new_alert",
+        "action": "view_alert",
+        "action_label": action_label,
         "alert_id": str(alert.id)
     }
     success_count = notify_many_clients(
@@ -488,13 +504,16 @@ def notify_nearby_users(
         request_info, db_session)
     return success_count
 
-def notify_chief(alert, user_id, fcm_token, 
-        type: str, title: str, content: str, 
+def notify_chief(user_id, fcm_token,
+        language: str, alert: Alert, content: str, 
         request_info, db_session):
-    msg_title = title
+    action_label = alert_notification_templates[language]["new_alert_action_label"]
+    msg_title = alert_notification_templates[language]["new_alert_title"]
     msg_body = content
     msg_data = {
-        "type": type,
+        "origin": "new_alert",
+        "action": "view_alert",
+        "action_label": action_label,
         "alert_id": str(alert.id)
     }
     return notify_single_client(
@@ -502,13 +521,16 @@ def notify_chief(alert, user_id, fcm_token,
         msg_title, msg_body, msg_data, 
         request_info, db_session)
 
-def notify_sender(alert, user_id, fcm_token, 
-        type: str, title: str, content: str, 
+def notify_sender(user_id, fcm_token,
+        language: str, alert: Alert, content: str, 
         request_info, db_session):
-    msg_title = title
+    action_label = alert_notification_templates[language]["new_alert_action_label"]
+    msg_title = alert_notification_templates[language]["new_alert_title"]
     msg_body = content
     msg_data = {
-        "type": type,
+        "origin": "new_alert",
+        "action": "view_alert",
+        "action_label": action_label,
         "alert_id": str(alert.id)
     }
     return notify_single_client(
@@ -547,36 +569,35 @@ def task_alert_notify_about_closure(
                 users_to_notify_fcm_tokens.append(fcm_token)
         if settings.app_mode == "development":
             time.sleep(10) # line executed only in development-mode, to simulate a long processing time, for manual testing purposes
-        # We prepare the notification message
-        # Note: # as language we use the caller's (current_user) language for simplicity 
-        # (we could use the language of each receiving user, in a future improvement of the system, if possible)
-        closing_type_label = alert_notification_templates[current_user.language].get(f"close_alert_{closing_type}_closure", closing_type)
-        msg_type = "close_alert"
-        msg_title = alert_notification_templates[current_user.language]["close_alert_title"]
-        msg_body = alert_notification_templates[current_user.language]["close_alert_text"].format(
-            date=alert.created_at.strftime("%Y-%m-%d"),
-            hour=alert.created_at.strftime("%H:%M"),
-            closing_type=closing_type_label.lower()
-        )
-        # We notify users in parallel, using the notify_many_clients function (multicast)
+        # We send notifications, using a multicast notification function. 
+        # Note: as language we use the caller's (current_user) language for simplicity, not the language of each client receiving the notification.
         if users_to_notify_ids and users_to_notify_fcm_tokens:
             try:
                 notification_count = notify_about_closure(
-                    alert, users_to_notify_ids, users_to_notify_fcm_tokens, 
-                    type=msg_type, title=msg_title, content=msg_body, 
-                    request_info=request_info, db_session=db_session)
+                        users_to_notify_ids, users_to_notify_fcm_tokens, 
+                        language=current_user.language, alert=alert, closing_type=closing_type, 
+                        request_info=request_info, db_session=db_session)
                 log_alert_notify_about_closure(str(alert.id), request_info, detail=f"Alert closure successfully, {notification_count} out of {len(users_to_notify_ids)} users notified about closure")
             except Exception as e:
                 log_alert_error_notifying_about_closure(str(alert.id), request_info, detail=str(e))
 
-def notify_about_closure(alert, user_ids, fcm_tokens, 
-        type: str, title: str, content: str, 
+def notify_about_closure(user_ids, fcm_tokens, 
+        language, alert, closing_type,  
         request_info, db_session):
-    msg_title = title
-    msg_body = content
+    closing_type_label = alert_notification_templates[language].get(f"close_alert_{closing_type}_closure", "unknown")
+    action_label = alert_notification_templates[language]["close_alert_action_label"]
+    msg_title = alert_notification_templates[language]["close_alert_title"]
+    msg_body = alert_notification_templates[language]["close_alert_text"].format(
+                date=alert.created_at.strftime("%Y-%m-%d"),
+                hour=alert.created_at.strftime("%H:%M"),
+                closing_type=closing_type_label.lower()
+            )
     msg_data = {
-        "type": type,
-        "alert_id": str(alert.id)
+        "origin": "close_alert",
+        "action": "view_alert",
+        "action_label": action_label,
+        "alert_id": str(alert.id),
+        "closing_type": closing_type
     }
     success_count = notify_many_clients(
         user_ids, fcm_tokens, 

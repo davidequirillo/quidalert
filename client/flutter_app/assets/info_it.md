@@ -10,7 +10,7 @@ Per poter usare questa applicazione, devi fare le seguenti cose:
 
 - A questo punto si può effettuare la registrazione del proprio account, usando questa app.
 
-- Infine, effettuare il Login (l'app chiederà l'accettazione delle notifiche e il permesso di rilevamento della locazione GPS in "consenti sempre")
+- Infine, effettuare il Login (l'app chiederà l'accettazione delle notifiche e il permesso di rilevamento della locazione GPS in "posizione esatta", e "consenti sempre").
 
 ## Accesso alla posizione
 
@@ -21,7 +21,7 @@ Questo processo di tracciamento in background si avvierà automaticamente solo d
 
 Nota: è preferibile impostare la modalità "esatta" del tracciamento GPS (non "approssimativa").
 
-Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento, garantendo così il massimo risparmio della batteria e del traffico dati.
+Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento e tempo trascorso sufficiente, garantendo così il massimo risparmio della batteria e del traffico dati.
 
 Nota: il server memorizzerà temporaneamente, per ciascun utente, solo l'ultima posizione GPS ricevuta, non l'intera cronologia di tracciamento. Se l'utente effettua il logout, la sua posizione GPS non verrà più aggiornata e, dopo alcuni giorni, il sistema eliminerà automaticamente questa vecchia posizione.
 

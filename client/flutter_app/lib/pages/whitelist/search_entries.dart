@@ -239,20 +239,25 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                   separatorBuilder: (_, _) => const Divider(),
                   itemBuilder: (context, index) {
                     if (index < _entriesCount) {
+                      final userIsReg = _entries[index].userIsRegistered;
                       return ListTile(
                         title: Text(_entries[index].email),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Authorized by: ${_entries[index].createdBy}"),
                             Text(
-                              "Registration type: ${_entries[index].registrationType}",
+                              "${loc.whiteListEntryAuthorizedBy}: ${_entries[index].createdBy}",
                             ),
+                            if (!userIsReg)
+                              Text(
+                                "${loc.whiteListEntryPendingType}: ${_entries[index].registrationType}",
+                              ),
+                            if (!userIsReg)
+                              Text(
+                                "${loc.whiteListEntryPendingRole}: ${_entries[index].registrationRole}",
+                              ),
                             Text(
-                              "Registration role: ${_entries[index].registrationRole}",
-                            ),
-                            Text(
-                              "User is registered: ${_entries[index].userIsRegistered ? 'yes' : 'no'}",
+                              "${loc.whiteListEntryUserIsRegistered}: ${_entries[index].userIsRegistered ? 'yes' : 'no'}",
                             ),
                           ],
                         ),
