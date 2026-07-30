@@ -489,6 +489,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelNotes => 'Note';
 
   @override
+  String get labelNote => 'Nota';
+
+  @override
   String get labelOK => 'OK';
 
   @override
@@ -592,6 +595,18 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sectionUsers => 'Utenti';
+
+  @override
+  String get sectionWhitelistAddSingleEntry => 'Aggiungi indirizzo email singolo';
+
+  @override
+  String get sectionWhitelistAddManyEntries => 'Aggiungi molti indirizzi email';
+
+  @override
+  String get sectionWhitelistAddInfoForAdmin => 'Per entrambe le modalità di inserimento, è possibile selezionare tipo e ruolo';
+
+  @override
+  String get sectionWhitelistAddInfoForOfficer => 'Per entrambe le modalità di inserimento, è possibile selezionare il ruolo';
 
   @override
   String get successAccountDismissed => 'Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo';
@@ -747,14 +762,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get userCompleteProfile => 'Completa profilo';
 
   @override
-  String get whiteListEntryAuthorizedBy => 'Autorizzato da';
+  String get whitelistEntryAuthorizedBy => 'Autorizzato da';
 
   @override
-  String get whiteListEntryPendingType => 'Tipo (in attesa)';
+  String get whitelistEntryPendingType => 'Tipo (in attesa)';
 
   @override
-  String get whiteListEntryPendingRole => 'Ruolo (in attesa)';
+  String get whitelistEntryPendingRole => 'Ruolo (in attesa)';
 
   @override
-  String get whiteListEntryUserIsRegistered => 'L\'utente è registrato';
+  String get whitelistEntryUserIsRegistered => 'L\'utente è registrato';
 }

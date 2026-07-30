@@ -160,6 +160,7 @@
   "labelNewPassword": "Nuova password",
   "labelNo": "No",
   "labelNotes": "Note",
+  "labelNote": "Nota",
   "labelOK": "OK",
   "labelPasswordForgotten": "Password dimenticata?",
   "labelPressButtonToObtainPosition": "Premi il tasto per ottenere la posizione",
@@ -195,6 +196,10 @@
   "sectionRecentUserAlerts": "Allerte recenti dell'utente",
   "sectionTechnicalInfo": "Informazioni tecniche",
   "sectionUsers": "Utenti",
+  "sectionWhitelistAddSingleEntry": "Aggiungi indirizzo email singolo",
+  "sectionWhitelistAddManyEntries": "Aggiungi molti indirizzi email",
+  "sectionWhitelistAddInfoForAdmin": "Per entrambe le modalità di inserimento, è possibile selezionare tipo e ruolo",
+  "sectionWhitelistAddInfoForOfficer": "Per entrambe le modalità di inserimento, è possibile selezionare il ruolo",
   "successAccountDismissed": "Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo",
   "successAlertCreated": "Allerta creata con successo",
   "successAlertCreatedLocal": "Allerta creata con successo. Sto cercando gli utenti vicini e il capo",
@@ -246,8 +251,8 @@
   "userPhoneNumber": "Telefono",
   "userLanguage": "Lingua",
   "userCompleteProfile": "Completa profilo",
-  "whiteListEntryAuthorizedBy": "Autorizzato da",
-  "whiteListEntryPendingType": "Tipo (in attesa)",
-  "whiteListEntryPendingRole": "Ruolo (in attesa)",
-  "whiteListEntryUserIsRegistered": "L'utente è registrato"
+  "whitelistEntryAuthorizedBy": "Autorizzato da",
+  "whitelistEntryPendingType": "Tipo (in attesa)",
+  "whitelistEntryPendingRole": "Ruolo (in attesa)",
+  "whitelistEntryUserIsRegistered": "L'utente è registrato"
 }

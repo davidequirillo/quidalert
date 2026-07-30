@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     redis_max_connections: int = config.REDIS_MAX_CONNECTIONS
     redis_cluster_nodes: str = config.REDIS_CLUSTER_NODES
     redis_max_connections_per_node: int = config.REDIS_MAX_CONNECTIONS_PER_NODE
+    redis_logical_shards_num: int = config.REDIS_LOGICAL_SHARDS_NUM
     # Mail sender conf
     smtp_user: str = "" # from environment, critical for security
     smtp_pass: str = "" # same as above

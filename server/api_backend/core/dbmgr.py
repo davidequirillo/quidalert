@@ -106,7 +106,7 @@ async def shutdown_redis_handle(handle: RedisHandle):
 # Note: ideally the cluster size (number of nodes) should be equal to REDIS_TOTAL_SHARDS,
 # but it works fine even in a cluster with fewer nodes (or even in Redis single mode), 
 # as the shards will be distributed across the available nodes.
-REDIS_TOTAL_SHARDS = 16
+REDIS_TOTAL_SHARDS = settings.redis_logical_shards_num
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT = 3600  # 1 hour in seconds

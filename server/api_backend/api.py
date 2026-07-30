@@ -68,7 +68,13 @@ async def init_engines(app: FastAPI):
     print("Initializing redis handle...")
     app.state.redis_handle = dbmgr.get_redis_handle()
     if settings.redis_mode == "cluster":
+        cluster_nodes_num = len(settings.redis_cluster_nodes.split(","))
+        logical_shards_num = settings.redis_logical_shards_num
         print("Redis cluster mode enabled")
+        print(f"Number of redis cluster nodes: {cluster_nodes_num}")
+        print(f"Number of redis logical shards: {logical_shards_num}")
+        if cluster_nodes_num > logical_shards_num:
+            print("Warning: the number of cluster nodes is greater than the number of logical shards. It's not good")
     else:
         print("Redis single mode enabled")
     print("Testing redis connection...")

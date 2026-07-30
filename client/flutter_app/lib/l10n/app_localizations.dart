@@ -1055,6 +1055,12 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get labelNotes;
 
+  /// No description provided for @labelNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get labelNote;
+
   /// No description provided for @labelOK.
   ///
   /// In en, this message translates to:
@@ -1264,6 +1270,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Users'**
   String get sectionUsers;
+
+  /// No description provided for @sectionWhitelistAddSingleEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Add single email address'**
+  String get sectionWhitelistAddSingleEntry;
+
+  /// No description provided for @sectionWhitelistAddManyEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Add many email addresses'**
+  String get sectionWhitelistAddManyEntries;
+
+  /// No description provided for @sectionWhitelistAddInfoForAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'For both entry modes, it\'s possible to select type and role'**
+  String get sectionWhitelistAddInfoForAdmin;
+
+  /// No description provided for @sectionWhitelistAddInfoForOfficer.
+  ///
+  /// In en, this message translates to:
+  /// **'For both entry modes, it\'s possible to select the role'**
+  String get sectionWhitelistAddInfoForOfficer;
 
   /// No description provided for @successAccountDismissed.
   ///
@@ -1571,29 +1601,29 @@ abstract class AppLocalizations {
   /// **'Complete profile'**
   String get userCompleteProfile;
 
-  /// No description provided for @whiteListEntryAuthorizedBy.
+  /// No description provided for @whitelistEntryAuthorizedBy.
   ///
   /// In en, this message translates to:
   /// **'Authorized by'**
-  String get whiteListEntryAuthorizedBy;
+  String get whitelistEntryAuthorizedBy;
 
-  /// No description provided for @whiteListEntryPendingType.
+  /// No description provided for @whitelistEntryPendingType.
   ///
   /// In en, this message translates to:
   /// **'Pending type'**
-  String get whiteListEntryPendingType;
+  String get whitelistEntryPendingType;
 
-  /// No description provided for @whiteListEntryPendingRole.
+  /// No description provided for @whitelistEntryPendingRole.
   ///
   /// In en, this message translates to:
   /// **'Pending role'**
-  String get whiteListEntryPendingRole;
+  String get whitelistEntryPendingRole;
 
-  /// No description provided for @whiteListEntryUserIsRegistered.
+  /// No description provided for @whitelistEntryUserIsRegistered.
   ///
   /// In en, this message translates to:
   /// **'User is registered'**
-  String get whiteListEntryUserIsRegistered;
+  String get whitelistEntryUserIsRegistered;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
