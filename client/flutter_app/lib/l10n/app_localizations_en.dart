@@ -745,4 +745,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userCompleteProfile => 'Complete profile';
+
+  @override
+  String get whiteListEntryAuthorizedBy => 'Authorized by';
+
+  @override
+  String get whiteListEntryPendingType => 'Pending type';
+
+  @override
+  String get whiteListEntryPendingRole => 'Pending role';
+
+  @override
+  String get whiteListEntryUserIsRegistered => 'User is registered';
 }

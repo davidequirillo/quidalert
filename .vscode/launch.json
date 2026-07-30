@@ -8,14 +8,14 @@
     "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "emulator-5554"
   },
-  {
+  { // Windows not supported
     "name": "Debug client (Flutter - Windows), not supported",
     "type": "dart",
     "request": "launch",
     "cwd": "${workspaceFolder}/client/flutter_app",
     "deviceId": "windows"
   },
-  {
+  { // Chrome Web not supported
     "name": "Debug client (Flutter - Web), not supported",
     "type": "dart",
     "request": "launch",

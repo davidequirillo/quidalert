@@ -118,12 +118,12 @@ async def assign_redis_data_to_users(db_session, redis_session):
 
 @pytest.fixture(autouse=True)
 def setup_fake_functions(mocker):
-    def fake_notify_nearby_users(alert, user_ids, fcm_tokens, 
-            type:str, title:str, content:str, 
+    def fake_notify_nearby_users(user_ids, fcm_tokens, 
+            language: str, alert: Alert, content: str, 
             request_info, db_session):
         return len(user_ids)
-    def fake_notify_about_closure(alert, user_ids, fcm_tokens, 
-            type:str, title:str, content:str, 
+    def fake_notify_about_closure(user_ids, fcm_tokens, 
+            language: str, alert: Alert, closing_type: str, 
             request_info, db_session):
         return len(user_ids)
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)

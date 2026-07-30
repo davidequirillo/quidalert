@@ -1570,6 +1570,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Complete profile'**
   String get userCompleteProfile;
+
+  /// No description provided for @whiteListEntryAuthorizedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorized by'**
+  String get whiteListEntryAuthorizedBy;
+
+  /// No description provided for @whiteListEntryPendingType.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending type'**
+  String get whiteListEntryPendingType;
+
+  /// No description provided for @whiteListEntryPendingRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending role'**
+  String get whiteListEntryPendingRole;
+
+  /// No description provided for @whiteListEntryUserIsRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'User is registered'**
+  String get whiteListEntryUserIsRegistered;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

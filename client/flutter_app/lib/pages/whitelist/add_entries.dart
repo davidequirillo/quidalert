@@ -344,6 +344,20 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
                     onPressed: () => Navigator.pop(context),
                     child: Text(loc.buttonBack),
                   ),
+                  const SizedBox(width: 15),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        setState(() {
+                          _emailController.clear();
+                          selectedType = null;
+                          selectedRole = null;
+                          _formKey.currentState?.reset();
+                        });
+                      });
+                    },
+                    child: Text(loc.buttonClear),
+                  ),
                 ],
               ),
               const SizedBox(height: 15),

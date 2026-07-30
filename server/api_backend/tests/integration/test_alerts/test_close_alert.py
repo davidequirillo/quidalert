@@ -815,31 +815,22 @@ def test_close_alert_type_local_notifications_sent(client, db_session, test_chie
     db_session.refresh(alert)
     # For local alerts, there should be a notification sent to the sender and all alerted users
     # (the background task is called for local alerts)
-    # Note: in the implementation of alert notifications, we use the caller's language for simplicity
-    # (we could use the language of each receiving user, in a future improvement of the system, if possible)
+    # Note: in the implementation of alert notifications, we use the API caller's language for simplicity.
     language = caller.language
-    closing_type_label = alert_notification_templates[language].get(f"close_alert_{closing_type}_closure", closing_type)
-    msg_type = "close_alert"
-    msg_title = alert_notification_templates[language]["close_alert_title"]
-    msg_body = alert_notification_templates[language]["close_alert_text"].format(
-        date=alert.created_at.strftime("%Y-%m-%d"),
-        hour=alert.created_at.strftime("%H:%M"),
-        closing_type=closing_type_label.lower()
-    )
     setup_fake_functions["mock_notify_about_closure"].assert_called_once()
     args, kwargs = setup_fake_functions["mock_notify_about_closure"].call_args
-    print("Number of notified user ids: ", len(args[1]), "fcm_tokens: ", len(args[2]))
+    print("Number of notified user ids: ", len(args[0]), "fcm_tokens: ", len(args[1]))
     # We check that the notified user ids and fcm tokens 
     # (used inside the mock_notify_about_closure call) 
     # match the alerted users (plus the sender) for this local alert, 
     # and message type, title and body are correct
     for id in users_to_notify_ids:
-        assert str(id) in args[1]
+        assert str(id) in args[0]
     for fcm_token in users_to_notify_fcm_tokens:
-        assert fcm_token in args[2]
-    assert kwargs["type"] == msg_type
-    assert kwargs["title"] == msg_title
-    assert kwargs["content"] == msg_body
+        assert fcm_token in args[1]
+    assert kwargs["language"] == language
+    assert kwargs["alert"].id == alert.id
+    assert kwargs["closing_type"] == closing_type
 
 def test_close_alert_type_managed_notifications_sent(client, db_session, test_chief, setup_fake_functions):
     caller: User = test_chief["user"]
@@ -878,17 +869,8 @@ def test_close_alert_type_managed_notifications_sent(client, db_session, test_ch
     closing_type = ClosingType.neutral.value
     # For managed alerts, there should be a notification sent to all alerted users
     # (the background task is called for managed alerts)
-    # Note: in the implementation of alert notifications, we use the caller's language for simplicity
-    # (we could use the language of each receiving user, in a future improvement of the system, if possible)
+    # Note: in the implementation of alert notifications, we use the API caller's language for simplicity
     language = caller.language
-    closing_type_label = alert_notification_templates[language].get(f"close_alert_{closing_type}_closure", closing_type)
-    msg_type = "close_alert"
-    msg_title = alert_notification_templates[language]["close_alert_title"]
-    msg_body = alert_notification_templates[language]["close_alert_text"].format(
-            date=alert.created_at.strftime("%Y-%m-%d"),
-            hour=alert.created_at.strftime("%H:%M"),
-            closing_type=closing_type_label.lower()
-        )
     response = client.post(
         f"/api/alerts/{alert_id}/close", json={"type": closing_type}, headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
@@ -896,17 +878,18 @@ def test_close_alert_type_managed_notifications_sent(client, db_session, test_ch
     db_session.refresh(alert)
     setup_fake_functions["mock_notify_about_closure"].assert_called_once()
     args, kwargs = setup_fake_functions["mock_notify_about_closure"].call_args
+    print("Number of notified user ids: ", len(args[0]), "fcm_tokens: ", len(args[1]))
     # We check that the notified user ids and fcm tokens 
     # (used inside the mock_notify_about_closure call) 
     # match the alerted users for this managed alert,
     # and message type, title and body are correct
     for id in alerted_user_ids:
-        assert str(id) in args[1]
+        assert str(id) in args[0]
     for fcm_token in alerted_user_fcm_tokens:
-        assert fcm_token in args[2]
-    assert kwargs["type"] == msg_type
-    assert kwargs["title"] == msg_title
-    assert kwargs["content"] == msg_body
+        assert fcm_token in args[1]
+    assert kwargs["language"] == language
+    assert kwargs["alert"].id == alert.id
+    assert kwargs["closing_type"] == closing_type
 
 def test_close_alert_all_users_without_fcm_token(client, db_session, test_chief, setup_fake_functions):
     caller: User = test_chief["user"]

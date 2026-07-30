@@ -10,7 +10,7 @@ To use this application, you must do the following steps:
 
 - Then, you can do the account registration, using this app.
 
-- Finally, you can do Login (the app will ask the acceptance of notifications and background gps location in "always allow")
+- Finally, you can do Login (the app will ask the acceptance of notifications and background gps location in "exact position", and "allow all the time")
 
 ## Grant location access 
 
@@ -21,7 +21,7 @@ This background process will start automatically once you have successfully logg
 
 Note: the gps tracking recommended mode is the "precise" mode, not the approximate one.
 
-Note: to maximize battery efficiency, the system only sends updates when a significant change in location is detected.
+Note: to maximize battery efficiency, the system only sends updates when a significant change in location is detected and enough time is passed.
 
 Note: the server will temporarily store, for each user, only the last received gps position, not the complete tracking history. If the user does a logout, their gps location will no longer be refreshed, and after a few days the system will automatically delete this old location.
 

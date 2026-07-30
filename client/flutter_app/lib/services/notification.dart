@@ -142,15 +142,13 @@ class NotificationProvider extends ChangeNotifier {
         debugPrintC(
           'Notification: received a message while in the foreground: ${message.messageId}',
         );
-        final String messageType = message.data['type'] ?? '';
-        if (messageType.isEmpty) {
-          return;
-        }
+        final actionLabel = message.data['action_label'] ?? "Ok";
+        final messageTitle = message.notification?.title ?? 'Notification';
         AppKeys.snackbarKey.currentState?.showSnackBar(
           SnackBar(
-            content: Text(message.notification?.title ?? messageType),
+            content: Text(messageTitle),
             action: SnackBarAction(
-              label: "View",
+              label: actionLabel,
               onPressed: () {
                 handleNavigation(message.data);
               },
@@ -202,6 +200,7 @@ class NotificationProvider extends ChangeNotifier {
     } catch (e) {
       debugPrintC('Error checking for initial message: $e');
       _initialMessage = null;
+      // We could use FirebaseCrashlytics to report this error
     }
     if (_initialMessage != null) {
       await Future.delayed(Duration(milliseconds: 1000));
@@ -216,17 +215,17 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   void handleNavigation(Map<String, dynamic> messageData) {
-    if (!messageData.containsKey('type') || messageData['type'] == null) {
+    if (!messageData.containsKey('origin') || messageData['origin'] == null) {
       debugPrintC(
-        'Notification: message data does not contain a "type" field. Ignoring.',
+        'Notification: message data does not contain an "origin" field. Ignoring.',
       );
       return;
     }
-    switch (messageData['type']) {
+    switch (messageData['origin']) {
       case 'new_alert':
         _navigateToAlertDetails(messageData);
         break;
-      case 'update_alert':
+      case 'expand_alert':
         _navigateToAlertDetails(messageData);
         break;
       case 'close_alert':
@@ -234,7 +233,7 @@ class NotificationProvider extends ChangeNotifier {
         break;
       default:
         debugPrintC(
-          'Notification: unrecognized message type "${messageData['type']}". Ignoring.',
+          'Notification: unrecognized message origin "${messageData['origin']}". Ignoring.',
         );
     }
   }
@@ -243,7 +242,7 @@ class NotificationProvider extends ChangeNotifier {
     if (!messageData.containsKey('alert_id') ||
         messageData['alert_id'] == null) {
       debugPrintC(
-        'Notification: ${messageData["type"]} message does not contain an "alert_id" field.',
+        'Notification: ${messageData["origin"]} message does not contain an "alert_id" field.',
       );
       return;
     }
