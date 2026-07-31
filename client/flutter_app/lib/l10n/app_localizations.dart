@@ -515,12 +515,6 @@ abstract class AppLocalizations {
   /// **'Nessuna voce trovata'**
   String get entriesNotFound;
 
-  /// No description provided for @errorAddressNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Address not found'**
-  String get errorAddressNotFound;
-
   /// No description provided for @errorAlertSimilarInZone.
   ///
   /// In en, this message translates to:
@@ -629,6 +623,12 @@ abstract class AppLocalizations {
   /// **'Loading error'**
   String get errorLoading;
 
+  /// No description provided for @errorLocationAddressNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Address not found'**
+  String get errorLocationAddressNotFound;
+
   /// No description provided for @errorLocationServicesDisabled.
   ///
   /// In en, this message translates to:
@@ -652,6 +652,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Timeout error, I fetched the last know position'**
   String get errorLocationFetchTimeout;
+
+  /// No description provided for @errorLocationNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Position not available'**
+  String get errorLocationNotAvailable;
+
+  /// No description provided for @errorLocationAccuracyIsLow.
+  ///
+  /// In en, this message translates to:
+  /// **'The fetched position has a very low accuracy. Please retry'**
+  String get errorLocationAccuracyIsLow;
 
   /// No description provided for @errorLoginLocked.
   ///
@@ -730,12 +742,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permissions not valid'**
   String get errorPermissionsNotValid;
-
-  /// No description provided for @errorPositionNotAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Position not available'**
-  String get errorPositionNotAvailable;
 
   /// No description provided for @errorRegisteringDeviceForPushNotifications.
   ///
@@ -874,6 +880,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'GPS position'**
   String get gpsPosition;
+
+  /// No description provided for @gpsPositionAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS position accuracy'**
+  String get gpsPositionAccuracy;
 
   /// No description provided for @gpsPositionTest.
   ///

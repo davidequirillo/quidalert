@@ -38,6 +38,7 @@ class LocationTestBody extends StatefulWidget {
 
 class _LocationTestBodyState extends State<LocationTestBody> {
   String coords = "";
+  String accuracy = "";
 
   @override
   void dispose() {
@@ -53,6 +54,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
       await locationClient.fetchLocation();
       setState(() {
         coords = getCoords(locationClient.currentPosition);
+        accuracy = getAccuracy(locationClient.currentPosition);
       });
     } on LocationClientPermissionDeniedException {
       retMessage = loc.errorLocationPermissionDenied;
@@ -61,13 +63,16 @@ class _LocationTestBodyState extends State<LocationTestBody> {
       retMessage = loc.errorLocationFetchTimeout;
       retTitle = loc.errorError;
     } on LocationClientAddressNotFoundException {
-      retMessage = loc.errorAddressNotFound;
+      retMessage = loc.errorLocationAddressNotFound;
       retTitle = loc.errorError;
     } on LocationClientFetchPositionException {
-      retMessage = loc.errorPositionNotAvailable;
+      retMessage = loc.errorLocationNotAvailable;
+      retTitle = loc.errorError;
+    } on LocationClientAccuracyLowException catch (e) {
+      retMessage = loc.errorLocationAccuracyIsLow;
+      retMessage += "(${e.message})";
       retTitle = loc.errorError;
     } catch (e) {
-      debugPrintC("Error fetching location: $e");
       retMessage = loc.errorError;
       retTitle = loc.errorError;
     } finally {
@@ -80,13 +85,13 @@ class _LocationTestBodyState extends State<LocationTestBody> {
   String getCoords(Map<String, double>? positionMap) {
     if (positionMap != null) {
       final coordStr = gpsCoordinatesAsString(
-        positionMap['lat']!,
-        positionMap['long']!,
+        positionMap['latitude']!,
+        positionMap['longitude']!,
       );
       return coordStr;
     } else {
       final loc = AppLocalizations.of(context)!;
-      return loc.errorPositionNotAvailable;
+      return loc.errorLocationNotAvailable;
     }
   }
 
@@ -96,6 +101,15 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     if (position != null) {
       final String s = getCoords(position);
       await Clipboard.setData(ClipboardData(text: s));
+    }
+  }
+
+  String getAccuracy(Map<String, double>? positionMap) {
+    if (positionMap != null) {
+      return "${positionMap['accuracy']!} m";
+    } else {
+      final loc = AppLocalizations.of(context)!;
+      return loc.errorLocationNotAvailable;
     }
   }
 
@@ -119,6 +133,11 @@ class _LocationTestBodyState extends State<LocationTestBody> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
+            Text(
+              "${loc.gpsPositionAccuracy}: $accuracy",
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
             locationClient.isFetching
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
@@ -127,7 +146,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
                   ),
             const SizedBox(height: 20),
             SelectableText(
-              locationClient.currentAddress ?? loc.errorAddressNotFound,
+              locationClient.currentAddress ?? loc.errorLocationAddressNotFound,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),

@@ -348,6 +348,7 @@ class Alert {
   final bool isExpanded;
   final double latitude;
   final double longitude;
+  final double accuracy;
   final String? address;
   final double radius;
   final DateTime createdAt;
@@ -360,6 +361,7 @@ class Alert {
     required this.isExpanded,
     required this.latitude,
     required this.longitude,
+    required this.accuracy,
     required this.address,
     required this.radius,
     required this.createdAt,
@@ -389,6 +391,9 @@ class Alert {
     final double longitude = json['longitude'] != null
         ? json['longitude'].toDouble()
         : 0.0;
+    final double accuracy = json['accuracy'] != null
+        ? json['accuracy'].toDouble()
+        : 0.0;
     final double radius = json['radius'] != null
         ? json['radius'].toDouble()
         : 0.0;
@@ -399,6 +404,7 @@ class Alert {
       description: description,
       latitude: latitude,
       longitude: longitude,
+      accuracy: accuracy,
       address: address,
       radius: radius,
       status: status,
