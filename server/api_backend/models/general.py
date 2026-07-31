@@ -447,6 +447,7 @@ class AlertIn(SQLModel, table=False):
     description: str = Field(nullable=False, min_length=1, max_length=512)
     latitude: float = Field(default=0.0, nullable=False)
     longitude: float = Field(default=0.0, nullable=False)
+    accuracy: float = Field(default=0.0, nullable=False) # gps location accuracy (in meters)
     radius: float = Field(default=1.0, nullable=False, gt=0, lt=50) # in kilometers
     address: Optional[str] = Field(default=None, nullable=True, min_length=0, max_length=256)
 

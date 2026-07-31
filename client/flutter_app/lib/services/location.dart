@@ -41,6 +41,15 @@ class LocationClientFetchPositionException implements Exception {
   String toString() => 'LocationClientFetchPositionException: $message';
 }
 
+class LocationClientAccuracyLowException implements Exception {
+  final String message;
+  LocationClientAccuracyLowException([
+    this.message = 'Location accuracy is low',
+  ]);
+  @override
+  String toString() => 'LocationClientAccuracyLowException: $message';
+}
+
 class LocationClientTimeoutException implements Exception {
   final String message;
   LocationClientTimeoutException([this.message = 'Location fetch timed out']);
@@ -54,25 +63,16 @@ class LocationClient extends ChangeNotifier {
   bg.Location? _currentPosition;
   String? _currentAddress;
   bool _isFetching = false;
-  DateTime? _lastFetchingTime;
-
-  static const double accuracy =
-      10; // meters, high accuracy, used for fetching location with the "getCurrentPosition" method
-  static const int distanceBoundary = 30; // meters
-  static const int timeBoundary = 60; // seconds
-  // distanceBoundary and timeBoundary, used to optimize battery
-  // consumption by not updating address if user hasn't moved significantly
-  // or if enough time hasn't passed
-
-  static const int maxTimeout = 15; // seconds
+  double accuracyLimit = 50.0; // meters
 
   String? get currentAddress => _currentAddress;
 
   Map<String, double>? get currentPosition {
     if (_currentPosition != null) {
       final Map<String, double> gpsMap = {
-        "lat": _currentPosition!.coords.latitude,
-        "long": _currentPosition!.coords.longitude,
+        "latitude": _currentPosition!.coords.latitude,
+        "longitude": _currentPosition!.coords.longitude,
+        "accuracy": _currentPosition!.coords.accuracy,
       };
       return gpsMap;
     } else {
@@ -88,21 +88,16 @@ class LocationClient extends ChangeNotifier {
   Future<Map<String, double>?> fetchLocation({bool forceUpdate = false}) async {
     _isFetching = true;
     notifyListeners();
-    double accuracy = LocationClient.accuracy;
-    int distanceBoundary = LocationClient.distanceBoundary;
-    debugPrintC(
-      "Fetching foreground location with accuracy: $accuracy m, distance boundary: $distanceBoundary m, force update: $forceUpdate",
-    );
+    debugPrintC("Fetching foreground location...");
     try {
-      bg.Location returnedPosition;
       try {
-        returnedPosition =
+        _currentPosition =
             await BackgroundLocationService.getForegroundCurrentPosition();
       } on bg.LocationError catch (e) {
         final msg = e.message.toLowerCase();
         // it can throw an error code (int) if the position cannot be fetched, for example:
         // 1: Location unknown, 2: Location timeout, 3: Permission denied, 4: Network error, 408: Network timeout
-        debugPrintC("Error during foreground location fetch: ${e.code}");
+        debugPrintC("Error fetching foreground location: ${e.code}");
         if (e.code == 1 || msg.contains("unknown")) {
           throw LocationClientFetchPositionException("Location unknown");
         } else if (e.code == 3 || msg.contains("permission")) {
@@ -121,38 +116,13 @@ class LocationClient extends ChangeNotifier {
         throw LocationClientFetchPositionException(e.toString());
       }
       debugPrintC(
-        "Fetched position: ${returnedPosition.coords.latitude}, ${returnedPosition.coords.longitude}",
+        "Fetched position: ${_currentPosition!.coords.latitude}, ${_currentPosition!.coords.longitude}, accuracy: ${_currentPosition!.coords.accuracy} meters",
       );
-      // We optimize battery consumption
-      // by not updating the relative address if the user
-      // hasn't moved significantly or enough time hasn't passed since the last fetching
-      if (_currentPosition != null) {
-        bool isTimePassed =
-            (_lastFetchingTime == null) ||
-            (DateTime.now().difference(_lastFetchingTime!).inSeconds >
-                LocationClient.timeBoundary);
-        debugPrintC(
-          "Time has passed? $isTimePassed (last fetching: $_lastFetchingTime)",
+      if (_currentPosition!.coords.accuracy > accuracyLimit) {
+        throw LocationClientAccuracyLowException(
+          "${_currentPosition!.coords.accuracy} m",
         );
-        double gap = BackgroundLocationService.calculateDistance(
-          _currentPosition!.coords.latitude,
-          _currentPosition!.coords.longitude,
-          returnedPosition.coords.latitude,
-          returnedPosition.coords.longitude,
-        );
-        debugPrintC(
-          "Distance from last position: $gap m (threshold: ${LocationClient.distanceBoundary} m)",
-        );
-        if (((gap < LocationClient.distanceBoundary) || (!isTimePassed)) &&
-            (!forceUpdate)) {
-          debugPrintC(
-            "Minimum movement or time not passed: not updating position and address",
-          );
-          return currentPosition;
-        }
       }
-      _currentPosition = returnedPosition;
-      _lastFetchingTime = DateTime.now();
       _currentAddress = await translateToAddress(
         _currentPosition!.coords.latitude,
         _currentPosition!.coords.longitude,
@@ -162,27 +132,31 @@ class LocationClient extends ChangeNotifier {
         throw LocationClientAddressNotFoundException();
       }
       return currentPosition;
-    } on LocationClientPermissionDeniedException catch (_) {
+    } on LocationClientPermissionDeniedException catch (e) {
+      debugPrintC("Location permission denied: ${e.message}");
       _currentPosition = null;
       _currentAddress = null;
       rethrow;
-    } on LocationClientFetchPositionException catch (_) {
+    } on LocationClientFetchPositionException catch (e) {
+      debugPrintC("Error fetching position: ${e.message}");
       _currentPosition = null;
       _currentAddress = null;
       rethrow;
-    } on LocationClientAddressNotFoundException catch (_) {
+    } on LocationClientAccuracyLowException catch (e) {
+      debugPrintC("Location accuracy is low: ${e.message}");
+      _currentPosition = null;
       _currentAddress = null;
       rethrow;
     } on LocationClientTimeoutException catch (_) {
-      debugPrintC("Location fetch timed out");
+      debugPrintC("Location fetch timeout");
       _currentPosition = null;
       _currentAddress = null;
       rethrow;
     } catch (e) {
-      debugPrintC("Error fetching foreground location: $e");
+      debugPrintC("Unknown error fetching foreground location: $e");
       _currentPosition = null;
       _currentAddress = null;
-      throw LocationClientFetchPositionException(e.toString());
+      rethrow;
     } finally {
       debugPrintC("Finished fetching foreground location");
       _isFetching = false;

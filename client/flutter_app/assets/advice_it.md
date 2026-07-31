@@ -4,6 +4,8 @@
 
 - Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine.
 
+- Per localizzare il dispositivo mobile dell'utente, il sistema sfrutta prevalentemente il segnale GPS nei luoghi aperti, e le tecniche di triangolazione dei segnali Wi-Fi circostanti nei luoghi chiusi (dove il segnale GPS non viene ricevuto). Per questo motivo, si raccomanda di tenere il Wi-Fi del dispositivo abilitato, al fine di poter inviare allerte accurate e poter ricevere eventuali allerte vicine.
+
 - Al primo avvio o login, l'app chiederà il permesso di ricevere notifiche, il permesso di rilevamento della propria propria posizione GPS "mentre l'app è in uso" e subito dopo anche il permesso di passare alla modalità "consenti sempre". Ecco, ricordarsi di impostare quest'ultima modalità, "consenti sempre", in modo che l'app possa tracciare la posizione GPS approssimativa del dispositivo anche quando essa si trova in background e non in uso. 
 
 - Per interrompere il processo di tracciamento della posizione in background e non ricevere più notifiche, non è necessario disinstallare l'app, ma è sufficiente effettuare il "logout". Così facendo però non si potrà più ricevere o inviare allerte, fino ad un nuovo eventuale "login".

@@ -102,7 +102,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     showSimpleAlertDialog(
       context,
       loc.labelAddress,
-      address ?? loc.errorAddressNotFound,
+      address ?? loc.errorLocationAddressNotFound,
     );
   }
 
@@ -486,6 +486,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ],
           ),
+        if (alertIsLocal)
+          Text("${loc.gpsPositionAccuracy}: ${alertWithInfo.alert.accuracy} m"),
         if (!alertIsGeneral)
           Row(
             children: [

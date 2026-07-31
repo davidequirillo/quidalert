@@ -191,6 +191,21 @@ def test_create_alert_with_address_too_long():
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)
 
+def test_create_alert_with_accuracy():
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "accuracy": 12.5
+    }
+    alert = AlertIn.model_validate(data)
+    assert alert.description == data["description"]
+    assert alert.latitude == data["latitude"]
+    assert alert.longitude == data["longitude"]
+    assert alert.accuracy == data["accuracy"]
+    assert alert.address is None
+    assert alert.radius == 1.0
+
 def test_create_alert_out_with_defaults():
     data = {
         "description": "This is a test alert",
@@ -201,6 +216,7 @@ def test_create_alert_out_with_defaults():
     assert alert.description == data["description"]
     assert alert.latitude == data["latitude"]
     assert alert.longitude == data["longitude"]
+    assert alert.accuracy == 0.0
     assert alert.address is None
     assert alert.radius == 1.0
     assert alert.type == AlertType.local.value

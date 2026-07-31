@@ -19,11 +19,9 @@ import 'package:quidalert_flutter/utils/strings.dart';
 class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;
-  static double distanceFilterInMeters = 250; // 250 meters
-  static int timeFilterInSeconds = 1800; // 30 minutes
+  static double distanceLimitInMeters = 250; // 250 meters
   static int dailyLimitInSeconds = 86400; // 24 hours
-  static double distanceLimitInMeters = 15000; // 15 km
-  static double accuracyLimitInMeters = 500; // 500 meters
+  static double accuracyLimitInMeters = 150; // 150 meters
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static Future<void> init() async {
@@ -36,33 +34,75 @@ class BackgroundLocationService {
       debugPrintC(
         "Background location received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
+      if (location.isMoving) {
+        debugPrintC("The device is moving, skipping update");
+        return;
+      }
       try {
         await handleLocation(location);
       } catch (e) {
-        debugPrintC('[BackgroundLocationService] Error handling location: $e');
+        debugPrintC(
+          '[BackgroundLocationService, onLocation] Unknown error handling location: $e',
+        );
       }
     });
     bg.BackgroundGeolocation.onHeartbeat((bg.HeartbeatEvent event) async {
       debugPrintC(
-        "Background heartbeat received, fetching current location...",
+        "Background heartbeat received, checking if the last cached location must be sent to the backend...",
       );
+      bg.Location? location = event.location;
+      if (location != null) {
+        debugPrintC(
+          "Heartbeat event contains a location: ${location.coords.latitude}, ${location.coords.longitude} location_id: ${location.uuid}",
+        );
+        if (location.isMoving) {
+          debugPrintC("The device is moving, skipping update");
+          return;
+        }
+        try {
+          await handleHeartbeatLocation(location);
+        } catch (e) {
+          debugPrintC(
+            '[BackgroundLocationService, heartbeat] Unknown error handling location: $e',
+          );
+        }
+      } else {
+        debugPrintC("No location data in heartbeat event, skipping update");
+      }
+    });
+    bg.BackgroundGeolocation.onMotionChange((bg.Location location) async {
+      debugPrintC(
+        "Background motion change received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
+      );
+      if (location.isMoving) {
+        debugPrintC("The device is moving, skipping update");
+        return;
+      }
       try {
-        await BackgroundLocationService.getBackgroundCurrentPosition();
+        await handleLocation(location);
       } catch (e) {
         debugPrintC(
-          '[BackgroundLocationService] Error fetching heartbeat location: $e',
+          '[BackgroundLocationService, onMotionChange] Unknown error handling motion change location: $e',
         );
       }
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         allowIdenticalLocations: false,
+        maxRecordsToPersist: 50,
+        autoSync: false,
         desiredAccuracy: bg
             .Config
             .DESIRED_ACCURACY_MEDIUM, // balance between accuracy and battery
-        distanceFilter: distanceFilterInMeters,
-        heartbeatInterval: timeFilterInSeconds, // get location every 30 minutes
-        stopOnStationary: false, // we don't stop completely when stationary
+        distanceFilter:
+            250, // in meters (movement threshold for update location events)
+        heartbeatInterval: 1800, // heartbeat event every 30 minutes
+        stopTimeout:
+            3, // the device is considered stationary after 3 minutes of "no movement" (see stationaryRadius)
+        stationaryRadius:
+            25, // 25 meters radius to consider the device not in movement
+        stopOnStationary:
+            false, // we don't stop completely the background service when stationary
         stopOnTerminate: false,
         startOnBoot: true,
         foregroundService:
@@ -102,6 +142,16 @@ class BackgroundLocationService {
 
   static Future<void> handleLocation(bg.Location location) async {
     final now = DateTime.now();
+    final locationAccuracyInMeters = location.coords.accuracy;
+    debugPrintC(
+      "Handling location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracyInMeters.toStringAsFixed(2)} meters",
+    );
+    if (locationAccuracyInMeters > accuracyLimitInMeters) {
+      debugPrintC(
+        "Location accuracy is worse than the limit (${accuracyLimitInMeters.toStringAsFixed(2)} meters), skipping update",
+      );
+      return;
+    }
     if (_lastSentLocation != null && _lastSentTime != null) {
       final distance = calculateDistance(
         _lastSentLocation!.coords.latitude,
@@ -109,33 +159,68 @@ class BackgroundLocationService {
         location.coords.latitude,
         location.coords.longitude,
       );
-      double accuracyMeters = location.coords.accuracy;
-      debugPrintC(
-        "Location accuracy=${accuracyMeters.toStringAsFixed(2)} meters",
-      );
-      if (accuracyMeters > accuracyLimitInMeters &&
-          (distance > accuracyLimitInMeters)) {
-        debugPrintC("Location accuracy is bad, skipping update");
-        return;
-      }
+      // We skip sending the location to the backend if the distance is less than 250 meters,
+      // but if 24 hours have passed, we send it anyway, even if the distance is less than 250 meters,
+      // to ensure that the backend has a recent location for the user.
       final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
-      // don't send the update to the backend if not enough time is passed
-      // or there hasn't been a significant movement,
-      // but force the update after a daily limit or if the user moved very far away
       debugPrintC(
         "Difference between last sent location and current location: ${distance.toStringAsFixed(2)} meters, $secondsSinceLast seconds",
       );
-      if ((distance < distanceFilterInMeters ||
-              secondsSinceLast < timeFilterInSeconds) &&
-          (distance < distanceLimitInMeters) &&
+      if ((distance < distanceLimitInMeters) &&
           (secondsSinceLast < dailyLimitInSeconds)) {
         debugPrintC("Location update skipped");
         return;
       }
     }
-    await sendToBackend(location.coords.latitude, location.coords.longitude);
-    _lastSentLocation = location;
-    _lastSentTime = now;
+    final success = await sendToBackend(
+      location.coords.latitude,
+      location.coords.longitude,
+    );
+    if (success) {
+      _lastSentLocation = location;
+      _lastSentTime = now;
+    }
+  }
+
+  static Future<void> handleHeartbeatLocation(bg.Location location) async {
+    final now = DateTime.now();
+    bg.Location locationToSend;
+    final locationAccuracyInMeters = location.coords.accuracy;
+    debugPrintC(
+      "Handling heartbeat location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracyInMeters.toStringAsFixed(2)} meters",
+    );
+    if (locationAccuracyInMeters > accuracyLimitInMeters) {
+      debugPrintC(
+        "Location accuracy is worse than the limit (${accuracyLimitInMeters.toStringAsFixed(2)} meters), skipping update",
+      );
+      return;
+    }
+    if (_lastSentLocation != null && _lastSentTime != null) {
+      final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
+      debugPrintC(
+        "Time between last sent location and current heartbeat location: $secondsSinceLast seconds",
+      );
+      if (secondsSinceLast < dailyLimitInSeconds) {
+        debugPrintC("Heartbeat location will not be sent to the backend");
+        return;
+      } else {
+        debugPrintC("Heartbeat location will be sent to the backend");
+        locationToSend = location;
+      }
+    } else {
+      debugPrintC(
+        "No last sent location available, sending current heartbeat location to the backend",
+      );
+      locationToSend = location;
+    }
+    final success = await sendToBackend(
+      locationToSend.coords.latitude,
+      locationToSend.coords.longitude,
+    );
+    if (success) {
+      _lastSentLocation = locationToSend;
+      _lastSentTime = now;
+    }
   }
 
   static double calculateDistance(
@@ -159,9 +244,9 @@ class BackgroundLocationService {
 
   static double _degreesToRadians(double degrees) => degrees * pi / 180;
 
-  static Future<void> sendToBackend(double lat, double lng) async {
+  static Future<bool> sendToBackend(double lat, double lng) async {
     final token = await getGpsToken();
-    if (token == null) return;
+    if (token == null) return false;
     debugPrintC("Sending to backend: Lat=$lat, Lng=$lng");
     final String url = "${config.apiBaseUrl}/update-gps-position";
     try {
@@ -176,11 +261,14 @@ class BackgroundLocationService {
       );
       if (response.statusCode == 200) {
         debugPrintC('Gps location update successful');
+        return true;
       } else {
         debugPrintC('Server error: ${response.statusCode} - ${response.body}');
+        return false;
       }
     } catch (e) {
       debugPrintC("Error sending location to backend: $e");
+      return false;
     }
   }
 
@@ -205,21 +293,6 @@ class BackgroundLocationService {
     if (exp == null) return true;
     final expiry = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
     return DateTime.now().toUtc().isAfter(expiry);
-  }
-
-  // This method is used to fetch the current position in background. We use it in the heartbeat event
-  static Future<bg.Location> getBackgroundCurrentPosition() async {
-    bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
-      persist: false,
-      samples: 1,
-      desiredAccuracy:
-          100, // 100 meters accuracy for heartbeat-triggered location fetches, to save battery, since it's used just to check if the user moved significantly
-      maximumAge:
-          120000, // 120 seconds, to avoid fetching a new location if the last one is recent enough
-      timeout: 30,
-      extras: {"reason": "heartbeat location fetch"},
-    );
-    return location;
   }
 
   static Future<bg.Location> getForegroundCurrentPosition() async {

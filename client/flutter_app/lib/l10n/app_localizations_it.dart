@@ -219,9 +219,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get entriesNotFound => 'Nessuna voce trovata';
 
   @override
-  String get errorAddressNotFound => 'Indirizzo non trovato';
-
-  @override
   String get errorAlertSimilarInZone => 'Un\'allerta simile esiste già in questa zona';
 
   @override
@@ -276,6 +273,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorLoading => 'Errore di caricamento';
 
   @override
+  String get errorLocationAddressNotFound => 'Indirizzo non trovato';
+
+  @override
   String get errorLocationServicesDisabled => 'I servizi di localizzazione sono disabilitati, vai nelle impostazioni e abilita il gps e i servizi di localizzazione';
 
   @override
@@ -286,6 +286,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorLocationFetchTimeout => 'Errore di attesa, ho preso l\'ultima posizione nota';
+
+  @override
+  String get errorLocationNotAvailable => 'Posizione non disponibile';
+
+  @override
+  String get errorLocationAccuracyIsLow => 'L\'accuratezza della posizione trovata è troppo bassa. Riprovare';
 
   @override
   String get errorLoginLocked => 'Troppi tentativi, l\'accesso (login) è bloccato per 24 ore';
@@ -325,9 +331,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorPermissionsNotValid => 'Permessi non validi';
-
-  @override
-  String get errorPositionNotAvailable => 'Posizione non disponibile';
 
   @override
   String get errorRegisteringDeviceForPushNotifications => 'Errore di registrazione del dispositivo per le notifiche push';
@@ -397,6 +400,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get gpsPosition => 'Posizione GPS';
+
+  @override
+  String get gpsPositionAccuracy => 'Accuratezza posizione GPS';
 
   @override
   String get gpsPositionTest => 'Test positione GPS';

@@ -46,7 +46,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   final _customCoordinates = TextEditingController();
   String _selectedType = AlertType.local.name;
   bool alertRequestInProgress = false;
-  bool fetchLocationError = false;
+  bool locationError = false;
 
   @override
   void dispose() {
@@ -58,7 +58,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
 
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
-    fetchLocationError = false;
+    locationError = false;
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.read<LocationClient>();
     final description = _description.text.trim();
@@ -107,8 +107,8 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         return;
       }
     } else {
-      await _fetchLocation();
-      if (fetchLocationError == true) {
+      await _getGpsLocation();
+      if (locationError == true) {
         return;
       }
       final Map<String, double>? pos = locationClient.currentPosition;
@@ -117,16 +117,17 @@ class _NewAlertBodyState extends State<NewAlertBody> {
           await showSimpleAlertDialog(
             context,
             loc.errorError,
-            loc.errorPositionNotAvailable,
+            loc.errorLocationNotAvailable,
           );
         }
         return;
       }
-      final double lat = pos['lat']!;
-      final double long = pos['long']!;
+      final double lat = pos['latitude']!;
+      final double long = pos['longitude']!;
       fields.addAll({
         "latitude": lat,
         "longitude": long,
+        "accuracy": pos['accuracy']!,
         "address": locationClient.currentAddress ?? "",
       });
     }
@@ -136,7 +137,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     });
   }
 
-  Future<void> _fetchLocation() async {
+  Future<void> _getGpsLocation() async {
     String retMessage = "";
     String retTitle = "";
     final loc = AppLocalizations.of(context)!;
@@ -154,14 +155,18 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       retMessage = "";
       retTitle = "";
     } on LocationClientFetchPositionException {
-      retMessage = loc.errorPositionNotAvailable;
+      retMessage = loc.errorLocationNotAvailable;
+      retTitle = loc.errorError;
+    } on LocationClientAccuracyLowException catch (e) {
+      retMessage = loc.errorLocationAccuracyIsLow;
+      retMessage += "(${e.message})";
       retTitle = loc.errorError;
     } catch (e) {
       retMessage = loc.errorError;
       retTitle = loc.errorError;
     } finally {
       if ((retMessage.isNotEmpty) && (mounted)) {
-        fetchLocationError = true;
+        locationError = true;
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
     }
