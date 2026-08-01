@@ -262,7 +262,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                           ],
                         ),
                         trailing: Text(
-                          datetimeAsStringWithoutMicroseconds(
+                          datetimeAsStringWithoutMilliseconds(
                             _entries[index].createdAt,
                             includeTimezone: false,
                           ),

@@ -39,6 +39,17 @@ extension AppLocalizationsExtension on AppLocalizations {
     }
   }
 
+  String getBooleanString(String value) {
+    switch (value) {
+      case "true":
+        return booleanTrue;
+      case "false":
+        return booleanFalse;
+      default:
+        return '';
+    }
+  }
+
   String getAlertTypeString(String key) {
     switch (key) {
       case 'general':

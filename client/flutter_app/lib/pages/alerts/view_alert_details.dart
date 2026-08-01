@@ -106,30 +106,6 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     );
   }
 
-  Future<void> _viewOnMap(
-    BuildContext context,
-    double latitude,
-    double longitude,
-  ) async {
-    final loc = AppLocalizations.of(context)!;
-    Uri url;
-    if (Platform.isAndroid) {
-      url = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude");
-    } else if (Platform.isIOS) {
-      url = Uri.parse("maps://?ll=$latitude,$longitude&q=$latitude,$longitude");
-    } else {
-      url = Uri.parse(
-        "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude",
-      );
-    }
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (!context.mounted) return;
-      showSimpleAlertDialog(context, loc.errorError, loc.errorUnableToOpenMap);
-    }
-  }
-
   void _showSenderInfo(BuildContext context, User? sender) {
     final loc = AppLocalizations.of(context)!;
     if (sender == null) {
@@ -376,7 +352,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   Widget alertColumn(BuildContext context, AlertWithInfo alertWithInfo) {
     final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
-    final createdAt = datetimeAsStringWithoutMicroseconds(
+    final createdAt = datetimeAsStringWithoutMilliseconds(
       alertWithInfo.alert.createdAt,
       includeTimezone: false,
     );
@@ -507,7 +483,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               // we add an icon to viewonmap link
               InkWell(
                 onTap: () {
-                  _viewOnMap(
+                  viewOnMap(
                     context,
                     alertWithInfo.alert.latitude,
                     alertWithInfo.alert.longitude,

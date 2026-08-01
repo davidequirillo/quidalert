@@ -266,7 +266,7 @@ class _HomeBodyState extends State<HomeBody> {
     String type;
     String status;
     final lastRefreshAtStr = user['last_refresh_at'] != null
-        ? datetimeAsStringWithoutMicroseconds(
+        ? datetimeAsStringWithoutMilliseconds(
             DateTime.parse(user['last_refresh_at']),
           )
         : "N/A";

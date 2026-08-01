@@ -125,30 +125,30 @@ class UserDetailsBody extends StatelessWidget {
           '${loc.userActive}: ${user.isActive ? loc.labelYes.toLowerCase() : loc.labelNo.toLowerCase()}',
         ),
         Text(
-          'Reset locked until : ${user.resetLockedUntil != null ? datetimeAsStringWithoutMicroseconds(user.resetLockedUntil!) : "N/A"}',
+          'Reset locked until : ${user.resetLockedUntil != null ? datetimeAsStringWithoutMilliseconds(user.resetLockedUntil!) : "N/A"}',
         ),
         Text(
-          'Last reset done at : ${user.lastResetDoneAt != null ? datetimeAsStringWithoutMicroseconds(user.lastResetDoneAt!) : "N/A"}',
+          'Last reset done at : ${user.lastResetDoneAt != null ? datetimeAsStringWithoutMilliseconds(user.lastResetDoneAt!) : "N/A"}',
         ),
         Text(
-          'Login locked until : ${user.loginLockedUntil != null ? datetimeAsStringWithoutMicroseconds(user.loginLockedUntil!) : "N/A"}',
+          'Login locked until : ${user.loginLockedUntil != null ? datetimeAsStringWithoutMilliseconds(user.loginLockedUntil!) : "N/A"}',
         ),
         Text(
-          'Last login done at : ${user.lastLoginDoneAt != null ? datetimeAsStringWithoutMicroseconds(user.lastLoginDoneAt!) : "N/A"}',
+          'Last login done at : ${user.lastLoginDoneAt != null ? datetimeAsStringWithoutMilliseconds(user.lastLoginDoneAt!) : "N/A"}',
         ),
         Text(
-          'Last refresh at : ${user.lastRefreshAt != null ? datetimeAsStringWithoutMicroseconds(user.lastRefreshAt!) : "N/A"}',
+          'Last refresh at : ${user.lastRefreshAt != null ? datetimeAsStringWithoutMilliseconds(user.lastRefreshAt!) : "N/A"}',
         ),
         Text(
-          'Created at : ${user.createdAt != null ? datetimeAsStringWithoutMicroseconds(user.createdAt!) : "N/A"}',
+          'Created at : ${user.createdAt != null ? datetimeAsStringWithoutMilliseconds(user.createdAt!) : "N/A"}',
         ),
         Text('Updated by : ${user.updatedBy ?? "N/A"}'),
         Text(
-          'Updated at : ${user.updatedAt != null ? datetimeAsStringWithoutMicroseconds(user.updatedAt!) : "N/A"}',
+          'Updated at : ${user.updatedAt != null ? datetimeAsStringWithoutMilliseconds(user.updatedAt!) : "N/A"}',
         ),
         Text('Authorized by : ${user.authorizedBy ?? "N/A"}'),
         Text(
-          'Authorized at : ${user.authorizedAt != null ? datetimeAsStringWithoutMicroseconds(user.authorizedAt!) : "N/A"}',
+          'Authorized at : ${user.authorizedAt != null ? datetimeAsStringWithoutMilliseconds(user.authorizedAt!) : "N/A"}',
         ),
         Text('${loc.labelNotes}: ${user.notes}'),
         SizedBox(height: 20),
@@ -162,7 +162,7 @@ class UserDetailsBody extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: alerts.length,
             itemBuilder: (context, index) {
-              final createdAtStr = datetimeAsStringWithoutMicroseconds(
+              final createdAtStr = datetimeAsStringWithoutMilliseconds(
                 alerts[index].createdAt,
               );
               final description =

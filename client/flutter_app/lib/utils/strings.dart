@@ -16,7 +16,7 @@ String timezoneOffsetAsString(DateTime datetime) {
   return "$sign$hours:$minutes";
 }
 
-String datetimeAsStringWithoutMicroseconds(
+String datetimeAsStringWithoutMilliseconds(
   DateTime datetime, {
   bool includeTimezone = true,
 }) {

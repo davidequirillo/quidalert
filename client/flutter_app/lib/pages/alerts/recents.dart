@@ -102,7 +102,7 @@ class RecentAlertsBody extends StatelessWidget {
                   ) +
                   (alert.description.length > 50 ? "..." : "");
               final alertCreatedAt = alert.createdAt;
-              final alertDateTimeStr = datetimeAsStringWithoutMicroseconds(
+              final alertDateTimeStr = datetimeAsStringWithoutMilliseconds(
                 alertCreatedAt,
                 includeTimezone: false,
               );
