@@ -329,6 +329,18 @@ abstract class AppLocalizations {
   /// **'You have not voted'**
   String get alertedUserYouHaveNotVoted;
 
+  /// No description provided for @booleanTrue.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get booleanTrue;
+
+  /// No description provided for @booleanFalse.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get booleanFalse;
+
   /// No description provided for @buttonAccept.
   ///
   /// In en, this message translates to:
@@ -512,7 +524,7 @@ abstract class AppLocalizations {
   /// No description provided for @entriesNotFound.
   ///
   /// In en, this message translates to:
-  /// **'Nessuna voce trovata'**
+  /// **'Entries not found'**
   String get entriesNotFound;
 
   /// No description provided for @errorAlertSimilarInZone.
@@ -881,11 +893,23 @@ abstract class AppLocalizations {
   /// **'GPS position'**
   String get gpsPosition;
 
+  /// No description provided for @gpsAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get gpsAccuracy;
+
   /// No description provided for @gpsPositionAccuracy.
   ///
   /// In en, this message translates to:
   /// **'GPS position accuracy'**
   String get gpsPositionAccuracy;
+
+  /// No description provided for @gpsPositionIsMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving'**
+  String get gpsPositionIsMoving;
 
   /// No description provided for @gpsPositionTest.
   ///
@@ -904,6 +928,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Longitude'**
   String get gpsLongitude;
+
+  /// No description provided for @gpsLocationLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Background locations log'**
+  String get gpsLocationLog;
 
   /// No description provided for @labelAllPm.
   ///
@@ -1306,6 +1336,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'For both entry modes, it\'s possible to select the role'**
   String get sectionWhitelistAddInfoForOfficer;
+
+  /// No description provided for @sectionLocationLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Background locations log'**
+  String get sectionLocationLog;
 
   /// No description provided for @successAccountDismissed.
   ///

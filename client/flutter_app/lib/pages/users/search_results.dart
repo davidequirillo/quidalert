@@ -276,7 +276,7 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                         subtitle: Text(subtitle),
                         trailing: Text(
                           (_users[index].authorizedAt != null)
-                              ? datetimeAsStringWithoutMicroseconds(
+                              ? datetimeAsStringWithoutMilliseconds(
                                   _users[index].authorizedAt!,
                                 )
                               : "N/A",

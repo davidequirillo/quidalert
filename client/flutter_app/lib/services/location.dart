@@ -85,7 +85,7 @@ class LocationClient extends ChangeNotifier {
   }
 
   // Used for foreground location tracking (e.g., when user is filling an alert form)
-  Future<Map<String, double>?> fetchLocation({bool forceUpdate = false}) async {
+  Future<Map<String, double>?> fetchLocation() async {
     _isFetching = true;
     notifyListeners();
     debugPrintC("Fetching foreground location...");

@@ -126,6 +126,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertedUserYouHaveNotVoted => 'You have not voted';
 
   @override
+  String get booleanTrue => 'Yes';
+
+  @override
+  String get booleanFalse => 'No';
+
+  @override
   String get buttonAccept => 'Accept';
 
   @override
@@ -216,7 +222,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get entriesAuthorizedByMe => 'All entries authorized by me';
 
   @override
-  String get entriesNotFound => 'Nessuna voce trovata';
+  String get entriesNotFound => 'Entries not found';
 
   @override
   String get errorAlertSimilarInZone => 'A similar alert already exists in this zone';
@@ -402,7 +408,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsPosition => 'GPS position';
 
   @override
+  String get gpsAccuracy => 'Accuracy';
+
+  @override
   String get gpsPositionAccuracy => 'GPS position accuracy';
+
+  @override
+  String get gpsPositionIsMoving => 'Moving';
 
   @override
   String get gpsPositionTest => 'GPS position test';
@@ -412,6 +424,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gpsLongitude => 'Longitude';
+
+  @override
+  String get gpsLocationLog => 'Background locations log';
 
   @override
   String get labelAllPm => 'All';
@@ -613,6 +628,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionWhitelistAddInfoForOfficer => 'For both entry modes, it\'s possible to select the role';
+
+  @override
+  String get sectionLocationLog => 'Background locations log';
 
   @override
   String get successAccountDismissed => 'Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active';

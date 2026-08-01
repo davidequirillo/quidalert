@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/services/location.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
@@ -39,9 +41,11 @@ class LocationTestBody extends StatefulWidget {
 class _LocationTestBodyState extends State<LocationTestBody> {
   String coords = "";
   String accuracy = "";
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -117,7 +121,8 @@ class _LocationTestBodyState extends State<LocationTestBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.watch<LocationClient>();
-    return Padding(
+    return SingleChildScrollView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16.0),
       child: Center(
         child: Column(
@@ -156,9 +161,82 @@ class _LocationTestBodyState extends State<LocationTestBody> {
                     onPressed: _fetchCurrentLocation,
                     child: Text(loc.buttonObtain),
                   ),
+            Divider(height: 30, thickness: 1),
+            buildSectionTitle(loc.sectionLocationLog),
+            buildLocationLogListView(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget buildLocationLogListView() {
+    final loc = AppLocalizations.of(context)!;
+    return FutureBuilder<List<dynamic>>(
+      future: BackgroundLocationService.getLocationLog(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('${loc.errorError}: ${snapshot.error}');
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Text(loc.entriesNotFound);
+        } else {
+          final locations = snapshot.data!;
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: locations.length,
+            itemBuilder: (context, index) {
+              final location = locations[index] as Map<String, String>;
+              final coords =
+                  "${location["latitude"]}, ${location["longitude"]}";
+              final String accuracy = "${location["accuracy"]} m";
+              final String isMovingStr = loc.getBooleanString(
+                location["is_moving"]!,
+              );
+              final String timestamp = location["timestamp"]!;
+              final String uuidPart = location["uuid"]!.length > 8
+                  ? location["uuid"]!.substring(0, 8)
+                  : location["uuid"]!;
+              String subtitleText = "${loc.gpsPositionAccuracy}: $accuracy\n";
+              subtitleText +=
+                  "${loc.gpsPositionIsMoving}: ${isMovingStr.toLowerCase()}\n";
+              subtitleText += "ID: $uuidPart";
+              return ListTile(
+                title: Text(coords),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(subtitleText),
+                    InkWell(
+                      onTap: () {
+                        final double? lat = double.tryParse(
+                          location["latitude"]!,
+                        );
+                        final double? long = double.tryParse(
+                          location["longitude"]!,
+                        );
+                        if ((lat != null) && (long != null)) {
+                          viewOnMap(context, lat, long);
+                        }
+                      },
+                      child: Text(
+                        loc.labelViewOnMap,
+                        style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: Text(timestamp, style: const TextStyle(fontSize: 12)),
+              );
+            },
+          );
+        }
+      },
     );
   }
 }

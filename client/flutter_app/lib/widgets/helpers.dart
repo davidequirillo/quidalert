@@ -6,7 +6,9 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 
 // USEFUL DIALOGS
@@ -138,6 +140,30 @@ void goToHomePagePostFrameCallback(BuildContext context) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
   });
+}
+
+Future<void> viewOnMap(
+  BuildContext context,
+  double latitude,
+  double longitude,
+) async {
+  final loc = AppLocalizations.of(context)!;
+  Uri url;
+  if (Platform.isAndroid) {
+    url = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude");
+  } else if (Platform.isIOS) {
+    url = Uri.parse("maps://?ll=$latitude,$longitude&q=$latitude,$longitude");
+  } else {
+    url = Uri.parse(
+      "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude",
+    );
+  }
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  } else {
+    if (!context.mounted) return;
+    showSimpleAlertDialog(context, loc.errorError, loc.errorUnableToOpenMap);
+  }
 }
 
 // USEFUL WIDGETS

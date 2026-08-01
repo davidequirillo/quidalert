@@ -126,6 +126,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertedUserYouHaveNotVoted => 'Non hai votato';
 
   @override
+  String get booleanTrue => 'Sì';
+
+  @override
+  String get booleanFalse => 'No';
+
+  @override
   String get buttonAccept => 'Accetta';
 
   @override
@@ -402,7 +408,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsPosition => 'Posizione GPS';
 
   @override
+  String get gpsAccuracy => 'Accuratezza';
+
+  @override
   String get gpsPositionAccuracy => 'Accuratezza posizione GPS';
+
+  @override
+  String get gpsPositionIsMoving => 'In movimento';
 
   @override
   String get gpsPositionTest => 'Test positione GPS';
@@ -412,6 +424,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get gpsLongitude => 'Longitudine';
+
+  @override
+  String get gpsLocationLog => 'Log posizioni gps in background';
 
   @override
   String get labelAllPm => 'Tutti';
@@ -613,6 +628,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sectionWhitelistAddInfoForOfficer => 'Per entrambe le modalità di inserimento, è possibile selezionare il ruolo';
+
+  @override
+  String get sectionLocationLog => 'Log posizioni gps in background';
 
   @override
   String get successAccountDismissed => 'Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo';

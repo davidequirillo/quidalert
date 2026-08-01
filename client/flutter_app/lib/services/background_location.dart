@@ -20,7 +20,7 @@ class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;
   static double distanceLimitInMeters = 250; // 250 meters
-  static int dailyLimitInSeconds = 86400; // 24 hours
+  static int dailyLimitInSeconds = 3600 * 24; // 24 hours
   static double accuracyLimitInMeters = 150; // 150 meters
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
 
@@ -89,6 +89,7 @@ class BackgroundLocationService {
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         allowIdenticalLocations: false,
+        persistMode: bg.Config.PERSIST_MODE_ALL,
         maxRecordsToPersist: 50,
         autoSync: false,
         desiredAccuracy: bg
@@ -142,11 +143,11 @@ class BackgroundLocationService {
 
   static Future<void> handleLocation(bg.Location location) async {
     final now = DateTime.now();
-    final locationAccuracyInMeters = location.coords.accuracy;
+    final locationAccuracy = location.coords.accuracy;
     debugPrintC(
-      "Handling location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracyInMeters.toStringAsFixed(2)} meters",
+      "Handling location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracy.toStringAsFixed(2)} meters",
     );
-    if (locationAccuracyInMeters > accuracyLimitInMeters) {
+    if (locationAccuracy > accuracyLimitInMeters) {
       debugPrintC(
         "Location accuracy is worse than the limit (${accuracyLimitInMeters.toStringAsFixed(2)} meters), skipping update",
       );
@@ -172,11 +173,11 @@ class BackgroundLocationService {
         return;
       }
     }
-    final success = await sendToBackend(
+    final isSuccess = await sendToBackend(
       location.coords.latitude,
       location.coords.longitude,
     );
-    if (success) {
+    if (isSuccess) {
       _lastSentLocation = location;
       _lastSentTime = now;
     }
@@ -185,11 +186,11 @@ class BackgroundLocationService {
   static Future<void> handleHeartbeatLocation(bg.Location location) async {
     final now = DateTime.now();
     bg.Location locationToSend;
-    final locationAccuracyInMeters = location.coords.accuracy;
+    final locationAccuracy = location.coords.accuracy;
     debugPrintC(
-      "Handling heartbeat location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracyInMeters.toStringAsFixed(2)} meters",
+      "Handling heartbeat location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracy.toStringAsFixed(2)} meters",
     );
-    if (locationAccuracyInMeters > accuracyLimitInMeters) {
+    if (locationAccuracy > accuracyLimitInMeters) {
       debugPrintC(
         "Location accuracy is worse than the limit (${accuracyLimitInMeters.toStringAsFixed(2)} meters), skipping update",
       );
@@ -213,11 +214,11 @@ class BackgroundLocationService {
       );
       locationToSend = location;
     }
-    final success = await sendToBackend(
+    final isSuccess = await sendToBackend(
       locationToSend.coords.latitude,
       locationToSend.coords.longitude,
     );
-    if (success) {
+    if (isSuccess) {
       _lastSentLocation = locationToSend;
       _lastSentTime = now;
     }
@@ -245,7 +246,13 @@ class BackgroundLocationService {
   static double _degreesToRadians(double degrees) => degrees * pi / 180;
 
   static Future<bool> sendToBackend(double lat, double lng) async {
-    final token = await getGpsToken();
+    String? token;
+    try {
+      token = await getGpsToken();
+    } catch (e) {
+      debugPrintC("Error retrieving GPS token: $e");
+      return false;
+    }
     if (token == null) return false;
     debugPrintC("Sending to backend: Lat=$lat, Lng=$lng");
     final String url = "${config.apiBaseUrl}/update-gps-position";
@@ -303,9 +310,40 @@ class BackgroundLocationService {
           10, // 10 meters accuracy for foreground location fetches, since it's used for user-initiated actions that require more precision
       maximumAge:
           15000, // (in milliseconds) if a cached location is available and is not older than 15 seconds, it will be returned
-      timeout: 60, // Max time (in seconds) to wait for a location fix
+      timeout: 30, // Max time (in seconds) to wait for a location fix
       extras: {"reason": "foreground location"},
     );
     return location;
+  }
+
+  static Future<List<Map<String, String>>> getLocationLog() async {
+    List<Map<String, String>> locations = [];
+    List<dynamic> storedLocations = await bg.BackgroundGeolocation.locations;
+    debugPrintC(
+      "Retrieved ${storedLocations.length} stored locations from the database",
+    );
+    for (var location in storedLocations.take(25)) {
+      // Convert the timestamp in ISO 8601 format
+      // to a DateTime object (in local timezone)
+      final String? locationTimestampStr = location["timestamp"];
+      final DateTime? locationDatetime = locationTimestampStr != null
+          ? DateTime.parse(locationTimestampStr).toLocal()
+          : null;
+      final String locationDatetimeStr = locationDatetime != null
+          ? datetimeAsStringWithoutMilliseconds(
+              locationDatetime,
+              includeTimezone: false,
+            )
+          : "n/a";
+      locations.add({
+        "uuid": location["uuid"]?.toString() ?? "n/a",
+        "latitude": location["coords"]?["latitude"]?.toString() ?? "n/a",
+        "longitude": location["coords"]?["longitude"]?.toString() ?? "n/a",
+        "accuracy": location["coords"]?["accuracy"]?.toString() ?? "n/a",
+        "is_moving": location["is_moving"]?.toString() ?? "n/a",
+        "timestamp": locationDatetimeStr,
+      });
+    }
+    return locations;
   }
 }
