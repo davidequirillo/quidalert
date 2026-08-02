@@ -6,12 +6,10 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';

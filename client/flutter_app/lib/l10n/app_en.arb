@@ -55,6 +55,7 @@
   "buttonSearch": "Search",
   "buttonWrite": "Write",
   "buttonView": "View",
+  "buttonTest": "Test",
   "buttonVotePositive": "Confirm",
   "buttonVoteNegative": "Deny",
   "buttonVoteNeutral": "I don't know",

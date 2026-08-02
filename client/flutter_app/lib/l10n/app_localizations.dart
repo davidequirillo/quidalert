@@ -425,6 +425,12 @@ abstract class AppLocalizations {
   /// **'View'**
   String get buttonView;
 
+  /// No description provided for @buttonTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get buttonTest;
+
   /// No description provided for @buttonVotePositive.
   ///
   /// In en, this message translates to:
