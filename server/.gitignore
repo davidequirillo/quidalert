@@ -19,3 +19,6 @@ files/terms_it.md
 
 # Firebase keys (secret)
 firebase_keys.json
+
+# Docker compose for production
+docker-compose.prod.yml

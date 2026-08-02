@@ -1,0 +1,30 @@
+# Docker ignore file for the API backend
+
+## Ignore Python bytecode, cache, and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+node_modules/
+npm-debug.log
+
+## Ignore GIT files
+.git
+.gitignore
+
+## Ignore documentation files
+README.md
+
+## Ignore environment files (important, for security reasons)
+.env
+.env.*
+.env.example
+
+## Ignore IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Dockerfile*
+docker-compose*

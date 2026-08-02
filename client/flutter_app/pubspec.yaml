@@ -20,6 +20,7 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.10.4
+  flutter: '^3.41.3' # Quidalert: flutter version used for development
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -30,7 +31,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_localizations: # quidalert: add localization (languages) support
+  flutter_localizations: # Quidalert: add localization (languages) support
     sdk: flutter
   provider: ^6.1.4
   http: ^1.6.0
@@ -72,7 +73,7 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-  generate: true # quidalert: enable code generation for localization
+  generate: true # Quidalert: enable code generation for localization
 
   # To add assets to your application, add an assets section, like this:
   # Quidalert: assets (we must create assets directory manually in the flutter root)

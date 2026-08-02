@@ -39,7 +39,7 @@ SMTP_HOST = "mailserver" # to send activation mail messages to clients
 SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
 
-## Firebase configuration
+## Firebase configuration (not used at the moment)
 FIREBASE_POOL_SIZE = 10 # the maximum number of concurrent connections to Firebase, default is 10
 
 ## S3 conf (for file uploads storage)
@@ -47,17 +47,19 @@ S3_ENDPOINT="http://localhost:9000"
 S3_BUCKET_NAME="quidalert-uploads"
 
 ## IMPORTANT note about security configurations.
-# The following variables are critical for security and should not be hardcoded in the codebase. The application will not start if any of these variables is missing or empty.
-# They must be set as environment variables in the system, container (for production), or in a ".env" file (for development).
+# The following variables are critical for security and should not be hardcoded in the codebase. 
+# The application will not start if any of these variables is missing or empty.
+# They must be set as environment variables (see .env file), and in production, they should be managed securely 
+# (e.g., using Docker secrets, HashiCorp Vault, etc.) to avoid storing them in plaintext in the .env file.
 # 
 # Copy the ".env.example" file to ".env" and fill the values for those variables.
 # 
 # Variables:
-# APP_MODE, ADMIN_PASS, 
+# APP_MODE, ADMIN_PASS, FAKE_USERS_PASS
 # OTP_PEPPER, EMAIL_PEPPER, GLOBAL_PEPPER, JWT_SECRET_KEY
-# S3_USER, S3_PASSWORD, S3_ACCESS_KEY, S3_SECRET_KEY
-# SMTP_USER, SMTP_PASSWORD  
-# DB_USER, DB_PASSWORD
-# REDIS_USER, REDIS_PASSWORD
+# S3_USER, S3_PASS, S3_ACCESS_KEY, S3_SECRET_KEY
+# SMTP_USER, SMTP_PASS  
+# DB_USER, DB_PASS
+# REDIS_USER, REDIS_PASS
 # FIREBASE_KEYS_PATH
 # FIREBASE_PROJECT_ID

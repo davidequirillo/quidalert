@@ -6,8 +6,8 @@ import random
 import asyncio
 import pytest
 from scripts.seed_redis_data import (
-    DENVER_LAT, 
-    DENVER_LON,
+    CENTER_LAT, 
+    CENTER_LON,
     get_random_coords
 )
 from sqlmodel import delete, select
@@ -23,7 +23,7 @@ from core.dbmgr import (
 )
 
 GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
-RADIUS_KM = 5  # Radius in kilometers for random location generation around Denver
+RADIUS_KM = 5  # Radius in kilometers for random location generation around the central point (CENTER_LAT, CENTER_LON) for testing purposes
 
 def print_alert_coordinates_and_nearby_users(alert, user, closest_chiefs, nearby_users):
     print()
@@ -102,7 +102,7 @@ async def assign_redis_data_to_users(db_session, redis_session):
         if (random.random() < GPS_PROBABILITY) or (
             user.is_chief and (at_least_one_chief_has_gps == False)
         ):
-            lat, lon = get_random_coords(DENVER_LAT, DENVER_LON, RADIUS_KM)
+            lat, lon = get_random_coords(CENTER_LAT, CENTER_LON, RADIUS_KM)
             user_id_str = str(user.id)
             chief_locations_key = get_redis_chief_locations_key(user_id_str)
             user_locations_key = get_redis_user_locations_key(user_id_str)
@@ -156,8 +156,8 @@ def create_test_alert(db_session, test_baseuser):
         type=AlertType.local.value,
         description="Test alert description",
         user_id=user.id,
-        latitude=DENVER_LAT,
-        longitude=DENVER_LON,
+        latitude=CENTER_LAT,
+        longitude=CENTER_LON,
         radius=1
     )
     db_session.add(alert)
@@ -190,8 +190,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             type=AlertType.local.value,
             description=f"Strange user alert {i}",
             user_id=strange_user.id,  # Use the ID of the strange user
-            latitude=DENVER_LAT,
-            longitude=DENVER_LON,
+            latitude=CENTER_LAT,
+            longitude=CENTER_LON,
             radius=1
         )
         db_session.add(alert)
@@ -201,8 +201,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             type=AlertType.local.value,
             description=f"Test alert {i}",
             user_id=user.id,
-            latitude=DENVER_LAT,
-            longitude=DENVER_LON,
+            latitude=CENTER_LAT,
+            longitude=CENTER_LON,
             radius=1
         )
         db_session.add(alert)
@@ -212,8 +212,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             type=AlertType.local.value,
             description=f"Chief alert {i}",
             user_id=chief.id,
-            latitude=DENVER_LAT,
-            longitude=DENVER_LON,
+            latitude=CENTER_LAT,
+            longitude=CENTER_LON,
             radius=1
         )
         db_session.add(alert)
@@ -235,8 +235,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             type=AlertType.empty.value,
             description=f"Empty alert {i}",
             user_id=chief.id,
-            latitude=DENVER_LAT,
-            longitude=DENVER_LON,
+            latitude=CENTER_LAT,
+            longitude=CENTER_LON,
             radius=1,
             is_pending=False # empty alerts are not pending, because we don't have to perform background tasks for this type of alert
         )
@@ -247,8 +247,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             type=AlertType.managed.value,
             description=f"Managed alert {i}",
             user_id=chief.id,
-            latitude=DENVER_LAT,
-            longitude=DENVER_LON,
+            latitude=CENTER_LAT,
+            longitude=CENTER_LON,
             radius=random.uniform(2,5)
         )
         db_session.add(alert)

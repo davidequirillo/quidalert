@@ -10,7 +10,7 @@ import config
 
 class Settings(BaseSettings):
     # App conf
-    app_mode: str = "production" # you can change it to "development" in the ".env" file, not here, because this is the default value, and it will be overridden by the ".env" file or by environment variables in the system or in the container
+    app_mode: str = "production" # you can change it to "development" in the ".env" file, not here, because this is the default value, and it will be overridden by the environment (.env file)
     send_emails: bool = True
     host: str = "localhost" # backend host
     port: int = 8080 # backend port
@@ -21,11 +21,12 @@ class Settings(BaseSettings):
     # CORS conf
     cors_allow_origins: list = []
     # Security conf
-    admin_pass: str = "" # from environment (system, container, or .env)
-    email_pepper: str = "" # same as above, from environment 
-    otp_pepper: str = "" # same as above, they are critical for security
-    global_pepper: str = "" # same...
-    jwt_secret_key: str = "" # same...
+    admin_pass: str = "" # from environment
+    fake_users_pass: str = "" # from environment
+    email_pepper: str = "" # from environment
+    otp_pepper: str = "" # from environment, they are critical for security
+    global_pepper: str = "" # from environment
+    jwt_secret_key: str = "" # from environment
     # Database conf
     db_user : str = "" # from environment, critical for security
     db_pass : str = "" # same as above

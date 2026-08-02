@@ -95,7 +95,7 @@
   "errorLocationServicesDisabled": "Location services are disabled, go to settings and enable gps and location services",
   "errorLocationPermissionDenied": "Location permissions are denied, go to settings to enable them",
   "errorLocationPermissionDeniedForever": "You have permanently denied location permissions, go to settings and enable them",
-  "errorLocationFetchTimeout": "Timeout error, I fetched the last know position",
+  "errorLocationFetchTimeout": "Timeout error. Please retry",
   "errorLocationNotAvailable": "Position not available",
   "errorLocationAccuracyIsLow": "The fetched position has a very low accuracy. Please retry",
   "errorLoginLocked": "Too many attempts, login is locked for 24 hours",
