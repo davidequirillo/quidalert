@@ -132,36 +132,43 @@ class _LocationTestBodyState extends State<LocationTestBody> {
             const Icon(Icons.location_on, size: 50, color: Colors.blue),
             const SizedBox(height: 15),
             const SizedBox(height: 15),
-            SelectableText(
-              '(${loc.gpsLatitude}, ${loc.gpsLongitude}): $coords',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "${loc.gpsPositionAccuracy}: $accuracy",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            locationClient.isFetching
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: copyCoordsToClipboard,
-                    child: Text(loc.buttonCopy),
-                  ),
-            const SizedBox(height: 20),
-            SelectableText(
-              locationClient.currentAddress ?? loc.errorLocationAddressNotFound,
-              textAlign: TextAlign.center,
-            ),
+            if (coords.isNotEmpty)
+              SelectableText(
+                '(${loc.gpsLatitude}, ${loc.gpsLongitude}): $coords',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            if (coords.isNotEmpty) const SizedBox(height: 10),
+            if (coords.isNotEmpty)
+              Text(
+                "${loc.gpsPositionAccuracy}: $accuracy",
+                textAlign: TextAlign.center,
+              ),
+            if (coords.isNotEmpty) const SizedBox(height: 10),
+            if (coords.isNotEmpty)
+              locationClient.isFetching
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: copyCoordsToClipboard,
+                      child: Text(loc.buttonCopy),
+                    ),
+            if (coords.isNotEmpty) const SizedBox(height: 20),
+            if (coords.isNotEmpty)
+              SelectableText(
+                (locationClient.currentPosition != null &&
+                        locationClient.currentAddress != null)
+                    ? locationClient.currentAddress!
+                    : loc.errorLocationAddressNotFound,
+                textAlign: TextAlign.center,
+              ),
             const SizedBox(height: 20),
             locationClient.isFetching
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: _fetchCurrentLocation,
-                    child: Text(loc.buttonObtain),
+                    child: Text(loc.buttonTest),
                   ),
-            Divider(height: 30, thickness: 1),
+            Divider(height: 50, thickness: 1),
             buildSectionTitle(loc.sectionLocationLog),
             buildLocationLogListView(),
           ],
@@ -196,9 +203,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
                 location["is_moving"]!,
               );
               final String timestamp = location["timestamp"]!;
-              final String uuidPart = location["uuid"]!.length > 8
-                  ? location["uuid"]!.substring(0, 8)
-                  : location["uuid"]!;
+              final String uuidPart = location["uuid"]!.split("-").last;
               String subtitleText = "${loc.gpsPositionAccuracy}: $accuracy\n";
               subtitleText +=
                   "${loc.gpsPositionIsMoving}: ${isMovingStr.toLowerCase()}\n";

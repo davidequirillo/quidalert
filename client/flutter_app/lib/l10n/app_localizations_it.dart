@@ -174,6 +174,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonView => 'Visualizza';
 
   @override
+  String get buttonTest => 'Test';
+
+  @override
   String get buttonVotePositive => 'Conferma';
 
   @override
