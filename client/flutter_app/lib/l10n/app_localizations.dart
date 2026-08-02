@@ -668,7 +668,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorLocationFetchTimeout.
   ///
   /// In en, this message translates to:
-  /// **'Timeout error, I fetched the last know position'**
+  /// **'Timeout error. Please retry'**
   String get errorLocationFetchTimeout;
 
   /// No description provided for @errorLocationNotAvailable.

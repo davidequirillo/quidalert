@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import sys
+import argparse
 from models.general import (
     User,
     RefreshToken
@@ -57,11 +58,10 @@ def assign_fcm_token_to_all_users(refresh_token, db_session):
     db_session.commit()
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    email = args[0] if len(args) > 0 else None
-    if not email:
-        print("Please provide the email of the user whose FCM token will be used for seeding.")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Seed FCM tokens for all users using the FCM token from a specific user: after running this script, all users will have the same FCM token as the specified user.")
+    parser.add_argument("--email", type=str, required=True, help="Email of the user whose FCM token will be used for seeding.")
+    args = parser.parse_args()
+    email = args.email
     with Session(db_engine) as db_session:
         user = select_the_seeding_user(email, db_session)
         if not user:

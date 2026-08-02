@@ -18,8 +18,8 @@ from tests.fixtures.alerts import (
     RADIUS_KM,
 )
 from scripts.seed_redis_data import (
-    DENVER_LAT, 
-    DENVER_LON
+    CENTER_LAT, 
+    CENTER_LON
 )
 from services.alert_btasks import (
     GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM,
@@ -400,13 +400,13 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     # Nearby users are searched within the alert radius
     # Closest chiefs are searched within a very big radius (GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS)
     # If we want to be sure to not find nearby users or closest chiefs, 
-    # we can set the alert coordinates very far from Denver
+    # we can set the alert coordinates very far from CENTER_LAT and CENTER_LON (the center of the test users generation area, see tests/fixtures/alerts.py)
     radius_for_closest_chiefs_in_degrees = GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM / 111
     data = {
         "description": description,
-        "latitude": DENVER_LAT - radius_for_closest_chiefs_in_degrees - 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver
-        "longitude": DENVER_LON + radius_for_closest_chiefs_in_degrees + 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from Denver
-        "address": "Far away from Denver"
+        "latitude": CENTER_LAT - radius_for_closest_chiefs_in_degrees - 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from CENTER_LAT
+        "longitude": CENTER_LON + radius_for_closest_chiefs_in_degrees + 10, # more than GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM km away from CENTER_LON
+        "address": "Far away from CENTER_LAT and CENTER_LON"
     }
     response = client.post(
         "/api/alerts", json=data,
@@ -454,13 +454,13 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     description = "Test local alert with closest chiefs but no nearby users"
     # Nearby users are searched within the alert radius
     # To simulate the absence of nearby users, we can set the alert coordinates in a location where there are no nearby users registered
-    # The test users have been generated with random coordinates around Denver, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py). 
-    # So, if we set the alert coordinates far from Denver (more than RADIUS_KM km away), we can be sure to not find nearby users.
+    # The test users have been generated with random coordinates around the CENTER location, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py). 
+    # So, if we set the alert coordinates far from the CENTER location (more than RADIUS_KM km away), we can be sure to not find nearby users.
     radius_for_nearby_users_in_degrees = RADIUS_KM / 111
     data = {
         "description": description,
-        "latitude": DENVER_LAT - (2 * radius_for_nearby_users_in_degrees) - 1, # more than RADIUS_KM km away from Denver, so that no nearby user is found
-        "longitude": DENVER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from Denver, so that no nearby user is found
+        "latitude": CENTER_LAT - (2 * radius_for_nearby_users_in_degrees) - 1, # more than RADIUS_KM km away from CENTER_LAT, so that no nearby user is found
+        "longitude": CENTER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from CENTER_LON, so that no nearby user is found
     }
     response = client.post(
         "/api/alerts", json=data,
@@ -517,14 +517,14 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
     db_session.commit()
     description = "Test local alert with no closest chiefs but nearby users"
     # Nearby users are searched within the alert radius
-    # The test users have been generated with random coordinates around Denver, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
-    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (DENVER_LAT, DENVER_LON, RADIUS_KM)
+    # The test users have been generated with random coordinates around the CENTER location, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
+    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (CENTER_LAT, CENTER_LON, RADIUS_KM)
     # The caller is a chief, so there is no problem in setting the radius to RADIUS_KM, which is greater than the default radius of 1 km, because chiefs can create alerts with a radius greater than the default.
     # Note: the alert is normal (local), not managed.
     data = {
         "description": description,
-        "latitude": DENVER_LAT, 
-        "longitude": DENVER_LON,
+        "latitude": CENTER_LAT, 
+        "longitude": CENTER_LON,
         "radius": RADIUS_KM
     }
     response = client.post(
@@ -577,14 +577,14 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     user: User = test_chief['user']
     description = "Test local alert with closest chiefs and nearby users"
     # Nearby users are searched within the alert radius
-    # The test users have been generated with random coordinates around Denver, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
-    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (DENVER_LAT, DENVER_LON, RADIUS_KM)
+    # The test users have been generated with random coordinates around the CENTER location, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
+    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (CENTER_LAT, CENTER_LON, RADIUS_KM)
     # The caller is a chief, so there is no problem in setting the radius to RADIUS_KM, which is greater than the default radius of 1 km, because chiefs can create alerts with a radius greater than the default.
     # Note: the alert is normal (local), not managed.
     data = {
         "description": description,
-        "latitude": DENVER_LAT, 
-        "longitude": DENVER_LON,
+        "latitude": CENTER_LAT, 
+        "longitude": CENTER_LON,
         "address": "Denver, CO",
         "radius": RADIUS_KM
     }
@@ -644,8 +644,8 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     description = "Different help request with a smaller radius"
     data = {
         "description": description,
-        "latitude": DENVER_LAT, 
-        "longitude": DENVER_LON,
+        "latitude": CENTER_LAT, 
+        "longitude": CENTER_LON,
         "radius": RADIUS_KM / 2 # smaller radius, so that less nearby users are found
     }
     response = client.post(
@@ -682,13 +682,13 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     user: User = test_chief['user']
     description = "Test managed alert with no nearby users"
     radius_for_nearby_users_in_degrees = RADIUS_KM / 111
-    # We use a location far away Denver coordinates (test users are generated near Denver coordinates)
+    # We use a location far away from the CENTER location (test users are generated near the CENTER location)
     # to be sure we will not find nearby users
     data = {
         "type": AlertType.managed.value,
         "description": description,
-        "latitude": DENVER_LAT - (2 * radius_for_nearby_users_in_degrees) - 1, # more than RADIUS_KM km away from Denver, so that no nearby user is found
-        "longitude": DENVER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from Denver, so that no nearby user is found
+        "latitude": CENTER_LAT - (2 * radius_for_nearby_users_in_degrees) - 1, # more than RADIUS_KM km away from the CENTER location, so that no nearby user is found
+        "longitude": CENTER_LON + (2 * radius_for_nearby_users_in_degrees) + 1 # more than RADIUS_KM km away from the CENTER location, so that no nearby user is found
     }
     response = client.post(
         "/api/alerts", json=data,
@@ -735,13 +735,13 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
     user: User = test_chief['user']
     description = "Test managed alert with nearby users"
     # Nearby users are searched within the alert radius
-    # The test users have been generated with random coordinates around Denver, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
-    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (DENVER_LAT, DENVER_LON, RADIUS_KM)
+    # The test users have been generated with random coordinates around the CENTER location, inside a radius of RADIUS_KM (see tests/fixtures/alerts.py).
+    # To be sure to find nearby users, we set the alert location and radius to the same location and radius used to generate test users (CENTER_LAT, CENTER_LON, RADIUS_KM)
     data = {
         "type": AlertType.managed.value,
         "description": description,
-        "latitude": DENVER_LAT, 
-        "longitude": DENVER_LON,
+        "latitude": CENTER_LAT, 
+        "longitude": CENTER_LON,
         "radius": RADIUS_KM
     }
     response = client.post(

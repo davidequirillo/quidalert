@@ -294,7 +294,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLocationPermissionDeniedForever => 'You have permanently denied location permissions, go to settings and enable them';
 
   @override
-  String get errorLocationFetchTimeout => 'Timeout error, I fetched the last know position';
+  String get errorLocationFetchTimeout => 'Timeout error. Please retry';
 
   @override
   String get errorLocationNotAvailable => 'Position not available';

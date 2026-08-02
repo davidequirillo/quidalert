@@ -95,7 +95,7 @@
   "errorLocationServicesDisabled": "I servizi di localizzazione sono disabilitati, vai nelle impostazioni e abilita il gps e i servizi di localizzazione",
   "errorLocationPermissionDenied": "I permessi di localizzazione sono negati, vai nelle impostazioni e abilitali",
   "errorLocationPermissionDeniedForever": "Hai negato in modo permanente i permessi di localizzazione, vai nelle impostazioni e abilitali",
-  "errorLocationFetchTimeout": "Errore di attesa, ho preso l'ultima posizione nota",
+  "errorLocationFetchTimeout": "Errore di attesa. Ritentare",
   "errorLocationNotAvailable": "Posizione non disponibile",
   "errorLocationAccuracyIsLow": "L'accuratezza della posizione trovata è troppo bassa. Riprovare",
   "errorLoginLocked": "Troppi tentativi, l'accesso (login) è bloccato per 24 ore",

@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import sys
+import argparse
 from models.general import (
     User,
     RefreshToken
@@ -30,6 +31,7 @@ def delete_refresh_token_by_emails(emails, db_session):
                 num += 1
     db_session.commit()
     print(f"Deleted {num} refresh tokens.")
+    print("NOTE: the number of refresh tokens deleted can be less than the number of emails provided, because not all users may have a refresh token in the database (e.g. if they never logged in).")
 
 def delete_refresh_token_for_all(db_session):
     statement = select(User)
@@ -46,12 +48,16 @@ def delete_refresh_token_for_all(db_session):
     print("NOTE: the number of refresh tokens deleted can be less than the number of users, because not all users may have a refresh token in the database (e.g. if they never logged in).")
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    emails = [arg for arg in args if "@" in arg]  # Filter out arguments that look like emails
-    print(f"Deleting refresh tokens for the following users: {emails}" if emails else "Deleting refresh tokens for all users.")
+    parser = argparse.ArgumentParser(description="Delete refresh tokens for specific users or all users.")
+    parser.add_argument("--emails", type=str, nargs="*", help="Email addresses of the users whose refresh tokens will be deleted. If not provided, refresh tokens for all users will be deleted.")
+    parser.add_argument("--all", action="store_true", help="Delete refresh tokens for all users. If this flag is set, the --emails argument will be ignored.")
+    args = parser.parse_args()
+    emails = args.emails if args.emails else []
+    print(f"Deleting refresh tokens for the following users: {emails}" if emails else "Deleting refresh tokens for all users...")
     with Session(db_engine) as db_session:
-        if emails:
+        if args.all:
+            delete_refresh_token_for_all(db_session)
+        elif emails:
             delete_refresh_token_by_emails(emails, db_session)
         else:
-            delete_refresh_token_for_all(db_session)
-    print("Refresh tokens deletion completed.")
+            print("No emails provided and --all flag not set. Nothing to delete.")

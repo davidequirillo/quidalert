@@ -1,3 +1,5 @@
+# Docker compose file (this is only for development)
+# For production, we will use a different deployment method (like Kubernetes or Docker Swarm)
 services:
   # --- FastAPI Backend ---
   backend:
@@ -7,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app  # We map the current directory to /app in the container, so you we can edit code locally and see changes in the container
+      - .:/app  # Only for development, not for production. We map the current directory to /app in the container, so you we can edit code locally and see changes in the container
     env_file:
       - .env    # Load all variables from .env file
     environment:
@@ -35,8 +37,8 @@ services:
     restart: always
     environment:
       # If variables are not found in .env, use defaults after :-
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASS:-password123}
+      POSTGRES_USER: ${DB_USER:-dbuser}
+      POSTGRES_PASSWORD: ${DB_PASS:-dbpass}
       POSTGRES_DB: ${DB_NAME:-quidalert_db}
     ports:
       - "5432:5432"
@@ -103,8 +105,8 @@ services:
       - "9000:9000" # API port
       - "9001:9001" # Web console port
     environment:
-      MINIO_ROOT_USER: ${S3_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${S3_PASS:-password123}
+      MINIO_ROOT_USER: ${S3_USER:-s3user}
+      MINIO_ROOT_PASSWORD: ${S3_PASS:-s3pass}
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"

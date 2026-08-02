@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import datetime, timedelta
+import argparse
 import asyncio
 import math
 import random
@@ -20,9 +21,9 @@ from services.security import now_tz_aware
 from services.periodics import CHIEF_DEMOTIONS_TTL_MINUTES, LOCATIONS_TTL_HOURS
 
 # --- CONFIGURATION ---
-DENVER_LAT = 39.7392
-DENVER_LON = -104.9903
-RADIUS_KM = 8
+CENTER_LAT = 39.7392 # Denver, Colorado, USA (default central point if no arguments are provided to the script)
+CENTER_LON = -104.9903 # Denver, Colorado, USA (default central point if no arguments are provided to the script)
+RADIUS_KM = 5.0 # default if no arguments are provided to the script
 GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
 GPS_LOCATION_EXPIRATION_PROBABILITY = 0.05  # 5% of GPS locations are expired (for testing purposes)
 DEMOTION_PROBABILITY = 0.02  # 2% chance that a user was a chief and has been demoted to regular user (for testing purposes)
@@ -63,6 +64,10 @@ async def flush_redis(redis_session):
 
 async def seed_redis_gps_and_demotions(users, redis_session):
     print(f"Assigning positions to users (GPS Probability: {GPS_PROBABILITY*100}%)...")
+    print(f"Central point: ({CENTER_LAT}, {CENTER_LON}), Radius: {RADIUS_KM} km")
+    print(f"GPS Location Expiration Probability: {GPS_LOCATION_EXPIRATION_PROBABILITY*100}%")
+    print(f"Demotion Probability: {DEMOTION_PROBABILITY*100}%") 
+    print(f"Demotion Expiration Probability: {DEMOTION_EXPIRATION_PROBABILITY*100}%")
     placed_count = 0
     not_placed_count = 0
     now = now_tz_aware()
@@ -78,7 +83,7 @@ async def seed_redis_gps_and_demotions(users, redis_session):
         if (random.random() < GPS_PROBABILITY) or (
             user.is_chief and (at_least_one_chief_has_gps == False)
             ):
-            lat, lon = get_random_coords(DENVER_LAT, DENVER_LON, RADIUS_KM)
+            lat, lon = get_random_coords(CENTER_LAT, CENTER_LON, RADIUS_KM)
             is_chief = user.is_chief
             is_demoted = False
             user_id_str = str(user.id)
@@ -163,4 +168,15 @@ async def main():
         raise RedisHandleTypeError(redis_handle)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Seed Redis with random GPS locations around a central point and other test Redis data for users.")
+    # Add central point coordinates and radius as optional arguments
+    parser.add_argument("--central-lat", type=float, default=CENTER_LAT, help="Central latitude for generating random GPS locations")
+    parser.add_argument("--central-lon", type=float, default=CENTER_LON, help="Central longitude for generating random GPS locations")
+    parser.add_argument("--radius", type=float, default=RADIUS_KM, help="Radius in kilometers for generating random GPS locations")
+    args = parser.parse_args()
+    # Update global variables based on command-line arguments
+    CENTER_LAT = args.central_lat
+    CENTER_LON = args.central_lon
+    RADIUS_KM = args.radius
+    print(f"Seeding Redis with random GPS locations around central point ({CENTER_LAT}, {CENTER_LON}) with radius {RADIUS_KM} km...")
     asyncio.run(main())

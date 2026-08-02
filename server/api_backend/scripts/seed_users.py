@@ -2,6 +2,7 @@
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import argparse
 from faker import Faker
 from core.settings import settings
 from models.general import User, UserLanguage, UserRole, WhiteListEntry
@@ -22,7 +23,8 @@ settings.send_emails = False  # Disable email sending during seeding to avoid sp
 settings.db_engine_echo = False  # Disable SQLAlchemy echo for cleaner output during seeding
 db_engine = get_engine()
 print(f"Generating a common password hash for all users...")
-common_password_hash = get_password_hash("Password1234!")
+common_password = settings.fake_users_pass
+common_password_hash = get_password_hash(common_password)
 
 def seed_superuser_if_db_is_empty():
     with Session(db_engine) as session:
@@ -148,6 +150,17 @@ def seed_users():
             session.rollback()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Seed the database with a superuser, whitelist entries, and users.")
+    # Add argument baseusers_count to specify the number of base users to seed
+    parser.add_argument("--baseusers_count", type=int, default=TOTAL_BASEUSERS)
+    args = parser.parse_args()
+    TOTAL_BASEUSERS = args.baseusers_count
+    if TOTAL_BASEUSERS < 1000:
+        print("The number of base users to seed must be at least 1000 (the default). Exiting.")
+        exit(1)
+    if TOTAL_BASEUSERS > 10000:
+        print("The number of base users to seed is too high (max 10000). Exiting.")
+        exit(1)
     seed_superuser_if_db_is_empty()
     seed_users_whitelist()
     seed_users()
