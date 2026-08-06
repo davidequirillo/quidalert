@@ -45,6 +45,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertAlertedUsers => 'Utenti allertati';
 
   @override
+  String get alertAlertedSpecialists => 'Specialisti allertati';
+
+  @override
   String get alertPositiveVotesNum => 'n. voti di conferma';
 
   @override

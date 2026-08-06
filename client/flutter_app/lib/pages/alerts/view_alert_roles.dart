@@ -11,54 +11,71 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
-import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/services/auth.dart';
-import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 
-class RecentAlertsPage extends StatelessWidget {
-  const RecentAlertsPage({super.key});
+class ViewAlertRolesPage extends StatelessWidget {
+  const ViewAlertRolesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.alertRecents, showBackButton: true),
+      appBar: CAppBar(title: loc.alertAlertedSpecialists, showBackButton: true),
       drawer: const CAppDrawer(),
-      body: SafeArea(top: false, child: RecentAlertsBody()),
+      body: SafeArea(top: false, child: ViewAlertRolesBody()),
     );
   }
 }
 
-class RecentAlertsBody extends StatelessWidget {
-  const RecentAlertsBody({super.key});
+class ViewAlertRolesBody extends StatelessWidget {
+  const ViewAlertRolesBody({super.key});
 
-  Future<List<Alert>> _getRecentAlerts(BuildContext context) async {
+  Future<List<Map<String, String>>> _getAlertRoles(
+    BuildContext context,
+    int alertId,
+  ) async {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "get",
-      '/alerts/recent',
+      '/alerts/$alertId/roles',
     );
-    final List<dynamic>? respObj = json.decode(response.body);
-    if (respObj == null) {
+    final Map<String, dynamic>? respObj = json.decode(response.body);
+    if (respObj == null || !respObj.containsKey("alert_roles")) {
       throw NotFoundException();
     }
-    final alerts = respObj.map((e) => Alert.fromJson(e)).toList();
-    return alerts;
+    if (respObj["alert_roles"] == null) {
+      throw NotFoundException();
+    }
+    if (respObj["alert_roles"] is! List) {
+      throw FormatException(
+        "Invalid response format: 'alert_roles' is not a list",
+      );
+    }
+    final alertRoles = (respObj["alert_roles"]! as List)
+        .map(
+          (e) => {
+            "role": e["role"] as String,
+            "specialists_count": (e["specialists_count"] ?? 0).toString(),
+          },
+        )
+        .toList();
+    return alertRoles;
   }
 
   @override
   Widget build(BuildContext context) {
+    final alertId = ModalRoute.of(context)!.settings.arguments as int;
     final loc = AppLocalizations.of(context)!;
-    return FutureBuilder<List<Alert>>(
-      future: _getRecentAlerts(context),
+    return FutureBuilder<List<Map<String, String>>>(
+      future: _getAlertRoles(context, alertId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          debugPrint("Error fetching recent alerts: ${snapshot.error}");
+          debugPrint("Error fetching alert roles: ${snapshot.error}");
           final exceptionName = snapshot.error.runtimeType.toString();
           final errorMessage =
               loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
@@ -68,18 +85,19 @@ class RecentAlertsBody extends StatelessWidget {
           return Center(child: Text(errorMessage));
         }
         if (snapshot.hasData) {
-          final alerts = snapshot.data!;
-          return alertList(context, alerts);
+          final alertRoles = snapshot.data!;
+          return alertList(context, alertRoles);
         }
         return Center(child: Text(loc.errorGeneric));
       },
     );
   }
 
-  Widget alertList(BuildContext context, List<Alert> alerts) {
+  Widget alertList(BuildContext context, List<Map<String, String>> alertRoles) {
     final primaryScrollController = PrimaryScrollController.of(context);
+    final alertId = ModalRoute.of(context)!.settings.arguments as int;
     final loc = AppLocalizations.of(context)!;
-    if (alerts.isEmpty) {
+    if (alertRoles.isEmpty) {
       return Center(child: Text(loc.entriesNotFound));
     }
     return Column(
@@ -87,36 +105,27 @@ class RecentAlertsBody extends StatelessWidget {
         Expanded(
           child: ListView.separated(
             controller: primaryScrollController,
-            itemCount: alerts.length,
+            itemCount: alertRoles.length,
             separatorBuilder: (context, index) => Divider(),
             itemBuilder: (context, index) {
-              final alert = alerts[index];
-              final alertTypeKey = alert.type;
-              final alertStatusKey = alert.status;
-              final description =
-                  alert.description.substring(
-                    0,
-                    alert.description.length > 50
-                        ? 50
-                        : alert.description.length,
-                  ) +
-                  (alert.description.length > 50 ? "..." : "");
-              final alertCreatedAt = alert.createdAt;
-              final alertDateTimeStr = datetimeAsStringWithoutMilliseconds(
-                alertCreatedAt,
-                includeTimezone: false,
-              );
+              final alertRole = alertRoles[index];
+              final String role = alertRole["role"] ?? "";
+              final specialistsCount = alertRole["specialists_count"] ?? "0";
               return ListTile(
-                title: Text(description),
+                title: Text(role),
                 subtitle: Text(
-                  "${loc.labelType}: ${loc.getAlertTypeString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getAlertStatusString(alertStatusKey)}",
+                  "${loc.alertAlertedSpecialists}: $specialistsCount",
                 ),
-                trailing: Text(alertDateTimeStr),
                 onTap: () {
+                  final specialistsCountAsInt =
+                      int.tryParse(specialistsCount) ?? 0;
+                  if (specialistsCountAsInt == 0) {
+                    return;
+                  }
                   Navigator.pushNamed(
                     context,
-                    '/alerts/view-alert-details',
-                    arguments: alert.id,
+                    '/alerts/view-alerted-users',
+                    arguments: {"alert_id": alertId, "role": role},
                   );
                 },
               );

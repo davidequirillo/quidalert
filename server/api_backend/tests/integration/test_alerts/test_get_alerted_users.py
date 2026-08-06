@@ -10,7 +10,7 @@ from core.exceptions import (
     forbidden_exception
 )
 from models.general import (
-    User, Alert, AlertType, AlertedUser
+    User, UserRole, Alert, AlertType, AlertedUser
 )
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
@@ -235,3 +235,46 @@ def test_get_alerted_users_success_paginated_offset_too_far(client, db_session, 
     # The list returned should be empty because the offset is beyond the number of alerted users for the alert
     assert len(resp_data["alerted_users"]) == 0
     assert resp_data["next_cursor"] is None
+
+def test_get_alerted_users_success_filtered_by_unknown_role(client, db_session, test_chief):
+    chief: User = test_chief['user']
+    assert chief is not None
+    access_token = test_chief['access_token']
+    statement = select(Alert).where(Alert.type == AlertType.local.value)
+    # We take a random local alert from the test database
+    alerts = db_session.exec(statement).all()
+    alerts_num = len(alerts)
+    assert alerts_num > 0
+    alert = random.choice(alerts)
+    assert alert is not None
+    # We call the endpoint to get the alerted users filtered by role
+    alert_id = alert.id
+    role = "unknown_role"
+    response = client.get(
+        f"/api/alerts/{alert_id}/alerted-users?role={role}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    # The list returned should be empty because the role is unknown
+    assert len(resp_data["alerted_users"]) == 0
+
+def test_get_alerted_users_success_filtered_by_role(client, db_session, test_chief):
+    chief: User = test_chief['user']
+    assert chief is not None
+    access_token = test_chief['access_token']
+    statement = select(Alert).where(Alert.type == AlertType.local.value)
+    # We take a random local alert from the test database
+    alerts = db_session.exec(statement).all()
+    alerts_num = len(alerts)
+    assert alerts_num > 0
+    alert = random.choice(alerts)
+    assert alert is not None
+    # We call the endpoint to get the alerted users filtered by role
+    alert_id = alert.id
+    role = UserRole.firefighter.value
+    response = client.get(
+        f"/api/alerts/{alert_id}/alerted-users?role={role}", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    resp_data = response.json()
+    # The list returned should contain only alerted users with the specified role
+    for au in resp_data["alerted_users"]:
+        assert au["user"]["role"] == role

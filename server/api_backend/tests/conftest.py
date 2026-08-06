@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from start import app
+import random
 import pytest
 import boto3
 from moto import mock_aws
@@ -13,7 +14,7 @@ from sqlalchemy.engine import Engine # Useful for sqlalchemy event.listener
 from sqlalchemy import event # Useful for sqlalchemy event.listener
 from fakeredis.aioredis import FakeRedis
 from models.general import (
-    User, UserLanguage, 
+    User, UserLanguage, UserRole,
     RefreshToken,
     WhiteListEntry
 )
@@ -164,7 +165,7 @@ def create_not_logged_test_user(db_session: Session):
     db_session.refresh(test_user)
     return test_user
 
-def create_logged_test_user(user_type, db_session: Session):
+def create_logged_test_user(user_type, role, db_session: Session):
     test_user = User.model_validate({
         "firstname": "Firstname1",
         "surname": "Surname1",
@@ -175,7 +176,7 @@ def create_logged_test_user(user_type, db_session: Session):
         "is_admin": (user_type == "admin") or (user_type == "superuser"),
         "is_chief": (user_type == "chief"),
         "is_officer": (user_type == "officer"),
-        "role": None,
+        "role": role,
         "is_active": True,
         "activation_code": "fakeacttoken",
         "activation_code_expires_at": activation_expiry(),
@@ -220,23 +221,31 @@ def create_logged_test_user(user_type, db_session: Session):
 
 @pytest.fixture(name="test_baseuser")
 def create_test_baseuser(db_session: Session):
-    return create_logged_test_user("baseuser", db_session)
+    return create_logged_test_user("baseuser", None, db_session)
+
+@pytest.fixture(name="test_specialist_user")
+def create_test_specialist_user(db_session: Session):
+    # A specialist user is a user with a specific role assigned
+    # In this case, we create a base user with a random role
+    roles = [r.value for r in UserRole]
+    role = random.choice(roles)
+    return create_logged_test_user("baseuser", role, db_session)
 
 @pytest.fixture(name="test_superuser")
 def create_test_superuser(db_session: Session):
-    return create_logged_test_user("superuser", db_session)
+    return create_logged_test_user("superuser", None, db_session)
 
 @pytest.fixture(name="test_admin")
 def create_test_admin(db_session: Session):
-    return create_logged_test_user("admin", db_session)
+    return create_logged_test_user("admin", None, db_session)
 
 @pytest.fixture(name="test_chief")
 def create_test_chief(db_session: Session):
-    return create_logged_test_user("chief", db_session)
+    return create_logged_test_user("chief", None, db_session)
 
 @pytest.fixture(name="test_officer")
 def create_test_officer(db_session: Session):
-    return create_logged_test_user("officer", db_session)
+    return create_logged_test_user("officer", None, db_session)
 
 @pytest.fixture(name="superuser_in_db")
 def existing_superuser(db_session):

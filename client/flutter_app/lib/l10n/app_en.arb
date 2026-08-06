@@ -12,6 +12,7 @@
   "alertDescription": "Description",
   "alertInvolvedUsers": "Alerted users",
   "alertAlertedUsers": "Alerted users",
+  "alertAlertedSpecialists": "Alerted specialists",
   "alertPositiveVotesNum": "n. confirmation votes",
   "alertNegativeVotesNum": "n. denial votes",
   "alertMessages": "Messages",

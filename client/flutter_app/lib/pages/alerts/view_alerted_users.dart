@@ -121,13 +121,18 @@ class _AlertedUsersBodyState extends State<AlertedUsersBody> {
   Future<List<AlertedUser>> _getAlertedUsers() async {
     debugPrintC("Fetching alerted users from the server...");
     final authClient = context.read<AuthClient>();
-    final id = ModalRoute.of(context)!.settings.arguments as String;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final id = args["alert_id"]! as int;
+    final role = args["role"] as String?;
+    final String roleStr = (role != null) ? "role=$role" : "";
     final String offsetStr = (_currentCursor != null)
-        ? "offset=$_currentCursor&limit=$_limit"
-        : "offset=0&limit=$_limit";
+        ? "&offset=$_currentCursor&limit=$_limit"
+        : "&offset=0&limit=$_limit";
+    final paramsStr = "$roleStr$offsetStr".trim().replaceAll(RegExp(r'^&'), '');
     final response = await authClient.doProtectedApiRequest(
       "get",
-      '/alerts/$id/alerted-users?$offsetStr',
+      '/alerts/$id/alerted-users?$paramsStr',
     );
     final Map<String, dynamic>? respObj = json.decode(response.body);
     if (respObj == null || respObj.isEmpty) {

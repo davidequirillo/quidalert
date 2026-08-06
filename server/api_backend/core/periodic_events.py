@@ -11,14 +11,14 @@ def log_cleanup_expired_locations_in_cooldown(detail: str = ""):
         f"cleanup_expired_locations_in_cooldown, detail={detail}"
     )
 
-def log_cleanup_expired_locations_error(detail: str = ""):
-    logger.info(
-        f"cleanup_expired_locations_error, detail={detail}"
-    )
-
 def log_cleanup_expired_locations_started(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_started, detail={detail}"
+    )
+
+def log_cleanup_expired_special_locations_started(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_special_locations_started, detail={detail}"
     )
 
 def log_cleanup_expired_locations_shard(detail: str = ""):
@@ -26,14 +26,39 @@ def log_cleanup_expired_locations_shard(detail: str = ""):
         f"cleanup_expired_locations_shard, detail={detail}"
     )
 
+def log_cleanup_expired_special_locations_shard(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_special_locations_shard, detail={detail}"
+    )
+
 def log_cleanup_expired_locations_shard_error(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_shard_error, detail={detail}"
     )
 
+def log_cleanup_expired_special_locations_shard_error(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_special_locations_shard_error, detail={detail}"
+    )
+
 def log_cleanup_expired_locations_completed(detail: str = ""):
     logger.info(
         f"cleanup_expired_locations_completed, detail={detail}"
+    )
+
+def log_cleanup_expired_special_locations_completed(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_special_locations_completed, detail={detail}"
+    )
+
+def log_cleanup_expired_locations_error(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_locations_error, detail={detail}"
+    )
+
+def log_cleanup_expired_special_locations_error(detail: str = ""):
+    logger.info(
+        f"cleanup_expired_special_locations_error, detail={detail}"
     )
 
 def log_cleanup_expired_demotions_in_cooldown(detail: str = ""):
