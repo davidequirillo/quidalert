@@ -53,10 +53,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     super.dispose();
   }
 
-  Future<AlertWithInfo> _getAlertDetails(
-    BuildContext context,
-    String id,
-  ) async {
+  Future<AlertWithInfo> _getAlertDetails(BuildContext context, int id) async {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "get",
@@ -74,7 +71,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   }
 
   void _refreshPage(BuildContext context) {
-    final id = ModalRoute.of(context)!.settings.arguments as String;
+    final id = ModalRoute.of(context)!.settings.arguments as int;
     Navigator.pushReplacementNamed(
       context,
       '/alerts/view-alert-details',
@@ -149,7 +146,16 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     Navigator.pushNamed(
       context,
       '/alerts/view-alerted-users',
-      arguments: alertId.toString(),
+      arguments: {"alert_id": alertId, "role": null},
+    );
+    return;
+  }
+
+  void _viewAlertRolesPage(BuildContext context, int alertId) {
+    Navigator.pushNamed(
+      context,
+      '/alerts/view-alert-roles',
+      arguments: alertId,
     );
     return;
   }
@@ -158,17 +164,13 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     Navigator.pushNamed(
       context,
       '/alerts/view-alert-messages',
-      arguments: alertId.toString(),
+      arguments: alertId,
     );
     return;
   }
 
   void _viewExtendAlertPage(BuildContext context, int alertId) {
-    Navigator.pushNamed(
-      context,
-      '/alerts/extend',
-      arguments: alertId.toString(),
-    );
+    Navigator.pushNamed(context, '/alerts/extend', arguments: alertId);
     return;
   }
 
@@ -291,7 +293,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       Navigator.of(context).pushNamed("/alerts/recents");
       Navigator.of(
         context,
-      ).pushNamed("/alerts/view-alert-details", arguments: alertId.toString());
+      ).pushNamed("/alerts/view-alert-details", arguments: alertId);
     }
     return;
   }
@@ -299,7 +301,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
-    final id = ModalRoute.of(context)!.settings.arguments as String;
+    final id = ModalRoute.of(context)!.settings.arguments as int;
     if (alertWithInfo != null) {
       debugPrintC("Using cached alert details for alert $id");
       return scrollableAlertDetails(context, alertWithInfo!);
@@ -533,7 +535,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                 ? '${loc.alertChief} ${loc.alertManager.toLowerCase()}: $chiefName'
                 : '${loc.alertChief} ${loc.alertManager.toLowerCase()}: N/A',
           ),
-        SizedBox(height: 20),
+        SizedBox(height: 10),
         if (!alertIsGeneral)
           Text('${loc.alertAlertedUsers}: (${alertWithInfo.alertedUsersNum})'),
         // if the alert is not general, and there are alerted users,
@@ -554,6 +556,27 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
+        if (!alertIsGeneral &&
+            (alertWithInfo.alertedUsersNum > 0) &&
+            (authClient.isChief() || authClient.isAdmin()))
+          Row(
+            children: [
+              Text('${loc.alertAlertedSpecialists}: '),
+              InkWell(
+                onTap: () {
+                  _viewAlertRolesPage(context, alertWithInfo.alert.id);
+                },
+                child: Text(
+                  loc.buttonView,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        SizedBox(height: 10),
         if (alertIsLocal && alertWithInfo.alertedUsersNum > 0)
           Text(
             '${loc.alertPositiveVotesNum}: ${alertWithInfo.positiveVotesNum}',
@@ -562,7 +585,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           Text(
             '${loc.alertNegativeVotesNum}: ${alertWithInfo.negativeVotesNum}',
           ),
-        SizedBox(height: 20),
+        SizedBox(height: 10),
         Text('${loc.alertMessages}: (${alertWithInfo.messagesNum})'),
         Row(
           children: [

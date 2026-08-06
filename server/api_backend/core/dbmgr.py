@@ -8,6 +8,7 @@ from sqlmodel import create_engine, Session
 import redis.asyncio as redis
 import redis.asyncio.cluster as cluster
 from core.settings import settings
+from models.general import UserRole
 
 ## DBMS engine and session management
 
@@ -120,6 +121,9 @@ REDIS_USER_LOCATIONS_KEY = "{{shard:{i}}}:locations:users"
 REDIS_CHIEF_LOCATIONS_KEY = "{{shard:{i}}}:locations:chiefs"
 REDIS_LOCATION_LAST_UPDATES_KEY = "{{shard:{i}}}:locations:last_updates"
 REDIS_CHIEF_DEMOTIONS_KEY = "{{shard:{i}}}:demotions:chiefs"
+# Location keys for specialists (users with a specific role)
+REDIS_SPEC_LOCATIONS_KEY = "{{shard:{i}}}:locations:roles:{role}"
+REDIS_SPEC_LOCATION_LAST_UPDATES_KEY = "{{shard:{i}}}:locations:last_updates:roles:{role}"
 
 # Simple sharding (for clustering), to distribute the load of location updates and geospatial queries across multiple keys and avoid bottlenecks. 
 # With 16 shards, we can have 16 different keys for user locations, 
@@ -164,3 +168,31 @@ def get_all_redis_location_last_updates_keys() -> list[str]:
 
 def get_all_redis_chief_demotions_keys() -> list[str]:
     return [REDIS_CHIEF_DEMOTIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
+
+# Functions for specialist locations and last updates keys, sharded by user UUID and role
+# Specialist locations are for users with a specific role (e.g., firefighters, medics, etc.), 
+# and we want to manage their locations separately in Redis.
+
+def get_redis_spec_locations_key(uuid: str, role: str) -> str:
+    data_bytes = uuid.encode('utf-8')
+    hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
+    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    return REDIS_SPEC_LOCATIONS_KEY.format(i=shard_index, role=role)
+
+def get_redis_spec_location_last_updates_key(uuid: str, role: str) -> str:
+    data_bytes = uuid.encode('utf-8')
+    hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
+    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    return REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=shard_index, role=role)
+
+def get_all_redis_spec_locations_keys() -> list[str]:
+    keys = []
+    for role in [r.value for r in UserRole]:
+        keys.extend([REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)])
+    return keys
+
+def get_all_redis_spec_location_last_updates_keys() -> list[str]:
+    keys = []
+    for role in [r.value for r in UserRole]:
+        keys.extend([REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)])
+    return keys

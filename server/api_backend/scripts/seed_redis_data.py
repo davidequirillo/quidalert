@@ -15,8 +15,10 @@ from core.dbmgr import (
     get_redis_user_locations_key,
     get_redis_location_last_updates_key,
     get_redis_chief_demotions_key,
+    get_redis_spec_locations_key,
+    get_redis_spec_location_last_updates_key
 )
-from models.general import User
+from models.general import User, UserRole
 from services.security import now_tz_aware
 from services.periodics import CHIEF_DEMOTIONS_TTL_MINUTES, LOCATIONS_TTL_HOURS
 
@@ -74,13 +76,21 @@ async def seed_redis_gps_and_demotions(users, redis_session):
     now_int_ts = int(now.timestamp())
     expired_demotions_int_ts_for_update = int((now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES + 10)).timestamp())
     expired_locations_int_ts_for_update = int((now - timedelta(hours=LOCATIONS_TTL_HOURS + 1)).timestamp())
-    expired_demotions_int_ts = int((now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES)).timestamp())
-    expired_locations_int_ts = int((now - timedelta(hours=LOCATIONS_TTL_HOURS)).timestamp())
     at_least_one_chief_has_gps = False
     at_least_one_chief_has_not_expired_gps = False
+    locations_count = 0
+    locations_expired_count = 0
+    spec_locations_count = 0
+    spec_locations_expired_count = 0
+    demoted_chiefs_count = 0
+    demoted_chiefs_expired_count = 0
     for user in users:
+        random_gps_num = random.random()
+        random_gps_expiration_num = random.random()
+        random_demotion_num = random.random()
+        random_demotion_expiration_num = random.random()
         # Decide if this user has GPS enabled
-        if (random.random() < GPS_PROBABILITY) or (
+        if (random_gps_num < GPS_PROBABILITY) or (
             user.is_chief and (at_least_one_chief_has_gps == False)
             ):
             lat, lon = get_random_coords(CENTER_LAT, CENTER_LON, RADIUS_KM)
@@ -91,14 +101,18 @@ async def seed_redis_gps_and_demotions(users, redis_session):
             user_locations_key = get_redis_user_locations_key(user_id_str)
             chief_demotions_key = get_redis_chief_demotions_key(user_id_str)
             last_updates_key = get_redis_location_last_updates_key(user_id_str)
-            if (not is_chief) and (random.random() < DEMOTION_PROBABILITY):
+            if (not is_chief) and (random_demotion_num < DEMOTION_PROBABILITY):
                 # Simulate a user that was a chief but has been demoted to regular user (so it's not a chief anymore)
                 is_demoted = True
             async with redis_session.pipeline(transaction=True) as pipe:
                 if is_demoted:
                     # Mark the user as demoted in Redis (for testing purposes)
-                    if random.random() < DEMOTION_EXPIRATION_PROBABILITY:
+                    demoted_chiefs_count += 1
+                    print(f"User {user.id} is marked as demoted (was a chief but now is a regular user).")
+                    if random_demotion_expiration_num < DEMOTION_EXPIRATION_PROBABILITY:
                         demoted_at = expired_demotions_int_ts_for_update  # Expired demotion
+                        print(f"User {user.id} demotion is expired (demoted at: {datetime.fromtimestamp(demoted_at)})")    
+                        demoted_chiefs_expired_count += 1
                     else:   
                         demoted_at = now_int_ts # active demotion (not expired)
                     pipe.zadd(chief_demotions_key, {user_id_str: demoted_at})
@@ -109,14 +123,28 @@ async def seed_redis_gps_and_demotions(users, redis_session):
                 else:
                     pipe.zrem(chief_locations_key, user_id_str)  # Remove from chief locations if previously added
                     pipe.geoadd(user_locations_key, (lon, lat, user_id_str)) 
-                if (random.random() < GPS_LOCATION_EXPIRATION_PROBABILITY) and (
+                locations_count += 1
+                if (random_gps_expiration_num < GPS_LOCATION_EXPIRATION_PROBABILITY) and (
                     (not is_chief) or (at_least_one_chief_has_not_expired_gps == True)
                     ):
                     pipe.zadd(last_updates_key, {user_id_str: expired_locations_int_ts_for_update})  # Expired location
+                    print(f"User {user.id} has an expired GPS location (last update: {datetime.fromtimestamp(expired_locations_int_ts_for_update)})")
+                    locations_expired_count += 1
                 else:
                     pipe.zadd(last_updates_key, {user_id_str: now_int_ts})
                     if is_chief and (not is_demoted):
-                        at_least_one_chief_has_not_expired_gps = True      
+                        at_least_one_chief_has_not_expired_gps = True
+                if user.role and (user.role in [r.value for r in UserRole]):
+                    specloc_key = get_redis_spec_locations_key(user_id_str, user.role)
+                    spec_last_upd_key = get_redis_spec_location_last_updates_key(user_id_str, user.role)
+                    pipe.geoadd(specloc_key, (lon, lat, user_id_str))
+                    spec_locations_count += 1
+                    if (random_gps_expiration_num < GPS_LOCATION_EXPIRATION_PROBABILITY):
+                        pipe.zadd(spec_last_upd_key, {user_id_str: expired_locations_int_ts_for_update})  # Expired location
+                        print(f"User {user.id} with role {user.role} has an expired GPS specialist location (last update: {datetime.fromtimestamp(expired_locations_int_ts_for_update)})")
+                        spec_locations_expired_count += 1
+                    else:
+                        pipe.zadd(spec_last_upd_key, {user_id_str: now_int_ts})
                 await pipe.execute()
                 placed_count += 1
         else:
@@ -124,32 +152,10 @@ async def seed_redis_gps_and_demotions(users, redis_session):
     print(f"Total users in SQL: {len(users)}")
     print(f"Users with a GPS location placed: {placed_count}")
     print(f"Users without a GPS location placed: {not_placed_count}")
-    # We calculate the number of users with a GPS location in Redis and how many of those locations are expired (for testing purposes)
-    locations_count = 0
-    locations_expired_count = 0
-    for user in users:
-        last_updates_key = get_redis_location_last_updates_key(str(user.id))
-        last_update_timestamp = await redis_session.zscore(last_updates_key, str(user.id))
-        if (last_update_timestamp is not None):
-            locations_count += 1
-            if (last_update_timestamp <= expired_locations_int_ts):
-                locations_expired_count += 1
-                print(f"User {user.id} has an expired GPS location (last update: {datetime.fromtimestamp(last_update_timestamp)})")
     print(f"Users with a GPS location (total): {locations_count}")
     print(f"Users with expired GPS locations: {locations_expired_count}")
-    # We calculate the number of demoted chiefs in Redis
-    demoted_chiefs_count = 0
-    demoted_chiefs_expired_count = 0
-    for user in users:
-        chief_demotions_key = get_redis_chief_demotions_key(str(user.id))
-        demotion_timestamp = await redis_session.zscore(chief_demotions_key, str(user.id))
-        if demotion_timestamp is not None:
-            demoted_chiefs_count += 1
-            if demotion_timestamp <= expired_demotions_int_ts:
-                demoted_chiefs_expired_count += 1
-                print(f"User {user.id} is marked as demoted with an expired timestamp ({datetime.fromtimestamp(demotion_timestamp)})")
-            else:
-                print(f"User {user.id} is marked as demoted with an active timestamp ({datetime.fromtimestamp(demotion_timestamp)})")
+    print(f"Users with a specialist location (total): {spec_locations_count}")
+    print(f"Users with expired specialist locations: {spec_locations_expired_count}")
     print(f"Demoted chiefs (total): {demoted_chiefs_count}")
     print(f"Demoted chiefs with expired timestamp: {demoted_chiefs_expired_count}")
 

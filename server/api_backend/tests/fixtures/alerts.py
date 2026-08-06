@@ -20,9 +20,12 @@ from core.dbmgr import (
     get_redis_chief_locations_key,
     get_redis_user_locations_key,
     get_redis_location_last_updates_key,
+    get_redis_spec_locations_key,
+    get_redis_spec_location_last_updates_key
 )
 
 GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
+ROLE_PROBABILITY = 0.10  # 10% of users have a role assigned (the rest have role equal to None)
 RADIUS_KM = 5  # Radius in kilometers for random location generation around the central point (CENTER_LAT, CENTER_LON) for testing purposes
 
 def print_alert_coordinates_and_nearby_users(alert, user, closest_chiefs, nearby_users):
@@ -34,6 +37,16 @@ def print_alert_coordinates_and_nearby_users(alert, user, closest_chiefs, nearby
         print(f"Closest chief: {chief['user_id']} at distance {chief['distance_km']} km")
     for nearby_user in nearby_users:
         print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+
+def print_alert_coordinates_and_zone_specialists(alert, user, zone_specialists):
+    # Print alert coordinates and specialists in the zone for debugging purposes
+    # Specialists are users with a role assigned (not None)
+    print()
+    print(f"Test alert ID: {alert.id}")
+    print(f"Alert sender: ID {alert.user_id} email {user.email}")
+    print(f"Alert coordinates: ({alert.latitude}, {alert.longitude})")
+    for specialist in zone_specialists:
+        print(f"Specialist in the zone: {specialist['user_id']} at distance {specialist['distance_km']} km")
 
 def create_test_users(db_session):
     roles = [r.value for r in UserRole]
@@ -52,15 +65,15 @@ def create_test_users(db_session):
     )
     db_session.add(superuser)
     db_session.commit()
-    # Create 300 normal users with random roles
-    for i in range(300):
+    # Create 500 normal users with random roles or role equal to None
+    for i in range(500):
         user = User(
             email=f"user{i}@example.com",
             password_hash="hashed_password",
             firstname=f"Firstname{i}",
             surname=f"Surname{i}",
             is_active=True,
-            role=roles[i % len(roles)],
+            role=roles[i % len(roles)] if random.random() < ROLE_PROBABILITY else None,
             language=languages[i % len(languages)],
             authorized_by=superuser.email,
             authorized_at=now_tz_naive()
@@ -114,6 +127,11 @@ async def assign_redis_data_to_users(db_session, redis_session):
                 else:
                     pipe.geoadd(user_locations_key, (lon, lat, user_id_str)) 
                 pipe.zadd(last_updates_key, {user_id_str: now_int_ts})      
+                if user.role and (user.role in [r.value for r in UserRole]):
+                    roleloc_key = get_redis_spec_locations_key(user_id_str, user.role)
+                    role_last_upd_key = get_redis_spec_location_last_updates_key(user_id_str, user.role)
+                    pipe.geoadd(roleloc_key, (lon, lat, user_id_str))
+                    pipe.zadd(role_last_upd_key, {user_id_str: now_int_ts})
                 await pipe.execute()
 
 @pytest.fixture(autouse=True)

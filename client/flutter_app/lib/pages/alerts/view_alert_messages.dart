@@ -29,7 +29,7 @@ class AlertMessagesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final id = ModalRoute.of(context)!.settings.arguments as String;
+    final id = ModalRoute.of(context)!.settings.arguments as int;
     final loc = AppLocalizations.of(context)!;
     return Center(child: Text(loc.alertMessages));
   }

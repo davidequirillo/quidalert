@@ -167,6 +167,12 @@ abstract class AppLocalizations {
   /// **'Alerted users'**
   String get alertAlertedUsers;
 
+  /// No description provided for @alertAlertedSpecialists.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerted specialists'**
+  String get alertAlertedSpecialists;
+
   /// No description provided for @alertPositiveVotesNum.
   ///
   /// In en, this message translates to:

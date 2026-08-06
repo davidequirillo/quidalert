@@ -29,9 +29,14 @@ REDIS_URL="redis://localhost:6379/0"
 REDIS_CLUSTER_NODES="redis-node-1:7001,redis-node-2:7002,redis-node-3:7003"
 REDIS_MAX_CONNECTIONS = 200
 REDIS_MAX_CONNECTIONS_PER_NODE = 32 # in cluster mode
-# REDIS_LOGICAL_SHARDS_NUM: don't change this value, 
-# because at the moment it's the recommended value.
+
+# REDIS_LOGICAL_SHARDS_NUM: don't change this value at the moment, 
+# because it's the recommended value (used for testing).
 # But, in theory, values ​​from 16 up to 128 should not represent a problem.
+# Important note: if you increase this value, some cleanup tests (where batch size is tested) 
+# may fail, due to the fact that the number of shards is increased (the data is distributed accordingly across the shards),
+# and for each shard we have only a few expired records to delete, so the batch size is not reached.
+# In this case, we must increase the number of testing records to test those cases, or reduce the testing batch size (specified in those tests). 
 REDIS_LOGICAL_SHARDS_NUM = 16
 
 ## Mail sender configuration

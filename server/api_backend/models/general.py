@@ -13,7 +13,7 @@ from sqlmodel import SQLModel, Field, Index
 from services.security import now_tz_naive
 
 class UserRole(str, Enum):
-    firefighter = "firefighter"
+    firefighter = "firefighter" # only alphabetical characters, no spaces, no special characters, max length 32
     wateroperator = "wateroperator"
     usar = "usar"
     alpinerescuer = "alpinerescuer"
@@ -108,6 +108,9 @@ def string_as_uuid(s):
     except:
         raise ValueError("Invalid UUID format")
 
+USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS = 180
+USER_RELIABILITY_SCORE_INC_VALUE = 15
+
 class UserOut(UserBase, table=False):
     id: uuid.UUID = Field(
         default_factory=lambda: uuid.UUID(bytes=uuid_pkg.uuid7().bytes),
@@ -187,9 +190,6 @@ class UserOutSmall(BaseModel):
 class UsersOutPaginated(BaseModel):
     users: List[UserOutSmall]
     next_cursor: Optional[uuid.UUID] = None
-
-USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS = 180
-USER_RELIABILITY_SCORE_INC_VALUE = 15
 
 class User(UserOut, table=True):
     __tablename__: str = 'users'
@@ -478,7 +478,9 @@ class AlertIn(SQLModel, table=False):
         if not (-180 <= v <= 180):
             raise ValueError("Longitude must be between -180 and 180")
         return v
-    
+
+ALERT_SPREAD_MAX_COUNT = 4 # initial alert + 3 expansions = max 4 "generations" of alerted users
+
 class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
     severity: int = Field(default=10, ge=0, le=10, nullable=False) # not used at the moment, but we can use it in the future to indicate the severity of the alert (0 = low, 10 = high)
@@ -486,7 +488,7 @@ class AlertOut(AlertIn, table=False):
     is_pending: bool = Field(default=True, nullable=False) # "pending" means that the alert has been created but it's in processing phase (background task is running to spread the alert to nearby users)
     is_banned: bool = Field(default=False, nullable=False)
     is_expanded: bool = Field(default=False, nullable=False) # "expanded" means that the alert has been extended at least 1 time (except the initial spread), adding new users to the alerted users list, in other words "a new generation" of alerted users)
-    spread_count: int = Field(default=0, ge=0, le=4, nullable=False) # number of times the alert has been spread to nearby users (adding new users to the alerted users list), max 4 spreads (initial alert + 3 expansions = max 4 "generations" of alerted users)
+    spread_count: int = Field(default=0, ge=0, le=ALERT_SPREAD_MAX_COUNT, nullable=False) # number of times the alert has been spread to nearby users (adding new users to the alerted users list), max 4 spreads (initial alert + 3 expansions = max 4 "generations" of alerted users)
     is_closed: bool = Field(default=False, nullable=False)
 
 class Alert(AlertOut, table=True):
@@ -624,4 +626,22 @@ class ClosingSchema(BaseModel):
     def validate_type(cls, s):
         if not s in [t.value for t in ClosingType]:
             raise ValueError("Wrong closing type")
+        return s
+
+class ExpandingSchema(BaseModel):
+    radius: float = Field(default=1.0, gt=1, le=100) # in kilometers
+    role: Optional[str] = Field(default=None, min_length=1, max_length=32)
+
+    @field_validator("radius")
+    @classmethod
+    def validate_radius(cls, v):
+        if not (1 < v <= 100):
+            raise ValueError("Radius must be between 1 and 100 kilometers")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, s):
+        if (s is not None) and (s not in [t.value for t in UserRole]):
+            raise ValueError("Wrong role")
         return s

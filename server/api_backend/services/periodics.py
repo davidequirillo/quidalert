@@ -9,18 +9,23 @@ from sqlmodel import Session, select, update, delete
 from fakeredis.aioredis import FakeRedis
 from models.general import (
     WhiteListEntry,
-    User, UserLanguage,
+    User, UserRole, UserLanguage,
     Alert, Message
 )
 from services.security import (
     now_tz_aware,
     GEOPOSITION_TOKEN_TTL_MINUTES)
 from core.periodic_events import (
-    log_cleanup_expired_locations_error,
-    log_cleanup_expired_locations_completed,
     log_cleanup_expired_locations_started,
+    log_cleanup_expired_special_locations_started,
+    log_cleanup_expired_locations_completed,
+    log_cleanup_expired_special_locations_completed,
+    log_cleanup_expired_locations_error,
+    log_cleanup_expired_special_locations_error,
     log_cleanup_expired_locations_shard,
+    log_cleanup_expired_special_locations_shard,
     log_cleanup_expired_locations_shard_error,
+    log_cleanup_expired_special_locations_shard_error,
     log_cleanup_expired_demotions_error,
     log_cleanup_expired_demotions_completed,
     log_cleanup_expired_demotions_started,
@@ -42,6 +47,8 @@ from core.dbmgr import (
     REDIS_CHIEF_DEMOTIONS_KEY,
     REDIS_USER_LOCATIONS_KEY,
     REDIS_CHIEF_LOCATIONS_KEY,
+    REDIS_SPEC_LOCATIONS_KEY,
+    REDIS_SPEC_LOCATION_LAST_UPDATES_KEY,
     REDIS_LOCATION_LAST_UPDATES_KEY,
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY,
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT,
@@ -70,15 +77,15 @@ USER_DESTRUCTION_AFTER_PENDING_DELETE_DAYS = 30 * 24 # 2 years approximately
 
 async def do_locations_cleanup(redis_handle):
     if isinstance(redis_handle, cluster.RedisCluster):
-        deleted_count = await cleanup_expired_locations(redis_handle)
-        return deleted_count
+        del_count, del_count_for_roles = await cleanup_expired_locations(redis_handle)
+        return del_count, del_count_for_roles
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
-            deleted_count = await cleanup_expired_locations(redis_session)
-        return deleted_count
+            del_count, del_count_for_roles = await cleanup_expired_locations(redis_session)
+        return del_count, del_count_for_roles
     elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
-        deleted_count = await cleanup_expired_locations(redis_handle)
-        return deleted_count
+        del_count, del_count_for_roles = await cleanup_expired_locations(redis_handle)
+        return del_count, del_count_for_roles
     else:
         raise RedisHandleTypeError(redis_handle)
 
@@ -86,7 +93,8 @@ async def cleanup_expired_locations(redis_client):
     now = now_tz_aware()
     exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
     exp_int_ts = int(exp_dt.timestamp())
-    total_deleted = 0
+    normal_locations_del_num = 0
+    special_locations_del_num = 0
     lock_key = REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY
     lock_timeout = REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT
     # nx=True (set if not exists)
@@ -98,23 +106,40 @@ async def cleanup_expired_locations(redis_client):
         log_cleanup_expired_locations_in_cooldown(
             detail=f"Skipping cleanup, waiting for cooldown"
         )
-        return 0
+        return 0, 0
+    # We run the location cleanup in parallel across all shards, 
+    # to cleanup expired locations for users and chiefs
     log_cleanup_expired_locations_started(
-        detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
-    )
+            detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
+        )
     try:
         tasks = [cleanup_expired_locations_shard(
                 i, exp_int_ts, redis_client
             ) for i in range(REDIS_TOTAL_SHARDS)]
         results = await asyncio.gather(*tasks)
-        total_deleted = sum(results)       
+        normal_locations_del_num = sum(results)       
         log_cleanup_expired_locations_completed(
-            detail=f"Cleanup completed: {total_deleted} locations removed across {REDIS_TOTAL_SHARDS} shards"
+            detail=f"Cleanup completed: {normal_locations_del_num} locations removed across {REDIS_TOTAL_SHARDS} shards"
         )
-        return total_deleted
     except Exception as e:
         log_cleanup_expired_locations_error(detail=str(e))
-        return total_deleted
+    # We also run the special locations cleanup in parallel across all shards, 
+    # to cleanup expired locations for specialists (users with specific roles)
+    log_cleanup_expired_special_locations_started(
+            detail=f"Starting parallel cleanup for all roles across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
+        )
+    try:
+        tasks = [cleanup_expired_special_locations_shard(
+                i, exp_int_ts, redis_client
+            ) for i in range(REDIS_TOTAL_SHARDS)]
+        results = await asyncio.gather(*tasks)
+        special_locations_del_num = sum(results)
+        log_cleanup_expired_special_locations_completed(
+            detail=f"Cleanup completed for all roles: {special_locations_del_num} special locations removed across {REDIS_TOTAL_SHARDS} shards"
+        )
+    except Exception as e:
+        log_cleanup_expired_special_locations_error(detail=str(e))
+    return normal_locations_del_num, special_locations_del_num
 
 async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client, batch_size=1000):
     deleted_in_shard = 0
@@ -144,6 +169,35 @@ async def cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_client,
             await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
     except Exception as e:
         log_cleanup_expired_locations_shard_error(detail=f"Shard {shard_index}: {str(e)}")
+    return deleted_in_shard
+
+async def cleanup_expired_special_locations_shard(shard_index, exp_int_ts, redis_client, batch_size=1000):
+    deleted_in_shard = 0
+    for role in [r.value for r in UserRole]:
+        spec_last_upd_key = REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=shard_index, role=role)
+        spec_loc_key = REDIS_SPEC_LOCATIONS_KEY.format(i=shard_index, role=role)
+        log_cleanup_expired_special_locations_shard(detail=f"Cleaning expired special locations for shard {shard_index}, role {role}")
+        try:
+            while True:
+                expired_user_ids = await redis_client.zrange(
+                    spec_last_upd_key, 
+                    start = "-inf", 
+                    end = exp_int_ts, # inclusive range
+                    byscore=True,
+                    offset=0,
+                    num=batch_size
+                )
+                if not expired_user_ids:
+                    break
+                # Potential race condition here, but it's not a big issue for consistency (the client will just have to update the location again)
+                async with redis_client.pipeline(transaction=True) as pipe:
+                    pipe.zrem(spec_loc_key, *expired_user_ids)
+                    pipe.zrem(spec_last_upd_key, *expired_user_ids)
+                    await pipe.execute()
+                deleted_in_shard += len(expired_user_ids)
+                await asyncio.sleep(0.1) # we add a small sleep (in seconds) between each batch to avoid overwhelming the Redis server
+        except Exception as e:
+            log_cleanup_expired_special_locations_shard_error(detail=f"Shard {shard_index}, role {role}: {str(e)}")
     return deleted_in_shard
 
 async def do_demotions_cleanup(redis_handle):

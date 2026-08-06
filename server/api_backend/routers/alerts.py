@@ -25,10 +25,12 @@ from core.dbmgr import (
     get_redis_chief_locations_key, 
     get_redis_user_locations_key, 
     get_redis_location_last_updates_key,
-    get_redis_chief_demotions_key
+    get_redis_chief_demotions_key,
+    get_redis_spec_locations_key,
+    get_redis_spec_location_last_updates_key
 )
 from models.general import (
-    User, Alert, AlertOut, 
+    User, UserRole, Alert, AlertOut, 
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
     Message, GpsCoordinatesSchema, GpsTokenData,
@@ -36,14 +38,16 @@ from models.general import (
     CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
     CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,  
     HERO_SCORE_INC_VALUE_TO_ALERT_SENDER,
-    HERO_SCORE_INC_VALUE_TO_ALERTED_USERS
+    HERO_SCORE_INC_VALUE_TO_ALERTED_USERS,
+    ExpandingSchema, ALERT_SPREAD_MAX_COUNT
 )
 from services.security import (
     now_tz_naive, now_tz_aware
 )
 from services.alert_btasks import (
     task_alert_search_and_notify,
-    task_alert_notify_about_closure
+    task_alert_notify_about_closure,
+    task_alert_process_expansion
 )
 
 router = APIRouter(
@@ -265,6 +269,7 @@ def get_alert(alert_id: int,
 
 @router.get("/api/alerts/{alert_id}/alerted-users", response_model=AlertedUserJoinedPaginated)
 def get_alerted_users(alert_id: int,
+                role: str | None = None,
                 offset: int = 0,
                 limit: int = 100,
                 current_user: User = Depends(get_current_user), 
@@ -281,6 +286,8 @@ def get_alerted_users(alert_id: int,
     statement = (select(User, AlertedUser)
         .join(AlertedUser, User.id == AlertedUser.user_id) # type: ignore
         .where(AlertedUser.alert_id == alert_id))
+    if role:
+        statement = statement.where(User.role == role)
     statement = statement.order_by(asc(AlertedUser.distance))
     statement = statement.offset(offset).limit(limit)
     results = db_session.exec(statement).all()
@@ -305,6 +312,26 @@ def get_alerted_users(alert_id: int,
         "alerted_users": out_alerted_users, 
         "next_cursor": next_cursor
     }
+
+@router.get("/api/alerts/{alert_id}/roles")
+def get_alert_roles(alert_id: int,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    # API endpoint used by chiefs to list all alerted roles related to a specific alert
+    if (not current_user.is_admin) and (not current_user.is_chief):
+        raise forbidden_exception()
+    role_counts = {}
+    for role in UserRole:
+        role_counts[role.value] = 0
+    statement = (select(User, AlertedUser)
+            .join(AlertedUser, User.id == AlertedUser.user_id) # type: ignore
+            .where(AlertedUser.alert_id == alert_id))
+    results = db_session.exec(statement).all()
+    for r in results:
+        user = r[0]
+        if user.role:
+            role_counts[user.role] = role_counts.get(user.role, 0) + 1
+    return {"alert_roles": [{"role": role, "specialists_count": count} for role, count in role_counts.items()]}
 
 @router.post("/api/alerts/{alert_id}/vote")
 def vote_alert(alert_id: int,
@@ -463,6 +490,66 @@ def close_alert(alert_id: int,
         "closing_vote": closing_vote
     }
 
+@router.post("/api/alerts/{alert_id}/expand")
+def expand_alert(alert_id: int,
+            request: Request,
+            background_tasks: BackgroundTasks,
+            expanding_schema: ExpandingSchema,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    if (not current_user.is_chief):
+        raise forbidden_exception("Only chiefs can expand alerts")
+    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+    if not alert:
+        raise not_found_exception("Alert not found")
+    if alert.is_closed:
+        raise forbidden_exception("Alert is closed, it can't be expanded")
+    if alert.is_pending:
+        raise forbidden_exception("Alert is in pending state, at the moment it can't be expanded")
+    if alert.spread_count >= ALERT_SPREAD_MAX_COUNT:
+        raise forbidden_exception("Alert has reached the maximum number of expansions")
+    alerted_manager = None
+    if alert.type == AlertType.local.value:
+        # Only the chief alert manager can expand a local alert, not any other chief
+        statement = (select(AlertedUser, User).join(User, AlertedUser.user_id == User.id) # type: ignore
+            .where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)
+            .where(AlertedUser.is_manager == True))
+        result = db_session.exec(statement).first()
+        if not result:
+            raise forbidden_exception("Only the chief alert manager can expand this alert")
+        alerted_manager = result[1]
+    else:
+        # For non-local alerts, the chief alert manager is the chief alert sender,
+        # and he is the only one who can expand the alert
+        if (current_user.id != alert.user_id):
+            raise forbidden_exception("Only the chief alert sender (manager) can expand this alert")
+        if alert.type == AlertType.general.value:
+            raise forbidden_exception("General alerts can't be expanded") 
+    alert.is_pending = True
+    alert.is_expanded = True
+    # We will increase the spread_count of the alert at the end of background task, 
+    # when we will set is_pending = False
+    db_session.add(alert)
+    db_session.commit()
+    alert_copy = Alert.model_validate(alert)
+    curr_user_copy = User.model_validate(current_user)
+    if alerted_manager:
+        alerted_manager_copy = User.model_validate(alerted_manager)
+    else:
+        alerted_manager_copy = None
+    req_info = get_request_info(str(current_user.id))
+    background_tasks.add_task(
+        task_alert_process_expansion,
+        alert_copy,
+        curr_user_copy,
+        alerted_manager_copy,
+        radius=expanding_schema.radius,
+        role=expanding_schema.role,
+        request_info=req_info,
+        db_engine=request.app.state.db_engine,
+        redis_handle=request.app.state.redis_handle)
+    return {"message": "Alert expanded successfully"}
+
 @router.post("/api/update-gps-position")
 async def update_gps_position(
     gps_data: GpsCoordinatesSchema,
@@ -471,6 +558,7 @@ async def update_gps_position(
 ):
     user_id_str = user_data.user_id # already a string, no need to convert from UUID
     is_chief = user_data.user_is_chief
+    user_role = user_data.user_role
     now = now_tz_aware()
     now_int_ts = int(now.timestamp())
     lat, lon = gps_data.latitude, gps_data.longitude
@@ -490,7 +578,12 @@ async def update_gps_position(
             else:
                 pipe.zrem(chiefloc_key, user_id_str)
                 pipe.geoadd(userloc_key, (lon, lat, user_id_str))
-            pipe.zadd(last_upd_key, {user_id_str: now_int_ts})      
+            pipe.zadd(last_upd_key, {user_id_str: now_int_ts})
+            if user_role and (user_role in [r.value for r in UserRole]):
+                specloc_key = get_redis_spec_locations_key(user_id_str, user_role)
+                spec_last_upd_key = get_redis_spec_location_last_updates_key(user_id_str, user_role)
+                pipe.geoadd(specloc_key, (lon, lat, user_id_str))
+                pipe.zadd(spec_last_upd_key, {user_id_str: now_int_ts})
             await pipe.execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")

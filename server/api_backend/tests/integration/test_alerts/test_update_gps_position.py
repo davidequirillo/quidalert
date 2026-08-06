@@ -14,7 +14,9 @@ from core.dbmgr import (
     get_redis_chief_demotions_key,
     get_redis_chief_locations_key,
     get_redis_user_locations_key,
-    get_redis_location_last_updates_key
+    get_redis_spec_locations_key,
+    get_redis_location_last_updates_key,
+    get_redis_spec_location_last_updates_key
 )
 
 def test_update_gps_position_missing_token(client):
@@ -127,6 +129,9 @@ async def test_update_gps_position_success_as_normal_user(client, redis_session,
     user = test_baseuser['user']
     assert user.is_chief == False
     gps_token = test_baseuser['gps_token']
+    gps_token_data = decode_token(gps_token)
+    user_is_chief = gps_token_data["user_is_chief"]
+    assert user_is_chief == 0, "The GPS token should indicate that the user is not a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
         'latitude': 45.0,
@@ -162,6 +167,9 @@ async def test_update_gps_position_success_as_chief(client, redis_session, test_
     chief = test_chief['user']
     assert chief.is_chief == True
     gps_token = test_chief['gps_token']
+    gps_token_data = decode_token(gps_token)
+    user_is_chief = gps_token_data["user_is_chief"]
+    assert user_is_chief == 1, "The GPS token should indicate that the user is a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
         'latitude': 45.0,
@@ -376,4 +384,52 @@ async def test_update_gps_position_promote_user_as_chief_then_demote_again(clien
         assert False, "Chief demotion timestamp should be a valid integer"
     now_int_ts = int(ensure_tz_aware(now_tz_naive()).timestamp())
     assert now_int_ts - chief_demotion_int < 60, "Chief demotion timestamp should be recent (within the last minute) for a promoted and then demoted user"
-      
+
+async def test_update_gps_position_for_a_specialist_user(client, redis_session, test_specialist_user):
+    # Specialist users are users with a role other than "citizen", 
+    # so we test that the GPS position update for a specialist user works correctly
+    user = test_specialist_user['user']
+    gps_token = test_specialist_user['gps_token']
+    gps_token_data = decode_token(gps_token)
+    user_role = gps_token_data["user_role"]
+    # Test_specialist_user is a user with a role other than "citizen", so we assert that the role is not "citizen"
+    assert user_role is not None, "The GPS token should indicate that the user has a role"
+    assert user_role != "citizen", "The GPS token should indicate that the user has a role other than 'citizen'"
+    # We provide the valid token and valid coordinates in the request body, so we expect a successful update
+    response = client.post('/api/update-gps-position', json={
+        'latitude': 45.0,
+        'longitude': 9.0
+    }, headers={
+        'Authorization': f'Bearer {gps_token}'
+    })
+    assert response.status_code == status.HTTP_200_OK
+    # Now we check Redis cache to see if the user location was updated
+    # and also the specialist location (for his role) was updated
+    user_Loc_key = get_redis_user_locations_key(str(user.id))
+    last_upd_key = get_redis_location_last_updates_key(str(user.id))
+    # The user should be in the user locations sorted set
+    user_location_results = await redis_session.geopos(user_Loc_key, str(user.id))
+    last_update = await redis_session.zscore(last_upd_key, str(user.id))
+    assert all(p is not None for p in user_location_results), "User location should be present in Redis"
+    assert last_update is not None, "Last update timestamp should be present in Redis"
+    # We check the last update format, it should be a valid integer timestamp
+    try:
+        last_update_int = int(last_update)
+    except ValueError:
+        assert False, "Last update timestamp should be a valid integer"
+    # We check that the last update timestamp is recent (within the last minute)
+    now_int_ts = int(ensure_tz_aware(now_tz_naive()).timestamp())
+    assert now_int_ts - last_update_int < 60, "Last update timestamp should be recent (within the last minute)"
+    # We also check that the specialist location for the user's role is updated in Redis
+    spec_Loc_key = get_redis_spec_locations_key(str(user.id), user_role)
+    spec_last_upd_key = get_redis_spec_location_last_updates_key(str(user.id), user_role)
+    spec_location_results = await redis_session.geopos(spec_Loc_key, str(user.id))
+    spec_last_update = await redis_session.zscore(spec_last_upd_key, str(user.id))
+    assert all(p is not None for p in spec_location_results), "Specialist location should be present in Redis for the user's role"
+    assert spec_last_update is not None, "Last update timestamp for the specialist location should be present in Redis"
+    try:
+        spec_last_update_int = int(spec_last_update)
+    except ValueError:
+        assert False, "Last update timestamp for the specialist location should be a valid integer"
+    now_int_ts = int(ensure_tz_aware(now_tz_naive()).timestamp())
+    assert now_int_ts - spec_last_update_int < 60, "Last update timestamp for the specialist location should be recent (within the last minute)"

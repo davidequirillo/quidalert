@@ -45,6 +45,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertAlertedUsers => 'Alerted users';
 
   @override
+  String get alertAlertedSpecialists => 'Alerted specialists';
+
+  @override
   String get alertPositiveVotesNum => 'n. confirmation votes';
 
   @override

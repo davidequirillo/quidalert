@@ -135,3 +135,11 @@ def log_alert_error_notifying_about_closure(alert_id: str, request_info: dict, d
         f"alert_error_notifying_about_closure, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
+
+## ALERT EXPAND events logging
+
+def log_alert_error_finalizing_expansion(alert_id: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"alert_error_finalizing_expansion, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )

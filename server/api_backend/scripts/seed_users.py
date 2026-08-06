@@ -16,6 +16,7 @@ TOTAL_ADMINS = 2
 TOTAL_OFFICERS = 10
 TOTAL_CHIEFS = 5
 TOTAL_BASEUSERS = 1000
+ROLE_PROBABILITY = 0.10  # 10% of users have a role assigned
 user_categories = ["admins", "officers", "chiefs", "baseusers"]
 user_types = ["admin", "officer", "chief", "baseuser"] 
 user_cardinalities = [TOTAL_ADMINS, TOTAL_OFFICERS, TOTAL_CHIEFS, TOTAL_BASEUSERS]
@@ -102,6 +103,7 @@ def seed_users():
         languages = [lang.value for lang in UserLanguage]
         user_roles = [role.value for role in UserRole]
         print(f"Populating PostgreSQL with users...")
+        specialists_num = 0
         try:
             for category, user_type, cardinality in zip(user_categories, user_types, user_cardinalities):
                 for i in range(1, cardinality+1):
@@ -112,8 +114,13 @@ def seed_users():
                         continue                    
                     authorized_by = whitelist_entry.created_by
                     authorized_at = whitelist_entry.created_at
-                    if (user_type == "baseuser") and (i <= int(cardinality / 10)):
-                        role = fake.random.choice(user_roles)
+                    if (user_type == "baseuser"):
+                        random_value = fake.random.random()
+                        if random_value < ROLE_PROBABILITY:
+                            role = fake.random.choice(user_roles)
+                            specialists_num += 1
+                        else:
+                            role = None
                     else:
                         role = None
                     user = User.model_validate({
@@ -145,6 +152,7 @@ def seed_users():
                         print(f"{i}/{cardinality} {category} inserted...")
             session.commit()
             print("User insertion completed!")
+            print("Number of specialists (users with a role): ", specialists_num)
         except Exception as e:
             print(f"Error during user seeding: {e}")
             session.rollback()

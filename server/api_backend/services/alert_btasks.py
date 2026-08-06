@@ -36,7 +36,8 @@ from core.btask_events import (
     log_alert_error_notifying_sender,
     log_alert_notify_sender,
     log_alert_notify_about_closure,
-    log_alert_error_notifying_about_closure
+    log_alert_error_notifying_about_closure,
+    log_alert_error_finalizing_expansion
 )
 from core.settings import settings
 
@@ -604,3 +605,33 @@ def notify_about_closure(user_ids, fcm_tokens,
         msg_title, msg_body, msg_data, 
         request_info, db_session)
     return success_count
+
+## EXPAND ALERT BTASK: This is the main function that will be executed as a background task when an alert is expanded.
+async def task_alert_process_expansion(
+        alert, current_user, alerted_manager,
+        radius, role,
+        request_info, db_engine, redis_handle):
+    if (alert.id is None) or (alert.is_closed):
+        return
+    with Session(db_engine) as db_session:
+        users_to_fcm_tokens = {}
+        users_num = len(users_to_fcm_tokens)
+        await run_in_threadpool(
+                finalize_alert_expansion, 
+                alert.id, radius, users_num, request_info, db_session)
+
+def finalize_alert_expansion(alert_id, new_radius, new_users_num, request_info, db_session):
+    try:
+        statement = select(Alert).where(Alert.id == alert_id) 
+        alert = db_session.exec(statement).first()
+        if alert:
+            alert.is_pending = False
+            if new_radius > alert.radius:
+                alert.radius = new_radius
+            if new_users_num > 0:
+                alert.spread_count += 1
+            db_session.add(alert)
+            db_session.commit()
+    except Exception as e:
+        db_session.rollback()
+        log_alert_error_finalizing_expansion(str(alert.id), request_info, detail=str(e))

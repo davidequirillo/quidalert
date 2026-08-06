@@ -36,6 +36,7 @@ import 'package:quidalert_flutter/pages/alerts/extend.dart';
 import 'package:quidalert_flutter/pages/alerts/recents.dart';
 import 'package:quidalert_flutter/pages/alerts/view_alert_details.dart';
 import 'package:quidalert_flutter/pages/alerts/view_alerted_users.dart';
+import 'package:quidalert_flutter/pages/alerts/view_alert_roles.dart';
 import 'package:quidalert_flutter/pages/alerts/view_alert_messages.dart';
 import 'package:quidalert_flutter/pages/accounts.dart';
 import 'package:quidalert_flutter/pages/whitelist/add_entries.dart';
@@ -176,6 +177,11 @@ class QuidalertWidget extends StatelessWidget {
             case '/alerts/view-alerted-users':
               return MaterialPageRoute(
                 builder: (_) => const AlertedUsersPage(),
+                settings: settings,
+              );
+            case '/alerts/view-alert-roles':
+              return MaterialPageRoute(
+                builder: (_) => const ViewAlertRolesPage(),
                 settings: settings,
               );
             case '/alerts/view-alert-messages':
