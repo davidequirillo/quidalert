@@ -1,8 +1,8 @@
-"""initial migration: users table, whitelist table, alerts table, etc.
+"""create tables: whitelist_entries, users, alerts, etc. etc.
 
-Revision ID: 56174dbb44cd
+Revision ID: e2870de89414
 Revises: 
-Create Date: 2026-07-01 14:18:29.064872
+Create Date: 2026-08-06 16:44:41.558578
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '56174dbb44cd'
+revision: str = 'e2870de89414'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -36,6 +36,7 @@ def upgrade() -> None:
     sa.Column('is_reliable', sa.Boolean(), nullable=False),
     sa.Column('reliability_score', sa.Integer(), nullable=False),
     sa.Column('last_reliability_score_at', sa.DateTime(), nullable=True),
+    sa.Column('hero_score', sa.Integer(), nullable=False),
     sa.Column('is_blocked', sa.Boolean(), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('activation_expires_at', sa.DateTime(), nullable=True),
@@ -88,6 +89,9 @@ def upgrade() -> None:
     sa.Column('email', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_by', sqlmodel.sql.sqltypes.AutoString(length=128), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('registration_type', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=True),
+    sa.Column('registration_role', sqlmodel.sql.sqltypes.AutoString(length=32), nullable=True),
+    sa.Column('user_is_registered', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_whitelist_entries_email'), 'whitelist_entries', ['email'], unique=True)
@@ -97,12 +101,15 @@ def upgrade() -> None:
     sa.Column('description', sqlmodel.sql.sqltypes.AutoString(length=512), nullable=False),
     sa.Column('latitude', sa.Float(), nullable=False),
     sa.Column('longitude', sa.Float(), nullable=False),
+    sa.Column('accuracy', sa.Float(), nullable=False),
     sa.Column('radius', sa.Float(), nullable=False),
     sa.Column('address', sqlmodel.sql.sqltypes.AutoString(length=256), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('severity', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.Column('is_pending', sa.Boolean(), nullable=False),
+    sa.Column('is_banned', sa.Boolean(), nullable=False),
+    sa.Column('is_expanded', sa.Boolean(), nullable=False),
     sa.Column('spread_count', sa.Integer(), nullable=False),
     sa.Column('is_closed', sa.Boolean(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
@@ -111,6 +118,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_alerts_user_id'), 'alerts', ['user_id'], unique=False)
     op.create_index('ixc_alerts_created_at_lat_long', 'alerts', ['created_at', 'latitude', 'longitude'], unique=False)
+    op.create_index('ixp_alerts_created_at_where_is_not_closed', 'alerts', ['created_at'], unique=False, postgresql_where='is_closed IS FALSE')
     op.create_index('ixp_alerts_created_at_where_type_general', 'alerts', ['created_at'], unique=False, postgresql_where="type = 'general'")
     op.create_table('refresh_tokens',
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -130,6 +138,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('alert_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
+    sa.Column('distance', sa.Float(), nullable=False),
     sa.Column('is_manager', sa.Boolean(), nullable=False),
     sa.Column('vote', sa.Integer(), nullable=False),
     sa.Column('closing_vote', sa.Integer(), nullable=False),
@@ -144,6 +153,7 @@ def upgrade() -> None:
     sa.Column('alert_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.Column('content', sqlmodel.sql.sqltypes.AutoString(length=512), nullable=False),
+    sa.Column('is_banned', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['alert_id'], ['alerts.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -166,6 +176,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_refresh_tokens_user_id'), table_name='refresh_tokens')
     op.drop_table('refresh_tokens')
     op.drop_index('ixp_alerts_created_at_where_type_general', table_name='alerts', postgresql_where="type = 'general'")
+    op.drop_index('ixp_alerts_created_at_where_is_not_closed', table_name='alerts', postgresql_where='is_closed IS FALSE')
     op.drop_index('ixc_alerts_created_at_lat_long', table_name='alerts')
     op.drop_index(op.f('ix_alerts_user_id'), table_name='alerts')
     op.drop_table('alerts')

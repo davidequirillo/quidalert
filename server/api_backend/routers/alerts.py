@@ -508,16 +508,17 @@ def expand_alert(alert_id: int,
         raise forbidden_exception("Alert is in pending state, at the moment it can't be expanded")
     if alert.spread_count >= ALERT_SPREAD_MAX_COUNT:
         raise forbidden_exception("Alert has reached the maximum number of expansions")
+    if expanding_schema.radius <= 0:
+        raise invalid_request_exception("Expansion radius must be greater than 0")
     alerted_manager = None
     if alert.type == AlertType.local.value:
         # Only the chief alert manager can expand a local alert, not any other chief
-        statement = (select(AlertedUser, User).join(User, AlertedUser.user_id == User.id) # type: ignore
+        statement = (select(AlertedUser)
             .where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)
             .where(AlertedUser.is_manager == True))
-        result = db_session.exec(statement).first()
-        if not result:
+        alerted_manager = db_session.exec(statement).first()
+        if not alerted_manager:
             raise forbidden_exception("Only the chief alert manager can expand this alert")
-        alerted_manager = result[1]
     else:
         # For non-local alerts, the chief alert manager is the chief alert sender,
         # and he is the only one who can expand the alert
@@ -527,22 +528,21 @@ def expand_alert(alert_id: int,
             raise forbidden_exception("General alerts can't be expanded") 
     alert.is_pending = True
     alert.is_expanded = True
+    # If the expansion is not directed to a specific role, 
+    # we will increase the radius of the alert
+    if (not expanding_schema.role) and (expanding_schema.radius > alert.radius):
+        alert.radius = expanding_schema.radius
     # We will increase the spread_count of the alert at the end of background task, 
-    # when we will set is_pending = False
+    # when we will set is_pending to False
     db_session.add(alert)
     db_session.commit()
     alert_copy = Alert.model_validate(alert)
     curr_user_copy = User.model_validate(current_user)
-    if alerted_manager:
-        alerted_manager_copy = User.model_validate(alerted_manager)
-    else:
-        alerted_manager_copy = None
     req_info = get_request_info(str(current_user.id))
     background_tasks.add_task(
         task_alert_process_expansion,
         alert_copy,
         curr_user_copy,
-        alerted_manager_copy,
         radius=expanding_schema.radius,
         role=expanding_schema.role,
         request_info=req_info,

@@ -47,9 +47,9 @@ from core.dbmgr import (
     REDIS_CHIEF_DEMOTIONS_KEY,
     REDIS_USER_LOCATIONS_KEY,
     REDIS_CHIEF_LOCATIONS_KEY,
+    REDIS_LOCATION_LAST_UPDATES_KEY,
     REDIS_SPEC_LOCATIONS_KEY,
     REDIS_SPEC_LOCATION_LAST_UPDATES_KEY,
-    REDIS_LOCATION_LAST_UPDATES_KEY,
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY,
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT,
     REDIS_COOLDOWN_DEMOTIONS_CLEANUP_KEY,
@@ -89,7 +89,7 @@ async def do_locations_cleanup(redis_handle):
     else:
         raise RedisHandleTypeError(redis_handle)
 
-async def cleanup_expired_locations(redis_client):
+async def cleanup_expired_locations(redis_client): # Redis client can be either a redis_handle (in cluster mode) or a redis_session from pool (in single node mode)
     now = now_tz_aware()
     exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
     exp_int_ts = int(exp_dt.timestamp())
@@ -214,7 +214,7 @@ async def do_demotions_cleanup(redis_handle):
     else:
         raise RedisHandleTypeError(redis_handle)
 
-async def cleanup_expired_demotions(redis_client):
+async def cleanup_expired_demotions(redis_client): # Redis client can be either a redis_handle (in cluster mode) or a redis_session from pool (in single node mode)
     now =  now_tz_aware()
     exp_dt = now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES) 
     exp_int_ts = int(exp_dt.timestamp())

@@ -12,9 +12,9 @@ from sqlmodel import Session, select
 from core.dbmgr import get_engine
 
 fake = Faker('en_US')
-TOTAL_ADMINS = 2
+TOTAL_ADMINS = 3
 TOTAL_OFFICERS = 10
-TOTAL_CHIEFS = 5
+TOTAL_CHIEFS = 7
 TOTAL_BASEUSERS = 1000
 ROLE_PROBABILITY = 0.10  # 10% of users have a role assigned
 user_categories = ["admins", "officers", "chiefs", "baseusers"]
@@ -152,6 +152,13 @@ def seed_users():
                         print(f"{i}/{cardinality} {category} inserted...")
             session.commit()
             print("User insertion completed!")
+            print(f"Superuser inserted: 1")
+            print(f"Admins inserted: {TOTAL_ADMINS}")
+            print(f"Officers inserted: {TOTAL_OFFICERS}")
+            print(f"Chiefs inserted: {TOTAL_CHIEFS}")
+            print(f"Base users inserted: {TOTAL_BASEUSERS}")
+            print("-------------------")
+            print(f"Total users inserted: {sum(user_cardinalities)} + 1 (superuser) = {sum(user_cardinalities) + 1}")
             print("Number of specialists (users with a role): ", specialists_num)
         except Exception as e:
             print(f"Error during user seeding: {e}")
@@ -163,6 +170,7 @@ if __name__ == "__main__":
     parser.add_argument("--baseusers_count", type=int, default=TOTAL_BASEUSERS)
     args = parser.parse_args()
     TOTAL_BASEUSERS = args.baseusers_count
+    user_cardinalities[3] = TOTAL_BASEUSERS  # Update the cardinality for baseusers
     if TOTAL_BASEUSERS < 1000:
         print("The number of base users to seed must be at least 1000 (the default). Exiting.")
         exit(1)

@@ -187,12 +187,20 @@ def get_redis_spec_location_last_updates_key(uuid: str, role: str) -> str:
 
 def get_all_redis_spec_locations_keys() -> list[str]:
     keys = []
-    for role in [r.value for r in UserRole]:
-        keys.extend([REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)])
+    for k in range(REDIS_TOTAL_SHARDS):
+        for role in [r.value for r in UserRole]:
+            keys.append(REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role))
     return keys
 
 def get_all_redis_spec_location_last_updates_keys() -> list[str]:
     keys = []
-    for role in [r.value for r in UserRole]:
-        keys.extend([REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)])
+    for k in range(REDIS_TOTAL_SHARDS):
+        for role in [r.value for r in UserRole]:
+            keys.append(REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role))
     return keys
+
+def get_all_redis_spec_locations_keys_for_a_role(role: str) -> list[str]:
+    return [REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)]
+
+def get_all_redis_spec_location_last_updates_keys_for_a_role(role: str) -> list[str]:
+    return [REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)]

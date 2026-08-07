@@ -149,7 +149,7 @@ async def seed_redis_gps_and_demotions(users, redis_session):
                 placed_count += 1
         else:
             not_placed_count += 1
-    print(f"Total users in SQL: {len(users)}")
+    print(f"Total users in SQL database: {len(users)}")
     print(f"Users with a GPS location placed: {placed_count}")
     print(f"Users without a GPS location placed: {not_placed_count}")
     print(f"Users with a GPS location (total): {locations_count}")

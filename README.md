@@ -28,7 +28,7 @@ This way, white-listed users can register their account whenever they want to lo
 Administrator also define the chiefs (for example the "rescue operators" or "emergency workers"), white-listing them in the same way.  
 Note: CSV file, used to add many emails in the whitelist in bulk, can be very simple, for example only one column, and many rows, where each row is the email address to insert in the whitelist. More complex CSV files are supported: the important thing is that one email address is present in each row.
 
-Do you remember? Chief users are those who manage the alerts: when a generic user sends an alert, the server search the closest chief in the territory, and the nearby users residing in a certain radius (1 km) from the alert sender location.  
+Do you remember? Chief users are those who manage the alerts: when a generic user sends an alert, the server search the closest chief in the territory, and the nearby users residing in a certain radius (1 km) from the alert sender location, and notify them.  
 A note: chief users can also create general alerts or managed alerts with custom gps location (writing the alert gps coordinates manually, to target a specific area, to notify nearby users who are within that area).
 
 Chief users will also be able to expand an existing alert, increasing the radius to many kilometers, with the aim to notify more specialized users (for example, expand the alert to all medics in 10 km, expand the alert to all firefighters in 50 km, etc. etc.).
