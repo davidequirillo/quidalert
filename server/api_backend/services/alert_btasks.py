@@ -40,8 +40,8 @@ from core.btask_events import (
     log_alert_error_notifying_about_closure,
     log_alert_error_finalizing_expansion,
     log_alert_error_notifying_caller,
-    log_alert_search_zone_specialists_done,
-    log_alert_error_searching_zone_specialists,
+    log_alert_no_caller_to_notify,
+    log_alert_notify_caller
 )
 from core.settings import settings
 from core.dbmgr import (
@@ -70,8 +70,9 @@ alert_notification_templates = {
         "close_alert_neutral_closure": "Neutral",
         "close_alert_punitive_closure": "Punitive",
         "expand_alert_title": "Alert expanded",
-        "expand_alert_to_role_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to role: {role}, with radius: {radius}",
-        "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}",
+        "expand_alert_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager)",
+        "expand_alert_to_role_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to role: {role}, with radius: {radius}. Found {users_num} specialists in the area",
+        "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}. Found {users_num} users in the area",
         "expand_alert_action_label": "View"
     },
     "it": {
@@ -92,8 +93,9 @@ alert_notification_templates = {
         "close_alert_neutral_closure": "Neutrale",
         "close_alert_punitive_closure": "Punitiva",
         "expand_alert_title": "Allerta espansa",
-        "expand_alert_to_role_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) al ruolo {role}, con raggio: {radius}",
-        "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}",
+        "expand_alert_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile).",
+        "expand_alert_to_role_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) al ruolo {role}, con raggio: {radius}. Trovati {users_num} specialisti nell'area",
+        "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}. Trovati {users_num} utenti nell'area",
         "expand_alert_action_label": "Vedi"
     }
 }
@@ -143,16 +145,16 @@ async def task_alert_search_and_notify(
         if sender_fcm_token:
             sender_can_be_notified = True
         else:
-            log_alert_no_sender_to_notify(str(alert.id), request_info)
+            log_alert_no_sender_to_notify(str(alert.id), "create", request_info)
         if (alert.type == AlertType.local.value): 
             if chief and chief_fcm_token:
                 chief_can_be_notified = True
             else:
                 log_alert_no_closest_chief_to_notify(str(alert.id), request_info)
-        if nearby_users_to_fcm_tokens.keys():
+        if nearby_users_to_fcm_tokens:
             nearby_users_can_be_notified = True
         else:
-            log_alert_no_nearby_users_to_notify(str(alert.id), request_info)
+            log_alert_no_nearby_users_to_notify(str(alert.id), None, "create", request_info)
         if settings.app_mode == "development":
             await asyncio.sleep(10) # line executed only in development-mode, to simulate a long processing time, for manual testing purposes
         # Now we set the alert as not pending anymore, because we have already searched for chiefs and nearby users, and we have saved them in database
@@ -191,10 +193,10 @@ async def task_alert_search_and_notify(
                         request_info=request_info, db_session=db_session)
                     if notification_count <= 0:
                         nearby_users_can_be_notified = False
-                    log_alert_notify_nearby_users(str(alert.id), request_info, detail=f"Nearby users notified successfully, {notification_count} out of {len(user_ids)} users notified on alert creation")
+                    log_alert_notify_nearby_users(str(alert.id), None, "create", request_info, detail=f"Nearby users notified successfully, {notification_count} out of {len(user_ids)} users notified on alert creation")
                 except Exception as e:
                     nearby_users_can_be_notified = False
-                    log_alert_error_notifying_nearby_users(str(alert.id), request_info, detail=str(e))
+                    log_alert_error_notifying_nearby_users(str(alert.id), None, "create", request_info, detail=str(e))
         if sender_can_be_notified:
             msg_for_sender = ""
             if alert.type == AlertType.local.value:
@@ -219,9 +221,9 @@ async def task_alert_search_and_notify(
                     str(current_user.id), sender_fcm_token, 
                     language=current_user.language, alert=alert, content=msg_for_sender, 
                     request_info=request_info, db_session=db_session) # notify the user who created the alert
-                log_alert_notify_sender(str(alert.id), request_info, detail=f"Sender {current_user.id} notified successfully")
+                log_alert_notify_sender(str(alert.id), "create", request_info, detail=f"Sender {current_user.id} notified successfully")
             except Exception as e:
-                log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
+                log_alert_error_notifying_sender(str(alert.id), "create", request_info, detail=str(e))
     return
 
 async def get_closest_chiefs_and_nearby_users(alert, request_info, redis_handle):
@@ -296,14 +298,30 @@ async def get_closest_chiefs(alert, request_info, redis_client): # Redis client 
         log_alert_error_searching_closest_chiefs(str(alert.id), request_info, detail=str(e))
         return []
         
-async def get_nearby_users(alert, request_info, redis_client): # Redis client can be a redis handle (in cluster mode) or a redis session from pool (in single mode)
+async def get_nearby_users(
+        alert, request_info, redis_client, 
+        radius=None, role=None, is_expanded=False, 
+        search_num=1000): # Redis client can be a redis handle (in cluster mode) or a redis session from pool (in single mode)
     """
     Searches for users near a specific alert across all shards in parallel.
     This is the core of the universal scaling architecture.
+    This function is used both for alert creation and alert expansion, with different parameters.
+    If radius is None, it uses the radius of alert object (alert.radius), otherwise it uses the specified radius (useful for alert expansion). 
+    If role is specified, it searches for users with that role (specialists, examples: "medics", "firefighters", "policemen", etc.), otherwise it searches for all users (role=None).
+    If is_expanded is True, it indicates that the function is being called during alert expansion.
     """
+    operation_name = "expand" if is_expanded else "create"
     nearby_users = []
+    # Note: in alert creation, the alert sender is equal to the caller (current_user), 
+    # but in alert expansion, the alert sender can be different from the caller (current_user), 
+    # so we need to exclude both from the list of nearby users, to avoid duplicates or errors
+    alert_sender_id: str = str(alert.user_id) # the user who created the alert (the sender) is excluded from the list of nearby users, to avoid duplicates or errors
+    caller_id: str = request_info["user_id"] # the user who expands the alert (the caller, current_user) is excluded from the list of nearby users, to avoid duplicates or errors
     # We obtain all shards keys for user locations
-    shard_keys = get_all_redis_user_locations_keys()
+    if role:
+        shard_keys = get_all_redis_spec_locations_keys_for_a_role(role)
+    else:
+        shard_keys = get_all_redis_user_locations_keys()
     try:
         # 1. Preparation: we create the tasks (one for each shard)
         tasks = [
@@ -311,10 +329,10 @@ async def get_nearby_users(alert, request_info, redis_client): # Redis client ca
                 name=key,
                 longitude=alert.longitude,
                 latitude=alert.latitude,
-                radius=alert.radius,
+                radius=radius if radius is not None else alert.radius,
                 unit="km",
                 sort="asc",
-                count=1000, 
+                count=search_num, 
                 withdist=True,
                 withcoord=True
             ) for key in shard_keys
@@ -328,11 +346,11 @@ async def get_nearby_users(alert, request_info, redis_client): # Redis client ca
                 all_matches.extend(results)
         # 4. Sorting results, based on distance (x[1] contains the distance)
         all_matches.sort(key=lambda x: x[1])
-        # 5. Filtering: we keep only the first 1000 entries
-        if len(all_matches) > 1000:
-            all_matches = all_matches[:1000]
+        # 5. Filtering: we keep only the first "search_num" entries
+        if len(all_matches) > search_num:
+            all_matches = all_matches[:search_num]
         for user_id, distance, coords in all_matches:
-            if user_id != str(alert.user_id): # we exclude the user who created the alert from the list of nearby users, to avoid duplicates or errors
+            if (user_id != alert_sender_id) and (user_id != caller_id):
                 nearby_users.append({
                     "user_id": user_id,
                     "distance_km": round(distance, 3),
@@ -341,10 +359,10 @@ async def get_nearby_users(alert, request_info, redis_client): # Redis client ca
                         "longitude": coords[0]
                     }
                 })
-        log_alert_search_nearby_users_done(str(alert.id), request_info, detail=f"{len(nearby_users)} nearby users found and sorted successfully")
+        log_alert_search_nearby_users_done(str(alert.id), role, operation_name, request_info, detail=f"{len(nearby_users)} nearby users found and sorted successfully")
         return nearby_users
     except Exception as e:
-        log_alert_error_searching_nearby_users(str(alert.id), request_info, detail=str(e))
+        log_alert_error_searching_nearby_users(str(alert.id), role, operation_name, request_info, detail=str(e))
         return []
 
 def save_first_chief_in_db(alert, closest_chiefs, request_info, db_session):
@@ -414,22 +432,38 @@ def set_alert_as_not_pending_anymore(alert_id, request_info, db_session):
             db_session.commit()
     except Exception as e:
         db_session.rollback()
-        log_alert_error_saving_nearby_users(str(alert_id), request_info, detail=f"Error setting alert pending status to False: {e}")
+        log_alert_error_saving_nearby_users(str(alert_id), None, "create", request_info, detail=f"Error setting alert pending status to False: {e}")
     return
 
-def save_nearby_users_in_db(alert, users, request_info, db_session):
+def save_nearby_users_in_db(alert, users, request_info, db_session, 
+                role=None, is_expanded: bool = False):
+    # We save nearby users in database as "alerted users" and we get their fcm tokens
+    # This function is used both for alert creation and alert expansion, with different parameters.
+    # If role is specified, it indicates we have search for users with that role (specialists, examples: "medics", "firefighters", "policemen", etc.), 
+    # otherwise it indicates we have searched for all users (role=None).
+    # If is_expanded is True, it indicates that the function is being called during alert expansion.
+    # If is_expanded is True, obviously we add in the database (as alerted users) only the users who have not been alerted yet (to avoid duplicates or errors), 
+    # so we check the database for already alerted users and we exclude them from the list of users to be added in the database.
+    operation_name = "expand" if is_expanded else "create"
     if not users:
         return {}
+    alerted_users_set = None
+    if is_expanded:
+        alerted_users_stmt = select(AlertedUser.user_id).where(AlertedUser.alert_id == alert.id)
+        alerted_users_ids = db_session.exec(alerted_users_stmt).all()
+        alerted_users_set = set(str(id) for id in alerted_users_ids)
     ids_as_uuid = []
     users_to_distances = {}
     users_to_tokens = {}
     for u in users:
         try:
             uuid = string_as_uuid(u["user_id"])
-            ids_as_uuid.append(uuid)
+            if alerted_users_set and (str(uuid) in alerted_users_set):
+                continue
             users_to_distances[str(uuid)] = u["distance_km"]
+            ids_as_uuid.append(uuid)
         except Exception as e:
-            log_alert_error_checking_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
+            log_alert_error_checking_nearby_users(str(alert.id), role, operation_name, request_info, detail=f"Error converting user_id string to UUID: {e}")
             continue
     existing_ids_in_db = set()
     try:
@@ -445,9 +479,9 @@ def save_nearby_users_in_db(alert, users, request_info, db_session):
         orphans = [uid for uid in ids_as_uuid if str(uid) not in existing_ids_in_db]
         if orphans:
             err_detail = f"Orphan user_ids found (in Redis but not in Postgres, causes: null fcm token, or they have been modified, or deleted): {orphans}"
-            log_alert_orphan_ids_found_in_checking_nearby_users(str(alert.id), request_info, detail=err_detail)
+            log_alert_orphan_ids_found_in_checking_nearby_users(str(alert.id), role, operation_name, request_info, detail=err_detail)
     except Exception as e:
-        log_alert_error_checking_nearby_users(str(alert.id), request_info, detail=str(e))
+        log_alert_error_checking_nearby_users(str(alert.id), role, operation_name, request_info, detail=str(e))
         users_to_tokens = {}
     try:
         if users_to_tokens and existing_ids_in_db:
@@ -457,7 +491,7 @@ def save_nearby_users_in_db(alert, users, request_info, db_session):
                     user_uuid = string_as_uuid(u_id)
                     user_distance = users_to_distances.get(u_id, 0.0)
                 except Exception as e:
-                    log_alert_error_saving_nearby_users(str(alert.id), request_info, detail=f"Error converting user_id string to UUID: {e}")
+                    log_alert_error_saving_nearby_users(str(alert.id), role, operation_name, request_info, detail=f"Error converting user_id string to UUID: {e}")
                     continue
                 valid_data_for_db_bulk_insert.append({
                     "alert_id": alert.id,
@@ -468,22 +502,22 @@ def save_nearby_users_in_db(alert, users, request_info, db_session):
                     "closing_vote": 0
                 })
             if valid_data_for_db_bulk_insert:
-                # bulk insert nearby users into alerted_users table 
+                # Bulk insert nearby users into alerted_users table 
                 stmt = insert(AlertedUser)
                 db_session.exec(stmt, params=valid_data_for_db_bulk_insert)
                 db_session.commit()
     except Exception as e:
         db_session.rollback()
-        log_alert_error_saving_nearby_users(str(alert.id), request_info, detail=str(e))
+        log_alert_error_saving_nearby_users(str(alert.id), role, operation_name, request_info, detail=str(e))
         users_to_tokens = {}
     return users_to_tokens
 
-def get_sender_fcm_token(alert, sender, request_info, db_session):
+def get_sender_fcm_token(alert, sender_id, request_info, db_session, operation="create"):
     try:
-        fcm_token = get_user_fcm_token(sender, db_session)
+        fcm_token = get_user_fcm_token(sender_id, db_session)
         return fcm_token
     except Exception as e:
-        log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
+        log_alert_error_notifying_sender(str(alert.id), operation, request_info, detail=str(e))
         return None
     
 def notify_nearby_users(
@@ -612,29 +646,80 @@ async def task_alert_process_expansion(
         request_info, db_engine, redis_handle):
     if (alert.id is None) or (alert.is_closed):
         return
-    users_can_be_notified = False
     # The caller is the chief manager who is expanding the alert (the "current_user"), 
-    # the one who called the API endpoint to expand the alert
-    caller_can_be_notified = False
+    # the one who called the API endpoint to expand the alert.
+    caller_fcm_token = None
+    # The sender is the user who created the alert (the "alert.user_id"),
+    # In non-local alerts (managed by chiefs), the sender is equal to the expanding caller (current_user),
+    # but in local alerts, the sender can be different from the caller (current_user).
+    sender_fcm_token = None
     # Get users (or specialists, if role is specified) who reside in the expansion area 
-    # (not in the alert radius, but in the new radius)
+    # (not in the alert radius, but in the new radius defined by the chief manager who expands the alert)
     zone_users = await get_zone_users(alert, radius, role, request_info, redis_handle)
     with Session(db_engine) as db_session:
         caller_fcm_token = await run_in_threadpool(
                 get_caller_fcm_token, 
-                alert, current_user, request_info, db_session)
-        zone_users_to_fcm_tokens = {}
-        zone_users_added_num = len(zone_users_to_fcm_tokens)
+                alert, current_user.id, request_info, db_session)
+        if alert.user_id != current_user.id:
+            sender_fcm_token = await run_in_threadpool(
+                get_sender_fcm_token, 
+                alert, alert.sender_id, request_info, db_session)
+        zone_users_to_fcm_tokens = await run_in_threadpool(
+                    save_zone_users_in_db, 
+                    alert, zone_users, role, request_info, db_session)
+        if not caller_fcm_token:
+            log_alert_no_caller_to_notify(str(alert.id), "expand", request_info)
+        if (not sender_fcm_token) and (alert.user_id != current_user.id):
+            log_alert_no_sender_to_notify(str(alert.id), "expand", request_info)
+        if settings.app_mode == "development":
+            await asyncio.sleep(10) # line executed only in development-mode, to simulate a long processing time, for manual testing purposes
+        # Now we finalize alert expansion (setting it as not pending anymore, because we have searched for users in the zone, and we have saved them in database.
+        # Note: we don't pass the "alert" object to the function, because it is a copy of the original alert object coming from api endpoint, 
+        # so, we need to retrieve the original alert object from database, to update its is_pending field (see function "finalize_alert_expansion")
+        zone_users_num = len(zone_users_to_fcm_tokens)
         await run_in_threadpool(
                 finalize_alert_expansion,  
-                alert.id, zone_users_added_num, request_info, db_session)
+                alert.id, zone_users_num, request_info, db_session)
+        if caller_fcm_token:
+            try:
+                await run_in_threadpool(
+                    notify_caller_about_expansion, 
+                    str(current_user.id), caller_fcm_token, 
+                    current_user.language, alert, radius, role, zone_users_num,
+                    request_info, db_session)
+                log_alert_notify_caller(str(alert.id), "expand", request_info, detail=f"Caller {current_user.id} notified successfully")
+            except Exception as e:
+                log_alert_error_notifying_caller(str(alert.id), "expand", request_info, detail=str(e))
+        if (alert.user_id != current_user.id) and sender_fcm_token:
+            try:
+                await run_in_threadpool(
+                    notify_sender_about_expansion, 
+                    str(alert.user_id), sender_fcm_token, 
+                    current_user.language, alert, 
+                    request_info, db_session)
+                log_alert_notify_sender(str(alert.id), "expand", request_info, detail=f"Sender {alert.user_id} notified successfully")
+            except Exception as e:
+                log_alert_error_notifying_sender(str(alert.id), "expand", request_info, detail=str(e))
+        if zone_users_to_fcm_tokens:
+            try:
+                user_ids = list(zone_users_to_fcm_tokens.keys())
+                fcm_tokens = list(zone_users_to_fcm_tokens.values())
+                notification_count = await run_in_threadpool(
+                    notify_nearby_users_about_expansion,
+                    user_ids, fcm_tokens,
+                    current_user.language, alert, 
+                    request_info, db_session)
+                log_alert_notify_nearby_users(str(alert.id), role, "expand", request_info, detail=f"Nearby users notified successfully, {notification_count} out of {len(user_ids)} users notified on alert expansion")
+            except Exception as e:
+                log_alert_error_notifying_nearby_users(str(alert.id), role, "expand", request_info, detail=str(e))
+    return
 
-def get_caller_fcm_token(alert, caller, request_info, db_session):
+def get_caller_fcm_token(alert, caller_id, request_info, db_session, operation="expand"):
     try:
-        fcm_token = get_user_fcm_token(caller, db_session)
+        fcm_token = get_user_fcm_token(caller_id, db_session)
         return fcm_token
     except Exception as e:
-        log_alert_error_notifying_caller(str(alert.id), request_info, detail=str(e))
+        log_alert_error_notifying_caller(str(alert.id), operation, request_info, detail=str(e))
         return None
 
 def finalize_alert_expansion(alert_id, users_num, request_info, db_session):
@@ -652,85 +737,105 @@ def finalize_alert_expansion(alert_id, users_num, request_info, db_session):
         log_alert_error_finalizing_expansion(str(alert_id), request_info, detail=str(e))
 
 async def get_zone_users(alert, radius, role, request_info, redis_handle):
-    # We search for users (or specialists) who are within a certain radius from the alert location, 
-    # based on the role specified.
-    # If no role is specified, we search for all nearby users (reusing the same function as for the initial alert creation).
-    # In this case, we pass only the alert object (not the role or the new radius),
-    # but the alert object in this case contains the new radius (alert.radius) updated by the API "expand_alert".
-    # See API endpoint "expand_alert" in routers/alerts.py, where the alert object is updated with the new radius if no role is specified.
-    zone_users = []
+    # We search for users (or specialists) who are within a certain radius from the alert location, based on the role specified.
+    # If no role is specified, we search for all nearby users.
+    # We reuse "get_nearby_users" function, calling it with the correct parameters for expansion.
+    nearby_users = []
     if isinstance(redis_handle, cluster.RedisCluster):
-        if not alert.role:
-            zone_users = await get_nearby_users(alert, request_info, redis_handle)
-        else:
-            zone_users = await get_zone_specialists(alert, radius, role, request_info, redis_handle)
-        return zone_users
+        nearby_users = await get_nearby_users(alert, request_info, redis_handle, 
+                            radius=radius, role=role, is_expanded=True)
+        return nearby_users
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
-            if not alert.role:
-                zone_users = await get_nearby_users(alert, request_info, redis_session)
-            else:
-                zone_users = await get_zone_specialists(alert, radius, role, request_info, redis_session)
-        return zone_users
+            nearby_users = await get_nearby_users(alert, request_info, redis_session, 
+                                radius=radius, role=role, is_expanded=True)
+        return nearby_users
     elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
-        if not alert.role:
-            zone_users = await get_nearby_users(alert, request_info, redis_handle)
-        else:
-            zone_users = await get_zone_specialists(alert, radius, role, request_info, redis_handle)
-        return zone_users
+        nearby_users = await get_nearby_users(alert, request_info, redis_handle, 
+                            radius=radius, role=role, is_expanded=True)
+        return nearby_users
     else:
         raise RedisHandleTypeError(redis_handle)
 
-async def get_zone_specialists(alert, radius, role, request_info, redis_client): # Redis client can be a redis handle (in cluster mode) or a redis session from pool (in single mode)
-    """
-    Searches for specialists (users with a specific role) who are within a certain radius.
-    We search for them across all shards in parallel.
-    This is the core of the universal scaling architecture.
-    """
-    zone_specialists = []
-    alert_sender_id: str = str(alert.user_id) # the user who created the alert (the sender) is excluded from the list of specialists to alert, to avoid duplicates or errors
-    caller_id: str = request_info["user_id"] # the user who expands the alert (the caller, current_user) is excluded from the list of specialists to alert, to avoid duplicates or errors
-    # We obtain all shards keys for user locations
-    shard_keys = get_all_redis_spec_locations_keys_for_a_role(role)
-    try:
-        # 1. Preparation: we create the tasks (one for each shard)
-        tasks = [
-            redis_client.geosearch(
-                name=key,
-                longitude=alert.longitude,
-                latitude=alert.latitude,
-                radius=radius, # not "alert.radius", but "radius" input parameter (the new radius)
-                unit="km",
-                sort="asc",
-                count=1000, 
-                withdist=True,
-                withcoord=True
-            ) for key in shard_keys
-        ] 
-        # 2. Parallel execution
-        sharded_results = await asyncio.gather(*tasks)
-        # 3. Unification of the results for each shard
-        all_matches = []
-        for results in sharded_results:
-            if results:
-                all_matches.extend(results)
-        # 4. Sorting results, based on distance (x[1] contains the distance)
-        all_matches.sort(key=lambda x: x[1])
-        # 5. Filtering: we keep only the first 1000 entries
-        if len(all_matches) > 1000:
-            all_matches = all_matches[:1000]
-        for user_id, distance, coords in all_matches:
-            if (user_id != alert_sender_id) and (user_id != caller_id):
-                zone_specialists.append({
-                    "user_id": user_id,
-                    "distance_km": round(distance, 3),
-                    "location": {
-                        "latitude": coords[1],  # Redis returns (lon, lat)
-                        "longitude": coords[0]
-                    }
-                })
-        log_alert_search_zone_specialists_done(str(alert.id), request_info, detail=f"{len(zone_specialists)} specialists in the area found and sorted successfully")
-        return zone_specialists
-    except Exception as e:
-        log_alert_error_searching_zone_specialists(str(alert.id), request_info, detail=str(e))
-        return []
+def save_zone_users_in_db(alert, users, role, request_info, db_session):
+    # We save zone users in database as "alerted users" and we get their fcm tokens
+    # The existing users in the database (already alerted users) are excluded from the list of users to be added in the database, to avoid duplicates or errors.
+    # We reuse "save_nearby_users_in_db" function, calling it with the correct parameters for expansion.
+    return save_nearby_users_in_db(alert, users, request_info, db_session, role=role, is_expanded=True)
+
+def notify_caller_about_expansion(caller_id, caller_fcm_token, 
+            language: str, alert: Alert, radius: float, role: str, users_num: int,
+            request_info, db_session):
+    date_str = alert.created_at.strftime("%Y-%m-%d")
+    hour_str = alert.created_at.strftime("%H:%M")
+    action_label = alert_notification_templates[language]["expand_alert_action_label"]
+    msg_title = alert_notification_templates[language]["expand_alert_title"]
+    if role:
+        msg_body = alert_notification_templates[language]["expand_alert_to_role_text"].format(
+                date=date_str,
+                hour=hour_str,
+                radius=radius,
+                role=role,
+                users_num=users_num
+            )
+    else:
+        msg_body = alert_notification_templates[language]["expand_alert_to_all_text"].format(
+                date=date_str,
+                hour=hour_str,
+                radius=radius,
+                users_num=users_num
+            )
+    msg_data = {
+        "origin": "expand_alert",
+        "action": "view_alert",
+        "action_label": action_label,
+        "alert_id": str(alert.id),
+        "radius": radius,
+        "role": str(role),
+        "users_num": str(users_num)
+    }
+    return notify_single_client(
+        caller_id, caller_fcm_token, 
+        msg_title, msg_body, msg_data, 
+        request_info, db_session)
+
+def notify_sender_about_expansion(
+        sender_id, sender_fcm_token, 
+        language: str, alert: Alert, 
+        request_info, db_session):
+    date_str = alert.created_at.strftime("%Y-%m-%d")
+    hour_str = alert.created_at.strftime("%H:%M")
+    action_label = alert_notification_templates[language]["expand_alert_action_label"]
+    msg_title = alert_notification_templates[language]["expand_alert_title"]
+    msg_body = alert_notification_templates[language]["expand_alert_text"].format(date=date_str, hour=hour_str)
+    msg_data = {
+        "origin": "expand_alert",
+        "action": "view_alert",
+        "action_label": action_label,
+        "alert_id": str(alert.id)
+    }
+    return notify_single_client(
+        sender_id, sender_fcm_token, 
+        msg_title, msg_body, msg_data, 
+        request_info, db_session)
+
+def notify_nearby_users_about_expansion(
+        user_ids, fcm_tokens,
+        language: str, alert: Alert, 
+        request_info, db_session):        
+    date_str = alert.created_at.strftime("%Y-%m-%d")
+    hour_str = alert.created_at.strftime("%H:%M")
+    action_label = alert_notification_templates[language]["expand_alert_action_label"]
+    msg_title = alert_notification_templates[language]["expand_alert_title"]
+    msg_body = alert_notification_templates[language]["expand_alert_text"].format(date=date_str, hour=hour_str)
+    msg_data = {
+        "origin": "expand_alert",
+        "action": "view_alert",
+        "action_label": action_label,
+        "alert_id": str(alert.id)
+    }
+    success_count = notify_many_clients(
+        user_ids, fcm_tokens, 
+        msg_title, msg_body, msg_data, 
+        request_info, db_session)
+    return success_count

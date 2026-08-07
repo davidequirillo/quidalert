@@ -20,7 +20,7 @@ def test_get_user_fcm_token_is_none(db_session, test_baseuser):
     db_session.refresh(refresh_token)
     assert refresh_token.fcm_token is None
     # We check that the function returns None if the user has no FCM token in the database (fcm token null)
-    user_fcm_token = get_user_fcm_token(user, db_session)
+    user_fcm_token = get_user_fcm_token(user.id, db_session)
     assert user_fcm_token is None
 
 def test_get_user_fcm_token_success(db_session, test_baseuser):
@@ -37,5 +37,5 @@ def test_get_user_fcm_token_success(db_session, test_baseuser):
     db_session.add(refresh_token)
     db_session.commit()
     # We check that the function returns the FCM token we set in the database
-    user_fcm_token = get_user_fcm_token(user, db_session)
+    user_fcm_token = get_user_fcm_token(user.id, db_session)
     assert user_fcm_token == refresh_token.fcm_token
