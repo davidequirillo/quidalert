@@ -73,6 +73,16 @@ def send_login_code_mail(email: str, code: str, lang: str):
     msg.set_content(localize_login_code_mail(code, lang))     
     send_mail_message(msg)
 
+def get_user_fcm_token(user, db_session):
+    fcm_token = None
+    statement = select(RefreshToken).where(
+        RefreshToken.user_id == user.id).where(
+            RefreshToken.fcm_token != None)
+    rtoken = db_session.exec(statement).first()
+    if rtoken:
+        fcm_token = rtoken.fcm_token
+    return fcm_token
+
 def notify_single_client(
         user_id, fcm_token, 
         msg_title: str, msg_body: str, msg_data: dict, 

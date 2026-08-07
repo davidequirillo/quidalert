@@ -2,14 +2,10 @@
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-import sys
 import argparse
 from models.general import (
     User,
     RefreshToken
-)
-from services.security import (
-    now_tz_naive
 )
 from sqlmodel import Session, select, delete
 from core.dbmgr import get_engine

@@ -13,12 +13,6 @@ def log_alert_search_closest_chiefs_done(alert_id: str, request_info: dict, deta
         f"alert_search_closest_chiefs_done, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
-    
-def log_alert_search_nearby_users_done(alert_id: str, request_info: dict, detail: str = ""):
-    logger.info(
-        f"alert_search_nearby_users_done, alert_id={alert_id}, detail={detail}",
-        extra=request_info
-    )
 
 def log_alert_error_searching_closest_chiefs(alert_id: str, request_info: dict, detail: str):
     logger.error(
@@ -59,6 +53,12 @@ def log_alert_error_notifying_closest_chief(alert_id: str, request_info: dict, d
 def log_alert_notify_closest_chief(alert_id: str, request_info: dict, detail: str = ""):
     logger.info(
         f"alert_notify_closest_chief, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_search_nearby_users_done(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_search_nearby_users_done, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
 
@@ -141,5 +141,23 @@ def log_alert_error_notifying_about_closure(alert_id: str, request_info: dict, d
 def log_alert_error_finalizing_expansion(alert_id: str, request_info: dict, detail: str = ""):
     logger.error(
         f"alert_error_finalizing_expansion, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_notifying_caller(alert_id: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"alert_error_notifying_caller, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_search_zone_specialists_done(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_search_zone_specialists_done, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+    
+def log_alert_error_searching_zone_specialists(alert_id: str, request_info: dict, detail: str):
+    logger.error(
+        f"alert_error_searching_nearby_users, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )

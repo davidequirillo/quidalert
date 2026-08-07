@@ -12,12 +12,12 @@ from models.general import (
     RefreshToken, User, 
     Alert, AlertType, AlertedUser)
 from services.network import (
+    get_user_fcm_token,
     notify_single_client,
     notify_many_clients
 )
 from core.btask_events import (
     log_alert_search_closest_chiefs_done,
-    log_alert_search_nearby_users_done,
     log_alert_error_searching_closest_chiefs,
     log_alert_error_checking_closest_chiefs,
     log_alert_orphan_ids_found_in_checking_closest_chiefs,
@@ -25,6 +25,7 @@ from core.btask_events import (
     log_alert_no_closest_chief_to_notify,
     log_alert_error_notifying_closest_chief,
     log_alert_notify_closest_chief,
+    log_alert_search_nearby_users_done,
     log_alert_error_searching_nearby_users,
     log_alert_error_checking_nearby_users,
     log_alert_orphan_ids_found_in_checking_nearby_users,
@@ -37,14 +38,18 @@ from core.btask_events import (
     log_alert_notify_sender,
     log_alert_notify_about_closure,
     log_alert_error_notifying_about_closure,
-    log_alert_error_finalizing_expansion
+    log_alert_error_finalizing_expansion,
+    log_alert_error_notifying_caller,
+    log_alert_search_zone_specialists_done,
+    log_alert_error_searching_zone_specialists,
 )
 from core.settings import settings
-
 from core.dbmgr import (
     cluster, redis, RedisHandleTypeError,
     get_all_redis_chief_locations_keys,
-    get_all_redis_user_locations_keys)
+    get_all_redis_user_locations_keys,
+    get_all_redis_spec_locations_keys_for_a_role
+    )
 
 alert_notification_templates = {
     "en": {
@@ -237,7 +242,7 @@ async def get_closest_chiefs_and_nearby_users(alert, request_info, redis_handle)
     else:
         raise RedisHandleTypeError(redis_handle)
         
-async def get_closest_chiefs(alert, request_info, redis_client):
+async def get_closest_chiefs(alert, request_info, redis_client): # Redis client can be a redis handle (in cluster mode) or a redis session from pool (in single mode)
     closest_chiefs = []
     if (alert.type != AlertType.local.value):
         # For non-local alerts, we don't need to search for chiefs, because only chiefs can create non-local alerts
@@ -291,7 +296,7 @@ async def get_closest_chiefs(alert, request_info, redis_client):
         log_alert_error_searching_closest_chiefs(str(alert.id), request_info, detail=str(e))
         return []
         
-async def get_nearby_users(alert, request_info, redis_client):
+async def get_nearby_users(alert, request_info, redis_client): # Redis client can be a redis handle (in cluster mode) or a redis session from pool (in single mode)
     """
     Searches for users near a specific alert across all shards in parallel.
     This is the core of the universal scaling architecture.
@@ -474,17 +479,12 @@ def save_nearby_users_in_db(alert, users, request_info, db_session):
     return users_to_tokens
 
 def get_sender_fcm_token(alert, sender, request_info, db_session):
-    fcm_token = None
-    statement = select(RefreshToken).where(
-        RefreshToken.user_id == sender.id).where(
-            RefreshToken.fcm_token != None)
     try:
-        rtoken = db_session.exec(statement).first()
-        if rtoken:
-            fcm_token = rtoken.fcm_token
+        fcm_token = get_user_fcm_token(sender, db_session)
+        return fcm_token
     except Exception as e:
         log_alert_error_notifying_sender(str(alert.id), request_info, detail=str(e))
-    return fcm_token
+        return None
     
 def notify_nearby_users(
         user_ids, fcm_tokens,
@@ -608,30 +608,129 @@ def notify_about_closure(user_ids, fcm_tokens,
 
 ## EXPAND ALERT BTASK: This is the main function that will be executed as a background task when an alert is expanded.
 async def task_alert_process_expansion(
-        alert, current_user, alerted_manager,
-        radius, role,
+        alert, current_user, radius, role,
         request_info, db_engine, redis_handle):
     if (alert.id is None) or (alert.is_closed):
         return
+    users_can_be_notified = False
+    # The caller is the chief manager who is expanding the alert (the "current_user"), 
+    # the one who called the API endpoint to expand the alert
+    caller_can_be_notified = False
+    # Get users (or specialists, if role is specified) who reside in the expansion area 
+    # (not in the alert radius, but in the new radius)
+    zone_users = await get_zone_users(alert, radius, role, request_info, redis_handle)
     with Session(db_engine) as db_session:
-        users_to_fcm_tokens = {}
-        users_num = len(users_to_fcm_tokens)
+        caller_fcm_token = await run_in_threadpool(
+                get_caller_fcm_token, 
+                alert, current_user, request_info, db_session)
+        zone_users_to_fcm_tokens = {}
+        zone_users_added_num = len(zone_users_to_fcm_tokens)
         await run_in_threadpool(
-                finalize_alert_expansion, 
-                alert.id, radius, users_num, request_info, db_session)
+                finalize_alert_expansion,  
+                alert.id, zone_users_added_num, request_info, db_session)
 
-def finalize_alert_expansion(alert_id, new_radius, new_users_num, request_info, db_session):
+def get_caller_fcm_token(alert, caller, request_info, db_session):
+    try:
+        fcm_token = get_user_fcm_token(caller, db_session)
+        return fcm_token
+    except Exception as e:
+        log_alert_error_notifying_caller(str(alert.id), request_info, detail=str(e))
+        return None
+
+def finalize_alert_expansion(alert_id, users_num, request_info, db_session):
     try:
         statement = select(Alert).where(Alert.id == alert_id) 
         alert = db_session.exec(statement).first()
         if alert:
             alert.is_pending = False
-            if new_radius > alert.radius:
-                alert.radius = new_radius
-            if new_users_num > 0:
+            if users_num > 0:
                 alert.spread_count += 1
             db_session.add(alert)
             db_session.commit()
     except Exception as e:
         db_session.rollback()
-        log_alert_error_finalizing_expansion(str(alert.id), request_info, detail=str(e))
+        log_alert_error_finalizing_expansion(str(alert_id), request_info, detail=str(e))
+
+async def get_zone_users(alert, radius, role, request_info, redis_handle):
+    # We search for users (or specialists) who are within a certain radius from the alert location, 
+    # based on the role specified.
+    # If no role is specified, we search for all nearby users (reusing the same function as for the initial alert creation).
+    # In this case, we pass only the alert object (not the role or the new radius),
+    # but the alert object in this case contains the new radius (alert.radius) updated by the API "expand_alert".
+    # See API endpoint "expand_alert" in routers/alerts.py, where the alert object is updated with the new radius if no role is specified.
+    zone_users = []
+    if isinstance(redis_handle, cluster.RedisCluster):
+        if not alert.role:
+            zone_users = await get_nearby_users(alert, request_info, redis_handle)
+        else:
+            zone_users = await get_zone_specialists(alert, radius, role, request_info, redis_handle)
+        return zone_users
+    elif isinstance(redis_handle, redis.ConnectionPool):
+        async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
+            if not alert.role:
+                zone_users = await get_nearby_users(alert, request_info, redis_session)
+            else:
+                zone_users = await get_zone_specialists(alert, radius, role, request_info, redis_session)
+        return zone_users
+    elif isinstance(redis_handle, FakeRedis): # for testing purposes with fakeredis
+        if not alert.role:
+            zone_users = await get_nearby_users(alert, request_info, redis_handle)
+        else:
+            zone_users = await get_zone_specialists(alert, radius, role, request_info, redis_handle)
+        return zone_users
+    else:
+        raise RedisHandleTypeError(redis_handle)
+
+async def get_zone_specialists(alert, radius, role, request_info, redis_client): # Redis client can be a redis handle (in cluster mode) or a redis session from pool (in single mode)
+    """
+    Searches for specialists (users with a specific role) who are within a certain radius.
+    We search for them across all shards in parallel.
+    This is the core of the universal scaling architecture.
+    """
+    zone_specialists = []
+    alert_sender_id: str = str(alert.user_id) # the user who created the alert (the sender) is excluded from the list of specialists to alert, to avoid duplicates or errors
+    caller_id: str = request_info["user_id"] # the user who expands the alert (the caller, current_user) is excluded from the list of specialists to alert, to avoid duplicates or errors
+    # We obtain all shards keys for user locations
+    shard_keys = get_all_redis_spec_locations_keys_for_a_role(role)
+    try:
+        # 1. Preparation: we create the tasks (one for each shard)
+        tasks = [
+            redis_client.geosearch(
+                name=key,
+                longitude=alert.longitude,
+                latitude=alert.latitude,
+                radius=radius, # not "alert.radius", but "radius" input parameter (the new radius)
+                unit="km",
+                sort="asc",
+                count=1000, 
+                withdist=True,
+                withcoord=True
+            ) for key in shard_keys
+        ] 
+        # 2. Parallel execution
+        sharded_results = await asyncio.gather(*tasks)
+        # 3. Unification of the results for each shard
+        all_matches = []
+        for results in sharded_results:
+            if results:
+                all_matches.extend(results)
+        # 4. Sorting results, based on distance (x[1] contains the distance)
+        all_matches.sort(key=lambda x: x[1])
+        # 5. Filtering: we keep only the first 1000 entries
+        if len(all_matches) > 1000:
+            all_matches = all_matches[:1000]
+        for user_id, distance, coords in all_matches:
+            if (user_id != alert_sender_id) and (user_id != caller_id):
+                zone_specialists.append({
+                    "user_id": user_id,
+                    "distance_km": round(distance, 3),
+                    "location": {
+                        "latitude": coords[1],  # Redis returns (lon, lat)
+                        "longitude": coords[0]
+                    }
+                })
+        log_alert_search_zone_specialists_done(str(alert.id), request_info, detail=f"{len(zone_specialists)} specialists in the area found and sorted successfully")
+        return zone_specialists
+    except Exception as e:
+        log_alert_error_searching_zone_specialists(str(alert.id), request_info, detail=str(e))
+        return []

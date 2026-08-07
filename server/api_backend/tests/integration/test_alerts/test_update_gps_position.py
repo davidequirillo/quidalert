@@ -16,7 +16,9 @@ from core.dbmgr import (
     get_redis_user_locations_key,
     get_redis_spec_locations_key,
     get_redis_location_last_updates_key,
-    get_redis_spec_location_last_updates_key
+    get_redis_spec_location_last_updates_key,
+    get_all_redis_spec_locations_keys,
+    get_all_redis_spec_location_last_updates_keys,
 )
 
 def test_update_gps_position_missing_token(client):
@@ -385,7 +387,7 @@ async def test_update_gps_position_promote_user_as_chief_then_demote_again(clien
     now_int_ts = int(ensure_tz_aware(now_tz_naive()).timestamp())
     assert now_int_ts - chief_demotion_int < 60, "Chief demotion timestamp should be recent (within the last minute) for a promoted and then demoted user"
 
-async def test_update_gps_position_for_a_specialist_user(client, redis_session, test_specialist_user):
+async def test_update_gps_position_called_by_specialist_user(client, redis_session, test_specialist_user):
     # Specialist users are users with a role other than "citizen", 
     # so we test that the GPS position update for a specialist user works correctly
     user = test_specialist_user['user']
@@ -433,3 +435,45 @@ async def test_update_gps_position_for_a_specialist_user(client, redis_session, 
         assert False, "Last update timestamp for the specialist location should be a valid integer"
     now_int_ts = int(ensure_tz_aware(now_tz_naive()).timestamp())
     assert now_int_ts - spec_last_update_int < 60, "Last update timestamp for the specialist location should be recent (within the last minute)"
+
+async def test_update_gps_position_called_by_a_non_specialist_user(client, test_baseuser, redis_session):
+    # Non-specialist users are users with a role of "citizen" (or None), 
+    # so we test that the GPS position update for a non-specialist user works correctly
+    user = test_baseuser['user']
+    gps_token = test_baseuser['gps_token']
+    gps_token_data = decode_token(gps_token)
+    user_role = gps_token_data["user_role"]
+    # Test_baseuser is a user with a role of None (not a specialist user)
+    assert user.role is None
+    # So, the GPS token has a user_role of "citizen" (not a specialist role)
+    assert user_role == "citizen", "The GPS token should indicate that the user has a role of 'citizen'"
+    response = client.post('/api/update-gps-position', json={
+        'latitude': 45.0,
+        'longitude': 9.0
+    }, headers={
+        'Authorization': f'Bearer {gps_token}'
+    })
+    assert response.status_code == status.HTTP_200_OK
+    # Now we check Redis cache to see if the user location was updated
+    user_Loc_key = get_redis_user_locations_key(str(user.id))
+    last_upd_key = get_redis_location_last_updates_key(str(user.id))
+    # The user should be in the user locations sorted set
+    user_location_results = await redis_session.geopos(user_Loc_key, str(user.id))
+    last_update = await redis_session.zscore(last_upd_key, str(user.id))
+    assert all(p is not None for p in user_location_results), "User location should be present in Redis"
+    assert last_update is not None, "Last update timestamp should be present in Redis"
+    try:
+        last_update_int = int(last_update)
+    except ValueError:
+        assert False, "Last update timestamp should be a valid integer"
+    now_int_ts = int(ensure_tz_aware(now_tz_naive()).timestamp())
+    assert now_int_ts - last_update_int < 60, "Last update timestamp should be recent (within the last minute)"
+    # We also check that the specialist location for the user's role is not updated in Redis, because the user has no valid role (None)
+    location_keys = get_all_redis_spec_locations_keys()
+    for location_key in location_keys:
+        spec_location_results = await redis_session.geopos(location_key, str(user.id))
+        assert all(p is None for p in spec_location_results), "Specialist location should not be present in Redis for a non-specialist user"
+    last_upd_keys = get_all_redis_spec_location_last_updates_keys()
+    for last_upd_key in last_upd_keys:
+        spec_last_update = await redis_session.zscore(last_upd_key, str(user.id))
+        assert spec_last_update is None, "Specialist last update should not be present in Redis for a non-specialist user"
