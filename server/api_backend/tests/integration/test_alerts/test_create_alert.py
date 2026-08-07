@@ -443,7 +443,7 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
             str(user.id), ANY, language=language, alert=ANY, content=message, request_info=ANY, db_session=ANY)
     # No chief is notified, because no chief is found
-    setup_fake_functions["mock_notify_chief"].assert_not_called()
+    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
     # No nearby user is notified, because no nearby user is found
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
@@ -498,8 +498,8 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # The chief is notified, because a chief is found
-    setup_fake_functions["mock_notify_chief"].assert_called_once()
-    setup_fake_functions["mock_notify_chief"].assert_called_once_with(
+    setup_fake_functions["mock_notify_chief_manager"].assert_called_once()
+    setup_fake_functions["mock_notify_chief_manager"].assert_called_once_with(
         str(alerted_users[0].user_id), ANY, language=language, alert=ANY, content=ANY, request_info=ANY, db_session=ANY)
     # No nearby user is notified, because no nearby user is found
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
@@ -563,7 +563,7 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because no chief is found
-    setup_fake_functions["mock_notify_chief"].assert_not_called()
+    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
     # Nearby users are notified, because nearby users are found
     setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
     args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
@@ -628,8 +628,8 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # Alert manager (the closest chief) is notified
-    setup_fake_functions["mock_notify_chief"].assert_called_once()
-    setup_fake_functions["mock_notify_chief"].assert_called_once_with(
+    setup_fake_functions["mock_notify_chief_manager"].assert_called_once()
+    setup_fake_functions["mock_notify_chief_manager"].assert_called_once_with(
         str(alerted_managers[0].user_id), ANY, language=language, alert=ANY, content=ANY, request_info=ANY, db_session=ANY)
     # Nearby users are notified
     setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
@@ -726,7 +726,7 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because it's a managed alert, and the sender (a chief) is the alert manager
-    setup_fake_functions["mock_notify_chief"].assert_not_called()
+    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
     # No nearby user is notified, because no nearby user is found
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
@@ -784,7 +784,7 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
     setup_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=user.language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because it's a managed alert, and the sender is the alert manager
-    setup_fake_functions["mock_notify_chief"].assert_not_called()
+    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
     # Nearby users are notified, because nearby users are found
     setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
     args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
