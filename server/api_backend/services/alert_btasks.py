@@ -1,4 +1,4 @@
-# Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Quidalert – a network alert manager: if a client sends an alert, the server propagates it to chief and nearby users.
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
@@ -737,6 +737,8 @@ def finalize_alert_expansion(alert_id, users_num, request_info, db_session):
             alert.is_pending = False
             if users_num > 0:
                 alert.spread_count += 1
+                if alert.type == AlertType.empty.value:
+                    alert.type = AlertType.managed.value
             db_session.add(alert)
             db_session.commit()
     except Exception as e:

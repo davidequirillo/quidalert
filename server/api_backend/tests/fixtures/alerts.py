@@ -1,4 +1,4 @@
-# Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Quidalert – a network alert manager: if a client sends an alert, the server propagates it to chief and nearby users.
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
@@ -144,15 +144,25 @@ def setup_fake_functions(mocker):
             language: str, alert: Alert, closing_type: str, 
             request_info, db_session):
         return len(user_ids)
+    def fake_notify_nearby_users_about_expansion(user_ids, fcm_tokens,
+            language: str, alert: Alert, 
+            request_info, db_session):
+        return len(user_ids)  
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)
     notify_chief_manager_mocked = mocker.patch("services.alert_btasks.notify_chief_manager", return_value=True)
     notify_nearby_users_mocked = mocker.patch("services.alert_btasks.notify_nearby_users", side_effect=fake_notify_nearby_users)
     notify_about_closure_mocked = mocker.patch("services.alert_btasks.notify_about_closure", side_effect=fake_notify_about_closure)
+    notify_sender_exp_mocked = mocker.patch("services.alert_btasks.notify_sender_about_expansion", return_value=True)
+    notify_chief_manager_exp_mocked = mocker.patch("services.alert_btasks.notify_chief_manager_about_expansion", return_value=True)
+    notify_nearby_users_exp_mocked = mocker.patch("services.alert_btasks.notify_nearby_users_about_expansion", side_effect=fake_notify_nearby_users_about_expansion)
     yield {
         "mock_notify_sender": notify_sender_mocked,
         "mock_notify_chief_manager": notify_chief_manager_mocked,
         "mock_notify_nearby_users": notify_nearby_users_mocked,
-        "mock_notify_about_closure": notify_about_closure_mocked
+        "mock_notify_about_closure": notify_about_closure_mocked,
+        "mock_notify_sender_about_expansion": notify_sender_exp_mocked,
+        "mock_notify_chief_manager_about_expansion": notify_chief_manager_exp_mocked,
+        "mock_notify_nearby_users_about_expansion": notify_nearby_users_exp_mocked
     }
 
 @pytest.fixture(autouse=True, name="test_alert_users_data")

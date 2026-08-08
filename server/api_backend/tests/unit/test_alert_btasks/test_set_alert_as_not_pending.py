@@ -1,4 +1,4 @@
-# Quidalert – a network alert manager: it receives alerts from users and makes decisions to help them
+# Quidalert – a network alert manager: if a client sends an alert, the server propagates it to chief and nearby users.
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
@@ -6,7 +6,6 @@ from services.alert_btasks import (
     set_alert_as_not_pending_anymore,
 )
 from tests.fixtures.alerts import (
-    setup_users_data_and_teardown, # required (fixture setup_users_data_and_teardown)
     create_test_alert, # required (fixture test_alert)
     create_test_request_info, # required (fixture test_request_info)
 )
