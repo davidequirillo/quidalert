@@ -28,7 +28,8 @@ GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
 ROLE_PROBABILITY = 0.10  # 10% of users have a role assigned (the rest have role equal to None)
 RADIUS_KM = 5  # Radius in kilometers for random location generation around the central point (CENTER_LAT, CENTER_LON) for testing purposes
 
-def print_alert_coordinates_and_nearby_users(alert, user, closest_chiefs, nearby_users):
+def print_closest_chiefs_and_nearby_users(alert, user, closest_chiefs, nearby_users):
+    # Print alert coordinates, closest chiefs and nearby users for debugging purposes
     print()
     print(f"Test alert ID: {alert.id}")
     print(f"Alert sender: ID {alert.user_id} email {user.email}")
@@ -38,7 +39,16 @@ def print_alert_coordinates_and_nearby_users(alert, user, closest_chiefs, nearby
     for nearby_user in nearby_users:
         print(f"Nearby user: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
 
-def print_alert_coordinates_and_zone_specialists(alert, user, zone_specialists):
+def print_zone_users(alert, user, nearby_users):
+    # Print alert coordinates and users in the zone (nearby users) for debugging purposes
+    print()
+    print(f"Test alert ID: {alert.id}")
+    print(f"Alert sender: ID {alert.user_id} email {user.email}")
+    print(f"Alert coordinates: ({alert.latitude}, {alert.longitude})")
+    for nearby_user in nearby_users:
+        print(f"Zone users: {nearby_user['user_id']} at distance {nearby_user['distance_km']} km")
+
+def print_zone_specialists(alert, user, zone_specialists):
     # Print alert coordinates and specialists in the zone for debugging purposes
     # Specialists are users with a role assigned (not None)
     print()
@@ -220,7 +230,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             user_id=strange_user.id,  # Use the ID of the strange user
             latitude=CENTER_LAT,
             longitude=CENTER_LON,
-            radius=1
+            radius=1, 
+            is_pending=False
         )
         db_session.add(alert)
     # Create some local alert for the base user
@@ -231,7 +242,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             user_id=user.id,
             latitude=CENTER_LAT,
             longitude=CENTER_LON,
-            radius=1
+            radius=1,
+            is_pending=False,
         )
         db_session.add(alert)
     # Create some local alert for the chief user
@@ -242,7 +254,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             user_id=chief.id,
             latitude=CENTER_LAT,
             longitude=CENTER_LON,
-            radius=1
+            radius=1,
+            is_pending=False
         )
         db_session.add(alert)
     # Now we create some general alerts
@@ -277,7 +290,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
             user_id=chief.id,
             latitude=CENTER_LAT,
             longitude=CENTER_LON,
-            radius=random.uniform(2,5)
+            radius=random.uniform(2,5),
+            is_pending=False
         )
         db_session.add(alert)
     # We keep base users as candidates to be "alerted users" (not including test_baseuser, test_chief, or test_strange_user)

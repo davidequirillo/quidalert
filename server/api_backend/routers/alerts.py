@@ -505,12 +505,9 @@ def expand_alert(alert_id: int,
     if alert.is_closed:
         raise forbidden_exception("Alert is closed, it can't be expanded")
     if alert.is_pending:
-        raise forbidden_exception("Alert is in pending state, at the moment it can't be expanded")
+        raise forbidden_exception("Alert is in pending status, at the moment it can't be expanded")
     if alert.spread_count >= ALERT_SPREAD_MAX_COUNT:
         raise forbidden_exception("Alert has reached the maximum number of expansions")
-    if expanding_schema.radius <= 0:
-        raise invalid_request_exception("Expansion radius must be greater than 0")
-    alerted_manager = None
     if alert.type == AlertType.local.value:
         # Only the chief alert manager can expand a local alert, not any other chief
         statement = (select(AlertedUser)

@@ -15,8 +15,11 @@ from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically used)
     create_test_alert, # required (fixture test_alert)
     create_test_request_info, # required (fixture test_request_info)
-    print_alert_coordinates_and_nearby_users
+    print_closest_chiefs_and_nearby_users, # required (fixture test_alert)
 )
+
+# The function "save_nearby_users_in_db" is used by the alert creation background task to save in the database (as "alerted users") all nearby users found in Redis.
+# Note: this function can be reused in alert expansion background task to add in the database (as "alerted users") additional nearby users or nearby specialists found in Redis.
 
 async def test_save_nearby_users_in_db_success(db_session, redis_session, test_alert, test_request_info):
     assert test_alert is not None
@@ -35,7 +38,7 @@ async def test_save_nearby_users_in_db_success(db_session, redis_session, test_a
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     nearby_users_num = len(nearby_users)
     fcm_tokens_map = save_nearby_users_in_db(test_alert, nearby_users, test_request_info, db_session)
     if nearby_users_num == 0:
@@ -82,7 +85,7 @@ async def test_save_nearby_users_in_db_some_having_wrong_id(db_session, redis_se
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     # We intentionally add 2 nearby users with wrong user_id (not existing in the database) to test that the function handles them correctly
     nearby_users.append({"user_id": "wrong_id_1", "distance_km": 1.0})
     nearby_users.append({"user_id": "wrong_id_2", "distance_km": 2.0})
@@ -130,7 +133,7 @@ async def test_save_nearby_users_some_orphans_with_null_fcm_tokens(db_session, r
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     nearby_users_num = len(nearby_users)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if nearby_users_num < 2:
         print("Not enough nearby users in Redis for this test. Please retry it") 
         return
@@ -186,7 +189,7 @@ async def test_save_nearby_users_some_orphans_deleted_in_db(db_session, redis_se
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     nearby_users_num = len(nearby_users)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if nearby_users_num < 3:
         print("Not enough nearby users in Redis for this test. Please retry it") 
         return

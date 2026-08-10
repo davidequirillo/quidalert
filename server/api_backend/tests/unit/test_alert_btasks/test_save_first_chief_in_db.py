@@ -15,7 +15,7 @@ from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically used)
     create_test_alert, # required (fixture test_alert)
     create_test_request_info, # required (fixture test_request_info)
-    print_alert_coordinates_and_nearby_users
+    print_closest_chiefs_and_nearby_users
 )
 
 async def test_save_first_chief_in_db_success(db_session, redis_session, test_alert, test_request_info):
@@ -35,7 +35,7 @@ async def test_save_first_chief_in_db_success(db_session, redis_session, test_al
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     closest_chiefs_num = len(closest_chiefs)
     first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
     if closest_chiefs_num > 0:
@@ -82,7 +82,7 @@ async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
        print("No closest chiefs in Redis for this test. Please retry it")
        return
@@ -134,7 +134,7 @@ async def test_save_first_chief_in_db_orphan_is_no_longer_a_chief_in_db(db_sessi
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
         print("No closest chiefs in Redis for this test. Please retry it")
         return
@@ -196,7 +196,7 @@ async def test_save_first_chief_in_db_found_orphan_with_no_fcm_token(db_session,
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
         print("No closest chiefs in Redis for this test. Please retry it")
         return
@@ -255,7 +255,7 @@ async def test_save_first_chief_in_db_3_orphan_chiefs_deleted_from_db(db_session
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if (not closest_chiefs) or (len(closest_chiefs) < 4):
         print("Not enough closest chiefs in Redis for this test. Please retry it")
         return
@@ -316,7 +316,7 @@ async def test_save_first_chief_in_db_all_orphan_chiefs_deleted_from_db(db_sessi
     redis_engine = redis_session
     # We get closest chiefs and nearby users from Redis
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
-    print_alert_coordinates_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
+    print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     if not closest_chiefs:
         print("No closest chiefs in Redis for this test. Please retry it")
         return

@@ -3,7 +3,6 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import random
-from unittest.mock import ANY
 from fastapi import status
 from sqlmodel import select, update
 from core.exceptions import (
@@ -21,14 +20,11 @@ from models.general import (
     HERO_SCORE_INC_VALUE_TO_ALERTED_USERS,
     Message
 )
-from services.alert_btasks import (
-    alert_notification_templates
-)
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
-    create_test_alert, # required fixture (manually called as argument in test functions when needed)
-    setup_fake_functions, # required (fixture automatically called)
+    create_test_alert, # required fixture (manually called as argument named "test_alert" in test functions when needed)
+    setup_fake_functions
 )
 
 def test_close_alert_not_authorized_missing_token(client, test_alert):

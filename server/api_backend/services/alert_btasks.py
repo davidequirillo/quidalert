@@ -669,6 +669,9 @@ async def task_alert_process_expansion(
                 get_sender_fcm_token, 
                 alert, alert.user_id, request_info, db_session, 
                 operation=AlertOperation.expand.value)
+        # Zone_users_to_fcm_token contains only the new users saved in database as alerted users, 
+        # not all the users found in the zone, because some of them may have been already alerted before 
+        # (during alert creation or previous alert expansions)
         zone_users_to_fcm_tokens = await run_in_threadpool(
                     save_zone_users_in_db, 
                     alert, zone_users, role, request_info, db_session)
