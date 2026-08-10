@@ -14,7 +14,7 @@ from models.general import RefreshToken, User, Alert, AlertType, AlertedUser
 from services.security import now_tz_naive
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
-    setup_fake_functions, # required (fixture automatically called)
+    setup_fake_functions,
     RADIUS_KM,
 )
 from scripts.seed_redis_data import (

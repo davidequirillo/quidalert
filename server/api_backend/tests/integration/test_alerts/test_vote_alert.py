@@ -16,7 +16,7 @@ from models.general import (
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
-    create_test_alert, # required fixture (manually called as argument in test functions when needed)
+    create_test_alert, # required fixture (manually called as argument named "test_alert" in test functions when needed)
 )
 
 def test_vote_alert_not_authorized_missing_token(client, test_alert):

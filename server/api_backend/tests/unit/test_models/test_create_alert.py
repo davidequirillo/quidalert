@@ -120,6 +120,27 @@ def test_create_alert_coordinates_not_present():
     assert alert.latitude == 0.0
     assert alert.longitude == 0.0
 
+def test_create_alert_with_valid_radius():
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
+        "radius": 5.0
+    }
+    alert = AlertIn.model_validate(data)
+    assert alert.radius == data["radius"]
+    # Another example with radius equal to 100 (maximum allowed)
+    data = {
+        "description": "This is a test alert",
+        "latitude": 45.123456,
+        "longitude": 120.17,
+        "address": "Alert Street, 85",
+        "radius": 100.0
+    }
+    alert = AlertIn.model_validate(data)
+    assert alert.radius == data["radius"]
+
 def test_create_alert_with_wrong_radius():
     data = {
         "description": "This is a test alert",
@@ -146,11 +167,11 @@ def test_create_alert_with_wrong_radius():
         "latitude": 45.123456,
         "longitude": 120.17,
         "address": "Alert Street, 85",
-        "radius": 1000.00 # it's too large
+        "radius": 101.0 # it's too large
     }
     with pytest.raises(ValueError):
         AlertIn.model_validate(data)
-
+    
 def test_create_alert_with_wrong_type():
     data = {
         "type": "Wrong type",

@@ -23,9 +23,16 @@ from tests.fixtures.alerts import (
     create_test_request_info # required (fixture test_request_info)
 )
 
+# The function "get_closest_chiefs_and_nearby_users" is used by the alert creation background task to extract the closest chiefs 
+# and all nearby users who are within a certain radius from the alert location.
+# Note: this function calls "get_closest_chiefs" and "get_nearby_users" (see services.alert_btasks module) 
+# with proper arguments to get separately the closest chiefs and nearby users in the area, in creation mode.
+# These two functions use Redis to get the locations of chiefs and users, and filter them based on the distance from the alert location.
+
 async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, test_request_info):
     # Some checks on test_alert and test_request_info
     assert test_alert.user_id is not None
+    assert test_alert.radius == 1 # 1 km radius
     assert test_request_info["request_id"] == "request_id_123"
     # We add some chief locations to Redis, near the test alert
     # We create 7 chief ids and locations around the alert (some within the alert radius, some outside), 
