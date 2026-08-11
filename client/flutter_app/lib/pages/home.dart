@@ -176,8 +176,8 @@ class _HomeBodyState extends State<HomeBody> {
           return Center(child: Text(loc.errorGeneric));
         }
         if (snapshot.hasData) {
-          final data = snapshot.data!;
-          authClient.setUserInfo(data);
+          final userData = snapshot.data!;
+          authClient.setUserInfo(userData);
           return Scrollbar(
             controller: _scrollController,
             thumbVisibility: true,
@@ -233,7 +233,7 @@ class _HomeBodyState extends State<HomeBody> {
                     label: Text("Refresh"),
                   ),
                   SizedBox(height: 35),
-                  _buildProfileCard(data),
+                  _buildProfileCard(userData),
                   ListTile(
                     leading: Icon(Icons.delete_forever),
                     title: Text(loc.labelDismissAccountConfirmation),

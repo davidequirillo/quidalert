@@ -52,6 +52,33 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
   bool showPasswordFlag = false;
 
   @override
+  void initState() {
+    super.initState();
+    final authClient = context.read<AuthClient>();
+    final userData = authClient.userInfo;
+    _firstnameController.text = userData['firstname'] ?? '';
+    _surnameController.text = userData['surname'] ?? '';
+    _streetController.text = userData['street'] ?? '';
+    _postalCodeController.text = userData['postal_code'] ?? '';
+    _cityController.text = userData['city'] ?? '';
+    _provinceController.text = userData['province'] ?? '';
+    _countryController.text = userData['country'] ?? '';
+    if (userData['birthdate'] != null && userData['birthdate'].isNotEmpty) {
+      _selectedDate = DateTime.tryParse(userData['birthdate']);
+      if (_selectedDate == null) {
+        debugPrint('Error: cannot parse birthdate ${userData['birthdate']}');
+      } else {
+        debugPrint('Birthdate parsed successfully: $_selectedDate');
+        _birthdateController.text =
+            "${_selectedDate!.day.toString().padLeft(2, '0')}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.year.toString().padLeft(4, '0')}";
+      }
+    } else {
+      _birthdateController.text = '';
+    }
+    _phoneNumberController.text = userData['phone'] ?? '';
+  }
+
+  @override
   void dispose() {
     _firstnameController.dispose();
     _surnameController.dispose();
@@ -69,7 +96,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
