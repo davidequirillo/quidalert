@@ -257,7 +257,7 @@ class NotificationProvider extends ChangeNotifier {
     AppKeys.navigatorKey.currentState?.pushNamed('/alerts/recents');
     AppKeys.navigatorKey.currentState?.pushNamed(
       '/alerts/view-alert-details',
-      arguments: alertId,
+      arguments: int.tryParse(alertId) ?? -1,
     );
   }
 }
