@@ -4,7 +4,7 @@
 
 # IMPORTANT
 # The following configurations are the default fallback values for the application. 
-# They can be overridden by environment variables (in system, in container, or in a ".env" file) 
+# They can be overridden by environment variables (defined in system, in container, or in a ".env" file) 
 
 SERVER_NAME = "myservername" # the server name (publicly accessible, for example the reverse proxy)
 SERVER_PORT = 8080 # the server port (publicly accessible) 
@@ -43,6 +43,9 @@ REDIS_LOGICAL_SHARDS_NUM = 16
 SMTP_HOST = "mailserver" # to send activation mail messages to clients
 SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
+# Fake SMTP server for testing purposes
+SMTP_HOST_TEST = "localhost"
+SMTP_PORT_TEST = 1025
 
 ## Firebase configuration (not used at the moment)
 FIREBASE_POOL_SIZE = 10 # the maximum number of concurrent connections to Firebase, default is 10

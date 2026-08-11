@@ -73,10 +73,10 @@ class _UsersSearchModuleBodyState extends State<UsersSearchModuleBody> {
       fields["role"] = selectedRole?.name;
       fields["status"] = selectedStatus?.name;
     }
-    await _prepareSearchFields(fields);
+    await _viewSearchResultsPage(fields);
   }
 
-  Future<void> _prepareSearchFields(Map<String, String?> data) async {
+  Future<void> _viewSearchResultsPage(Map<String, String?> data) async {
     Navigator.pushNamed(
       context,
       '/accounts/users/search-results',

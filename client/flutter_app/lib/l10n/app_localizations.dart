@@ -389,6 +389,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get buttonDelete;
 
+  /// No description provided for @buttonExtend.
+  ///
+  /// In en, this message translates to:
+  /// **'Extend'**
+  String get buttonExtend;
+
   /// No description provided for @buttonModify.
   ///
   /// In en, this message translates to:

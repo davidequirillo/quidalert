@@ -169,8 +169,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     return;
   }
 
-  void _viewExtendAlertPage(BuildContext context, int alertId) {
-    Navigator.pushNamed(context, '/alerts/extend', arguments: alertId);
+  void _viewExpandAlertPage(BuildContext context, int alertId) {
+    Navigator.pushNamed(context, '/alerts/expand', arguments: alertId);
     return;
   }
 
@@ -628,7 +628,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         if (alertWithInfo.userIsManager && !alertIsGeneral && !alertIsClosed)
           InkWell(
             onTap: () {
-              _viewExtendAlertPage(context, alertWithInfo.alert.id);
+              _viewExpandAlertPage(context, alertWithInfo.alert.id);
             },
             child: Text(
               loc.alertExtend,

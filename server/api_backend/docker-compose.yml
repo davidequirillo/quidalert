@@ -29,6 +29,7 @@ services:
       - redis-node-2
       - redis-node-3
       - minio
+      - mailpit
   
   # --- Relational DBMS ---
   db:
