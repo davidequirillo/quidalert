@@ -67,6 +67,7 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       _selectedDate = DateTime.tryParse(userData['birthdate']);
       if (_selectedDate == null) {
         debugPrint('Error: cannot parse birthdate ${userData['birthdate']}');
+        _birthdateController.text = '';
       } else {
         debugPrint('Birthdate parsed successfully: $_selectedDate');
         _birthdateController.text =
