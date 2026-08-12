@@ -43,17 +43,41 @@ class ExpandAlertBody extends StatefulWidget {
 class _ExpandAlertBodyState extends State<ExpandAlertBody> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
+  final _radiusController = TextEditingController();
   UserRole? selectedRole;
 
   @override
   void dispose() {
     debugPrintC("Disposing ExpandAlert widget state");
     _scrollController.dispose();
+    _radiusController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+  }
+
+  Future<void> _extendAlert() async {
+    final alertId = ModalRoute.of(context)!.settings.arguments as int;
+    final loc = AppLocalizations.of(context)!;
+    final authClient = context.read<AuthClient>();
+    final radius = double.tryParse(_radiusController.text.trim());
+    if (radius == null) {
+      return;
+    }
+    Map<String, dynamic> fields = {};
+    if ((selectedRole != null) && selectedRole!.name.isNotEmpty) {
+      fields["role"] = selectedRole!.name;
+    }
+    fields["radius"] = radius;
+    // Call the API to extend the alert
+    final response = await authClient.doProtectedApiRequest(
+      'POST',
+      '/alerts/$alertId/extend',
+      body: fields,
+    );
+    // to continue...
   }
 
   @override
@@ -87,6 +111,20 @@ class _ExpandAlertBodyState extends State<ExpandAlertBody> {
                 }).toList(),
                 onChanged: (newValue) {
                   selectedRole = newValue;
+                },
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _radiusController,
+                decoration: InputDecoration(
+                  labelText: loc.alertRadiusKm,
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.map),
+                ),
+                keyboardType: TextInputType.number,
+                maxLength: 3,
+                validator: (value) {
+                  return validateRadius(context, value);
                 },
               ),
               const SizedBox(height: 20),

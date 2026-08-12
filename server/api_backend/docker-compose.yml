@@ -2,28 +2,26 @@
 # For production, we will use a different deployment method (like Kubernetes or Docker Swarm)
 services:
   # --- FastAPI Backend ---
-  backend:
+  fastapi:
     build: .
     container_name: fastapi_backend
     restart: always
     ports:
       - "8000:8000"
     volumes:
-      - .:/app  # Only for development, not for production. We map the current directory to /app in the container, so you we can edit code locally and see changes in the container
+      - .:/app  # Only for development. Important: do not use this for production!
     env_file:
       - .env    # Load all variables from .env file
     environment:
       # Override hosts to point to Docker container names
-      DB_HOST: db
+      DB_HOST: postgres
       REDIS_URL: redis://redis:6379/0
       REDIS_CLUSTER_NODES: redis-node-1:7001,redis-node-2:7002,redis-node-3:7003
-      SMTP_HOST: mailpit
-      SMTP_FROM: no-reply@mailpit.local
       S3_ENDPOINT: http://minio:9000
     networks:
       - redis-cluster-net
     depends_on:
-      - db
+      - postgres
       - redis
       - redis-node-1
       - redis-node-2
@@ -32,9 +30,9 @@ services:
       - mailpit
   
   # --- Relational DBMS ---
-  db:
+  postgres:
     image: postgres:17-alpine
-    container_name: postgres_db
+    container_name: postgres_dbms
     restart: always
     environment:
       # If variables are not found in .env, use defaults after :-
