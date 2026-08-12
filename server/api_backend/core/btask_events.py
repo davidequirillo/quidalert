@@ -2,9 +2,71 @@
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-from core.logging import get_tasks_logger
+from core.logging import get_btasks_logger
 
-logger = get_tasks_logger()
+logger = get_btasks_logger()
+
+## USER E-MAIL MESSAGES
+
+def log_user_activation_code_mail_sent(email: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"user_activation_code_mail_sent, email={email}, detail={detail}", 
+        extra=request_info
+    )
+
+def log_user_activation_code_mail_error(email: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"user_activation_code_mail_error, email={email}, detail={detail}",
+        extra=request_info
+    )
+
+def log_user_reset_code_mail_sent(email: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"user_reset_code_mail_sent, email={email}, detail={detail}", 
+        extra=request_info
+    )
+
+def log_user_reset_code_mail_error(email: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"user_reset_code_mail_error, email={email}, detail={detail}",
+        extra=request_info
+    )
+
+def log_user_reset_successful_mail_sent(email: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"user_reset_successful_mail_sent, email={email}, detail={detail}", 
+        extra=request_info
+    )
+
+def log_user_reset_successful_mail_error(email: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"user_reset_successful_mail_error, email={email}, detail={detail}",
+        extra=request_info
+    )
+
+def log_user_login_code_mail_sent(email: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"user_login_code_mail_sent, email={email}, detail={detail}", 
+        extra=request_info
+    )
+
+def log_user_login_code_mail_error(email: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"user_login_code_mail_error, email={email}, detail={detail}",
+        extra=request_info
+    )
+
+def log_user_login_successful_mail_sent(email: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"user_login_successful_mail_sent, email={email}, detail={detail}", 
+        extra=request_info
+    )
+
+def log_user_login_successful_mail_error(email: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"user_login_successful_mail_error, email={email}, detail={detail}",
+        extra=request_info
+    )
 
 ## ALERT CREATE events logging
 

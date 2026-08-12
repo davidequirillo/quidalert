@@ -6,6 +6,8 @@ from core.logging import get_common_logger
 
 logger = get_common_logger()
 
+# Network notification events logging
+
 def log_notify_single_client_unregistered_error(request_info: dict, detail: str = ""):
     logger.error(
         f"notify_single_client_unregistered_error, detail={detail}",
