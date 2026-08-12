@@ -38,7 +38,7 @@ langmap = {
     }
 }
 
-def localize_activation_mail(activation_url: str, lang: str):
+def localize_activation_code_mail(activation_url: str, lang: str):
     if (lang == UserLanguage.it.value):
         return f"""Ciao, 
         

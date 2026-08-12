@@ -40,7 +40,7 @@ def setup_logging():
 def get_security_logger():
     return logging.getLogger("security")
 
-def get_tasks_logger():
+def get_btasks_logger():
     return logging.getLogger("btasks")
 
 def get_periodics_logger():

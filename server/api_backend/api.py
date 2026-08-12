@@ -18,7 +18,11 @@ import firebase_admin
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from core.settings import settings
-from core.logging import setup_logging, get_client_ip
+from core.logging import (
+    setup_logging, 
+    get_client_ip,
+    get_request_info
+)
 from core import api_events, security_events
 import services.localization as i18n
 from models.general import (string_as_uuid, 
@@ -41,9 +45,9 @@ from services.security import (
     TokenExpiredException, TokenNotValidException
     )
 from core import dbmgr, bucketmgr
-from services.network import (
-    send_activation_mail, send_reset_code_mail, send_reset_successful_mail,
-    send_login_successful_mail, send_login_code_mail
+from services.user_btasks import (
+    send_activation_code_mail, send_reset_code_mail, send_reset_successful_mail, 
+    send_login_code_mail, send_login_successful_mail
     )
 from services.periodics import (
     do_locations_cleanup, do_demotions_cleanup,
@@ -427,7 +431,11 @@ def login(data: LoginSchema,
             user.last_login_mail_code_at = now
             db_session.add(user)
             db_session.commit()
-            background_tasks.add_task(send_login_code_mail, user.email, code, user.language)
+            req_info = get_request_info(str(user.id))
+            background_tasks.add_task(
+                    send_login_code_mail, 
+                    user.email, code, user.language, 
+                    req_info)
         return two_factor_required_response()
     if (user.is_blocked) and (not user.is_superuser):
         raise forbidden_exception()
@@ -481,7 +489,10 @@ def login(data: LoginSchema,
         raw_random_str, issued_at=now_tz)
     security_events.log_login_successful(str(user.id))
     if can_send:
-        background_tasks.add_task(send_login_successful_mail, user.email, user.language)
+        req_info = get_request_info(str(user.id))
+        background_tasks.add_task(
+                send_login_successful_mail, 
+                user.email, user.language, req_info)
     return {"access_token": atoken, "refresh_token": rtoken, "gps_token": gps_token, "login_token": new_login_token, "token_type": "bearer"}
 
 @app.post("/api/register-device")
@@ -617,7 +628,11 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     db_session.refresh(user)
     if existing_user_deleted:
         api_events.log_deleted_user_to_renew_registration(str(user.id))
-    background_tasks.add_task(send_activation_mail, user.email, act_token, user.language)
+    req_info = get_request_info(str(user.id))
+    background_tasks.add_task(
+        send_activation_code_mail, 
+        user.email, act_token, user.language, 
+        req_info)
     return { "message": reg_message }
 
 @app.get("/api/activate", response_class=HTMLResponse)
@@ -690,8 +705,12 @@ def request_password_reset(data: PasswordResetRequest, background_tasks: Backgro
     if code:
         user.last_reset_mail_code_at = now
         db_session.add(user)
-        db_session.commit()   
-        background_tasks.add_task(send_reset_code_mail, user.email, code, user.language)
+        db_session.commit()
+        req_info = get_request_info(str(user.id))  
+        background_tasks.add_task(
+            send_reset_code_mail, 
+            user.email, code, user.language, 
+            req_info)
     return {"message": if_mail_exists_str}
 
 @app.post("/api/password-reset/confirm")
@@ -747,7 +766,10 @@ def confirm_password_reset(data: PasswordResetConfirm, background_tasks: Backgro
     db_session.commit()
     security_events.log_password_reset_successful(str(user.id))
     if can_send:
-        background_tasks.add_task(send_reset_successful_mail, user.email, user.language)
+        req_info = get_request_info(str(user.id))
+        background_tasks.add_task(
+            send_reset_successful_mail, 
+            user.email, user.language, req_info)
     return {"message": "Password reset successful"}
 
 @app.get("/api/profile", response_model=UserOut | None, status_code=http_status.HTTP_200_OK)
