@@ -60,6 +60,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertRadius => 'Raggio';
 
   @override
+  String get alertRadiusKm => 'Raggio (km)';
+
+  @override
   String get alertStatusOpen => 'Aperta';
 
   @override

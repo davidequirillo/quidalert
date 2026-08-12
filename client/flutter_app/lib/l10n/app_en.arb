@@ -17,6 +17,7 @@
   "alertNegativeVotesNum": "n. denial votes",
   "alertMessages": "Messages",
   "alertRadius": "Radius",
+  "alertRadiusKm": "Radius (km)",
   "alertStatusOpen": "Open",
   "alertStatusClosed": "Closed",
   "alertStatusPending": "Pending",

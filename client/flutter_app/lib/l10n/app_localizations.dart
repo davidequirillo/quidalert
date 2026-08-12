@@ -197,6 +197,12 @@ abstract class AppLocalizations {
   /// **'Radius'**
   String get alertRadius;
 
+  /// No description provided for @alertRadiusKm.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius (km)'**
+  String get alertRadiusKm;
+
   /// No description provided for @alertStatusOpen.
   ///
   /// In en, this message translates to:

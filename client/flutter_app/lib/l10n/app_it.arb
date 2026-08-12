@@ -17,6 +17,7 @@
   "alertNegativeVotesNum": "n. voti di smentita",
   "alertMessages": "Messaggi",
   "alertRadius": "Raggio",
+  "alertRadiusKm": "Raggio (km)",
   "alertStatusOpen": "Aperta",
   "alertStatusClosed": "Chiusa",
   "alertStatusPending": "In elaborazione",

@@ -239,3 +239,18 @@ String? validateGpsCoordinates(BuildContext context, String? value) {
   }
   return null;
 }
+
+String? validateRadius(BuildContext context, String? value) {
+  final l10n = AppLocalizations.of(context)!;
+  if (value == null || value.trim().isEmpty) {
+    return l10n.errorStringNotValid;
+  }
+  final radius = double.tryParse(value.trim());
+  if (radius == null) {
+    return l10n.errorStringNotValid;
+  }
+  if (radius <= 0 || radius > 1000) {
+    return l10n.errorStringNotValid;
+  }
+  return null;
+}
