@@ -27,7 +27,6 @@ class AlertDetailsPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.labelDetails, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: AlertDetailsBody()),
     );
   }
@@ -71,11 +70,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   }
 
   void _refreshPage(BuildContext context) {
-    final id = ModalRoute.of(context)!.settings.arguments as int;
+    final alertId = ModalRoute.of(context)!.settings.arguments as int;
     Navigator.pushReplacementNamed(
       context,
       '/alerts/view-alert-details',
-      arguments: id,
+      arguments: alertId,
     );
   }
 
@@ -289,11 +288,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       }
     }
     if (mounted) {
-      goToHomePage(context);
-      Navigator.of(context).pushNamed("/alerts/recents");
-      Navigator.of(
-        context,
-      ).pushNamed("/alerts/view-alert-details", arguments: alertId);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/alerts/view-alert-details',
+        (route) => false,
+        arguments: alertId,
+      );
     }
     return;
   }
@@ -667,6 +666,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           buildSectionTitle(loc.sectionAlertVote),
         if ((alertWithInfo.userIsAlerted) && alertIsLocal)
           Text('${loc.alertedUserMyVote}: ${myVoteStr.toLowerCase()}'),
+        if ((alertWithInfo.userIsAlerted) && alertIsLocal && alertIsExpanded)
+          Text(
+            loc.alertExtendedAndVoteTerminated,
+            style: TextStyle(fontStyle: FontStyle.italic),
+          ),
         if (alertWithInfo.userIsAlerted &&
             alertIsLocal &&
             !alertIsClosed &&

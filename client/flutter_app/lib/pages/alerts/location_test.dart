@@ -25,7 +25,6 @@ class LocationTestPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.gpsLocationTest, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: LocationTestBody()),
     );
   }

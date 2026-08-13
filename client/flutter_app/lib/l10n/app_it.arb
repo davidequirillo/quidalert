@@ -26,6 +26,7 @@
   "alertTypeEmpty": "Vuota",
   "alertTypeManaged": "Gestita",
   "alertExtend": "Estendi allerta",
+  "alertExtendedAndVoteTerminated": "L'allerta è stata estesa dal capo responsabile, quindi il voto è terminato",
   "alertSpreadingInfo": "L'allerta si sta propagando, attendere prego...",
   "alertSpreadCountInfo": "Numero di propagazioni: {count} of {max}",
   "alertNew": "Nuova allerta",

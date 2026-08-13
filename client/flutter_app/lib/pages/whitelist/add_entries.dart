@@ -27,7 +27,6 @@ class WhiteListAddPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: WhiteListAddBody()),
     );
   }
@@ -155,7 +154,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
       }
       if (newLoginRequired) {
         if (mounted) {
-          goToLoginPagePostFrameCallback(context);
+          goToLoginPage(context);
         }
       }
     }

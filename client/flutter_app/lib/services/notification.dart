@@ -214,7 +214,10 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void handleNavigation(Map<String, dynamic> messageData) {
+  void handleNavigation(
+    Map<String, dynamic> messageData, {
+    bool isFromStartup = false,
+  }) {
     if (!messageData.containsKey('origin') || messageData['origin'] == null) {
       debugPrintC(
         'Notification: message data does not contain an "origin" field. Ignoring.',
@@ -223,13 +226,13 @@ class NotificationProvider extends ChangeNotifier {
     }
     switch (messageData['origin']) {
       case 'new_alert':
-        _navigateToAlertDetails(messageData);
+        _navigateToAlertDetails(messageData, isFromStartup: isFromStartup);
         break;
       case 'expand_alert':
-        _navigateToAlertDetails(messageData);
+        _navigateToAlertDetails(messageData, isFromStartup: isFromStartup);
         break;
       case 'close_alert':
-        _navigateToAlertDetails(messageData);
+        _navigateToAlertDetails(messageData, isFromStartup: isFromStartup);
         break;
       default:
         debugPrintC(
@@ -238,7 +241,10 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void _navigateToAlertDetails(Map<String, dynamic> messageData) {
+  void _navigateToAlertDetails(
+    Map<String, dynamic> messageData, {
+    bool isFromStartup = false,
+  }) {
     if (!messageData.containsKey('alert_id') ||
         messageData['alert_id'] == null) {
       debugPrintC(
@@ -250,14 +256,18 @@ class NotificationProvider extends ChangeNotifier {
       'Notification: navigating to alert details for alert_id: ${messageData["alert_id"]}',
     );
     String alertId = messageData['alert_id'];
-    AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      '/home',
-      (route) => false,
-    );
-    AppKeys.navigatorKey.currentState?.pushNamed('/alerts/recents');
-    AppKeys.navigatorKey.currentState?.pushNamed(
-      '/alerts/view-alert-details',
-      arguments: int.tryParse(alertId) ?? -1,
-    );
+    if (!isFromStartup) {
+      AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/alerts/view-alert-details',
+        (route) => false,
+        arguments: int.tryParse(alertId) ?? -1,
+      );
+    } else {
+      AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/home',
+        (route) => false,
+        arguments: {"alert_id": int.tryParse(alertId) ?? -1},
+      );
+    }
   }
 }

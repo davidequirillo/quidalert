@@ -22,7 +22,6 @@ class UploadTermsPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.menuUploadTerms, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: UploadTermsBody()),
     ); // build
   }

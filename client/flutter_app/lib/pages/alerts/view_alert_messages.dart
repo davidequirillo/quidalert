@@ -18,7 +18,6 @@ class AlertMessagesPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.alertMessages, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: AlertMessagesBody()),
     );
   }

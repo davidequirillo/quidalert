@@ -20,7 +20,6 @@ class AdvicePage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.labelAdvice, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: AdviceBody()),
     ); // build
   }

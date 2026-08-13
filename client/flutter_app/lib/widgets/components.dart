@@ -31,12 +31,21 @@ class CAppBar extends StatelessWidget implements PreferredSizeWidget {
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         title: Text(title),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              )
+            : IconButton(
+                icon: const Icon(Icons.home),
+                onPressed: () {
+                  Navigator.of(
+                    context,
+                  ).pushNamedAndRemoveUntil('/home', (route) => false);
+                },
+              ),
       );
     } else {
       return AppBar(

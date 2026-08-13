@@ -26,6 +26,7 @@
   "alertTypeEmpty": "Empty",
   "alertTypeManaged": "Managed",
   "alertExtend": "Extend alert",
+  "alertExtendedAndVoteTerminated": "The alert has been extended by the chief manager, so vote is terminated",
   "alertSpreadingInfo": "The alert is spreading, wait please...",
   "alertSpreadCountInfo": "Spread count: {count} of {max}",
   "alertNew": "New alert",

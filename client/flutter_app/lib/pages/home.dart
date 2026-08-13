@@ -52,6 +52,7 @@ class _HomeBodyState extends State<HomeBody> {
       );
       await _syncFcmToken();
       await _startBackgroundLocationTracking();
+      await _goToAnotherRouteFromArguments();
     });
   }
 
@@ -148,6 +149,22 @@ class _HomeBodyState extends State<HomeBody> {
       await BackgroundLocationService.startTracking();
     } catch (e) {
       debugPrintC("Error initializing background location tracking: $e");
+    }
+  }
+
+  Future<void> _goToAnotherRouteFromArguments() async {
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      if (args.containsKey("alert_id")) {
+        final alertId = args["alert_id"] as int;
+        debugPrintC(
+          "HomeBody initState: received alert_id from arguments: $alertId",
+        );
+        Navigator.of(
+          context,
+        ).pushNamed('/alerts/view-alert-details', arguments: alertId);
+      }
     }
   }
 

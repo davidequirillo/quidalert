@@ -25,7 +25,6 @@ class ExpandAlertPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.alertExtend, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: ExpandAlertBody()),
     );
   }
@@ -96,11 +95,11 @@ class _ExpandAlertBodyState extends State<ExpandAlertBody> {
       }
       if (isError == false) {
         if (mounted) {
-          goToHomePage(context);
-          Navigator.of(context).pushNamed('/alerts/recents');
-          Navigator.of(
-            context,
-          ).pushNamed('/alerts/view-alert-details', arguments: alertId);
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/alerts/view-alert-details',
+            (route) => false,
+            arguments: alertId,
+          );
         }
       } else if (newLoginRequired == true) {
         if (mounted) {
