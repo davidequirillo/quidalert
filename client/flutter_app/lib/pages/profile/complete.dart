@@ -23,7 +23,6 @@ class CompleteProfilePage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.userCompleteProfile, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: CompleteProfileBody()),
     );
   }
@@ -185,11 +184,11 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       }
       if (error == false) {
         if (mounted) {
-          goToHomePagePostFrameCallback(context);
+          goToHomePage(context);
         }
       } else if (newLoginRequired == true) {
         if (mounted) {
-          goToLoginPagePostFrameCallback(context);
+          goToLoginPage(context);
         }
       }
     }

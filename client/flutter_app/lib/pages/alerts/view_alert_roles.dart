@@ -23,7 +23,6 @@ class ViewAlertRolesPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.alertAlertedSpecialists, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: ViewAlertRolesBody()),
     );
   }

@@ -24,7 +24,6 @@ class UsersSearchResultsPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: UsersSearchResultsBody()),
     );
   }

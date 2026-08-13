@@ -25,7 +25,6 @@ class AlertedUsersPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.alertAlertedUsers, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: AlertedUsersBody()),
     );
   }

@@ -23,7 +23,6 @@ class WhiteListDeletePage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: WhiteListDeleteBody()),
     );
   }
@@ -140,7 +139,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       }
       if (newLoginRequired) {
         if (mounted) {
-          goToLoginPagePostFrameCallback(context);
+          goToLoginPage(context);
         }
       }
     }
@@ -199,7 +198,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       }
       if (newLoginRequired) {
         if (mounted) {
-          goToLoginPagePostFrameCallback(context);
+          goToLoginPage(context);
         }
       }
     }

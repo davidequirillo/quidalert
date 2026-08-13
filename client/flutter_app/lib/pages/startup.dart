@@ -62,7 +62,10 @@ class StartupPageBodyState extends State<StartupPageBody> {
           debugPrint(
             "StartupPage: app opened from a notification, navigating to the correct route...",
           );
-          notifProvider.handleNavigation(notifProvider.initialMessage!.data);
+          notifProvider.handleNavigation(
+            notifProvider.initialMessage!.data,
+            isFromStartup: true,
+          );
         } else if (termsAccepted == false) {
           Navigator.pushReplacementNamed(context, '/info');
         } else if (!isLoggedIn) {

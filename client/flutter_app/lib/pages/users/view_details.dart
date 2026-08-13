@@ -24,7 +24,6 @@ class UserDetailsPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.labelDetails, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: UserDetailsBody()),
     );
   }

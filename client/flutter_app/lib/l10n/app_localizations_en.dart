@@ -87,6 +87,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertExtend => 'Extend alert';
 
   @override
+  String get alertExtendedAndVoteTerminated => 'The alert has been extended by the chief manager, so vote is terminated';
+
+  @override
   String get alertSpreadingInfo => 'The alert is spreading, wait please...';
 
   @override

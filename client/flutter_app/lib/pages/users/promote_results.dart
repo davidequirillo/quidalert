@@ -24,7 +24,6 @@ class UsersPromoteResultsPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: UsersPromoteResultsBody()),
     );
   }
@@ -117,17 +116,16 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       }
       if (error == false) {
         if (mounted) {
-          Navigator.pop(context);
-          Navigator.pop(context);
-          Navigator.pushNamed(
+          Navigator.pushNamedAndRemoveUntil(
             context,
             "/accounts/users/search-results",
+            ModalRoute.withName("/accounts/users/search-module"),
             arguments: args,
           );
         }
       } else if (newLoginRequired == true) {
         if (mounted) {
-          goToLoginPagePostFrameCallback(context);
+          goToLoginPage(context);
         }
       }
     }

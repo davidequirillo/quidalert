@@ -251,6 +251,12 @@ abstract class AppLocalizations {
   /// **'Extend alert'**
   String get alertExtend;
 
+  /// No description provided for @alertExtendedAndVoteTerminated.
+  ///
+  /// In en, this message translates to:
+  /// **'The alert has been extended by the chief manager, so vote is terminated'**
+  String get alertExtendedAndVoteTerminated;
+
   /// No description provided for @alertSpreadingInfo.
   ///
   /// In en, this message translates to:

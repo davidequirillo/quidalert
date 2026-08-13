@@ -27,7 +27,6 @@ class NewAlertPage extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: CAppBar(title: loc.alertNew, showBackButton: true),
-      drawer: const CAppDrawer(),
       body: SafeArea(top: false, child: NewAlertBody()),
     );
   }
@@ -198,8 +197,10 @@ class _NewAlertBodyState extends State<NewAlertBody> {
         retMessage = loc.successAlertCreatedGeneral;
       } else if (retMessage.contains("Similar general alert already exists")) {
         retMessage = loc.errorAlertSimilarInGeneral;
+        error = true;
       } else if (retMessage.contains("Similar alert already exists")) {
         retMessage = loc.errorAlertSimilarInZone;
+        error = true;
       } else {
         retMessage = loc.successAlertCreated;
       }
