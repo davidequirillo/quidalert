@@ -203,7 +203,6 @@ class NotificationProvider extends ChangeNotifier {
       // We could use FirebaseCrashlytics to report this error
     }
     if (_initialMessage != null) {
-      await Future.delayed(Duration(milliseconds: 1000));
       debugPrintC(
         'Notification: app opened from terminated state by tapping on a notification: ${_initialMessage!.messageId}',
       );
