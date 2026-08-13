@@ -87,7 +87,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertExtend => 'Extend alert';
 
   @override
-  String get alertIsExtendedInfo => 'This alert has been enlarged';
+  String get alertSpreadingInfo => 'The alert is spreading, wait please...';
+
+  @override
+  String alertSpreadCountInfo(Object count, Object max) {
+    return 'Spread count: $count of $max';
+  }
 
   @override
   String get alertNew => 'New alert';
@@ -667,6 +672,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successAlertClosed => 'Alert closed successfully';
+
+  @override
+  String get successAlertExtended => 'Alert extension request received. The alert is spreading';
 
   @override
   String get successDeviceRegisteredForPushNotifications => 'Device registered for push notification';

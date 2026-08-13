@@ -251,11 +251,17 @@ abstract class AppLocalizations {
   /// **'Extend alert'**
   String get alertExtend;
 
-  /// No description provided for @alertIsExtendedInfo.
+  /// No description provided for @alertSpreadingInfo.
   ///
   /// In en, this message translates to:
-  /// **'This alert has been enlarged'**
-  String get alertIsExtendedInfo;
+  /// **'The alert is spreading, wait please...'**
+  String get alertSpreadingInfo;
+
+  /// No description provided for @alertSpreadCountInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Spread count: {count} of {max}'**
+  String alertSpreadCountInfo(Object count, Object max);
 
   /// No description provided for @alertNew.
   ///
@@ -1414,6 +1420,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Alert closed successfully'**
   String get successAlertClosed;
+
+  /// No description provided for @successAlertExtended.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert extension request received. The alert is spreading'**
+  String get successAlertExtended;
 
   /// No description provided for @successDeviceRegisteredForPushNotifications.
   ///
