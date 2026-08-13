@@ -6,13 +6,11 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
-import 'package:quidalert_flutter/services/location.dart';
 import 'package:quidalert_flutter/models/general.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
@@ -56,9 +54,14 @@ class _ExpandAlertBodyState extends State<ExpandAlertBody> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    await _extendAlert();
   }
 
   Future<void> _extendAlert() async {
+    String retTitle = "";
+    String retMessage = "";
+    bool newLoginRequired = false;
+    bool isError = true;
     final alertId = ModalRoute.of(context)!.settings.arguments as int;
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
@@ -71,13 +74,40 @@ class _ExpandAlertBodyState extends State<ExpandAlertBody> {
       fields["role"] = selectedRole!.name;
     }
     fields["radius"] = radius;
-    // Call the API to extend the alert
-    final response = await authClient.doProtectedApiRequest(
-      'POST',
-      '/alerts/$alertId/extend',
-      body: fields,
-    );
-    // to continue...
+    try {
+      await authClient.doProtectedApiRequest(
+        'POST',
+        '/alerts/$alertId/expand',
+        body: fields,
+      );
+      retTitle = loc.successGeneric;
+      retMessage = loc.successAlertExtended;
+      isError = false;
+    } catch (e) {
+      final exceptionName = e.runtimeType.toString();
+      if (exceptionName == "GenericNotAuthorizedException") {
+        newLoginRequired = true;
+      }
+      retTitle = loc.errorError;
+      retMessage = loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
+    } finally {
+      if (mounted) {
+        await showSimpleAlertDialog(context, retTitle, retMessage);
+      }
+      if (isError == false) {
+        if (mounted) {
+          goToHomePage(context);
+          Navigator.of(context).pushNamed('/alerts/recents');
+          Navigator.of(
+            context,
+          ).pushNamed('/alerts/view-alert-details', arguments: alertId);
+        }
+      } else if (newLoginRequired == true) {
+        if (mounted) {
+          goToLoginPagePostFrameCallback(context);
+        }
+      }
+    }
   }
 
   @override

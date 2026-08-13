@@ -341,11 +341,13 @@ class User {
 }
 
 class Alert {
+  static const maxSpreadCount = 4;
   final int id;
   final String type;
   final String description;
   final String status;
   final bool isExpanded;
+  final int spreadCount;
   final double latitude;
   final double longitude;
   final double accuracy;
@@ -359,6 +361,7 @@ class Alert {
     required this.description,
     required this.status,
     required this.isExpanded,
+    required this.spreadCount,
     required this.latitude,
     required this.longitude,
     required this.accuracy,
@@ -372,6 +375,7 @@ class Alert {
     final bool isClosed = json['is_closed'] ?? false;
     final bool isPending = json['is_pending'] ?? true;
     final bool isExpanded = json['is_expanded'] ?? false;
+    final int spreadCount = json['spread_count'] ?? 0;
     String status;
     if (isClosed) {
       status = AlertStatus.closed.name;
@@ -409,6 +413,7 @@ class Alert {
       radius: radius,
       status: status,
       isExpanded: isExpanded,
+      spreadCount: spreadCount,
       createdAt: createdAt,
     );
   }

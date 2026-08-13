@@ -417,6 +417,8 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     final String alertStatusStr = loc.getAlertStatusString(
       alertWithInfo.alert.status,
     );
+    final int alertSpreadCount = alertWithInfo.alert.spreadCount;
+    final int alertMaxSpreadCount = Alert.maxSpreadCount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,18 +427,30 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         Text('${loc.labelType}: ${alertTypeStr.toLowerCase()}'),
         Text('${loc.labelStatus}: ${alertStatusStr.toLowerCase()}'),
         if (alertWithInfo.alert.status == AlertStatus.pending.name)
-          InkWell(
-            onTap: () {
-              _refreshPage(context);
-            },
-            child: Text(
-              loc.labelReloadPage,
-              style: TextStyle(
-                decoration: TextDecoration.underline,
-                color: Colors.blue,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 10),
+              Text(
+                loc.alertSpreadingInfo,
+                style: TextStyle(fontStyle: FontStyle.italic),
               ),
-            ),
+              InkWell(
+                onTap: () {
+                  _refreshPage(context);
+                },
+                child: Text(
+                  loc.labelReloadPage,
+                  style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    color: Colors.blue,
+                  ),
+                ),
+              ),
+            ],
           ),
+        if (!alertIsGeneral)
+          Text(loc.alertSpreadCountInfo(alertSpreadCount, alertMaxSpreadCount)),
         if (!alertIsGeneral)
           Row(
             children: [
@@ -623,9 +637,12 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
           ],
         ),
-        SizedBox(height: 20),
+        SizedBox(height: 10),
         // Only the chief alert manager can extend an alert
-        if (alertWithInfo.userIsManager && !alertIsGeneral && !alertIsClosed)
+        if (alertWithInfo.userIsManager &&
+            !alertIsGeneral &&
+            !alertIsClosed &&
+            (alertSpreadCount < alertMaxSpreadCount))
           InkWell(
             onTap: () {
               _viewExpandAlertPage(context, alertWithInfo.alert.id);
@@ -638,7 +655,6 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
             ),
           ),
-        if (alertIsExpanded) Text('Info: ${loc.alertIsExtendedInfo}'),
         // If the alert is closed, show the chief closing vote
         if (alertIsLocal && alertIsClosed)
           Text(
