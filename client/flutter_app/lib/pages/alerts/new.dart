@@ -271,30 +271,26 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                   segments: [
                     ButtonSegment(
                       value: AlertType.local.name,
-                      label: Text(
-                        loc.getAlertTypeString(AlertType.local.name)!,
-                      ),
+                      label: Text(loc.getAlertTypeString(AlertType.local.name)),
                       icon: Icon(Icons.place),
                     ),
                     ButtonSegment(
                       value: AlertType.managed.name,
                       label: Text(
-                        loc.getAlertTypeString(AlertType.managed.name)!,
+                        loc.getAlertTypeString(AlertType.managed.name),
                       ),
                       icon: Icon(Icons.manage_accounts),
                     ),
                     ButtonSegment(
                       value: AlertType.general.name,
                       label: Text(
-                        loc.getAlertTypeString(AlertType.general.name)!,
+                        loc.getAlertTypeString(AlertType.general.name),
                       ),
                       icon: Icon(Icons.public),
                     ),
                     ButtonSegment(
                       value: AlertType.empty.name,
-                      label: Text(
-                        loc.getAlertTypeString(AlertType.empty.name)!,
-                      ),
+                      label: Text(loc.getAlertTypeString(AlertType.empty.name)),
                       icon: Icon(Icons.block),
                     ),
                   ],
