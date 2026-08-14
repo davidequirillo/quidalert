@@ -4,7 +4,7 @@
 
 from datetime import timedelta
 from fastapi import status
-from sqlmodel import select
+from sqlmodel import select, delete
 from core.exceptions import (
     token_expired_exception, 
     token_not_valid_exception,
@@ -76,6 +76,43 @@ def test_register_device_user_not_found(client, test_baseuser):
     response = client.post("/api/register-device", json=payload, headers=headers)
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
+
+def test_register_device_refresh_token_not_found(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    assert refresh_token is not None
+    assert user.id is not None
+    access_token = test_baseuser['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # Delete the refresh token from the database to simulate it not being found
+    delete_stmt = delete(RefreshToken).where(RefreshToken.user_id == user.id) # type: ignore
+    db_session.exec(delete_stmt)
+    db_session.commit()
+    # Now attempt to register the device with the not-existent refresh token in db
+    payload = {"fcm_token": "test_fcm_token"}
+    response = client.post("/api/register-device", json=payload, headers=headers)
+    assert response.status_code == token_not_valid_exception().status_code
+    assert "No refresh token found" in response.json()["detail"]
+
+def test_register_device_refresh_token_revoked(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    refresh_token = test_baseuser['refresh_token']
+    assert refresh_token is not None
+    assert user.id is not None
+    access_token = test_baseuser['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # Revoke the refresh token from the database to simulate it being revoked
+    select_stmt = select(RefreshToken).where(RefreshToken.user_id == user.id) # type: ignore
+    rtoken_from_db = db_session.exec(select_stmt).first()
+    assert rtoken_from_db is not None
+    rtoken_from_db.is_revoked = True
+    db_session.add(rtoken_from_db)
+    db_session.commit()
+    # Now attempt to register the device with the revoked refresh token
+    payload = {"fcm_token": "test_fcm_token"}
+    response = client.post("/api/register-device", json=payload, headers=headers)
+    assert response.status_code == token_not_valid_exception().status_code
+    assert "The refresh token is revoked" in response.json()["detail"]
 
 def test_register_device_success(client, db_session, test_baseuser):
     user: User = test_baseuser['user']

@@ -55,6 +55,12 @@ class StartupPageBodyState extends State<StartupPageBody> {
     }
   }
 
+  Future<void> _doExtraInit() async {
+    final authClient = context.read<AuthClient>();
+    await startBackgroundLocationTracking(authClient);
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     debugPrintC('Startup page building...');
@@ -73,7 +79,6 @@ class StartupPageBodyState extends State<StartupPageBody> {
       debugPrintC("Providers not initialized yet...");
       return const Center(child: CircularProgressIndicator());
     } else {
-      startBackgroundLocationTracking(authClient);
       debugPrintC("Adding post frame callback...");
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (notifProvider.initialMessage != null) {
@@ -90,7 +95,17 @@ class StartupPageBodyState extends State<StartupPageBody> {
         }
       });
       debugPrintC("Returning empty scaffold...");
-      return const SizedBox.shrink(); // empty page at start, for a little time interval
+      return FutureBuilder(
+        future: _doExtraInit(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done) {
+            debugPrintC("Extra initialization done, returning empty page...");
+            return const SizedBox.shrink(); // empty page after init
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      );
     }
   }
 }

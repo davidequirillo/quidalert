@@ -99,8 +99,11 @@ class CAppDrawer extends StatelessWidget {
               onTap: () async {
                 try {
                   await BackgroundLocationService.stopTracking();
+                } catch (e) {
+                  debugPrint("Error stopping background location service: $e");
+                }
+                try {
                   await authClient.logout();
-                  debugPrint("Logout successful");
                 } catch (e) {
                   debugPrint("Error during logout: $e");
                 }
