@@ -57,8 +57,11 @@ class LocationClientTimeoutException implements Exception {
   String toString() => 'LocationClientTimeoutException: $message';
 }
 
-// Main class for fetching location and translating it to an address
-// Used for foreground location tracking (e.g., when user is filling an alert form)
+// Main class for fetching location and translating it to an address.
+// Used only for foreground location tracking (e.g., when user is filling an alert form, or user is doing a test in the app).
+// It uses the background_location plugin to fetch the current gps position,
+// but it calls the fetchLocation() method only when the user does a foreground request,
+// so it is not used for background location tracking.
 class LocationClient extends ChangeNotifier {
   bg.Location? _currentPosition;
   String? _currentAddress;

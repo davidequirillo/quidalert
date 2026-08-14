@@ -154,7 +154,7 @@ class _WhiteListAddBodyState extends State<WhiteListAddBody> {
       }
       if (newLoginRequired) {
         if (mounted) {
-          goToLoginPage(context);
+          goToLoginPagePostFrameCallback(context);
         }
       }
     }

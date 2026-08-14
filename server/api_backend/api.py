@@ -509,10 +509,11 @@ def register_device_for_push_notifications(
     if not results:
         raise token_not_valid_exception()
     rtoken = results[0] # at the moment we keep only one active refresh token per user (one device)
-    rtoken.fcm_token = fcm_token
-    rtoken.fcm_token_updated_at = now_tz_naive()
-    db_session.add(rtoken)
-    db_session.commit()
+    if (fcm_token != rtoken.fcm_token):
+        rtoken.fcm_token = fcm_token
+        rtoken.fcm_token_updated_at = now_tz_naive()
+        db_session.add(rtoken)
+        db_session.commit()
     return {"message": "Device registered for push notifications"}
 
 # USER REGISTRATION ENDPOINTS (registration, activation, password change, get profile).

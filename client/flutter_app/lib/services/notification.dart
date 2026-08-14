@@ -77,12 +77,28 @@ class NotificationProvider extends ChangeNotifier {
         settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional;
     if (isAllowed) {
+      debugPrintC('Push notifications are allowed. Getting FCM token...');
       await getFcmToken();
       try {
+        debugPrintC('Setting up Firebase listeners for push notifications...');
         _setupFirebaseTokenListener(); // Listen for fcm token refresh events
         _setupFirebaseMessageForegroundListener(); // Listend for messages when the app is in foreground
         _setupFirebaseMessageBackgroundListener(); // Listend for essages when the app is in background, but not closed
         await _setupFirebaseMessageTerminatedListener(); // Listen for messages when the app is terminated
+        debugPrintC(
+          'Firebase listeners for push notifications set up successfully',
+        );
+        debugPrintC('FCM token at startup: $fcmToken');
+        if (fcmToken != null && fcmToken!.isNotEmpty) {
+          debugPrintC('Syncing FCM token with backend...');
+          if ((_authClient != null) && _authClient!.isLoggedIn()) {
+            await _authClient!.syncFcmTokenWithBackendinBackground(fcmToken!);
+          } else {
+            debugPrintC(
+              'AuthClient is null or user is not logged in. Skipping FCM token sync with backend.',
+            );
+          }
+        }
       } catch (e) {
         debugPrintC('Error setting up Firebase listeners: $e');
         _tokenStream?.cancel();
@@ -108,7 +124,7 @@ class NotificationProvider extends ChangeNotifier {
       String? newToken = await _messaging!.getToken();
       if (newToken != null) {
         fcmToken = newToken;
-        debugPrintC('FCM token obtained: $newToken');
+        debugPrintC('FCM token obtained : $newToken');
       } else {
         debugPrintC('Failed to get FCM token');
       }
@@ -122,10 +138,15 @@ class NotificationProvider extends ChangeNotifier {
     _tokenStream?.cancel();
     _tokenStream = _messaging!.onTokenRefresh.listen(
       (newToken) async {
-        debugPrintC('FCM token obtained: $newToken');
+        debugPrintC('FCM token refreshed locally: $newToken');
+        debugPrintC('Syncing refreshed FCM token with backend...');
         fcmToken = newToken;
-        if (_authClient != null) {
+        if ((_authClient != null) && _authClient!.isLoggedIn()) {
           await _authClient!.syncFcmTokenWithBackendinBackground(newToken);
+        } else {
+          debugPrintC(
+            'AuthClient is null or user is not logged in. Skipping FCM token sync with backend.',
+          );
         }
       },
       onError: (error) {
@@ -213,10 +234,7 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void handleNavigation(
-    Map<String, dynamic> messageData, {
-    bool isFromStartup = false,
-  }) {
+  void handleNavigation(Map<String, dynamic> messageData) {
     if (!messageData.containsKey('origin') || messageData['origin'] == null) {
       debugPrintC(
         'Notification: message data does not contain an "origin" field. Ignoring.',
@@ -225,13 +243,13 @@ class NotificationProvider extends ChangeNotifier {
     }
     switch (messageData['origin']) {
       case 'new_alert':
-        _navigateToAlertDetails(messageData, isFromStartup: isFromStartup);
+        _navigateToAlertDetails(messageData);
         break;
       case 'expand_alert':
-        _navigateToAlertDetails(messageData, isFromStartup: isFromStartup);
+        _navigateToAlertDetails(messageData);
         break;
       case 'close_alert':
-        _navigateToAlertDetails(messageData, isFromStartup: isFromStartup);
+        _navigateToAlertDetails(messageData);
         break;
       default:
         debugPrintC(
@@ -240,10 +258,7 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
-  void _navigateToAlertDetails(
-    Map<String, dynamic> messageData, {
-    bool isFromStartup = false,
-  }) {
+  void _navigateToAlertDetails(Map<String, dynamic> messageData) {
     if (!messageData.containsKey('alert_id') ||
         messageData['alert_id'] == null) {
       debugPrintC(
@@ -254,19 +269,11 @@ class NotificationProvider extends ChangeNotifier {
     debugPrintC(
       'Notification: navigating to alert details for alert_id: ${messageData["alert_id"]}',
     );
-    String alertId = messageData['alert_id'];
-    if (!isFromStartup) {
-      AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/alerts/view-alert-details',
-        (route) => false,
-        arguments: int.tryParse(alertId) ?? -1,
-      );
-    } else {
-      AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        '/home',
-        (route) => false,
-        arguments: {"alert_id": int.tryParse(alertId) ?? -1},
-      );
-    }
+    String alertIdStr = messageData['alert_id'];
+    AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/alerts/view-alert-details',
+      (route) => false,
+      arguments: int.tryParse(alertIdStr) ?? -1,
+    );
   }
 }

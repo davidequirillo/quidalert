@@ -8,10 +8,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/notification.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 
 class StartupPage extends StatelessWidget {
   const StartupPage({super.key});
@@ -39,33 +41,46 @@ class StartupPageBodyState extends State<StartupPageBody> {
     super.initState();
   }
 
+  Future<void> startBackgroundLocationTracking(AuthClient ac) async {
+    if (!ac.isLoggedIn()) {
+      debugPrintC(
+        "User is not logged in, skipping background location tracking.",
+      );
+    } else {
+      try {
+        await BackgroundLocationService.startTracking();
+      } catch (e) {
+        debugPrintC("Error initializing background location service: $e");
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    debugPrint('Startup page building...');
-    debugPrint('Requesting SharedVars provider...');
+    debugPrintC('Startup page building...');
+    debugPrintC('Requesting SharedVars provider...');
     SharedVars shared = context.watch<SharedVars>();
-    debugPrint('Requesting AuthClient provider...');
+    debugPrintC('Requesting AuthClient provider...');
     AuthClient authClient = context.watch<AuthClient>();
-    debugPrint('Requesting NotificationProvider provider...');
-    NotificationProvider notifProvider = context.watch<NotificationProvider>();
     bool termsAccepted = shared.termsAccepted;
     bool isLoggedIn = authClient.isLoggedIn();
+    debugPrintC('Requesting NotificationProvider provider...');
+    NotificationProvider notifProvider = context.watch<NotificationProvider>();
+    notifProvider.setAuthClient(authClient);
     if ((!shared.initDone) ||
         (!authClient.initDone) ||
         (!notifProvider.initDone)) {
-      debugPrint("Returning loading circular progress indicator...");
+      debugPrintC("Providers not initialized yet...");
       return const Center(child: CircularProgressIndicator());
     } else {
-      debugPrint("Adding post frame callback...");
+      startBackgroundLocationTracking(authClient);
+      debugPrintC("Adding post frame callback...");
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (notifProvider.initialMessage != null) {
-          debugPrint(
+          debugPrintC(
             "StartupPage: app opened from a notification, navigating to the correct route...",
           );
-          notifProvider.handleNavigation(
-            notifProvider.initialMessage!.data,
-            isFromStartup: true,
-          );
+          notifProvider.handleNavigation(notifProvider.initialMessage!.data);
         } else if (termsAccepted == false) {
           Navigator.pushReplacementNamed(context, '/info');
         } else if (!isLoggedIn) {
@@ -74,7 +89,7 @@ class StartupPageBodyState extends State<StartupPageBody> {
           Navigator.pushReplacementNamed(context, '/home');
         }
       });
-      debugPrint("Returning empty scaffold...");
+      debugPrintC("Returning empty scaffold...");
       return const SizedBox.shrink(); // empty page at start, for a little time interval
     }
   }
