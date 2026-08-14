@@ -16,6 +16,9 @@ import 'dart:convert';
 import 'package:quidalert_flutter/config.dart' as config;
 import 'package:quidalert_flutter/utils/strings.dart';
 
+// The following class is used for background location tracking.
+// It's a wrapper around the flutter_background_geolocation plugin,
+// which starts in the main.dart file and runs in the background even when the app is closed.
 class BackgroundLocationService {
   static bg.Location? _lastSentLocation;
   static DateTime? _lastSentTime;

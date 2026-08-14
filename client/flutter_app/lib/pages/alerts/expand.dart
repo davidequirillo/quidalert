@@ -103,7 +103,7 @@ class _ExpandAlertBodyState extends State<ExpandAlertBody> {
         }
       } else if (newLoginRequired == true) {
         if (mounted) {
-          goToLoginPagePostFrameCallback(context);
+          goToLoginPage(context);
         }
       }
     }

@@ -52,7 +52,6 @@ class _HomeBodyState extends State<HomeBody> {
       );
       await _syncFcmToken();
       await _startBackgroundLocationTracking();
-      await _goToAnotherRouteFromArguments();
     });
   }
 
@@ -123,15 +122,21 @@ class _HomeBodyState extends State<HomeBody> {
   Future<void> _syncFcmToken() async {
     final notifProvider = context.read<NotificationProvider>();
     final authClient = context.read<AuthClient>();
-    notifProvider.setAuthClient(authClient);
-    await notifProvider.getFcmToken();
     if (notifProvider.fcmToken == null || notifProvider.fcmToken!.isEmpty) {
       debugPrintC(
         "FCM token is null or empty, skipping registration for push notifications.",
       );
       return;
     }
-    if (mounted) {
+    if (!authClient.isLoggedIn()) {
+      debugPrintC(
+        "User is not logged in, skipping registration for push notifications.",
+      );
+      return;
+    }
+    // If the app is opened from a notification (initialMessage != null),
+    // we don't show a dialog, but we still sync the FCM token in background.
+    if (mounted && notifProvider.initialMessage == null) {
       await authClient.syncFcmTokenWithBackendinForeground(
         notifProvider.fcmToken!,
         context: context,
@@ -149,22 +154,6 @@ class _HomeBodyState extends State<HomeBody> {
       await BackgroundLocationService.startTracking();
     } catch (e) {
       debugPrintC("Error initializing background location tracking: $e");
-    }
-  }
-
-  Future<void> _goToAnotherRouteFromArguments() async {
-    final args =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-    if (args != null) {
-      if (args.containsKey("alert_id")) {
-        final alertId = args["alert_id"] as int;
-        debugPrintC(
-          "HomeBody initState: received alert_id from arguments: $alertId",
-        );
-        Navigator.of(
-          context,
-        ).pushNamed('/alerts/view-alert-details', arguments: alertId);
-      }
     }
   }
 

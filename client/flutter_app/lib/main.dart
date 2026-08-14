@@ -53,11 +53,13 @@ import 'package:quidalert_flutter/pages/profile/complete.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrintC("Registering headless task for background location...");
+  debugPrintC("Registering headless task for background geolocation...");
   await bg.BackgroundGeolocation.registerHeadlessTask(
     backgroundLocationHeadlessTask,
   );
+  debugPrintC("Initializing background location service...");
   await BackgroundLocationService.init();
+  debugPrintC("Initializing Firebase plugin...");
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -90,6 +92,7 @@ class QuidalertWidget extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<SharedVars>(create: (context) => SharedVars()),
         ChangeNotifierProvider<AuthClient>(create: (context) => AuthClient()),
+        // Note: "LocationClient" provider is used only for foreground location tracking, not for background tracking.
         ChangeNotifierProvider<LocationClient>(
           create: (context) => LocationClient(),
         ),

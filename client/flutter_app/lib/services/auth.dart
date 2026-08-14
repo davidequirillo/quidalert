@@ -83,7 +83,7 @@ class AuthClient extends ChangeNotifier {
   String? gpsToken;
   bool initDone = false;
   Map<String, dynamic> userInfo = {};
-  String? lastFcmToken;
+  String? lastFcmTokenSent;
 
   AuthClient({FlutterSecureStorage? storage})
     : _secureStorage = storage ?? FlutterSecureStorage(),
@@ -92,7 +92,7 @@ class AuthClient extends ChangeNotifier {
     accessToken = null;
     loginToken = null;
     gpsToken = null;
-    lastFcmToken = null;
+    lastFcmTokenSent = null;
     _init();
   }
 
@@ -318,7 +318,7 @@ class AuthClient extends ChangeNotifier {
     String? atoken = data['access_token'];
     String? gtoken = data['gps_token'];
     String? ltoken = data['login_token'];
-    lastFcmToken = null;
+    lastFcmTokenSent = null;
     debugPrintC('Login successful');
     await setAuthTokens(rtoken, atoken, gtoken);
     if ((ltoken != null) && (ltoken != "")) {
@@ -344,7 +344,7 @@ class AuthClient extends ChangeNotifier {
       return resp;
     }
     await setAuthTokens(null, null, null);
-    lastFcmToken = null;
+    lastFcmTokenSent = null;
     setUserInfo({});
     return resp;
   }
@@ -592,7 +592,7 @@ class AuthClient extends ChangeNotifier {
       'Registering device for push notifications with token: $fcmToken',
     );
     try {
-      if (lastFcmToken != null && lastFcmToken == fcmToken) {
+      if ((lastFcmTokenSent != null) && (lastFcmTokenSent == fcmToken)) {
         debugPrintC('FCM token was registered recently, skipping registration');
         alreadyRegistered = true;
         return;
@@ -602,7 +602,7 @@ class AuthClient extends ChangeNotifier {
         '/register-device',
         body: {'fcm_token': fcmToken},
       );
-      lastFcmToken = fcmToken;
+      lastFcmTokenSent = fcmToken;
       debugPrintC('Ok, device registered for push notifications');
     } on GenericNotAuthorizedException catch (_) {
       debugPrintC('Not authorized');
@@ -638,21 +638,34 @@ class AuthClient extends ChangeNotifier {
     }
   }
 
-  // This method is automatically called by NotificationProvider listener, when FCM token is refreshed,
-  // to keep our backend updated with the latest fcm token.
-  // so it can send push notifications to the client device
+  // This method is called at startup (in NotificationProvider init function),
+  // and also when the FCM token is refreshed locally (in NotificationProvider listener),
+  // to keep our backend updated with the latest local fcm token,
+  // so it can send push notifications to the client device.
   Future<void> syncFcmTokenWithBackendinBackground(String fcmToken) async {
     try {
+      if ((lastFcmTokenSent != null) && (lastFcmTokenSent == fcmToken)) {
+        debugPrintC('FCM token was registered recently, skipping registration');
+        return;
+      }
       await doProtectedApiRequest(
         "post",
         '/register-device',
         body: {'fcm_token': fcmToken},
       );
-      lastFcmToken = fcmToken;
+      lastFcmTokenSent = fcmToken;
       debugPrintC('FCM token synced with backend successfully');
       return;
     } on ServerException catch (_) {
       debugPrintC('Server error');
+    } on BadRequestException catch (_) {
+      debugPrintC('Bad request');
+    } on ForbiddenRequestException catch (_) {
+      debugPrintC('Forbidden request');
+    } on GenericNotAuthorizedException catch (_) {
+      debugPrintC('Not authorized');
+    } on NotFoundException catch (_) {
+      debugPrintC('Not found');
     } catch (e) {
       debugPrintC('Unexpected error: $e');
     }

@@ -244,6 +244,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   Future<void> _closeAlert(int alertId, String closingType) async {
     String retMessage = "";
     String retTitle = "";
+    bool isError = false;
     bool newLoginRequired = false;
     final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
@@ -271,6 +272,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
       retTitle = loc.successGeneric;
       retMessage = loc.successAlertClosed;
     } catch (e) {
+      isError = true;
       final exceptionName = e.runtimeType.toString();
       if (exceptionName == "GenericNotAuthorizedException") {
         newLoginRequired = true;
@@ -287,7 +289,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         }
       }
     }
-    if (mounted) {
+    if ((mounted) && (isError == false)) {
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/alerts/view-alert-details',
         (route) => false,

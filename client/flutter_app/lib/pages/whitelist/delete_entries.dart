@@ -139,7 +139,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       }
       if (newLoginRequired) {
         if (mounted) {
-          goToLoginPage(context);
+          goToLoginPagePostFrameCallback(context);
         }
       }
     }
@@ -198,7 +198,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       }
       if (newLoginRequired) {
         if (mounted) {
-          goToLoginPage(context);
+          goToLoginPagePostFrameCallback(context);
         }
       }
     }
