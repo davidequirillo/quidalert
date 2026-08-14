@@ -69,13 +69,23 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     return alertWithInfo;
   }
 
-  void _refreshPage(BuildContext context) {
+  void _refreshPage() {
+    final loc = AppLocalizations.of(context)!;
     final alertId = ModalRoute.of(context)!.settings.arguments as int;
-    Navigator.pushReplacementNamed(
-      context,
-      '/alerts/view-alert-details',
-      arguments: alertId,
-    );
+    showLoadingDialog(context, loc.labelWaitPlease);
+    Future.delayed(Duration(milliseconds: 4000), () {
+      if (mounted) {
+        debugPrintC(
+          "Waited 4 seconds, now popping the loading dialog, and refreshing the page",
+        );
+        Navigator.pop(context);
+        Navigator.pushReplacementNamed(
+          context,
+          '/alerts/view-alert-details',
+          arguments: alertId,
+        );
+      }
+    });
   }
 
   Future<void> _showAddress(BuildContext context, Alert alert) async {
@@ -438,7 +448,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
               ),
               InkWell(
                 onTap: () {
-                  _refreshPage(context);
+                  _refreshPage();
                 },
                 child: Text(
                   loc.labelReloadPage,

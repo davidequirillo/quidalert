@@ -26,3 +26,15 @@ def log_promote_users_error(user_id: str, detail: str):
         f"promote_users_error, detail={detail}",
         extra=get_request_info(user_id)
     )
+
+def log_fcm_token_registration_error(user_id: str, detail: str):
+    logger.warning(
+        f"fcm_token_registration_error, detail={detail}",
+        extra=get_request_info(user_id)
+    )
+
+def log_fcm_token_registration_success(user_id: str):
+    logger.info(
+        "fcm_token_registration_success",
+        extra=get_request_info(user_id)
+    )

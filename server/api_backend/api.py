@@ -29,7 +29,7 @@ from models.general import (string_as_uuid,
     UserIn, User, UserOut, UserLanguage, UserInCompleteProfile,
     USER_RELIABILITY_SCORE_INC_VALUE,
     USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS, 
-    UserType, UserRole,
+    UserType,
     PasswordResetRequest, PasswordResetConfirm, 
     RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
     WhiteListEntry
@@ -57,7 +57,8 @@ from core.exceptions import (
     token_expired_exception, token_not_valid_exception,
     credentials_exception, two_factor_locked_exception,
     two_factor_not_valid_exception,
-    forbidden_exception, invalid_request_exception
+    forbidden_exception, invalid_request_exception,
+    server_error_exception
     )
 from core.responses import two_factor_required_response
 from dependencies import get_db_session, get_current_user
@@ -503,17 +504,26 @@ def register_device_for_push_notifications(
 ):
     fcm_token = data.fcm_token
     if not fcm_token:
+        api_events.log_fcm_token_registration_error(str(current_user.id), detail="missing_fcm_token")
         raise invalid_request_exception("FCM token is required")
     q = select(RefreshToken).where(RefreshToken.user_id == current_user.id)
     results = db_session.exec(q).all()
     if not results:
-        raise token_not_valid_exception()
+        api_events.log_fcm_token_registration_error(str(current_user.id), detail="no_active_refresh_token")
+        raise token_not_valid_exception("No refresh token found for the user. Please login again.")
     rtoken = results[0] # at the moment we keep only one active refresh token per user (one device)
+    if rtoken.is_revoked:
+        api_events.log_fcm_token_registration_error(str(current_user.id), detail="revoked_refresh_token")
+        raise token_not_valid_exception("The refresh token is revoked. Please login again.")
     if (fcm_token != rtoken.fcm_token):
-        rtoken.fcm_token = fcm_token
-        rtoken.fcm_token_updated_at = now_tz_naive()
-        db_session.add(rtoken)
-        db_session.commit()
+        try:
+            rtoken.fcm_token = fcm_token
+            rtoken.fcm_token_updated_at = now_tz_naive()
+            db_session.add(rtoken)
+            db_session.commit()
+        except Exception as e:
+            api_events.log_fcm_token_registration_error(str(current_user.id), detail=str(e))
+            raise server_error_exception("Failed to register fcm token for push notifications")
     return {"message": "Device registered for push notifications"}
 
 # USER REGISTRATION ENDPOINTS (registration, activation, password change, get profile).

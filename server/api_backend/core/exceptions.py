@@ -4,16 +4,16 @@
 
 from fastapi import HTTPException, status
 
-def token_not_valid_exception():
+def token_not_valid_exception(detail: str = "Token not valid"):
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token not valid",
+        detail=detail,
         headers={"WWW-Authenticate": "Bearer"})
 
-def token_expired_exception():
+def token_expired_exception(detail: str = "Token expired"):
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token expired",
+        detail=detail,
         headers={"WWW-Authenticate": "Bearer"})
 
 def credentials_exception():
@@ -64,5 +64,11 @@ def invalid_request_exception(detail: str = "Invalid request"):
 def not_found_exception(detail: str = "Resource not found"):
     return HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
+        detail=detail
+    )
+
+def server_error_exception(detail: str = "Internal server error"):
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=detail
     )

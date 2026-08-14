@@ -346,6 +346,7 @@ class AuthClient extends ChangeNotifier {
     await setAuthTokens(null, null, null);
     lastFcmTokenSent = null;
     setUserInfo({});
+    debugPrintC('Logout successful');
     return resp;
   }
 
