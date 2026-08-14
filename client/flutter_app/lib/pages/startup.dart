@@ -41,8 +41,9 @@ class StartupPageBodyState extends State<StartupPageBody> {
     super.initState();
   }
 
-  Future<void> startBackgroundLocationTracking(AuthClient ac) async {
-    if (!ac.isLoggedIn()) {
+  Future<void> startBackgroundLocationService() async {
+    final authClient = context.read<AuthClient>();
+    if (!authClient.isLoggedIn()) {
       debugPrintC(
         "User is not logged in, skipping background location tracking.",
       );
@@ -55,9 +56,30 @@ class StartupPageBodyState extends State<StartupPageBody> {
     }
   }
 
-  Future<void> _doExtraInit() async {
+  void goToNextPagePostFrameCallback() {
     final authClient = context.read<AuthClient>();
-    await startBackgroundLocationTracking(authClient);
+    final notifProvider = context.read<NotificationProvider>();
+    final sharedProvider = context.read<SharedVars>();
+    debugPrintC("Adding post frame callback...");
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (notifProvider.initialMessage != null) {
+        debugPrintC(
+          "StartupPage: app opened from a notification, navigating to the correct route...",
+        );
+        notifProvider.handleNavigation(notifProvider.initialMessage!.data);
+      } else if (sharedProvider.termsAccepted == false) {
+        Navigator.pushReplacementNamed(context, '/info');
+      } else if (!authClient.isLoggedIn()) {
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    });
+  }
+
+  Future<void> _doExtraInit() async {
+    await startBackgroundLocationService();
+    goToNextPagePostFrameCallback();
     return;
   }
 
@@ -68,8 +90,6 @@ class StartupPageBodyState extends State<StartupPageBody> {
     SharedVars shared = context.watch<SharedVars>();
     debugPrintC('Requesting AuthClient provider...');
     AuthClient authClient = context.watch<AuthClient>();
-    bool termsAccepted = shared.termsAccepted;
-    bool isLoggedIn = authClient.isLoggedIn();
     debugPrintC('Requesting NotificationProvider provider...');
     NotificationProvider notifProvider = context.watch<NotificationProvider>();
     notifProvider.setAuthClient(authClient);
@@ -79,22 +99,9 @@ class StartupPageBodyState extends State<StartupPageBody> {
       debugPrintC("Providers not initialized yet...");
       return const Center(child: CircularProgressIndicator());
     } else {
-      debugPrintC("Adding post frame callback...");
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (notifProvider.initialMessage != null) {
-          debugPrintC(
-            "StartupPage: app opened from a notification, navigating to the correct route...",
-          );
-          notifProvider.handleNavigation(notifProvider.initialMessage!.data);
-        } else if (termsAccepted == false) {
-          Navigator.pushReplacementNamed(context, '/info');
-        } else if (!isLoggedIn) {
-          Navigator.pushReplacementNamed(context, '/login');
-        } else {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      });
-      debugPrintC("Returning empty scaffold...");
+      debugPrintC(
+        "Calling _doExtraInit and returning future empty scaffold...",
+      );
       return FutureBuilder(
         future: _doExtraInit(),
         builder: (context, snapshot) {
@@ -102,6 +109,9 @@ class StartupPageBodyState extends State<StartupPageBody> {
             debugPrintC("Extra initialization done, returning empty page...");
             return const SizedBox.shrink(); // empty page after init
           } else {
+            debugPrintC(
+              "Extra initialization in progress, showing loading indicator...",
+            );
             return const Center(child: CircularProgressIndicator());
           }
         },
