@@ -11,7 +11,8 @@ from fakeredis.aioredis import FakeRedis
 from models.general import (
     string_as_uuid,
     RefreshToken, User, 
-    Alert, AlertType, AlertedUser)
+    Alert, AlertType, AlertedUser,
+    Message)
 from services.network import (
     get_user_fcm_token,
     notify_single_client,
@@ -39,7 +40,9 @@ from core.btask_events import (
     log_alert_notify_sender,
     log_alert_notify_about_closure,
     log_alert_error_notifying_about_closure,
-    log_alert_error_finalizing_expansion
+    log_alert_error_finalizing_expansion,
+    log_alert_notify_on_new_message,
+    log_alert_error_notifying_on_new_message
 )
 from core.settings import settings
 from core.dbmgr import (
@@ -76,7 +79,10 @@ alert_notification_templates = {
         "expand_alert_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager)",
         "expand_alert_to_role_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to role: {role}, with radius: {radius}. Found {users_num} specialists in the area",
         "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}. Found {users_num} users in the area",
-        "expand_alert_action_label": "View"
+        "expand_alert_action_label": "View",
+        "new_message_title": "New message",
+        "new_message_text": "There is a new message regarding the alert created on date {date}, hour {hour}: {text}",
+        "new_message_action_label": "View"
     },
     "it": {
         "new_alert_title": "Nuova allerta",
@@ -99,7 +105,10 @@ alert_notification_templates = {
         "expand_alert_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile).",
         "expand_alert_to_role_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) al ruolo {role}, con raggio: {radius}. Trovati {users_num} specialisti nell'area",
         "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}. Trovati {users_num} utenti nell'area",
-        "expand_alert_action_label": "Vedi"
+        "expand_alert_action_label": "Vedi",
+        "new_message_title": "Nuovo messaggio",
+        "new_message_text": "C'è un nuovo messaggio riguardo all'allerta creata in data {date}, ora {hour}: {text}",
+        "new_message_action_label": "Vedi"
     }
 }
 
@@ -107,7 +116,7 @@ alert_notification_templates = {
 # to be sure to find at least one closest chief (because a chief must be alerted, even if he is outside the alert radius)
 GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 10000
 
-## CREATE ALERT BTASK: This is the main function that will be executed as a background task when a new alert is created.
+## CREATE ALERT BTASK: this is the main function that will be executed as a background task when a new alert is created.
 async def task_alert_search_and_notify(
             alert: Alert, current_user: User, request_info: dict,
             db_engine, redis_handle):    
@@ -576,7 +585,7 @@ def notify_sender(user_id, fcm_token,
         msg_title, msg_body, msg_data, 
         request_info, db_session)
 
-## CLOSE ALERT BTASK: This is the main function that will be executed as a background task when an alert is closed.
+## CLOSE ALERT BTASK: this is the main function that will be executed as a background task when an alert is closed.
 def task_alert_notify_about_closure(
             alert: Alert, closing_type: str, current_user: User, request_info: dict, db_engine):
     if (alert.id is None) or (not alert.is_closed):
@@ -842,6 +851,73 @@ def notify_nearby_users_about_expansion(
     msg_body = alert_notification_templates[language]["expand_alert_text"].format(date=date_str, hour=hour_str)
     msg_data = {
         "origin": "expand_alert",
+        "action": "view_alert",
+        "action_label": action_label,
+        "alert_id": str(alert.id)
+    }
+    success_count = notify_many_clients(
+        user_ids, fcm_tokens, 
+        msg_title, msg_body, msg_data, 
+        request_info, db_session)
+    return success_count
+
+## ALERT MESSAGES BTASK: this is the main function that will be executed as a background task when a new alert message is sent.
+def task_alert_notify_on_new_message(
+        alert: Alert, message: Message, current_user: User, 
+        request_info: dict, db_engine):
+    if (alert.id is None) or (alert.is_closed):
+        return
+    users_to_notify_ids = []
+    users_to_notify_fcm_tokens = []
+    with Session(db_engine) as db_session:
+        # The alert sender (alert creator) must be notified,
+        # if he is not the one who sent the message (if he is not the current_user)
+        if alert.user_id != current_user.id:
+            statement = (select(RefreshToken)
+                .where(RefreshToken.user_id == alert.user_id)
+                .where(RefreshToken.fcm_token != None))
+            sender_rtoken = db_session.exec(statement).first()
+            if sender_rtoken:
+                users_to_notify_ids.append(str(sender_rtoken.user_id))
+                users_to_notify_fcm_tokens.append(sender_rtoken.fcm_token)
+        # We notify all alerted users, except the current_user (the one who sent the message).
+        statement = (select(AlertedUser.user_id, RefreshToken.fcm_token)
+                .join(RefreshToken, RefreshToken.user_id == AlertedUser.user_id) # type: ignore
+                .where(AlertedUser.alert_id == alert.id)
+                .where(RefreshToken.fcm_token != None))
+        db_results = db_session.exec(statement).all()
+        for row in db_results:
+            user_id, fcm_token = row
+            if user_id != current_user.id:
+                users_to_notify_ids.append(str(user_id))
+                users_to_notify_fcm_tokens.append(fcm_token)
+        if settings.app_mode == "development":
+            time.sleep(10) # line executed only in development-mode, to simulate a long processing time, for manual testing purposes
+        # We send notifications, using a multicast notification function. 
+        # Note: as language we use the caller's (current_user) language for simplicity, not the language of each client receiving the notification.
+        if users_to_notify_ids and users_to_notify_fcm_tokens:
+            try:
+                msg_content = message.content[:50] if len(message.content) > 50 else message.content
+                notification_count = notify_on_new_message(
+                        users_to_notify_ids, users_to_notify_fcm_tokens, 
+                        current_user.language, alert, msg_content,
+                        request_info, db_session)
+                log_alert_notify_on_new_message(str(alert.id), request_info, detail=f"Alert message successfully sent to {notification_count} out of {len(users_to_notify_ids)} users")
+            except Exception as e:
+                log_alert_error_notifying_on_new_message(str(alert.id), request_info, detail=str(e))
+
+def notify_on_new_message(user_ids, fcm_tokens, 
+        language, alert, content: str,
+        request_info, db_session):
+    action_label = alert_notification_templates[language]["new_message_action_label"]
+    msg_title = alert_notification_templates[language]["new_message_title"]
+    msg_body = alert_notification_templates[language]["new_message_text"].format(
+                date=alert.created_at.strftime("%Y-%m-%d"),
+                hour=alert.created_at.strftime("%H:%M"),
+                text=content
+            )
+    msg_data = {
+        "origin": "new_message",
         "action": "view_alert",
         "action_label": action_label,
         "alert_id": str(alert.id)

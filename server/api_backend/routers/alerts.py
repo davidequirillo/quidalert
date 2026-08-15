@@ -33,13 +33,14 @@ from models.general import (
     User, UserRole, Alert, AlertOut, 
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
-    Message, GpsCoordinatesSchema, GpsTokenData,
+    GpsCoordinatesSchema, GpsTokenData,
     VotingSchema, ClosingSchema, ClosingType,
     CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
     CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,  
     HERO_SCORE_INC_VALUE_TO_ALERT_SENDER,
     HERO_SCORE_INC_VALUE_TO_ALERTED_USERS,
-    ExpandingSchema, ALERT_SPREAD_MAX_COUNT
+    ExpandingSchema, ALERT_SPREAD_MAX_COUNT,
+    MessageIn, MessageOut,Message, ALERT_MAX_MESSAGES_NUM
 )
 from services.security import (
     now_tz_naive, now_tz_aware
@@ -47,12 +48,15 @@ from services.security import (
 from services.alert_btasks import (
     task_alert_search_and_notify,
     task_alert_notify_about_closure,
-    task_alert_process_expansion
+    task_alert_process_expansion,
+    task_alert_notify_on_new_message
 )
 
 router = APIRouter(
     tags=["Alerts"]
 )
+
+## Alert management endpoints (create, view, vote, close, expand)
     
 @router.post("/api/alerts")
 def create_alert(alert_in: AlertIn,
@@ -230,9 +234,7 @@ def get_alert(alert_id: int,
             else:
                 if (not current_user_is_alerted):
                     raise forbidden_exception()
-    statement = select(Message.id).where(Message.alert_id == alert.id)
-    message_ids = db_session.exec(statement).all()
-    messages_num = len(message_ids)
+    messages_num = alert.messages_num # for details about database denormalization, see the "messages_num" field in the Alert model
     if alert.type != AlertType.local.value:
         chief = sender
         if current_user_is_the_sender:
@@ -370,9 +372,9 @@ def vote_alert(alert_id: int,
 
 @router.post("/api/alerts/{alert_id}/close")
 def close_alert(alert_id: int,
+            closing_schema: ClosingSchema,
             request: Request,
             background_tasks: BackgroundTasks,
-            closing_schema: ClosingSchema,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     if (not current_user.is_chief):
@@ -547,6 +549,8 @@ def expand_alert(alert_id: int,
         redis_handle=request.app.state.redis_handle)
     return {"message": "Alert expanded successfully"}
 
+## GPS position update endpoint
+
 @router.post("/api/update-gps-position")
 async def update_gps_position(
     gps_data: GpsCoordinatesSchema,
@@ -585,3 +589,65 @@ async def update_gps_position(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
     return {"status": "success", "message": "GPS position updated"}
+
+## Alert messages endpoints (create, list)
+
+@router.post("/api/alerts/{alert_id}/messages", response_model=MessageOut)
+def create_alert_message(alert_id: int,
+            message: MessageIn,
+            request: Request,
+            background_tasks: BackgroundTasks,
+            current_user: User = Depends(get_current_user),
+            db_session: Session = Depends(get_db_session)):
+    # Only the alert sender (creator) or the chief alert manager can create messages for an alert
+    # The messages will be visible to all alerted users, but only the sender and the chief manager can create messages
+    alert = db_session.exec(select(Alert).where(Alert.id == alert_id)).first()
+    if (not alert) or (not alert.id):
+        raise not_found_exception("Alert not found")
+    if alert.is_closed:
+        raise forbidden_exception("Alert is closed, you can't create messages for it")
+    if (current_user.id != alert.user_id):
+        # If the current user is not the alert sender, we check if he is the chief alert manager
+        statement = (select(AlertedUser)
+            .where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)
+            .where(AlertedUser.is_manager == True))
+        alerted_manager = db_session.exec(statement).first()
+        if not alerted_manager:
+            raise forbidden_exception("Only the alert sender or the chief alert manager can create messages for this alert")
+    # If the sender of a local alert is not reliable or the alert is bannned,
+    # the sender cannot write any messages.
+    if (alert.type == AlertType.local.value) and (current_user.id == alert.user_id):
+        if (not current_user.is_reliable or current_user.reliability_score <= 0):
+            raise forbidden_exception("You are not a reliable user, you can't create messages for this alert")
+        if alert.is_banned:
+            raise forbidden_exception("This alert has been banned, you can't create messages for it")
+    if alert.messages_num >= ALERT_MAX_MESSAGES_NUM:
+        raise forbidden_exception(f"This alert has reached the maximum number of messages ({ALERT_MAX_MESSAGES_NUM}), you can't create more messages for it")
+    # We create the message and increment the messages_num field in the alert 
+    # (see details about denormalization in the Alert model, at "messages_num" field).
+    new_message = Message(
+        alert_id=alert.id,
+        user_id=current_user.id,
+        content=message.content
+    )
+    db_session.add(new_message)
+    alert.messages_num += 1
+    db_session.add(alert)
+    db_session.commit()
+    db_session.refresh(new_message)
+    # For local and managed alerts, we call the background task 
+    # to notify all users involved in the alert (except current_user)
+    if (alert.type == AlertType.local.value) or (alert.type == AlertType.managed.value):
+        alert_copy = Alert.model_validate(alert)
+        curr_user_copy = User.model_validate(current_user)
+        message_copy = Message.model_validate(new_message)
+        req_info = get_request_info(str(current_user.id))
+        background_tasks.add_task(
+            task_alert_notify_on_new_message,
+            alert_copy,
+            message_copy,
+            curr_user_copy, 
+            request_info=req_info,
+            db_engine=request.app.state.db_engine)
+    # We return the new message (MessageOut model) to the client
+    return new_message

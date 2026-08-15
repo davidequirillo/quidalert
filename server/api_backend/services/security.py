@@ -110,7 +110,10 @@ ACCESS_TOKEN_TTL_MINUTES = 60 # 60 minutes
 GEOPOSITION_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
 REFRESH_TOKEN_TTL_MINUTES = 60 * 24 * 180 # 180 days
 LOGIN_TOKEN_TTL_MINUTES = 60 * 24 * 240  # 240 days
-MAX_ACTIVE_REFRESH_TOKENS = 1 # IMPORTANT: at the moment we allow only one active refresh token per user (one device)
+# IMPORTANT: at the moment we allow only one 
+# active refresh token per user (one device per user).
+# Do not change this value unless you implement a proper refresh token management system
+MAX_ACTIVE_REFRESH_TOKENS = 1
 JWT_ALGORITHM = "HS256"
 
 def create_access_token(subject: str, expires_delta: Optional[timedelta] = None, issued_at: Optional[datetime] = None):

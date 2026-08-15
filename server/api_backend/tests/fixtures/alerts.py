@@ -353,6 +353,8 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
                     content=f"Test message {j} by user {message_sender_id} for alert {alert.id}"
                 )
                 db_session.add(message)
+                alert.messages_num += 1 # see "messages_num" field in the Alert model for details about database denormalization.
+                db_session.add(alert)
     db_session.commit()
     yield {"alerts_created": True}
     db_session.exec(delete(Message))
