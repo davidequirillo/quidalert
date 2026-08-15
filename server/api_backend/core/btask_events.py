@@ -205,3 +205,17 @@ def log_alert_error_finalizing_expansion(alert_id: str, request_info: dict, deta
         f"alert_error_finalizing_expansion, alert_id={alert_id}, detail={detail}",
         extra=request_info
     )
+
+### ALERT MESSAGE events logging
+
+def log_alert_notify_on_new_message(alert_id: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_notify_on_new_message, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_notifying_on_new_message(alert_id: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"alert_error_notifying_on_new_message, alert_id={alert_id}, detail={detail}",
+        extra=request_info
+    )

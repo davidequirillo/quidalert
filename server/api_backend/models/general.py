@@ -480,6 +480,7 @@ class AlertIn(SQLModel, table=False):
         return v
 
 ALERT_SPREAD_MAX_COUNT = 4 # initial alert + 3 expansions = max 4 "generations" of alerted users
+ALERT_MAX_MESSAGES_NUM = 1000 # maximum number of messages for an alert
 
 class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
@@ -490,6 +491,12 @@ class AlertOut(AlertIn, table=False):
     is_expanded: bool = Field(default=False, nullable=False) # "expanded" means that the alert has been extended at least 1 time (except the initial spread), adding new users to the alerted users list, in other words "a new generation" of alerted users)
     spread_count: int = Field(default=0, ge=0, le=ALERT_SPREAD_MAX_COUNT, nullable=False) # number of times the alert has been spread to nearby users (adding new users to the alerted users list), max 4 spreads (initial alert + 3 expansions = max 4 "generations" of alerted users)
     is_closed: bool = Field(default=False, nullable=False)
+    # "messages_num" is the number of messages sent for this alert (by the sender or by the alert manager.
+    # Note: this field causes a denormalization of the database, since we can always count the number of messages for an alert by querying the "messages" table, 
+    # but it's useful for efficiency reasons, to avoid counting messages every time we need to return the alert info.
+    # Additionally, we will not delete messages (they will be automatically deleted together with the alert when the alert becomes too old),
+    # so the "messages_num" management will be simple, and will not cause any inconsistencies in the database.
+    messages_num: int = Field(default=0, ge=0, nullable=False)
 
 class Alert(AlertOut, table=True):
     __tablename__: str = "alerts"
@@ -520,6 +527,13 @@ class UserOutWithAlerts(BaseModel):
     user: UserOut
     alerts: List[AlertOut]
 
+CLOSING_VOTE_POSITIVE = 30
+CLOSING_VOTE_NEGATIVE = -30
+CLOSING_VOTE_NEUTRAL = 0
+CLOSING_VOTE_PUNITIVE = -100
+HERO_SCORE_INC_VALUE_TO_ALERTED_USERS = 5
+HERO_SCORE_INC_VALUE_TO_ALERT_SENDER = 20
+
 class AlertedUser(SQLModel, table=True):
     __tablename__: str = "alerted_users"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -529,6 +543,9 @@ class AlertedUser(SQLModel, table=True):
         nullable=False,
         index=True
     )
+    # The "get alerted users" API returns alerted users list, so clients would see the user_id, 
+    # but it's not a problem, because user_id is not a very sensitive information.
+    # Additionally, get_alerted_users API is only accessible to chiefs.
     user_id: uuid.UUID = Field(
         foreign_key="users.id", 
         ondelete="CASCADE",
@@ -538,30 +555,35 @@ class AlertedUser(SQLModel, table=True):
     distance: float = Field(default=0, nullable=False) # distance from the alert location, in kilometers
     is_manager: bool = Field(default=False, nullable=False)
     # For all users: -1 = downvote, 0 = no vote, +1 = upvote
-    # Chief can do a closing vote: his final vote can be -15, 0, +15;
-    # We will think about the algorythm to use, 
-    # to modify reliability score of involved users (alert sender and alerted users)
+    # Chiefs can do a closing vote (see ClosingType, ClosingSchema);
     vote: int = Field(default=0, ge=-1, le=+1, nullable=False)
-    closing_vote: int = Field(default=0, ge=-100, le=+30, nullable=False)
+    closing_vote: int = Field(default=CLOSING_VOTE_NEUTRAL, ge=CLOSING_VOTE_PUNITIVE, le=CLOSING_VOTE_POSITIVE, nullable=False)
 
-class Message(SQLModel, table=True): # alert message sent by a user, either the sender or the alert manager
-    __tablename__: str = "messages"
-    id: Optional[int] = Field(default=None, primary_key=True)
-    alert_id: int = Field(
-        foreign_key="alerts.id", 
-        ondelete="CASCADE",
-        nullable=False,
-        index=True
-    )
-    user_id: uuid.UUID = Field(
-        foreign_key="users.id", 
-        ondelete="CASCADE",
-        nullable=False,
-        index=True
-    )
-    content: str = Field(nullable=False, min_length=1, max_length=512)
-    is_banned: bool = Field(default=False, nullable=False)
-    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+class VotingSchema(BaseModel):
+    vote: int = Field(ge=-1, le=+1) # -1 = downvote, +1 = upvote
+
+    @field_validator("vote")
+    @classmethod
+    def validate_vote(cls, v):
+        if v not in [-1, 1]:
+            raise ValueError("Vote must be either -1 (downvote) or +1 (upvote)")
+        return v
+
+class ClosingType(str, Enum):
+    positive = "positive"
+    negative = "negative"
+    neutral = "neutral"
+    punitive = "punitive"
+
+class ClosingSchema(BaseModel):
+    type: str = Field(default=ClosingType.neutral.value)
+
+    @field_validator("type")
+    @classmethod
+    def validate_type(cls, s):
+        if not s in [t.value for t in ClosingType]:
+            raise ValueError("Wrong closing type")
+        return s
 
 class AlertOutWithInfo(BaseModel):
     alert: AlertOut
@@ -595,39 +617,6 @@ class AlertedUserJoinedPaginated(BaseModel):
     alerted_users: List[AlertedUserJoined]
     next_cursor: Optional[int] = None
 
-class VotingSchema(BaseModel):
-    vote: int = Field(ge=-1, le=+1) # -1 = downvote, +1 = upvote
-
-    @field_validator("vote")
-    @classmethod
-    def validate_vote(cls, v):
-        if v not in [-1, 1]:
-            raise ValueError("Vote must be either -1 (downvote) or +1 (upvote)")
-        return v
-
-class ClosingType(str, Enum):
-    positive = "positive"
-    negative = "negative"
-    neutral = "neutral"
-    punitive = "punitive"
-
-CLOSING_VOTE_POSITIVE = 30
-CLOSING_VOTE_NEGATIVE = -30
-CLOSING_VOTE_NEUTRAL = 0
-CLOSING_VOTE_PUNITIVE = -100
-HERO_SCORE_INC_VALUE_TO_ALERTED_USERS = 5
-HERO_SCORE_INC_VALUE_TO_ALERT_SENDER = 20
-
-class ClosingSchema(BaseModel):
-    type: str = Field(default=ClosingType.neutral.value)
-
-    @field_validator("type")
-    @classmethod
-    def validate_type(cls, s):
-        if not s in [t.value for t in ClosingType]:
-            raise ValueError("Wrong closing type")
-        return s
-
 class ExpandingSchema(BaseModel):
     radius: float = Field(default=1.0, gt=0, le=1000) # in kilometers
     role: Optional[str] = Field(default=None, min_length=1, max_length=32)
@@ -638,3 +627,26 @@ class ExpandingSchema(BaseModel):
         if (s is not None) and (s not in [t.value for t in UserRole]):
             raise ValueError("Wrong role")
         return s
+
+class MessageIn(SQLModel, table=False):
+    content: str = Field(nullable=False, min_length=1, max_length=512)
+
+class MessageOut(MessageIn, table=False): # alert message sent by a user, either the sender or the alert manager
+    id: Optional[int] = Field(default=None, primary_key=True)
+    alert_id: int = Field(
+        foreign_key="alerts.id", 
+        ondelete="CASCADE",
+        nullable=False,
+        index=True
+    )
+    is_banned: bool = Field(default=False, nullable=False)
+    created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
+
+class Message(MessageOut, table=True):
+    __tablename__: str = "messages"
+    user_id: uuid.UUID = Field(
+        foreign_key="users.id", 
+        ondelete="CASCADE",
+        nullable=False, 
+        index=True
+    )
