@@ -628,10 +628,10 @@ class ExpandingSchema(BaseModel):
             raise ValueError("Wrong role")
         return s
 
-class MessageIn(SQLModel, table=False):
+class MessageIn(SQLModel, table=False): # alert message sent by the client, either the alert sender or the alert manager
     content: str = Field(nullable=False, min_length=1, max_length=512)
 
-class MessageOut(MessageIn, table=False): # alert message sent by a user, either the sender or the alert manager
+class MessageOut(MessageIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True)
     alert_id: int = Field(
         foreign_key="alerts.id", 
