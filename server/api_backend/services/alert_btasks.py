@@ -55,7 +55,8 @@ from core.dbmgr import (
 class AlertOperation(str, Enum):
     create = "create"
     expand = "expand"
-    message = "message"
+    message = "message" # not used
+    close = "close" # not used
 
 alert_notification_templates = {
     "en": {
@@ -81,7 +82,7 @@ alert_notification_templates = {
         "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}. Found {users_num} users in the area",
         "expand_alert_action_label": "View",
         "new_message_title": "New message",
-        "new_message_text": "There is a new message regarding the alert created on date {date}, hour {hour}: {text}",
+        "new_message_text": "{name} sent a new message regarding the alert created on date {date}, hour {hour}: {content}",
         "new_message_action_label": "View"
     },
     "it": {
@@ -107,7 +108,7 @@ alert_notification_templates = {
         "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}. Trovati {users_num} utenti nell'area",
         "expand_alert_action_label": "Vedi",
         "new_message_title": "Nuovo messaggio",
-        "new_message_text": "C'è un nuovo messaggio riguardo all'allerta creata in data {date}, ora {hour}: {text}",
+        "new_message_text": "{name} ha inviato un nuovo messaggio riguardo all'allerta creata in data {date}, ora {hour}: {content}",
         "new_message_action_label": "Vedi"
     }
 }
@@ -593,8 +594,10 @@ def task_alert_notify_about_closure(
     users_to_notify_ids = []
     users_to_notify_fcm_tokens = []
     with Session(db_engine) as db_session:
-        # For local alerts, the sender (user who created the alert) must be notified
-        if alert.type == AlertType.local.value:
+        # The alert sender is the user who created the alert (the "alert.user_id"),
+        # and he must be notified about the alert closure, if he is not the one who closed the alert (the current_user, the API caller)
+        # The following predicate is true in local alerts.
+        if alert.user_id != current_user.id:
             statement = (select(RefreshToken)
                     .where(RefreshToken.user_id == alert.user_id)
                     .where(RefreshToken.fcm_token != None))
@@ -603,7 +606,7 @@ def task_alert_notify_about_closure(
                 users_to_notify_ids.append(str(sender_rtoken.user_id))
                 users_to_notify_fcm_tokens.append(sender_rtoken.fcm_token)
         # For alerts, we notify all alerted users, except the alert manager, 
-        # because he is the one who just closed the alert: he is the current_user (the closing API caller)
+        # because if present, he is the one who closed the alert (the current_user, the API caller).
         statement = (select(AlertedUser.user_id, RefreshToken.fcm_token)
                 .join(RefreshToken, RefreshToken.user_id == AlertedUser.user_id) # type: ignore
                 .where(AlertedUser.alert_id == alert.id)
@@ -897,21 +900,24 @@ def task_alert_notify_on_new_message(
         # Note: as language we use the caller's (current_user) language for simplicity, not the language of each client receiving the notification.
         if users_to_notify_ids and users_to_notify_fcm_tokens:
             try:
-                msg_content = message.content[:50] if len(message.content) > 50 else message.content
+                msg_content = message.content[:30] if len(message.content) > 30 else message.content
+                msg_content += "..." if len(message.content) > 30 else ""
+                curr_user_name = f"{current_user.firstname} {current_user.surname}"
                 notification_count = notify_on_new_message(
                         users_to_notify_ids, users_to_notify_fcm_tokens, 
-                        current_user.language, alert, msg_content,
+                        current_user.language, alert, curr_user_name, msg_content,
                         request_info, db_session)
                 log_alert_notify_on_new_message(str(alert.id), request_info, detail=f"Alert message successfully sent to {notification_count} out of {len(users_to_notify_ids)} users")
             except Exception as e:
                 log_alert_error_notifying_on_new_message(str(alert.id), request_info, detail=str(e))
 
 def notify_on_new_message(user_ids, fcm_tokens, 
-        language, alert, content: str,
+        language, alert, name: str, content: str,
         request_info, db_session):
     action_label = alert_notification_templates[language]["new_message_action_label"]
     msg_title = alert_notification_templates[language]["new_message_title"]
     msg_body = alert_notification_templates[language]["new_message_text"].format(
+                name=name, # the name of the user who sent the message
                 date=alert.created_at.strftime("%Y-%m-%d"),
                 hour=alert.created_at.strftime("%H:%M"),
                 text=content

@@ -69,7 +69,7 @@ def test_expand_alert_invalid_input_data(client, test_baseuser, test_alert):
         headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
-def test_expand_alert_called_by_not_chief(client, db_session, test_alert, test_baseuser):
+def test_expand_alert_called_by_not_chief(client, test_alert, test_baseuser):
     user: User = test_baseuser['user']
     alert: Alert = test_alert 
     assert user is not None

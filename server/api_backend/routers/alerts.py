@@ -617,7 +617,7 @@ def create_alert_message(alert_id: int,
     # If the sender of a local alert is not reliable or the alert is bannned,
     # the sender cannot write any messages.
     if (alert.type == AlertType.local.value) and (current_user.id == alert.user_id):
-        if (not current_user.is_reliable or current_user.reliability_score <= 0):
+        if ((not current_user.is_reliable) or (current_user.reliability_score <= 0)):
             raise forbidden_exception("You are not a reliable user, you can't create messages for this alert")
         if alert.is_banned:
             raise forbidden_exception("This alert has been banned, you can't create messages for it")

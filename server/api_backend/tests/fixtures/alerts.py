@@ -157,6 +157,10 @@ def setup_fake_functions(mocker):
     def fake_notify_nearby_users_about_expansion(user_ids, fcm_tokens,
             language: str, alert: Alert, 
             request_info, db_session):
+        return len(user_ids)
+    def fake_notify_on_new_message(user_ids, fcm_tokens, 
+            language: str, alert: Alert, name: str, content: str,
+            request_info, db_session):
         return len(user_ids)  
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)
     notify_chief_manager_mocked = mocker.patch("services.alert_btasks.notify_chief_manager", return_value=True)
@@ -165,6 +169,8 @@ def setup_fake_functions(mocker):
     notify_sender_exp_mocked = mocker.patch("services.alert_btasks.notify_sender_about_expansion", return_value=True)
     notify_chief_manager_exp_mocked = mocker.patch("services.alert_btasks.notify_chief_manager_about_expansion", return_value=True)
     notify_nearby_users_exp_mocked = mocker.patch("services.alert_btasks.notify_nearby_users_about_expansion", side_effect=fake_notify_nearby_users_about_expansion)
+    notify_on_new_message_mocked = mocker.patch("services.alert_btasks.notify_on_new_message", side_effect=fake_notify_on_new_message)
+
     yield {
         "mock_notify_sender": notify_sender_mocked,
         "mock_notify_chief_manager": notify_chief_manager_mocked,
@@ -172,7 +178,8 @@ def setup_fake_functions(mocker):
         "mock_notify_about_closure": notify_about_closure_mocked,
         "mock_notify_sender_about_expansion": notify_sender_exp_mocked,
         "mock_notify_chief_manager_about_expansion": notify_chief_manager_exp_mocked,
-        "mock_notify_nearby_users_about_expansion": notify_nearby_users_exp_mocked
+        "mock_notify_nearby_users_about_expansion": notify_nearby_users_exp_mocked,
+        "mock_notify_on_new_message": notify_on_new_message_mocked
     }
 
 @pytest.fixture(autouse=True, name="test_alert_users_data")
