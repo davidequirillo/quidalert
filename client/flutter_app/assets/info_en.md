@@ -1,6 +1,6 @@
 # App info
 
-This is a network alerting app: the user can send an alert/help request to the relative server, writing a description of the event. The server, based on the alert description, will send a push notification to the closest chief (the head of the rescue operations), and to all geolocalized nearby persons. 
+This is a network alerting app, useful to receive help: the user can send an alert/help request to the server, writing a description of the event. The server, will propagate the alert, sending a notification to the closest chief (the head of the rescue operations), and to all geolocalized nearby persons. 
 
 To use this application, you must do the following steps:
 

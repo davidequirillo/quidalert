@@ -8,15 +8,18 @@ import asyncio
 from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, select, insert
 from fakeredis.aioredis import FakeRedis
+from email.message import EmailMessage
 from models.general import (
     string_as_uuid,
     RefreshToken, User, 
     Alert, AlertType, AlertedUser,
     Message)
+from services.localization import alert_langmap, localize_new_alert_mail
 from services.network import (
     get_user_fcm_token,
     notify_single_client,
-    notify_many_clients
+    notify_many_clients,
+    send_mail_message
 )
 from core.btask_events import (
     log_alert_search_closest_chiefs_done,
@@ -38,6 +41,8 @@ from core.btask_events import (
     log_alert_no_sender_to_notify,
     log_alert_error_notifying_sender,
     log_alert_notify_sender,
+    log_alert_success_sending_mail_to_chief_manager,
+    log_alert_error_sending_mail_to_chief_manager,
     log_alert_notify_about_closure,
     log_alert_error_notifying_about_closure,
     log_alert_error_finalizing_expansion,
@@ -58,60 +63,7 @@ class AlertOperation(str, Enum):
     message = "message" # not used
     close = "close" # not used
 
-alert_notification_templates = {
-    "en": {
-        "new_alert_title": "New alert",
-        "new_alert_prefix": "{name} has created a new alert:",
-        "new_alert_action_label": "View",
-        "no_chief_available_but_nearby_users": "No chief is available, but there are other users nearby who have been notified. Contact emergency services by phone if the situation is serious.",
-        "no_chief_available_no_nearby_users": "No chief is available and there are no other users nearby to notify. Contact emergency services by phone if the situation is serious.",
-        "chief_and_nearby_users_notified": "The closest chief and nearby users have been notified about the new alert.",
-        "only_chief_notified": "The closest chief has been notified about the new alert, but there are no nearby users to notify.",
-        "nearby_users_notified": "Nearby users have been notified about the new alert.",
-        "no_nearby_users_available": "There are no nearby users to notify about the new alert.",
-        "close_alert_title": "Alert closed",
-        "close_alert_text": "The alert created on date {date} hour {hour}, has been closed by the chief manager. Closure type: {closing_type}",
-        "close_alert_action_label": "View",
-        "close_alert_positive_closure": "Positive",
-        "close_alert_negative_closure": "Negative",
-        "close_alert_neutral_closure": "Neutral",
-        "close_alert_punitive_closure": "Punitive",
-        "expand_alert_title": "Alert expanded",
-        "expand_alert_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager)",
-        "expand_alert_to_role_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to role: {role}, with radius: {radius}. Found {users_num} specialists in the area",
-        "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}. Found {users_num} users in the area",
-        "expand_alert_action_label": "View",
-        "new_message_title": "New message",
-        "new_message_text": "{name} sent a new message regarding the alert created on date {date}, hour {hour}: {content}",
-        "new_message_action_label": "View"
-    },
-    "it": {
-        "new_alert_title": "Nuova allerta",
-        "new_alert_prefix": "{name} ha creato una nuova allerta:",
-        "new_alert_action_label": "Vedi",
-        "no_chief_available_but_nearby_users": "Nessun capo è disponibile, ma ci sono altri utenti nelle vicinanze che sono stati notificati. Contatta telefonicamente i soccorsi se la situazione è grave.",
-        "no_chief_available_no_nearby_users": "Nessun capo è disponibile e non ci sono altri utenti nelle vicinanze da notificare. Contatta telefonicamente i soccorsi se la situazione è grave.",
-        "chief_and_nearby_users_notified": "Il capo più vicino e gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
-        "only_chief_notified": "Il capo più vicino è stato notificato riguardo alla nuova allerta, ma non ci sono utenti nelle vicinanze da notificare.",
-        "nearby_users_notified": "Gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
-        "no_nearby_users_available": "Non ci sono utenti nelle vicinanze da notificare riguardo alla nuova allerta.",
-        "close_alert_title": "Allerta chiusa",
-        "close_alert_text": "L'allerta creata in data {date} ora {hour}, è stata chiusa dal capo responsabile. Tipo di chiusura: {closing_type}",
-        "close_alert_action_label": "Vedi",
-        "close_alert_positive_closure": "Positiva",
-        "close_alert_negative_closure": "Negativa",
-        "close_alert_neutral_closure": "Neutrale",
-        "close_alert_punitive_closure": "Punitiva",
-        "expand_alert_title": "Allerta espansa",
-        "expand_alert_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile).",
-        "expand_alert_to_role_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) al ruolo {role}, con raggio: {radius}. Trovati {users_num} specialisti nell'area",
-        "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}. Trovati {users_num} utenti nell'area",
-        "expand_alert_action_label": "Vedi",
-        "new_message_title": "Nuovo messaggio",
-        "new_message_text": "{name} ha inviato un nuovo messaggio riguardo all'allerta creata in data {date}, ora {hour}: {content}",
-        "new_message_action_label": "Vedi"
-    }
-}
+alert_notification_templates = alert_langmap
 
 # We search for chiefs within a very large radius, 
 # to be sure to find at least one closest chief (because a chief must be alerted, even if he is outside the alert radius)
@@ -136,18 +88,18 @@ async def task_alert_search_and_notify(
         # For local alerts, we keep the first closest chief as alert manager and save him to database (table alerted_users)
         # For non-local alerts, the user who created the alert is the alert manager, so we don't need to search for a chief or save him to database as alert manager
         if (alert.type == AlertType.local.value):
-            chief, chief_fcm_token = await run_in_threadpool(
+            chief, chief_fcm_token, chief_email = await run_in_threadpool(
                 save_first_chief_in_db, 
                 alert, closest_chiefs, request_info, db_session)
         else:
-            chief, chief_fcm_token = {
+            chief, chief_fcm_token, chief_email = {
                 "user_id": current_user.id,
                 "distance_km": 0.0,
                 "location": {
                     "latitude": alert.latitude,
                     "longitude": alert.longitude
                 }
-            }, sender_fcm_token
+            }, sender_fcm_token, current_user.email
         # To avoid duplicates or errors, we check if nearby users contains the chief (alert manager), and we delete him from nearby users list
         if chief:
             nearby_users = [u for u in nearby_users if u["user_id"] != chief["user_id"]]
@@ -160,7 +112,7 @@ async def task_alert_search_and_notify(
         else:
             log_alert_no_sender_to_notify(str(alert.id), AlertOperation.create.value, request_info)
         if (alert.type == AlertType.local.value): 
-            if chief and chief_fcm_token:
+            if chief and chief_email and chief_fcm_token:
                 chief_can_be_notified = True
             else:
                 log_alert_no_chief_manager_to_notify(str(alert.id), AlertOperation.create.value, request_info)
@@ -195,6 +147,14 @@ async def task_alert_search_and_notify(
                 except Exception as e:
                     chief_can_be_notified = False
                     log_alert_error_notifying_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=str(e))
+                try:
+                    await run_in_threadpool(
+                        send_mail_to_chief_manager,
+                        chief_id, chief_email, 
+                        language=current_user.language, alert=alert, sender=current_user, 
+                        request_info=request_info)
+                except Exception as e:
+                    pass # exception already logged inside send_mail_to_chief_manager function, so we don't need to log it again here
             if nearby_users_can_be_notified:
                 try:
                     user_ids = list(nearby_users_to_fcm_tokens.keys())
@@ -380,8 +340,9 @@ async def get_nearby_users(
 
 def save_first_chief_in_db(alert, closest_chiefs, request_info, db_session):
     if not closest_chiefs:
-        return None, None
+        return None, None, None
     chief = None
+    email = None
     fcm_token = None
     chief_ids_as_uuid = []
     for c in closest_chiefs:
@@ -391,13 +352,14 @@ def save_first_chief_in_db(alert, closest_chiefs, request_info, db_session):
         except Exception as e:
             log_alert_error_checking_closest_chiefs(str(alert.id), request_info, detail=f"Error converting chief user_id string to UUID: {e}")
             continue
-    statement = (select(User.id, RefreshToken.fcm_token)
+    statement = (select(User.id, User.email, RefreshToken.fcm_token)
     .join(RefreshToken, RefreshToken.user_id == User.id) # type: ignore
     .where(User.id.in_(chief_ids_as_uuid)) # type: ignore
     .where(User.is_chief == True, RefreshToken.fcm_token != None))
     try:
         db_results = db_session.exec(statement).all()
-        chiefs_to_tokens = {str(row[0]): row[1] for row in db_results}
+        # user_id -> (email, fcm_token)
+        chiefs_to_tokens = {str(row[0]): (row[1], row[2]) for row in db_results}
         # Identification of orphans 
         # Who is in Redis, but not in Postgres? (rare event)
         existing_ids_in_db = set(chiefs_to_tokens.keys())
@@ -408,11 +370,12 @@ def save_first_chief_in_db(alert, closest_chiefs, request_info, db_session):
         for c in closest_chiefs:
             if c["user_id"] in existing_ids_in_db:
                 chief = c
-                fcm_token = chiefs_to_tokens.get(c["user_id"])
+                email, fcm_token = chiefs_to_tokens.get(c["user_id"], (None, None))
                 break
     except Exception as e:
         log_alert_error_checking_closest_chiefs(str(alert.id), request_info, detail=str(e))
         chief = None
+        email = None
         fcm_token = None
     try:
         if chief and fcm_token:
@@ -431,8 +394,9 @@ def save_first_chief_in_db(alert, closest_chiefs, request_info, db_session):
         db_session.rollback()
         log_alert_error_saving_closest_chief(str(alert.id), request_info, detail=str(e))
         chief = None
+        email = None
         fcm_token = None
-    return chief, fcm_token
+    return chief, fcm_token, email
 
 def set_alert_as_not_pending_anymore(alert_id, request_info, db_session):
     try: 
@@ -585,6 +549,20 @@ def notify_sender(user_id, fcm_token,
         user_id, fcm_token, 
         msg_title, msg_body, msg_data, 
         request_info, db_session)
+
+def send_mail_to_chief_manager(chief_id, chief_email, 
+        language: str, alert: Alert, sender: User, 
+        request_info: dict):
+    msg = EmailMessage()
+    msg["Subject"] = alert_langmap[language]["new_alert_mail_subject"]
+    msg["From"] = settings.smtp_from
+    msg["To"] = chief_email
+    msg.set_content(localize_new_alert_mail(alert, sender, language))
+    try:
+        send_mail_message(msg)
+        log_alert_success_sending_mail_to_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=f"Email message sent successfully to chief {chief_id}")
+    except Exception as e:
+        log_alert_error_sending_mail_to_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=f"Error sending email message to chief {chief_id}: {e}")
 
 ## CLOSE ALERT BTASK: this is the main function that will be executed as a background task when an alert is closed.
 def task_alert_notify_about_closure(

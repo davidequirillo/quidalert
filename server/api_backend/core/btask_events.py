@@ -184,6 +184,18 @@ def log_alert_notify_sender(alert_id: str, operation: str, request_info: dict, d
         extra=request_info
     )
 
+def log_alert_success_sending_mail_to_chief_manager(alert_id: str, operation: str, request_info: dict, detail: str = ""):
+    logger.info(
+        f"alert_success_sending_mail_to_chief_manager, alert_id={alert_id}, operation={operation}, detail={detail}",
+        extra=request_info
+    )
+
+def log_alert_error_sending_mail_to_chief_manager(alert_id: str, operation: str, request_info: dict, detail: str = ""):
+    logger.error(
+        f"alert_error_sending_mail_to_chief_manager, alert_id={alert_id}, operation={operation}, detail={detail}",
+        extra=request_info
+    )
+
 ## ALERT CLOSE events logging
 
 def log_alert_notify_about_closure(alert_id: str, request_info: dict, detail: str = ""):
