@@ -37,13 +37,14 @@ async def test_save_first_chief_in_db_success(db_session, redis_session, test_al
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
     print_closest_chiefs_and_nearby_users(test_alert, user, closest_chiefs, nearby_users)
     closest_chiefs_num = len(closest_chiefs)
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
     if closest_chiefs_num > 0:
-        assert first_chief_fcm_token is not None
-        assert first_chief is not None
+        assert fc is not None
+        assert fc_fcm_token is not None
+        assert fc_email is not None
         # The chief_id of the alerted user should be the same as the id of the first closest chief
         # ...because the first closest chief has an FCM token for sure and exists in the database (see tests/fixtures/alerts.py)
-        assert first_chief["user_id"] == closest_chiefs[0]["user_id"]
+        assert fc["user_id"] == closest_chiefs[0]["user_id"]
         # Here we should have exactly one alerted user in the database, and it should be the closest chief
         # Note: in this test we are saving only the first chief and not all nearby users
         statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
@@ -58,11 +59,12 @@ async def test_save_first_chief_in_db_success(db_session, redis_session, test_al
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
         refresh_token = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alerted_users[0].user_id)).first()
         assert refresh_token is not None
-        assert refresh_token.fcm_token == first_chief_fcm_token
+        assert refresh_token.fcm_token == fc_fcm_token
     else:
         print("No closest chiefs in Redis for this test. Please retry it")
-        assert first_chief_fcm_token is None
-        assert first_chief is None
+        assert fc is None
+        assert fc_fcm_token is None
+        assert fc_email is None
         return
     
 async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db_session, redis_session, test_alert, test_request_info):
@@ -89,14 +91,15 @@ async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db
     # We simulate the wrong id of the first chief in Redis
     closest_chiefs[0]["user_id"] = "wrong_id"
     closest_chiefs_num = len(closest_chiefs)
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
     if closest_chiefs_num > 1:
-        assert first_chief_fcm_token is not None
-        assert first_chief is not None
+        assert fc_fcm_token is not None
+        assert fc_email is not None
+        assert fc is not None
         # The chief_id of the alerted user should be the same as the id of the second closest chief 
         # ...because the first closest chief has a wrong id, 
         # so the function should skip it and save the second closest chief as "first chief with FCM token"
-        assert first_chief["user_id"] == closest_chiefs[1]["user_id"]
+        assert fc["user_id"] == closest_chiefs[1]["user_id"]
         # Here we should have exactly one alerted user in the database, and it should be the closest chief
         # Note: in this test we are saving only the first chief and not all nearby users
         statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
@@ -110,11 +113,12 @@ async def test_save_first_chief_in_db_but_first_chief_has_wrong_uuid_in_redis(db
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
         refresh_token = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alerted_users[0].user_id)).first()
         assert refresh_token is not None
-        assert refresh_token.fcm_token == first_chief_fcm_token
+        assert refresh_token.fcm_token == fc_fcm_token
     else:
         print("Not enough closest chiefs in Redis for this test. Please retry it")
-        assert first_chief_fcm_token is None
-        assert first_chief is None
+        assert fc_fcm_token is None
+        assert fc_email is None
+        assert fc is None
         return
     
 async def test_save_first_chief_in_db_orphan_is_no_longer_a_chief_in_db(db_session, redis_session, test_alert, test_request_info):
@@ -151,14 +155,15 @@ async def test_save_first_chief_in_db_orphan_is_no_longer_a_chief_in_db(db_sessi
     db_session.add(chief_user)
     db_session.commit()
     closest_chiefs_num = len(closest_chiefs)
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
     if closest_chiefs_num > 1: # We need at least 2 closest chiefs in Redis for this test, because the first closest chief is no longer a chief in the database and cannot be taken as "first chief with FCM token"
-        assert first_chief_fcm_token is not None
-        assert first_chief is not None
+        assert fc_fcm_token is not None
+        assert fc_email is not None
+        assert fc is not None
         # The chief_id of the alerted user should be the same as the id of the second closest chief 
         # ...because the first closest chief is no longer a chief in database), 
         # so the function should skip it and save the second closest chief as the first chief with FCM token
-        assert first_chief["user_id"] == closest_chiefs[1]["user_id"]
+        assert fc["user_id"] == closest_chiefs[1]["user_id"]
         # Here we should have exactly one alerted user in the database, and it should be the closest chief
         # Note: in this test we are saving only the first chief and not all nearby users
         statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
@@ -172,11 +177,12 @@ async def test_save_first_chief_in_db_orphan_is_no_longer_a_chief_in_db(db_sessi
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
         refresh_token = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alerted_users[0].user_id)).first()
         assert refresh_token is not None
-        assert refresh_token.fcm_token == first_chief_fcm_token
+        assert refresh_token.fcm_token == fc_fcm_token
     else:
         print("Not enough closest chiefs in Redis for this test. Please retry it")
-        assert first_chief_fcm_token is None
-        assert first_chief is None
+        assert fc_fcm_token is None
+        assert fc_email is None
+        assert fc is None
         return
 
 async def test_save_first_chief_in_db_found_orphan_with_no_fcm_token(db_session, redis_session, test_alert, test_request_info):
@@ -210,14 +216,15 @@ async def test_save_first_chief_in_db_found_orphan_with_no_fcm_token(db_session,
     db_session.add(refresh_token)
     db_session.commit()
     closest_chiefs_num = len(closest_chiefs)
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
     if closest_chiefs_num > 1: # We need at least 2 closest chiefs in Redis for this test, because the first closest chief has no FCM token in the database and cannot be taken as "first chief"
-        assert first_chief_fcm_token is not None
-        assert first_chief is not None
+        assert fc_fcm_token is not None
+        assert fc is not None
+        assert fc_email is not None
         # The chief_id of the alerted user should be the same as the id of the second closest chief 
         # ...because the first closest chief has not FCM token in database), 
         # so the function should skip it and save the second closest chief as the first chief with FCM token
-        assert first_chief["user_id"] == closest_chiefs[1]["user_id"]
+        assert fc["user_id"] == closest_chiefs[1]["user_id"]
         # Here we should have exactly one alerted user in the database, and it should be the closest chief
         # Note: in this test we are saving only the first chief and not all nearby users
         statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
@@ -231,11 +238,12 @@ async def test_save_first_chief_in_db_found_orphan_with_no_fcm_token(db_session,
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
         refresh_token = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alerted_users[0].user_id)).first()
         assert refresh_token is not None
-        assert refresh_token.fcm_token == first_chief_fcm_token
+        assert refresh_token.fcm_token == fc_fcm_token
     else:
         print("Not enough closest chiefs in Redis for this test. Please retry it")
-        assert first_chief_fcm_token is None
-        assert first_chief is None
+        assert fc_fcm_token is None
+        assert fc is None
+        assert fc_email is None
         return
 
 async def test_save_first_chief_in_db_3_orphan_chiefs_deleted_from_db(db_session, redis_session, test_alert, test_request_info):
@@ -272,14 +280,15 @@ async def test_save_first_chief_in_db_3_orphan_chiefs_deleted_from_db(db_session
         db_session.exec(statement)
     db_session.commit()
     closest_chiefs_num = len(closest_chiefs)
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
     if closest_chiefs_num > 3: # We need at least 4 closest chiefs in Redis for this test, because the first 3 are "orphan chiefs" in Redis (they don't exist in database), so the function should skip them and save the 4th closest chief as "first chief with FCM token"
-        assert first_chief_fcm_token is not None
-        assert first_chief is not None
+        assert fc_fcm_token is not None
+        assert fc_email is not None
+        assert fc is not None
         # The chief_id of the alerted user should be the same as the id of the fourth closest chief 
         # ...because the first three closest chiefs have been deleted from the database (they are "orphan chiefs" in Redis), 
         # so the function should skip them and save the fourth closest chief as "first chief with FCM token"
-        assert first_chief["user_id"] == closest_chiefs[3]["user_id"]
+        assert fc["user_id"] == closest_chiefs[3]["user_id"]
         # Here we should have exactly one alerted user in the database, and it should be the closest chief
         # Note: in this test we are saving only the first chief and not all nearby users
         statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
@@ -292,11 +301,12 @@ async def test_save_first_chief_in_db_3_orphan_chiefs_deleted_from_db(db_session
         assert alerted_users[0].is_manager == True # The first chief is the alert manager
         refresh_token = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alerted_users[0].user_id)).first()
         assert refresh_token is not None
-        assert refresh_token.fcm_token == first_chief_fcm_token
+        assert refresh_token.fcm_token == fc_fcm_token
     else:
         print("Not enough closest chiefs in Redis for this test. Please retry it")
-        assert first_chief_fcm_token is None
-        assert first_chief is None
+        assert fc_fcm_token is None
+        assert fc_email is None
+        assert fc is None
         return
 
 async def test_save_first_chief_in_db_all_orphan_chiefs_deleted_from_db(db_session, redis_session, test_alert, test_request_info):
@@ -330,9 +340,10 @@ async def test_save_first_chief_in_db_all_orphan_chiefs_deleted_from_db(db_sessi
         statement = delete(User).where(User.id==chief_user_id) # type:ignore
         db_session.exec(statement)
     db_session.commit()
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
-    assert first_chief_fcm_token is None
-    assert first_chief is None
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    assert fc_fcm_token is None
+    assert fc is None
+    assert fc_email is None
     # In the database, there will be no alerted manager (no first chief) for this alert, because the function should not save any chief in the database
     statement = select(AlertedUser).where(AlertedUser.alert_id == test_alert.id)
     alerted_users = db_session.exec(statement).all()
@@ -357,6 +368,7 @@ def test_save_first_chief_in_db_no_closest_chief_in_redis(db_session, redis_sess
     closest_chiefs = []
     assert len(closest_chiefs) == 0
     # The function has no effect when there are no closest chiefs in Redis
-    first_chief, first_chief_fcm_token = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
-    assert first_chief_fcm_token is None
-    assert first_chief is None
+    fc, fc_fcm_token, fc_email = save_first_chief_in_db(test_alert, closest_chiefs, test_request_info, db_session)
+    assert fc_fcm_token is None
+    assert fc is None
+    assert fc_email is None

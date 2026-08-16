@@ -4,7 +4,7 @@
 
 NOTE: at the moment the project is under development.
 
-Quidalert is a network alert manager: when the server receives an alert from a client (which runs the mobile app), it takes the alert description and the alert gps location, and then it sends a push notification to all geolocalized nearby clients and to the closest chief (called "chief manager"), to notify them about the alert.  
+Quidalert is a network alert manager that can be used by users to send alerts and receive help from others: when the server receives an alert from a client (which runs the mobile app), it takes the alert description and the alert gps location, and then it sends a push notification to all geolocalized nearby clients and to the closest chief (called "chief manager"), to notify them about the alert.  
 At this point a group chat will be automatically created by the system and will include the user who sent the alert, nearby users (these ones in read-only mode) and the "chief manager", who will be able to write messages to them, helping them.  
 Obviously chief manager and nearby users will be able to see the alert gps coordinates with the related address in the map, to help the alert sender, if possible.
 
@@ -22,8 +22,7 @@ In addition, an algorithm has been implemented to punish fake alerts, using a vo
 Admin and officers can define users having specific roles, for example, medics, firefighters, policemen, alpinerescuers, etc. 
 A little note about officers: unlike admins, who can edit everyone, officers have less privileges, for example they can only modify their own users, that is, the users they have whitelisted (in other words, the users they have authorized). Furthermore, officers can't promote other users to "admin", to "officer", or to "chief" (not even those authorized by them).
 
-To put it simply, the fastest way to populate the database with a large number of users is the following: 
-the administrator define the officers (for example the municipalities) adding their email to the white list, in bulk mode (using a simple CSV file), or adding them one by one. After that, officers can register their account using the app, and each of them can separately define their own citizens, medics, firefighter, etc. etc., white-listing them in bulk (CSV file) or one by one.  
+To put it simply, the fastest way to populate the database with a large number of users is the following: the administrator define the officers (for example the municipalities) adding their email to the white list, in bulk mode (using a simple CSV file), or adding them one by one. After that, officers can register their account using the app, and each of them can separately define their own citizens, medics, firefighter, etc. etc., white-listing them in bulk (CSV file) or one by one.  
 This way, white-listed users can register their account whenever they want to login to the system.  
 Administrator also define the chiefs (for example the "rescue operators" or "emergency workers"), white-listing them in the same way.  
 Note: CSV file, used to add many emails in the whitelist in bulk, can be very simple, for example only one column, and many rows, where each row is the email address to insert in the whitelist. More complex CSV files are supported: the important thing is that one email address is present in each row.

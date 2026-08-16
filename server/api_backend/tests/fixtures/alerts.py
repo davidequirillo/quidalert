@@ -164,6 +164,7 @@ def setup_fake_functions(mocker):
         return len(user_ids)  
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)
     notify_chief_manager_mocked = mocker.patch("services.alert_btasks.notify_chief_manager", return_value=True)
+    notify_chief_manager_via_email_mocked = mocker.patch("services.alert_btasks.send_mail_to_chief_manager", return_value=True)
     notify_nearby_users_mocked = mocker.patch("services.alert_btasks.notify_nearby_users", side_effect=fake_notify_nearby_users)
     notify_about_closure_mocked = mocker.patch("services.alert_btasks.notify_about_closure", side_effect=fake_notify_about_closure)
     notify_sender_exp_mocked = mocker.patch("services.alert_btasks.notify_sender_about_expansion", return_value=True)
@@ -174,6 +175,7 @@ def setup_fake_functions(mocker):
     yield {
         "mock_notify_sender": notify_sender_mocked,
         "mock_notify_chief_manager": notify_chief_manager_mocked,
+        "mock_notify_chief_manager_via_email": notify_chief_manager_via_email_mocked,
         "mock_notify_nearby_users": notify_nearby_users_mocked,
         "mock_notify_about_closure": notify_about_closure_mocked,
         "mock_notify_sender_about_expansion": notify_sender_exp_mocked,

@@ -2,10 +2,10 @@
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-from models.general import UserLanguage
+from models.general import UserLanguage, Alert, User
 from services.security import OTP_CODE_TTL_MINUTES
 
-langmap = {
+user_langmap = {
     "en": {
         "act_expired_title": "Activation expired",
         "act_expired": "Activation code expired, retry account registration",
@@ -37,6 +37,67 @@ langmap = {
         "reset_done_subject": "Modifica password effettuata"
     }
 }
+
+alert_langmap = {
+    "en": {
+        "new_alert_mail_subject": "Alert notification",
+        "new_alert_mail_body_summary": "An alert has been sent by a user in your area. Please check the app for details.",
+        "new_alert_title": "New alert",
+        "new_alert_prefix": "{name} has created a new alert:",
+        "new_alert_action_label": "View",
+        "no_chief_available_but_nearby_users": "No chief is available, but there are other users nearby who have been notified. Contact emergency services by phone if the situation is serious.",
+        "no_chief_available_no_nearby_users": "No chief is available and there are no other users nearby to notify. Contact emergency services by phone if the situation is serious.",
+        "chief_and_nearby_users_notified": "The closest chief and nearby users have been notified about the new alert.",
+        "only_chief_notified": "The closest chief has been notified about the new alert, but there are no nearby users to notify.",
+        "nearby_users_notified": "Nearby users have been notified about the new alert.",
+        "no_nearby_users_available": "There are no nearby users to notify about the new alert.",
+        "close_alert_title": "Alert closed",
+        "close_alert_text": "The alert created on date {date} hour {hour}, has been closed by the chief manager. Closure type: {closing_type}",
+        "close_alert_action_label": "View",
+        "close_alert_positive_closure": "Positive",
+        "close_alert_negative_closure": "Negative",
+        "close_alert_neutral_closure": "Neutral",
+        "close_alert_punitive_closure": "Punitive",
+        "expand_alert_title": "Alert expanded",
+        "expand_alert_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager)",
+        "expand_alert_to_role_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to role: {role}, with radius: {radius}. Found {users_num} specialists in the area",
+        "expand_alert_to_all_text": "The alert created on date {date} hour {hour}, has been extended (by the chief manager) to all nearby users, with radius: {radius}. Found {users_num} users in the area",
+        "expand_alert_action_label": "View",
+        "new_message_title": "New message",
+        "new_message_text": "{name} sent a new message regarding the alert created on date {date}, hour {hour}: {content}",
+        "new_message_action_label": "View"
+    },
+    "it": {
+        "new_alert_mail_subject": "Notifica di allerta",
+        "new_alert_mail_body_summary": "Un utente della tua zona ha inviato un'allerta. Controlla l'app per i dettagli.",
+        "new_alert_title": "Nuova allerta",
+        "new_alert_prefix": "{name} ha creato una nuova allerta:",
+        "new_alert_action_label": "Vedi",
+        "no_chief_available_but_nearby_users": "Nessun capo è disponibile, ma ci sono altri utenti nelle vicinanze che sono stati notificati. Contatta telefonicamente i soccorsi se la situazione è grave.",
+        "no_chief_available_no_nearby_users": "Nessun capo è disponibile e non ci sono altri utenti nelle vicinanze da notificare. Contatta telefonicamente i soccorsi se la situazione è grave.",
+        "chief_and_nearby_users_notified": "Il capo più vicino e gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
+        "only_chief_notified": "Il capo più vicino è stato notificato riguardo alla nuova allerta, ma non ci sono utenti nelle vicinanze da notificare.",
+        "nearby_users_notified": "Gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
+        "no_nearby_users_available": "Non ci sono utenti nelle vicinanze da notificare riguardo alla nuova allerta.",
+        "close_alert_title": "Allerta chiusa",
+        "close_alert_text": "L'allerta creata in data {date} ora {hour}, è stata chiusa dal capo responsabile. Tipo di chiusura: {closing_type}",
+        "close_alert_action_label": "Vedi",
+        "close_alert_positive_closure": "Positiva",
+        "close_alert_negative_closure": "Negativa",
+        "close_alert_neutral_closure": "Neutrale",
+        "close_alert_punitive_closure": "Punitiva",
+        "expand_alert_title": "Allerta espansa",
+        "expand_alert_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile).",
+        "expand_alert_to_role_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) al ruolo {role}, con raggio: {radius}. Trovati {users_num} specialisti nell'area",
+        "expand_alert_to_all_text": "L'allerta creata in data {date} ora {hour}, è stata estesa (dal capo responsabile) a tutti gli utenti vicini, con raggio: {radius}. Trovati {users_num} utenti nell'area",
+        "expand_alert_action_label": "Vedi",
+        "new_message_title": "Nuovo messaggio",
+        "new_message_text": "{name} ha inviato un nuovo messaggio riguardo all'allerta creata in data {date}, ora {hour}: {content}",
+        "new_message_action_label": "Vedi"
+    }
+}
+
+## Mail body localization for users (activation, reset, login)
 
 def localize_activation_code_mail(activation_url: str, lang: str):
     if (lang == UserLanguage.it.value):
@@ -149,6 +210,55 @@ Your verification code is:
 This code is valid for {OTP_CODE_TTL_MINUTES} minutes.
 If you haven't asked the login, we recommend to change your password immediately (in the app, login page, "forgot password").
 """
-    
-def localize_empty_string(): # I'm including this for visual convenience.
-    return ""
+
+## Mail body localization for alerts (new alert)
+
+def localize_new_alert_mail(alert: Alert, sender: User, lang: str):
+    if (lang == UserLanguage.it.value):
+        return f"""Ciao, 
+
+{alert_langmap[lang]['new_alert_mail_body_summary']}
+
+Dati allerta:
+- ID: {alert.id}
+- Descrizione: {alert.description}
+- Coordinate: {alert.latitude}, {alert.longitude}
+- Indirizzo approssimativo: {alert.address}
+- Data creazione: {alert.created_at} (Nota importante: l'orario è in UTC. Convertilo nella tua ora locale)
+
+Dati mittente allerta: 
+- Nome: {sender.firstname}
+- Cognome: {sender.surname}
+- Email: {sender.email}
+- Telefono: {sender.phone}
+- Via: {sender.street}
+- Città: {sender.city}
+- CAP: {sender.postal_code}
+- Provincia: {sender.province}
+- Nazione: {sender.country}
+- Data di nascita: {sender.birthdate}
+"""
+    else:
+        return f"""Hello, 
+        
+{alert_langmap[lang]['new_alert_mail_body_summary']}
+
+Alert data:
+- ID: {alert.id}
+- Description: {alert.description}
+- Coordinates: {alert.latitude}, {alert.longitude}
+- Approximate address: {alert.address}
+- Creation date: {alert.created_at} (Important note: the time is in UTC. Please, convert it to your local time)
+
+Alert sender data:
+- Name: {sender.firstname}
+- Surname: {sender.surname}
+- Email: {sender.email}
+- Phone: {sender.phone}
+- Street: {sender.street}, 
+- City: {sender.city}
+- Postal code: {sender.postal_code}
+- Province: {sender.province}
+- Country: {sender.country}
+- Birth date: {sender.birthdate}
+"""

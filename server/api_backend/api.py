@@ -664,18 +664,18 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
     elif user.is_active:
         language=user.language
         style_class="warning"
-        title=i18n.langmap[user.language]["act_already_title"]
-        message=i18n.langmap[user.language]["act_already"]
+        title=i18n.user_langmap[user.language]["act_already_title"]
+        message=i18n.user_langmap[user.language]["act_already"]
     elif (not user.activation_expires_at) or (user.activation_expires_at < now):
         language=user.language
         style_class="error"
-        title=i18n.langmap[user.language]["act_expired_title"]
-        message=i18n.langmap[user.language]["act_expired"]
+        title=i18n.user_langmap[user.language]["act_expired_title"]
+        message=i18n.user_langmap[user.language]["act_expired"]
     else:
         language=user.language
         style_class="success"
-        title=i18n.langmap[user.language]["act_done_title"]
-        message=i18n.langmap[user.language]["act_done"]
+        title=i18n.user_langmap[user.language]["act_done_title"]
+        message=i18n.user_langmap[user.language]["act_done"]
         user.is_active = True
         user.pending_delete_since = None # no more in pending delete status, because now the user is active
         db_session.add(user)
@@ -688,7 +688,7 @@ def activate_user(request: Request, email: str, token: str, db_session: Session 
             "title": title,
             "message": message,
             "status_class": style_class,
-            "footer": i18n.langmap[language]["mail_ignore"],
+            "footer": i18n.user_langmap[language]["mail_ignore"],
             "login_url": None
         },
     )
