@@ -592,7 +592,7 @@ async def update_gps_position(
 
 ## Alert messages endpoints (create, list)
 
-@router.post("/api/alerts/{alert_id}/messages", response_model=MessageOut)
+@router.post("/api/alerts/{alert_id}/messages")
 def create_alert_message(alert_id: int,
             message: MessageIn,
             request: Request,
@@ -606,8 +606,9 @@ def create_alert_message(alert_id: int,
         raise not_found_exception("Alert not found")
     if alert.is_closed:
         raise forbidden_exception("Alert is closed, you can't create messages for it")
+    # If the caller (current_user) is not the alert sender
+    # and is not the alerted manager, the API call is not authorized
     if (current_user.id != alert.user_id):
-        # If the current user is not the alert sender, we check if he is the chief alert manager
         statement = (select(AlertedUser)
             .where(AlertedUser.alert_id == alert.id, AlertedUser.user_id == current_user.id)
             .where(AlertedUser.is_manager == True))
@@ -649,5 +650,29 @@ def create_alert_message(alert_id: int,
             curr_user_copy, 
             request_info=req_info,
             db_engine=request.app.state.db_engine)
-    # We return the new message (MessageOut model) to the client
-    return new_message
+    return { "message": "Message created successfully", "message_id": new_message.id }
+
+@router.get("/api/alerts/{alert_id}/messages", response_model=list[MessageOut])
+def get_alert_messages(alert_id: int,
+            current_user: User = Depends(get_current_user), 
+            db_session: Session = Depends(get_db_session)):
+    # If the alert is not found, we return "not found"
+    alert_stmt = select(Alert).where(Alert.id == alert_id)
+    alert = db_session.exec(alert_stmt).first()
+    if not alert:
+        raise not_found_exception("Alert not found")
+    # Only the alert sender (alert creator) or any alerted user can view the messages for an alert, 
+    # but if the caller is an admin or a chief, they can view the messages anyway
+    statement = (select(AlertedUser)
+        .where(AlertedUser.alert_id == alert_id, AlertedUser.user_id == current_user.id))
+    alerted_user = db_session.exec(statement).first()
+    if (not current_user.is_admin) and (not current_user.is_chief):
+        if (not alerted_user) and (alert.user_id != current_user.id):
+            raise forbidden_exception("You are not authorized to view the messages for this alert")
+    # Retrieve the messages for the alert
+    statement = select(Message).where(Message.alert_id == alert_id)
+    messages = db_session.exec(statement).all()
+    if alert.is_banned:
+        for msg in messages:
+            msg.content = "[BANNED MESSAGE]"
+    return messages

@@ -890,7 +890,7 @@ def task_alert_notify_on_new_message(
                 log_alert_error_notifying_on_new_message(str(alert.id), request_info, detail=str(e))
 
 def notify_on_new_message(user_ids, fcm_tokens, 
-        language, alert, name: str, content: str,
+        language: str, alert: Alert, name: str, content: str,
         request_info, db_session):
     action_label = alert_notification_templates[language]["new_message_action_label"]
     msg_title = alert_notification_templates[language]["new_message_title"]
