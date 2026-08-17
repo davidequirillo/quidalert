@@ -159,7 +159,7 @@ def setup_fake_functions(mocker):
             request_info, db_session):
         return len(user_ids)
     def fake_notify_on_new_message(user_ids, fcm_tokens, 
-            language: str, alert: Alert, name: str, content: str,
+            language: str, alert: Alert, name: str, message_id: int, content: str,
             request_info, db_session):
         return len(user_ids)  
     notify_sender_mocked = mocker.patch("services.alert_btasks.notify_sender", return_value=True)

@@ -639,13 +639,16 @@ def test_close_alert_local_punitive_closing(client, db_session, test_chief):
             assert user.hero_score == expected_hero_score
             assert user.hero_score >= 0
     # The alert should be banned (is_banned=True) because it was closed with a punitive closing type
-    # All related messages should be banned too (is_banned=True)
+    # All related messages, except messages written by chief manager, should be banned too (is_banned=True)
     db_session.refresh(alert)
     assert alert.is_banned == True
     messages_stmt = select(Message).where(Message.alert_id == alert.id)
     messages = db_session.exec(messages_stmt).all()
     for message in messages:
-        assert message.is_banned == True
+        if message.user_id != caller.id:
+            assert message.is_banned == True
+        else:
+            assert message.is_banned == False
 
 def test_close_alert_local_punitive_messages_banned(client, db_session, test_chief):
     caller: User = test_chief["user"]
@@ -680,7 +683,7 @@ def test_close_alert_local_punitive_messages_banned(client, db_session, test_chi
         db_session.add(message)
     db_session.commit()
     # We call the close alert api endpoint with a punitive closing type, which should be allowed for local alerts,
-    # and we check that the alert and all related messages are banned (is_banned=True)
+    # and we check that the alert and all related messages are banned (is_banned=True), except messages from the caller (chief manager)
     alert_id = alert.id
     closing_type = ClosingType.punitive.value
     response = client.post(
@@ -692,11 +695,14 @@ def test_close_alert_local_punitive_messages_banned(client, db_session, test_chi
     assert alerted_user.closing_vote == CLOSING_VOTE_PUNITIVE
     # The alert should be banned (is_banned=True) because it was closed with a punitive closing type
     assert alert.is_banned == True
-    # All related messages should be banned too (is_banned=True)
+    # All related messages, except messages from the chief manager (caller), should be banned too (is_banned=True)
     messages_stmt = select(Message).where(Message.alert_id == alert.id)
     messages = db_session.exec(messages_stmt).all()
     for message in messages:
-        assert message.is_banned == True
+        if message.user_id != caller.id:
+            assert message.is_banned == True
+        else:
+            assert message.is_banned == False
 
 def test_close_alert_type_general_notifications_not_sent(client, db_session, test_chief, setup_fake_functions):
     caller: User = test_chief["user"]
