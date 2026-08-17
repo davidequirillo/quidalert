@@ -12,7 +12,7 @@ from core.exceptions import (
 )
 from models.general import (
     User, Alert, AlertType, AlertedUser,
-    ALERT_MAX_MESSAGES_NUM
+    ALERT_MAX_MESSAGES_NUM, Message
 )
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
@@ -214,6 +214,9 @@ def test_create_message_success_for_general_alert(client, db_session, test_chief
     # The caller is the alert sender, because the alert is general
     assert alert.user_id == chief.id
     messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Call the API endpoint to create a message for the alert
     data = {
         "content": "This is a test message",
@@ -224,10 +227,14 @@ def test_create_message_success_for_general_alert(client, db_session, test_chief
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["message"] == "Message created successfully"
-    assert response_data["message_id"] is not None
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
     # Verify that the messages_num field in the alert has been incremented
     db_session.refresh(alert)
     assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Notifications are not sent because the alert is general
     setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
 
@@ -243,6 +250,9 @@ def test_create_message_success_for_empty_alert(client, db_session, test_chief, 
     assert alert is not None, "No suitable alert found in the database for testing"
     assert alert.user_id == chief.id
     messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Call the API endpoint to create a message for the alert
     data = {
         "content": "This is a test message",
@@ -253,10 +263,14 @@ def test_create_message_success_for_empty_alert(client, db_session, test_chief, 
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["message"] == "Message created successfully"
-    assert response_data["message_id"] is not None
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
     # Verify that the messages_num field in the alert has been incremented
     db_session.refresh(alert)
     assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Notifications are not sent because the alert is empty
     setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
 
@@ -272,12 +286,15 @@ def test_create_message_success_for_managed_alert(client, db_session, test_chief
     assert alert is not None, "No suitable alert found in the database for testing"
     assert alert.user_id == chief.id
     messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # We verify that there are some alerted users for this alert
     # See setup_alerts_data_and_teardown fixture, which creates some alerted users for the managed alert
     statement_alerted_users = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
     alerted_users = db_session.exec(statement_alerted_users).all()
     assert len(alerted_users) > 0, "No alerted users found for the managed alert in the database for testing"
-    alerted_users_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
+    alerted_user_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
     # Call the API endpoint to create a message for the alert
     data = {
         "content": "This is a test message",
@@ -288,10 +305,14 @@ def test_create_message_success_for_managed_alert(client, db_session, test_chief
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["message"] == "Message created successfully"
-    assert response_data["message_id"] is not None
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
     # Verify that the messages_num field in the alert has been incremented
     db_session.refresh(alert)
     assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Notifications are sent because the alert is managed
     # and there are some alerted users for this alert, 
     # so the mock_notify_on_new_message function should be called once
@@ -301,10 +322,13 @@ def test_create_message_success_for_managed_alert(client, db_session, test_chief
     if len(msg_content) > 30:
         msg_content = msg_content[:30] + "..."
     setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
-        alerted_users_ids, ANY, chief.language,
-        ANY, msg_name, msg_content,
+        ANY, ANY, chief.language,
+        ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
+    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    for id in alerted_user_ids:
+        assert str(id) in args[0]
 
 def test_create_message_success_by_alert_sender(client, db_session, test_baseuser, setup_fake_functions):
     user: User = test_baseuser['user']
@@ -319,13 +343,16 @@ def test_create_message_success_by_alert_sender(client, db_session, test_baseuse
     assert alert is not None, "No suitable alert found in the database for testing"
     assert alert.user_id == user.id
     messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # We select all alerted users for this alert
     statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
     alerted_users = db_session.exec(statement).all()
     # We verify that there are some alerted users for this alert.
     # See setup_alerts_data_and_teardown fixture, which creates some alerted users for the local alert
     assert len(alerted_users) > 0, "No alerted users found for the local alert in the database for testing"
-    alerted_users_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
+    alerted_user_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
     # Call the API endpoint to create a message for the alert
     data = {
         "content": "This is a test message",
@@ -336,10 +363,14 @@ def test_create_message_success_by_alert_sender(client, db_session, test_baseuse
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["message"] == "Message created successfully"
-    assert response_data["message_id"] is not None
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
     # Verify that the messages_num field in the alert has been incremented
     db_session.refresh(alert)
     assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Notifications are sent because the alert is local
     # and there are some alerted users for this alert.
     # So the notify_on_new_message function should be called once
@@ -349,10 +380,13 @@ def test_create_message_success_by_alert_sender(client, db_session, test_baseuse
     if len(msg_content) > 30:
         msg_content = msg_content[:30] + "..."
     setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
-        alerted_users_ids, ANY, user.language,
-        ANY, msg_name, msg_content,
+        ANY, ANY, user.language,
+        ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
+    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    for id in alerted_user_ids:
+        assert str(id) in args[0]
 
 def test_create_message_success_by_alert_manager(client, db_session, test_chief, setup_fake_functions):
     chief: User = test_chief['user']
@@ -379,8 +413,11 @@ def test_create_message_success_by_alert_manager(client, db_session, test_chief,
     statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
     alerted_users = db_session.exec(statement).all()
     assert len(alerted_users) > 0
-    alerted_users_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
+    alerted_user_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
     messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Call the API endpoint to create a message for the alert
     data = {
         "content": "This is a test message",
@@ -391,10 +428,14 @@ def test_create_message_success_by_alert_manager(client, db_session, test_chief,
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["message"] == "Message created successfully"
-    assert response_data["message_id"] is not None
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
     # Verify that the messages_num field in the alert has been incremented
     db_session.refresh(alert)
     assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Notifications are sent because the alert is local
     # and there are some alerted users for this alert.
     # So the notify_on_new_message function should be called once
@@ -406,18 +447,19 @@ def test_create_message_success_by_alert_manager(client, db_session, test_chief,
     # In this case we notify all alerted users 
     # (except the alert manager, who is the caller),
     # and we also notify the alert sender
-    alerted_users_ids.remove(str(chief.id))  # Remove the alert manager from the list of alerted users to notify
-    # Note: the order of the list is relevant, because the notify_on_new_message function (see alert_btasks.py) 
-    # is called with the list of user IDs in a specific order (first the alert sender, then the alerted users), 
-    # so we need to maintain that order in the test.
-    users_to_notify_ids = [str(alert.user_id)] + alerted_users_ids
+    alerted_user_ids.remove(str(chief.id))
+    users_to_notify_ids = [str(alert.user_id)] + alerted_user_ids
     setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
-        users_to_notify_ids, ANY, chief.language,
-        ANY, msg_name, msg_content,
+        ANY, ANY, chief.language,
+        ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
+    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    for id in alerted_user_ids:
+        assert str(id) in args[0]
 
-def test_create_message_with_no_other_alerted_users(client, db_session, test_baseuser, setup_fake_functions):
+
+def test_create_message_with_no_alerted_users(client, db_session, test_baseuser, setup_fake_functions):
     user: User = test_baseuser['user']
     access_token = test_baseuser['access_token']
     assert user is not None, "No user found in the database for testing"
@@ -430,6 +472,9 @@ def test_create_message_with_no_other_alerted_users(client, db_session, test_bas
     assert alert is not None, "No suitable alert found in the database for testing"
     assert alert.user_id == user.id
     messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # We remove all alerted users for this alert, 
     # to simulate the case where there are no alerted users
     statement = delete(AlertedUser).where(AlertedUser.alert_id == alert.id)
@@ -447,10 +492,14 @@ def test_create_message_with_no_other_alerted_users(client, db_session, test_bas
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["message"] == "Message created successfully"
-    assert response_data["message_id"] is not None
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
     # Verify that the messages_num field in the alert has been incremented
     db_session.refresh(alert)
     assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
     # Notifications are not sent because there are no alerted users for this alert,
     # so the notify_on_new_message function should not be called
     setup_fake_functions["mock_notify_on_new_message"].assert_not_called()

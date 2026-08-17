@@ -460,7 +460,10 @@ def close_alert(alert_id: int,
             if closing_schema.type == ClosingType.punitive.value:
                 alert.is_banned = True
                 db_session.add(alert)
-                upd_stmt = update(Message).where(Message.alert_id == alert.id).values(is_banned=True) # type: ignore
+                upd_stmt = (update(Message)
+                        .where(Message.alert_id == alert.id) # type: ignore
+                        .where(Message.user_id != current_user.id) # type: ignore
+                        .values(is_banned=True)) # type: ignore
                 db_session.exec(upd_stmt)
     else:
         # For non-local alerts, the chief alert manager is the chief alert sender,
@@ -662,17 +665,18 @@ def get_alert_messages(alert_id: int,
     if not alert:
         raise not_found_exception("Alert not found")
     # Only the alert sender (alert creator) or any alerted user can view the messages for an alert, 
-    # but if the caller is an admin or a chief, they can view the messages anyway
-    statement = (select(AlertedUser)
-        .where(AlertedUser.alert_id == alert_id, AlertedUser.user_id == current_user.id))
-    alerted_user = db_session.exec(statement).first()
+    # but admins or a chiefs can view the messages anyway
     if (not current_user.is_admin) and (not current_user.is_chief):
+        statement = (select(AlertedUser)
+                .where(AlertedUser.alert_id == alert_id, AlertedUser.user_id == current_user.id))
+        alerted_user = db_session.exec(statement).first()
         if (not alerted_user) and (alert.user_id != current_user.id):
             raise forbidden_exception("You are not authorized to view the messages for this alert")
     # Retrieve the messages for the alert
     statement = select(Message).where(Message.alert_id == alert_id)
+    statement = statement.order_by(asc(Message.created_at))
     messages = db_session.exec(statement).all()
-    if alert.is_banned:
-        for msg in messages:
+    for msg in messages:
+        if msg.is_banned:
             msg.content = "[BANNED MESSAGE]"
     return messages

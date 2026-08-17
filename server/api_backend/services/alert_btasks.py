@@ -846,7 +846,7 @@ def notify_nearby_users_about_expansion(
 def task_alert_notify_on_new_message(
         alert: Alert, message: Message, current_user: User, 
         request_info: dict, db_engine):
-    if (alert.id is None) or (alert.is_closed):
+    if (alert.id is None) or (message.id is None) or (alert.is_closed):
         return
     users_to_notify_ids = []
     users_to_notify_fcm_tokens = []
@@ -878,19 +878,20 @@ def task_alert_notify_on_new_message(
         # Note: as language we use the caller's (current_user) language for simplicity, not the language of each client receiving the notification.
         if users_to_notify_ids and users_to_notify_fcm_tokens:
             try:
+                msg_id = message.id
                 msg_content = message.content[:30] if len(message.content) > 30 else message.content
                 msg_content += "..." if len(message.content) > 30 else ""
                 curr_user_name = f"{current_user.firstname} {current_user.surname}"
                 notification_count = notify_on_new_message(
                         users_to_notify_ids, users_to_notify_fcm_tokens, 
-                        current_user.language, alert, curr_user_name, msg_content,
+                        current_user.language, alert, curr_user_name, msg_id, msg_content,
                         request_info, db_session)
                 log_alert_notify_on_new_message(str(alert.id), request_info, detail=f"Alert message successfully sent to {notification_count} out of {len(users_to_notify_ids)} users")
             except Exception as e:
                 log_alert_error_notifying_on_new_message(str(alert.id), request_info, detail=str(e))
 
 def notify_on_new_message(user_ids, fcm_tokens, 
-        language: str, alert: Alert, name: str, content: str,
+        language: str, alert: Alert, name: str, message_id: int, content: str,
         request_info, db_session):
     action_label = alert_notification_templates[language]["new_message_action_label"]
     msg_title = alert_notification_templates[language]["new_message_title"]
@@ -904,7 +905,8 @@ def notify_on_new_message(user_ids, fcm_tokens,
         "origin": "new_message",
         "action": "view_alert",
         "action_label": action_label,
-        "alert_id": str(alert.id)
+        "alert_id": str(alert.id),
+        "message_id": str(message_id)
     }
     success_count = notify_many_clients(
         user_ids, fcm_tokens, 
