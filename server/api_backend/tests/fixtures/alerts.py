@@ -196,7 +196,7 @@ def setup_users_data_and_teardown(db_session, redis_session):
     db_session.exec(delete(User))
     db_session.commit()
 
-@pytest.fixture(name="test_alert")
+@pytest.fixture(autouse=False, name="test_alert")
 def create_test_alert(db_session, test_baseuser):
     user: User = test_baseuser["user"]
     alert = Alert(
@@ -345,25 +345,31 @@ def setup_alerts_data_and_teardown(db_session, test_alert_users_data, test_baseu
     statement = select(Alert)
     alerts = db_session.exec(statement).all()
     for i, alert in enumerate(alerts):
-        if (alert.type == AlertType.general.value):
-            continue # generale alerts have no messages
-        if (alert.type == AlertType.empty.value):
-            continue # empty alerts have no messages
-        alerted_users_stmt = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
-        alerted_users = db_session.exec(alerted_users_stmt).all()
-        if len(alerted_users) == 0:
-            continue # no alerted users for this alert, so we skip message creation
-        for alerted_user in alerted_users:
-            message_sender_id = alerted_user.user_id
-            for j in range(0, 3):
-                message = Message(
-                    alert_id=alert.id,
-                    user_id=message_sender_id,
-                    content=f"Test message {j} by user {message_sender_id} for alert {alert.id}"
-                )
-                db_session.add(message)
-                alert.messages_num += 1 # see "messages_num" field in the Alert model for details about database denormalization.
-                db_session.add(alert)
+        # For all alerts, we create some messages by the alert sender
+        for j in range(0, 3):
+            message = Message(
+                alert_id=alert.id,
+                user_id=alert.user_id,
+                content=f"Test message {j} by user {alert.user_id} for alert {alert.id}"
+            )
+            db_session.add(message)
+            alert.messages_num += 1 # see "messages_num" field in the Alert model for details about database denormalization.
+            db_session.add(alert) 
+        # For local alerts, we create some messages by the alerted users
+        if alert.type == AlertType.local.value:
+            alerted_users_stmt = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+            alerted_users = db_session.exec(alerted_users_stmt).all()
+            for alerted_user in alerted_users:
+                message_sender_id = alerted_user.user_id
+                for j in range(0, 5):
+                    message = Message(
+                        alert_id=alert.id,
+                        user_id=message_sender_id,
+                        content=f"Test message {j} by user {message_sender_id} for alert {alert.id}"
+                    )
+                    db_session.add(message)
+                    alert.messages_num += 1 # see "messages_num" field in the Alert model for details about database denormalization.
+                    db_session.add(alert)
     db_session.commit()
     yield {"alerts_created": True}
     db_session.exec(delete(Message))

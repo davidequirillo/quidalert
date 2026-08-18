@@ -165,6 +165,7 @@ class NotificationProvider extends ChangeNotifier {
         );
         final actionLabel = message.data['action_label'] ?? "Ok";
         final messageTitle = message.notification?.title ?? 'Notification';
+        final origin = message.data['origin'] ?? 'unknown';
         AppKeys.snackbarKey.currentState?.showSnackBar(
           SnackBar(
             content: Text(messageTitle),
@@ -251,6 +252,9 @@ class NotificationProvider extends ChangeNotifier {
       case 'close_alert':
         _navigateToAlertDetails(messageData);
         break;
+      case 'new_message':
+        _navigateToMessagesPage(messageData);
+        break;
       default:
         debugPrintC(
           'Notification: unrecognized message origin "${messageData['origin']}". Ignoring.',
@@ -272,6 +276,25 @@ class NotificationProvider extends ChangeNotifier {
     String alertIdStr = messageData['alert_id'];
     AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/alerts/view-alert-details',
+      (route) => false,
+      arguments: int.tryParse(alertIdStr) ?? -1,
+    );
+  }
+
+  void _navigateToMessagesPage(Map<String, dynamic> messageData) {
+    if (!messageData.containsKey('alert_id') ||
+        messageData['alert_id'] == null) {
+      debugPrintC(
+        'Notification: new_message message does not contain an "alert_id" field.',
+      );
+      return;
+    }
+    debugPrintC(
+      'Notification: navigating to alert messages for alert_id: ${messageData["alert_id"]}',
+    );
+    String alertIdStr = messageData['alert_id'];
+    AppKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/alerts/view-alert-messages',
       (route) => false,
       arguments: int.tryParse(alertIdStr) ?? -1,
     );

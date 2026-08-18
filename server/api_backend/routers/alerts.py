@@ -655,7 +655,7 @@ def create_alert_message(alert_id: int,
             db_engine=request.app.state.db_engine)
     return { "message": "Message created successfully", "message_id": new_message.id }
 
-@router.get("/api/alerts/{alert_id}/messages", response_model=list[MessageOut])
+@router.get("/api/alerts/{alert_id}/messages")
 def get_alert_messages(alert_id: int,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
@@ -669,6 +669,7 @@ def get_alert_messages(alert_id: int,
     alerted_users = db_session.exec(statement).all()
     curr_user_is_alert_sender = (current_user.id == alert.user_id)
     curr_user_is_alerted_user = False
+    curr_user_is_alerted_manager = False
     alert_sender_id = alert.user_id
     alerted_manager_id = None
     for au in alerted_users:
@@ -676,6 +677,8 @@ def get_alert_messages(alert_id: int,
             curr_user_is_alerted_user = True
         if au.is_manager:
             alerted_manager_id = au.user_id
+            if au.user_id == current_user.id:
+                curr_user_is_alerted_manager = True
     # Only the alert sender (alert creator) or any alerted user can view the messages for an alert, 
     # but admins or a chiefs can view the messages anyway
     if (not current_user.is_admin) and (not current_user.is_chief):
@@ -709,4 +712,7 @@ def get_alert_messages(alert_id: int,
             created_at=message.created_at,
             content=message.content)
         messages_out.append(msg_out)
-    return messages_out
+    return {
+        "messages": messages_out,
+        "readonly": (not curr_user_is_alert_sender) and (not curr_user_is_alerted_manager)
+    }
