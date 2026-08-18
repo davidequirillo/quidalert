@@ -169,15 +169,11 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     return;
   }
 
-  void _viewMessagesPage(
-    BuildContext context,
-    int alertId,
-    bool writeModeIsEnabled,
-  ) {
+  void _viewMessagesPage(BuildContext context, int alertId) {
     Navigator.pushNamed(
       context,
       '/alerts/view-alert-messages',
-      arguments: {"alertId": alertId, "readOnly": !writeModeIsEnabled},
+      arguments: alertId,
     );
     return;
   }
@@ -434,9 +430,6 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     );
     final int alertSpreadCount = alertWithInfo.alert.spreadCount;
     final int alertMaxSpreadCount = Alert.maxSpreadCount;
-    final chatWriteModeIsEnabled =
-        ((alertWithInfo.userIsSender || alertWithInfo.userIsManager) &&
-        alertWithInfo.alert.status != AlertStatus.closed.name);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -623,11 +616,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           children: [
             InkWell(
               onTap: () {
-                _viewMessagesPage(
-                  context,
-                  alertWithInfo.alert.id,
-                  chatWriteModeIsEnabled,
-                );
+                _viewMessagesPage(context, alertWithInfo.alert.id);
               },
               child: Text(
                 "Chat",

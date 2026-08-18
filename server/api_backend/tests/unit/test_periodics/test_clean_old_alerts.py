@@ -28,6 +28,9 @@ async def test_clean_old_alerts_one_old_alert_in_db(db_session: Session, redis_s
     alerts_num = len(alerts)
     # There is at least one alert in the database (see setup_alerts_data fixture)
     assert alerts_num > 0
+    # There are 25 alerts in the database (see setup_alerts_data fixture)
+    assert alerts_num == 25
+    # We keep the first alert from the database
     alert = alerts[0]
     alerted_users_stmt = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
     alert_messages_stmt = select(Message).where(Message.alert_id == alert.id)
@@ -38,8 +41,10 @@ async def test_clean_old_alerts_one_old_alert_in_db(db_session: Session, redis_s
     assert alert_messages is not None
     assert len(alerted_users) > 0 # see setup_alerts_data fixture
     assert len(alert_messages) > 0 # see setup_alerts_data fixture
-    # see setup_alerts_data fixture, each alerted user has at least 3 messages for the alert
-    assert len(alert_messages) == len(alerted_users) * 3
+    # Each alerted user has written 5 messages for the alert
+    # And the alert sender has written 3 messages for the alert 
+    # (see setup_alerts_data fixture, where we create 5 messages for each alerted user and 3 messages for the alert sender)
+    assert len(alert_messages) == (len(alerted_users) * 5) + 3
     # Set the alert's created_at to be older than ALERT_TTL_DAYS
     alert.created_at = now - timedelta(days=ALERT_TTL_DAYS + 1)
     db_session.add(alert)

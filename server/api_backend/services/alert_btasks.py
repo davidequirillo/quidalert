@@ -899,7 +899,7 @@ def notify_on_new_message(user_ids, fcm_tokens,
                 name=name, # the name of the user who sent the message
                 date=alert.created_at.strftime("%Y-%m-%d"),
                 hour=alert.created_at.strftime("%H:%M"),
-                text=content
+                content=content
             )
     msg_data = {
         "origin": "new_message",

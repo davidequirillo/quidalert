@@ -70,28 +70,28 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
     }
   }
 
-  Future<List<Message>> _getMessages(int alertId) async {
+  Future<Map<String, dynamic>> _getMessages(int alertId) async {
     final authClient = context.read<AuthClient>();
     final response = await authClient.doProtectedApiRequest(
       "get",
       '/alerts/$alertId/messages',
     );
-    final List<dynamic>? respObj = json.decode(response.body);
-    if (respObj == null) {
+    final Map<String, dynamic> respObj = json.decode(response.body);
+    if (respObj['messages'] == null) {
       throw NotFoundException();
     }
-    final messages = respObj.map((e) => Message.fromJson(e)).toList();
-    return messages;
+    final messages = (respObj['messages'] as List)
+        .map((e) => Message.fromJson(e))
+        .toList();
+    final readOnly = respObj['readonly'] ?? true;
+    return {"messages": messages, "readOnly": readOnly};
   }
 
   @override
   Widget build(BuildContext context) {
-    final args =
-        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    final int alertId = args["alertId"] as int;
-    final bool readOnly = args["readOnly"] as bool;
+    final alertId = ModalRoute.of(context)!.settings.arguments as int;
     final loc = AppLocalizations.of(context)!;
-    return FutureBuilder<List<Message>>(
+    return FutureBuilder<Map<String, dynamic>>(
       future: _getMessages(alertId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -108,7 +108,8 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
           return Center(child: Text(errorMessage));
         }
         if (snapshot.hasData) {
-          final messages = snapshot.data!;
+          final messages = snapshot.data!['messages'] as List<Message>;
+          final readOnly = snapshot.data!['readOnly'] as bool;
           return buildChat(context, alertId, messages, readOnly);
         }
         return Center(child: Text(loc.errorGeneric));
@@ -135,7 +136,7 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
               left: 15,
               right: 15,
               top: 15,
-              bottom: 100, // Leave space for the input area
+              bottom: 200, // Leave space for the input area
             ),
             itemCount: messages.length,
             itemBuilder: (context, index) {
@@ -256,7 +257,7 @@ class _ChatBubble extends StatelessWidget {
               Text(
                 msgSenderStr,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -269,7 +270,7 @@ class _ChatBubble extends StatelessWidget {
             SizedBox(height: 5),
             Text(
               createdAtStr,
-              style: const TextStyle(fontSize: 10, color: Colors.black54),
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
             ),
           ],
         ),
