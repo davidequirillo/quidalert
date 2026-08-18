@@ -42,10 +42,18 @@ def test_create_message_content_too_long():
 def test_create_message_out_with_defaults():
     data = {
         "content": "This is a test message",
-        "alert_id": 1 
+        "alert_id": 1,
+        "firstname": "John",
+        "surname": "Doe"
         # Note: user_id is not required in MessageOut (required in Message)
     }
     message = MessageOut.model_validate(data)
     assert message.content == data["content"]
     assert message.is_banned == False
     assert message.created_at is not None
+    assert message.firstname == data["firstname"]
+    assert message.surname == data["surname"]
+    assert message.user_role is None
+    assert message.is_alert_sender is False
+    assert message.is_alert_manager is False
+    assert message.is_caller is False

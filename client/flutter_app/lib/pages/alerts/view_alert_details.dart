@@ -169,11 +169,15 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     return;
   }
 
-  void _viewMessagesPage(BuildContext context, int alertId) {
+  void _viewMessagesPage(
+    BuildContext context,
+    int alertId,
+    bool writeModeIsEnabled,
+  ) {
     Navigator.pushNamed(
       context,
       '/alerts/view-alert-messages',
-      arguments: alertId,
+      arguments: {"alertId": alertId, "readOnly": !writeModeIsEnabled},
     );
     return;
   }
@@ -430,6 +434,9 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     );
     final int alertSpreadCount = alertWithInfo.alert.spreadCount;
     final int alertMaxSpreadCount = Alert.maxSpreadCount;
+    final chatWriteModeIsEnabled =
+        ((alertWithInfo.userIsSender || alertWithInfo.userIsManager) &&
+        alertWithInfo.alert.status != AlertStatus.closed.name);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -611,41 +618,25 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             '${loc.alertNegativeVotesNum}: ${alertWithInfo.negativeVotesNum}',
           ),
         SizedBox(height: 10),
-        Text('${loc.alertMessages}: (${alertWithInfo.messagesNum})'),
+        Text(loc.alertMessages),
         Row(
           children: [
-            if (alertWithInfo.messagesNum > 0)
-              InkWell(
-                onTap: () {
-                  _viewMessagesPage(context, alertWithInfo.alert.id);
-                },
-                child: Text(
-                  loc.buttonView,
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                    color: Colors.blue,
-                  ),
+            InkWell(
+              onTap: () {
+                _viewMessagesPage(
+                  context,
+                  alertWithInfo.alert.id,
+                  chatWriteModeIsEnabled,
+                );
+              },
+              child: Text(
+                "Chat",
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  color: Colors.blue,
                 ),
               ),
-            if ((alertWithInfo.messagesNum > 0) &&
-                ((alertWithInfo.userIsSender) ||
-                    (alertWithInfo.userIsManager)) &&
-                alertWithInfo.alert.status != AlertStatus.closed.name)
-              SizedBox(width: 20),
-            if ((alertWithInfo.userIsSender || alertWithInfo.userIsManager) &&
-                alertWithInfo.alert.status != AlertStatus.closed.name)
-              InkWell(
-                onTap: () {
-                  _viewMessagesPage(context, alertWithInfo.alert.id);
-                },
-                child: Text(
-                  loc.buttonWrite,
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
+            ),
           ],
         ),
         SizedBox(height: 10),

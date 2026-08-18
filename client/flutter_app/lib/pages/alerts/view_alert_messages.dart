@@ -6,9 +6,16 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
+import 'package:quidalert_flutter/models/general.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
+import 'package:quidalert_flutter/services/auth.dart';
+import 'package:quidalert_flutter/widgets/helpers.dart';
 
 class AlertMessagesPage extends StatelessWidget {
   const AlertMessagesPage({super.key});
@@ -23,13 +30,250 @@ class AlertMessagesPage extends StatelessWidget {
   }
 }
 
-class AlertMessagesBody extends StatelessWidget {
+class AlertMessagesBody extends StatefulWidget {
   const AlertMessagesBody({super.key});
 
   @override
+  State<AlertMessagesBody> createState() => _AlertMessagesBodyState();
+}
+
+class _AlertMessagesBodyState extends State<AlertMessagesBody> {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage(int alertId) async {
+    final content = _messageController.text.trim();
+    if (content.isEmpty) return;
+    final authClient = context.read<AuthClient>();
+    try {
+      await authClient.doProtectedApiRequest(
+        "post",
+        '/alerts/$alertId/messages',
+        body: {"content": content},
+      );
+      _messageController.clear();
+      setState(() {}); // Refresh the messages list
+    } catch (e) {
+      debugPrint("Error sending message: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)),
+        );
+      }
+    }
+  }
+
+  Future<List<Message>> _getMessages(int alertId) async {
+    final authClient = context.read<AuthClient>();
+    final response = await authClient.doProtectedApiRequest(
+      "get",
+      '/alerts/$alertId/messages',
+    );
+    final List<dynamic>? respObj = json.decode(response.body);
+    if (respObj == null) {
+      throw NotFoundException();
+    }
+    final messages = respObj.map((e) => Message.fromJson(e)).toList();
+    return messages;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final id = ModalRoute.of(context)!.settings.arguments as int;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final int alertId = args["alertId"] as int;
+    final bool readOnly = args["readOnly"] as bool;
     final loc = AppLocalizations.of(context)!;
-    return Center(child: Text(loc.alertMessages));
+    return FutureBuilder<List<Message>>(
+      future: _getMessages(alertId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          debugPrint("Error fetching alert messages: ${snapshot.error}");
+          final exceptionName = snapshot.error.runtimeType.toString();
+          final errorMessage =
+              loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
+          if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
+            goToLoginPagePostFrameCallback(context);
+          }
+          return Center(child: Text(errorMessage));
+        }
+        if (snapshot.hasData) {
+          final messages = snapshot.data!;
+          return buildChat(context, alertId, messages, readOnly);
+        }
+        return Center(child: Text(loc.errorGeneric));
+      },
+    );
+  }
+
+  Widget buildChat(
+    BuildContext context,
+    int alertId,
+    List<Message> messages,
+    bool readOnly,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom(); // Scroll to bottom after the UI is built
+    });
+    return Column(
+      children: [
+        // Messages area
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.only(
+              left: 15,
+              right: 15,
+              top: 15,
+              bottom: 100, // Leave space for the input area
+            ),
+            itemCount: messages.length,
+            itemBuilder: (context, index) {
+              final message = messages[index];
+              return _ChatBubble(message: message);
+            },
+          ),
+        ),
+        // Input area
+        if (!readOnly) _buildInputArea(alertId),
+      ],
+    );
+  }
+
+  Widget _buildInputArea(int alertId) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        color: Colors.transparent,
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    hintText: "Write a message...",
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  onSubmitted: (_) => _sendMessage(alertId),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => _sendMessage(alertId),
+              child: const CircleAvatar(
+                radius: 22,
+                backgroundColor: Color(0xFF075E54),
+                child: Icon(Icons.send, color: Colors.white, size: 20),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  final Message message;
+
+  const _ChatBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final createdAtStr = datetimeAsStringWithoutMilliseconds(
+      message.createdAt,
+      includeTimezone: false,
+    );
+    String msgSenderStr = message.isCaller
+        ? ""
+        : "${message.firstname} ${message.surname}";
+    if (message.isAlertManager) {
+      msgSenderStr += " (manager)";
+    }
+    msgSenderStr = msgSenderStr.trim();
+    return Align(
+      alignment: message.isCaller
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        decoration: BoxDecoration(
+          color: message.isCaller ? const Color(0xFFE1FFC7) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(12),
+            topRight: const Radius.circular(12),
+            bottomLeft: Radius.circular(message.isCaller ? 12 : 0),
+            bottomRight: Radius.circular(message.isCaller ? 0 : 12),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              offset: Offset(0, 1),
+              blurRadius: 1,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (msgSenderStr.isNotEmpty)
+              Text(
+                msgSenderStr,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            SizedBox(height: 5),
+            Text(
+              message.content,
+              style: const TextStyle(fontSize: 15, color: Colors.black87),
+            ),
+            SizedBox(height: 5),
+            Text(
+              createdAtStr,
+              style: const TextStyle(fontSize: 10, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
