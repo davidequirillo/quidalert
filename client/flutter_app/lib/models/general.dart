@@ -524,3 +524,65 @@ class AlertedUser {
     }
   }
 }
+
+class Message {
+  final int id;
+  final int alertId;
+  final bool isBanned;
+  final String content;
+  final DateTime createdAt;
+  final String firstname;
+  final String surname;
+  final String userRole;
+  final bool isAlertSender;
+  final bool isAlertManager;
+  final bool isCaller;
+
+  Message({
+    required this.id,
+    required this.alertId,
+    required this.isBanned,
+    required this.content,
+    required this.createdAt,
+    required this.firstname,
+    required this.surname,
+    required this.userRole,
+    required this.isAlertSender,
+    required this.isAlertManager,
+    required this.isCaller,
+  });
+
+  factory Message.fromJson(Map<String, dynamic> json) {
+    try {
+      final id = json['id'];
+      final alertId = json['alert_id'];
+      final isBanned = json['is_banned'];
+      final content = json['content'];
+      final createdAt = json['created_at'] != null
+          ? DateTime.parse("${json['created_at']}Z").toLocal()
+          : DateTime(0);
+      final firstname = json['firstname'];
+      final surname = json['surname'];
+      final userRole = json['user_role'] ?? UserRoleExtended.citizen.name;
+      final isAlertSender = json['is_alert_sender'];
+      final isAlertManager = json['is_alert_manager'];
+      final isCaller = json['is_caller'];
+      return Message(
+        id: id,
+        alertId: alertId,
+        isBanned: isBanned,
+        content: content,
+        createdAt: createdAt,
+        firstname: firstname,
+        surname: surname,
+        userRole: userRole,
+        isAlertSender: isAlertSender,
+        isAlertManager: isAlertManager,
+        isCaller: isCaller,
+      );
+    } catch (e) {
+      debugPrintC("Error parsing Message from JSON: $e");
+      throw FromJsonObjException();
+    }
+  }
+}

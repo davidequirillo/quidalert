@@ -40,7 +40,7 @@ from models.general import (
     HERO_SCORE_INC_VALUE_TO_ALERT_SENDER,
     HERO_SCORE_INC_VALUE_TO_ALERTED_USERS,
     ExpandingSchema, ALERT_SPREAD_MAX_COUNT,
-    MessageIn, MessageOut,Message, ALERT_MAX_MESSAGES_NUM
+    MessageIn, Message, MessageOut, ALERT_MAX_MESSAGES_NUM
 )
 from services.security import (
     now_tz_naive, now_tz_aware
@@ -660,23 +660,53 @@ def get_alert_messages(alert_id: int,
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
     # If the alert is not found, we return "not found"
-    alert_stmt = select(Alert).where(Alert.id == alert_id)
-    alert = db_session.exec(alert_stmt).first()
-    if not alert:
+    statement = select(Alert).where(Alert.id == alert_id)
+    alert = db_session.exec(statement).first()
+    if (not alert) or (not alert.id):
         raise not_found_exception("Alert not found")
+    statement = (select(AlertedUser)
+            .where(AlertedUser.alert_id == alert_id))
+    alerted_users = db_session.exec(statement).all()
+    curr_user_is_alert_sender = (current_user.id == alert.user_id)
+    curr_user_is_alerted_user = False
+    alert_sender_id = alert.user_id
+    alerted_manager_id = None
+    for au in alerted_users:
+        if au.user_id == current_user.id:
+            curr_user_is_alerted_user = True
+        if au.is_manager:
+            alerted_manager_id = au.user_id
     # Only the alert sender (alert creator) or any alerted user can view the messages for an alert, 
     # but admins or a chiefs can view the messages anyway
     if (not current_user.is_admin) and (not current_user.is_chief):
-        statement = (select(AlertedUser)
-                .where(AlertedUser.alert_id == alert_id, AlertedUser.user_id == current_user.id))
-        alerted_user = db_session.exec(statement).first()
-        if (not alerted_user) and (alert.user_id != current_user.id):
+        if (not curr_user_is_alert_sender) and (not curr_user_is_alerted_user):
             raise forbidden_exception("You are not authorized to view the messages for this alert")
     # Retrieve the messages for the alert
-    statement = select(Message).where(Message.alert_id == alert_id)
-    statement = statement.order_by(asc(Message.created_at))
-    messages = db_session.exec(statement).all()
-    for msg in messages:
-        if msg.is_banned:
-            msg.content = "[BANNED MESSAGE]"
-    return messages
+    statement = (select(Message, User)
+            .join(User, Message.user_id == User.id) # type: ignore
+            .where(Message.alert_id == alert_id)
+            .order_by(asc(Message.created_at))
+            )
+    results = db_session.exec(statement).all()
+    messages_out: list[MessageOut] = []
+    for res in results:
+        message = res[0]
+        user = res[1]
+        if message.is_banned:
+            message.content = "[BANNED MESSAGE]"
+        user_is_manager = ((alerted_manager_id and (user.id == alerted_manager_id)) 
+                                or ((user.id == alert_sender_id) and (alert.type != AlertType.local.value)))
+        msg_out = MessageOut(
+            firstname=user.firstname,
+            surname=user.surname,
+            user_role=user.role,
+            is_alert_sender=(user.id == alert_sender_id),
+            is_alert_manager=user_is_manager,
+            is_caller=(user.id == current_user.id),
+            id=message.id,
+            alert_id=alert.id,
+            is_banned=message.is_banned,
+            created_at=message.created_at,
+            content=message.content)
+        messages_out.append(msg_out)
+    return messages_out

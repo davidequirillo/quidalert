@@ -480,7 +480,7 @@ class AlertIn(SQLModel, table=False):
         return v
 
 ALERT_SPREAD_MAX_COUNT = 4 # initial alert + 3 expansions = max 4 "generations" of alerted users
-ALERT_MAX_MESSAGES_NUM = 1000 # maximum number of messages for an alert
+ALERT_MAX_MESSAGES_NUM = 500 # maximum number of messages for an alert
 
 class AlertOut(AlertIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
@@ -631,7 +631,7 @@ class ExpandingSchema(BaseModel):
 class MessageIn(SQLModel, table=False): # alert message sent by the client, either the alert sender or the alert manager
     content: str = Field(nullable=False, min_length=1, max_length=512)
 
-class MessageOut(MessageIn, table=False):
+class MessageMid(MessageIn, table=False):
     id: Optional[int] = Field(default=None, primary_key=True)
     alert_id: int = Field(
         foreign_key="alerts.id", 
@@ -642,7 +642,7 @@ class MessageOut(MessageIn, table=False):
     is_banned: bool = Field(default=False, nullable=False)
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
 
-class Message(MessageOut, table=True):
+class Message(MessageMid, table=True):
     __tablename__: str = "messages"
     user_id: uuid.UUID = Field(
         foreign_key="users.id", 
@@ -650,3 +650,11 @@ class Message(MessageOut, table=True):
         nullable=False, 
         index=True
     )
+
+class MessageOut(MessageMid, table=False):
+    firstname: str
+    surname: str
+    user_role: Optional[str] = None
+    is_alert_sender: bool = Field(default=False, nullable=False)
+    is_alert_manager: bool = Field(default=False, nullable=False)
+    is_caller: bool = Field(default=False, nullable=False)

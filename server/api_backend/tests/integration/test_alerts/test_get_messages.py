@@ -127,6 +127,12 @@ def test_get_messages_called_by_alert_sender(client, db_session, test_baseuser):
         assert "user_id" not in msg
         assert msg["content"] is not None
         assert msg["created_at"] is not None
+        assert msg["firstname"] is not None
+        assert msg["surname"] is not None
+        assert "user_role" in msg
+        assert "is_alert_sender" in msg
+        assert "is_alert_manager" in msg
+        assert "is_caller" in msg
 
 def test_get_messages_called_by_alerted_user(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
@@ -164,6 +170,12 @@ def test_get_messages_called_by_alerted_user(client, db_session, test_baseuser):
         assert "user_id" not in msg
         assert msg["content"] is not None
         assert msg["created_at"] is not None
+        assert msg["firstname"] is not None
+        assert msg["surname"] is not None
+        assert "user_role" in msg
+        assert "is_alert_sender" in msg
+        assert "is_alert_manager" in msg
+        assert "is_caller" in msg
 
 def test_get_messages_with_all_messages_banned(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
@@ -206,3 +218,9 @@ def test_get_messages_with_all_messages_banned(client, db_session, test_baseuser
         assert "user_id" not in msg
         assert msg["content"] == "[BANNED MESSAGE]"
         assert msg["created_at"] is not None
+        assert msg["firstname"] is not None
+        assert msg["surname"] is not None
+        assert "user_role" in msg
+        assert "is_alert_sender" in msg
+        assert "is_alert_manager" in msg
+        assert "is_caller" in msg
