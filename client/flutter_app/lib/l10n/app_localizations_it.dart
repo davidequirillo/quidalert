@@ -57,6 +57,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get alertMessages => 'Messaggi';
 
   @override
+  String get alertMessagesWriteNew => 'Scrivi un nuovo messaggio...';
+
+  @override
+  String get alertMessagesEmpty => 'Al momento non ci sono messaggi';
+
+  @override
   String get alertRadius => 'Raggio';
 
   @override
@@ -156,6 +162,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get buttonCancel => 'Annulla';
+
+  @override
+  String get buttonChat => 'Chat';
 
   @override
   String get buttonClear => 'Pulisci';

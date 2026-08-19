@@ -49,6 +49,9 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
   }
 
   Future<void> _sendMessage(int alertId) async {
+    String retMessage = "";
+    bool loginIsRequired = false;
+    final loc = AppLocalizations.of(context)!;
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
     final authClient = context.read<AuthClient>();
@@ -58,14 +61,39 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
         '/alerts/$alertId/messages',
         body: {"content": content},
       );
-      _messageController.clear();
-      setState(() {}); // Refresh the messages list
+    } on GenericNotAuthorizedException catch (_) {
+      retMessage = loc.errorNotAuthorizedDoLogin;
+      loginIsRequired = true;
+    } on ForbiddenRequestException catch (_) {
+      retMessage = loc.errorPermissionsNotValid;
+    } on BadRequestException catch (e) {
+      retMessage = loc.errorBadRequest;
+      retMessage += ": ${e.toString()}";
+    } on ServerException catch (_) {
+      retMessage = loc.errorServer;
     } catch (e) {
-      debugPrint("Error sending message: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.errorGeneric)),
-        );
+      retMessage = loc.errorError;
+      retMessage += ": ${e.toString()}";
+    } finally {
+      if (retMessage.isNotEmpty) {
+        debugPrint("Error sending message: $retMessage");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(retMessage),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          if (loginIsRequired) {
+            goToLoginPagePostFrameCallback(context);
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _messageController.clear();
+          });
+        }
       }
     }
   }
@@ -84,7 +112,7 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
         .map((e) => Message.fromJson(e))
         .toList();
     final readOnly = respObj['readonly'] ?? true;
-    return {"messages": messages, "readOnly": readOnly};
+    return {"messages": messages, "readonly": readOnly};
   }
 
   @override
@@ -109,7 +137,7 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
         }
         if (snapshot.hasData) {
           final messages = snapshot.data!['messages'] as List<Message>;
-          final readOnly = snapshot.data!['readOnly'] as bool;
+          final readOnly = snapshot.data!['readonly'] as bool;
           return buildChat(context, alertId, messages, readOnly);
         }
         return Center(child: Text(loc.errorGeneric));
@@ -126,32 +154,44 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom(); // Scroll to bottom after the UI is built
     });
+    final loc = AppLocalizations.of(context)!;
     return Column(
       children: [
         // Messages area
-        Expanded(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.only(
-              left: 15,
-              right: 15,
-              top: 15,
-              bottom: 200, // Leave space for the input area
+        if (messages.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                loc.alertMessagesEmpty,
+                style: const TextStyle(fontSize: 16, color: Colors.black54),
+              ),
             ),
-            itemCount: messages.length,
-            itemBuilder: (context, index) {
-              final message = messages[index];
-              return _ChatBubble(message: message);
-            },
+          )
+        else
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.only(
+                left: 15,
+                right: 15,
+                top: 15,
+                bottom: 200, // Leave space for the input area
+              ),
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final message = messages[index];
+                return _ChatBubble(message: message);
+              },
+            ),
           ),
-        ),
         // Input area
-        if (!readOnly) _buildInputArea(alertId),
+        if (readOnly == false) _buildInputArea(alertId),
       ],
     );
   }
 
   Widget _buildInputArea(int alertId) {
+    final loc = AppLocalizations.of(context)!;
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -167,8 +207,8 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
                 child: TextField(
                   controller: _messageController,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    hintText: "Write a message...",
+                  decoration: InputDecoration(
+                    hintText: loc.alertMessagesWriteNew,
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
@@ -210,6 +250,16 @@ class _ChatBubble extends StatelessWidget {
 
   const _ChatBubble({required this.message});
 
+  Color getBubbleColor(Message message) {
+    if (message.isCaller) {
+      return const Color(0xFFD1FFC7); // Light green for caller
+    } else if (message.isAlertManager) {
+      return const Color(0xFFFFFAD1); // Light blue for alert manager
+    } else {
+      return Colors.white; // Default white for others
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final createdAtStr = datetimeAsStringWithoutMilliseconds(
@@ -234,7 +284,7 @@ class _ChatBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: message.isCaller ? const Color(0xFFE1FFC7) : Colors.white,
+          color: getBubbleColor(message),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(12),
             topRight: const Radius.circular(12),
@@ -263,7 +313,7 @@ class _ChatBubble extends StatelessWidget {
                 ),
               ),
             SizedBox(height: 5),
-            Text(
+            SelectableText(
               message.content,
               style: const TextStyle(fontSize: 15, color: Colors.black87),
             ),
