@@ -191,6 +191,18 @@ abstract class AppLocalizations {
   /// **'Messages'**
   String get alertMessages;
 
+  /// No description provided for @alertMessagesWriteNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a new message...'**
+  String get alertMessagesWriteNew;
+
+  /// No description provided for @alertMessagesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no messages at the moment'**
+  String get alertMessagesEmpty;
+
   /// No description provided for @alertRadius.
   ///
   /// In en, this message translates to:
@@ -388,6 +400,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get buttonCancel;
+
+  /// No description provided for @buttonChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get buttonChat;
 
   /// No description provided for @buttonClear.
   ///

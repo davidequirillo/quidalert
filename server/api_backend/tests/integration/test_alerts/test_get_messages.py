@@ -97,6 +97,45 @@ def test_get_messages_called_by_user_not_involved(client, db_session, test_baseu
     assert response.status_code == forbidden_exception().status_code
     assert "not authorized" in response.json()["detail"].lower()
 
+def test_get_messages_if_alert_is_general(client, db_session, test_chief, test_baseuser):
+    chief: User = test_chief['user']
+    user: User = test_baseuser['user']
+    access_token = test_baseuser['access_token']
+    assert user is not None, "No user found in the database for testing"
+    assert chief is not None, "No chief user found in the database for testing"
+    assert access_token is not None, "No access token found in the database for testing"
+    # We select a general alert created by test_chief (the alert sender).
+    # Test_chief is the alert sender, but is also the alert manager (because the alert is a non-local alert)
+    statement = select(Alert).where(Alert.user_id == chief.id, Alert.type == AlertType.general.value)
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    assert alert.type == AlertType.general.value
+    assert alert.user_id == chief.id
+    # Now we call the API with test_baseuser as caller 
+    # and we verify it's successful.
+    # Test_baseuser can view all messages for a general alert,
+    # even if he is not the alert sender or an alerted user.
+    alert_id = alert.id
+    response = client.get(
+        f"/api/alerts/{alert_id}/messages", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() is not None
+    response_data = response.json()
+    messages = response_data["messages"]
+    assert len(messages) > 0
+    for msg in messages:
+        # Each message is originated from MessageOut model, not Message model, 
+        # so user_id is not present. Content and created_at are not null.
+        assert "user_id" not in msg
+        assert msg["content"] is not None
+        assert msg["created_at"] is not None
+        assert msg["firstname"] is not None
+        assert msg["surname"] is not None
+        assert "user_role" in msg
+        assert "is_alert_sender" in msg
+        assert "is_alert_manager" in msg
+        assert "is_caller" in msg
+
 def test_get_messages_called_by_alert_sender(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     access_token = test_baseuser['access_token']

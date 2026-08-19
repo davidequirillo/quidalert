@@ -682,8 +682,12 @@ def get_alert_messages(alert_id: int,
     # Only the alert sender (alert creator) or any alerted user can view the messages for an alert, 
     # but admins or a chiefs can view the messages anyway
     if (not current_user.is_admin) and (not current_user.is_chief):
-        if (not curr_user_is_alert_sender) and (not curr_user_is_alerted_user):
-            raise forbidden_exception("You are not authorized to view the messages for this alert")
+        if alert.type == AlertType.general.value:
+            # For general alerts, any user can view the messages
+            pass
+        else:
+            if (not curr_user_is_alert_sender) and (not curr_user_is_alerted_user):
+                raise forbidden_exception("You are not authorized to view the messages for this alert")
     # Retrieve the messages for the alert
     statement = (select(Message, User)
             .join(User, Message.user_id == User.id) # type: ignore
@@ -712,7 +716,8 @@ def get_alert_messages(alert_id: int,
             created_at=message.created_at,
             content=message.content)
         messages_out.append(msg_out)
+    is_readonly = (not curr_user_is_alert_sender) and (not curr_user_is_alerted_manager)
     return {
         "messages": messages_out,
-        "readonly": (not curr_user_is_alert_sender) and (not curr_user_is_alerted_manager)
+        "readonly": is_readonly
     }

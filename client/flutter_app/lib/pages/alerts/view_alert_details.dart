@@ -619,7 +619,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                 _viewMessagesPage(context, alertWithInfo.alert.id);
               },
               child: Text(
-                "Chat",
+                loc.buttonChat,
                 style: TextStyle(
                   decoration: TextDecoration.underline,
                   color: Colors.blue,
