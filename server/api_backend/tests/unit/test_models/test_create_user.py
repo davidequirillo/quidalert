@@ -6,6 +6,7 @@ import pytest
 from models.general import UserIn, User, UserLanguage, UserRole
 
 ## Test UserIn model
+
 def test_create_user_success():
     data = {
         "firstname": "John",
@@ -18,7 +19,7 @@ def test_create_user_success():
     assert user.email == data["email"]
     assert user.language == UserLanguage.en # default language
 
-def test_create_user_firstname_or_surname_blank():
+def test_create_user_firstname_blank():
     data = {
         "firstname": "",
         "surname": "Doe",
@@ -27,16 +28,18 @@ def test_create_user_firstname_or_surname_blank():
     }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-    data["firstname"] = "John"
-    data["surname"] = ""
-    with pytest.raises(ValueError):
-        UserIn.model_validate(data)
-    data["firstname"] = "John"
-    data["surname"] = ""
+
+def test_create_user_surname_blank():
+    data = {
+        "firstname": "John",
+        "surname": "",
+        "email": "john.doe@example.com",
+        "password": "MyValidPassword123!"
+    }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
 
-def test_create_user_firstname_or_surname_too_short():
+def test_create_user_firstname_too_short():
     data = {
         "firstname": "J",
         "surname": "Doe",
@@ -45,13 +48,18 @@ def test_create_user_firstname_or_surname_too_short():
     }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-    data["firstname"] = "John"
-    data["surname"] = "D"
+
+def test_create_user_surname_too_short():
+    data = {
+        "firstname": "John",
+        "surname": "D",
+        "email": "john.doe@example.com",
+        "password": "MyValidPassword123!"
+    }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-        assert True
 
-def test_create_user_firstname_or_surname_too_long():
+def test_create_user_firstname_too_long():
     data = {
         "firstname": "J" * 256,
         "surname": "Doe",
@@ -60,11 +68,16 @@ def test_create_user_firstname_or_surname_too_long():
     }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-    data["firstname"] = "John"
-    data["surname"] = "D" * 256
+
+def test_create_user_surname_too_long():
+    data = {
+        "firstname": "John",
+        "surname": "D" * 256,
+        "email": "john.doe@example.com",
+        "password": "MyValidPassword123!"
+    }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-        assert True
 
 def test_create_user_invalid_email():
     data = {
@@ -106,7 +119,7 @@ def test_create_user_email_with_uppercase():
     user = UserIn.model_validate(data)
     assert user.email.lower() == data["email"].lower() # the email should always be normalized to lowercase
 
-def test_create_user_blank_or_invalid_password():
+def test_create_user_blank_password():
     data = {
         "firstname": "John",
         "surname": "Doe",
@@ -115,13 +128,26 @@ def test_create_user_blank_or_invalid_password():
     }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-    data["password"] = "short"
+
+def test_create_user_short_password():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password": "short"
+    }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-    data["password"] = "simplePassword123"
+
+def test_create_user_password_too_simple():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password": "tooSimple123456"
+    }
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
-        assert True
 
 def test_create_user_wrong_language_attribute():
     data = {
@@ -134,7 +160,19 @@ def test_create_user_wrong_language_attribute():
     with pytest.raises(ValueError):
         UserIn.model_validate(data)
 
-# Test User model
+def test_create_user_valid_language_attribute():
+    data = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "john.doe@example.com",
+        "password": "MyValidPassword123!",
+        "language": "it"
+    }
+    user = UserIn.model_validate(data)
+    assert user.language == data["language"]
+
+## Test User model
+
 def test_create_user_check_default_timestamp_fields():
     data = {
         "firstname": "John",

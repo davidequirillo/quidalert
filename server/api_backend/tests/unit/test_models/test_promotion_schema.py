@@ -104,6 +104,26 @@ def test_promotion_schema_invalid_authorizer():
     with pytest.raises(ValueError):
         PromotionSchema.model_validate(data)
 
+def test_promotion_schema_empty_authorizer():
+    data = {
+        "type": UserType.admin.value,
+        "role": UserRole.volunteer.value,
+        "status": UserStatus.ok.value,
+        "authorizer": ""
+    }
+    with pytest.raises(ValueError):
+        PromotionSchema.model_validate(data)
+
+def test_promotion_schema_empty_whitespace_authorizer():
+    data = {
+        "type": UserType.admin.value,
+        "role": UserRole.volunteer.value,
+        "status": UserStatus.ok.value,
+        "authorizer": "   "
+    }
+    with pytest.raises(ValueError):
+        PromotionSchema.model_validate(data)
+
 def test_promotion_schema_with_notes_too_long():
     data = {
         "type": UserType.admin.value,

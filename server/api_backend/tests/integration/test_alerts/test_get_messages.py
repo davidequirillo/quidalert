@@ -70,6 +70,32 @@ def test_get_messages_called_by_chief(client, db_session, test_chief, test_baseu
         f"/api/alerts/{alert_id}/messages", headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == status.HTTP_200_OK
 
+def test_get_messages_called_by_admin(client, db_session, test_admin, test_baseuser):
+    admin: User = test_admin['user']
+    user: User = test_baseuser['user']
+    # Test_admin is the caller
+    access_token = test_admin['access_token']
+    assert admin is not None
+    assert access_token is not None
+    # Chiefs and admins can get alert messages even if they are not involved for a specific alert.
+    # To verify this, we select a local alert created by test_baseuser (the alert sender).
+    # Test_admin is not an alerted user for any alert created by test_baseuser
+    # (see the fixture setup_alerts_data_and_teardown in fixtures/alerts.py)
+    statement = select(Alert).where(Alert.user_id == user.id, Alert.type == AlertType.local.value)
+    alert = db_session.exec(statement).first()
+    assert alert is not None
+    assert alert.type == AlertType.local.value
+    assert alert.user_id == user.id
+    statement = select(AlertedUser).where(AlertedUser.alert_id==alert.id)
+    alerted_users = db_session.exec(statement).all()
+    for alerted_user in alerted_users:
+        assert alerted_user.user_id != admin.id
+    # Now we call the API and we verify it's successful for test_admin
+    alert_id = alert.id
+    response = client.get(
+        f"/api/alerts/{alert_id}/messages", headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+
 def test_get_messages_called_by_user_not_involved(client, db_session, test_baseuser, test_chief):
     user: User = test_baseuser['user']
     chief: User = test_chief['user']

@@ -24,6 +24,8 @@ class NotificationProvider extends ChangeNotifier {
   String? fcmToken;
   bool initDone = false;
   AuthClient? _authClient;
+  String currentNotificationOrigin = '';
+  int currentNotificationOriginCounter = 0;
 
   NotificationProvider() : super() {
     fcmToken = null;
@@ -166,22 +168,107 @@ class NotificationProvider extends ChangeNotifier {
         final actionLabel = message.data['action_label'] ?? "Ok";
         final messageTitle = message.notification?.title ?? 'Notification';
         final origin = message.data['origin'] ?? 'unknown';
-        AppKeys.snackbarKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text(messageTitle),
-            action: SnackBarAction(
-              label: actionLabel,
-              onPressed: () {
-                handleNavigation(message.data);
-              },
-            ),
-          ),
-        );
+        final alertId = message.data['alert_id'] ?? 'unknown';
+        final currentRouteName = AppKeys.currentRouteName ?? '';
+        if (currentRouteName.isNotEmpty) {
+          debugPrintC('Notification: current route: $currentRouteName');
+          if (origin == 'new_message' &&
+              currentRouteName == '/alerts/view-alert-messages') {
+            final currentAlertId = AppKeys.currentRouteArguments as int? ?? -1;
+            if (currentAlertId != -1 && currentAlertId.toString() == alertId) {
+              debugPrintC(
+                'Notification: received a new_message for alert_id $alertId while already on the alert messages page. Not showing snackbar.',
+              );
+              _refreshMessagesPage(currentAlertId);
+              return;
+            }
+          }
+        }
+        String notificationCounterStr = '';
+        if (origin == currentNotificationOrigin) {
+          if ((origin == 'new_message') || (origin == 'expand_alert')) {
+            AppKeys.snackbarKey.currentState?.removeCurrentSnackBar();
+            currentNotificationOriginCounter++;
+            notificationCounterStr = ' ($currentNotificationOriginCounter)';
+            debugPrintC(
+              'Notification: received a message with the same origin "$origin" as the previous one. Incrementing counter to $currentNotificationOriginCounter.',
+            );
+          }
+        } else {
+          currentNotificationOriginCounter = 1;
+          notificationCounterStr = '';
+        }
+        currentNotificationOrigin = origin;
+        if (currentRouteName == '/alerts/view-alert-messages') {
+          _showMaterialBanner(
+            '$messageTitle$notificationCounterStr',
+            actionLabel,
+            () {
+              currentNotificationOriginCounter = 0;
+              handleNavigation(message.data);
+            },
+          );
+        } else {
+          _showSnackBar(
+            '$messageTitle$notificationCounterStr',
+            actionLabel,
+            () {
+              currentNotificationOriginCounter = 0;
+              handleNavigation(message.data);
+            },
+          );
+        }
       },
       onError: (error, stackTrace) {
         debugPrintC('Error in onMessage stream: $error');
         // We could use FirebaseCrashlytics to report this error
       },
+    );
+  }
+
+  void _showSnackBar(
+    String message,
+    String actionLabel,
+    VoidCallback onAction,
+  ) {
+    AppKeys.snackbarKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(
+          hours: 24,
+        ), // Keep the snackbar visible until the user interacts with it
+        dismissDirection: DismissDirection.down,
+        action: SnackBarAction(label: actionLabel, onPressed: onAction),
+      ),
+    );
+  }
+
+  void _showMaterialBanner(
+    String message,
+    String actionLabel,
+    VoidCallback onAction,
+  ) {
+    AppKeys.snackbarKey.currentState?.showMaterialBanner(
+      MaterialBanner(
+        content: Text(message),
+        leading: const Icon(Icons.notifications_active),
+        actions: [
+          TextButton(
+            onPressed: () {
+              AppKeys.snackbarKey.currentState?.hideCurrentMaterialBanner();
+              onAction();
+            },
+            child: Text(actionLabel),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              AppKeys.snackbarKey.currentState?.hideCurrentMaterialBanner();
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -297,6 +384,16 @@ class NotificationProvider extends ChangeNotifier {
       '/alerts/view-alert-messages',
       (route) => false,
       arguments: int.tryParse(alertIdStr) ?? -1,
+    );
+  }
+
+  void _refreshMessagesPage(int alertId) {
+    debugPrintC(
+      'Notification: refreshing alert messages page for alert_id: $alertId',
+    );
+    AppKeys.navigatorKey.currentState?.pushReplacementNamed(
+      '/alerts/view-alert-messages',
+      arguments: alertId,
     );
   }
 }

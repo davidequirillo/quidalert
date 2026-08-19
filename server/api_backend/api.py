@@ -601,8 +601,8 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     act_token = generate_activation_token()
     act_expires_at = activation_expiry()
     user = User(
-        firstname=user_in.firstname,
-        surname=user_in.surname,
+        firstname=user_in.firstname.strip(),
+        surname=user_in.surname.strip(),
         email=email_lowercase,
         language=user_in.language,
         password_hash=password_hashed,
@@ -791,15 +791,15 @@ def get_profile(current_user: User = Depends(get_current_user)):
 def update_profile(user_data: UserInCompleteProfile, 
             current_user: User = Depends(get_current_user), 
             db_session: Session = Depends(get_db_session)):
-    current_user.firstname = user_data.firstname
-    current_user.surname = user_data.surname
-    current_user.street = user_data.street
-    current_user.postal_code = user_data.postal_code
-    current_user.city = user_data.city
-    current_user.province = user_data.province
-    current_user.country = user_data.country
-    current_user.birthdate = user_data.birthdate
-    current_user.phone = user_data.phone
+    current_user.firstname = user_data.firstname.strip()
+    current_user.surname = user_data.surname.strip()
+    current_user.street = user_data.street.strip()
+    current_user.postal_code = user_data.postal_code.strip()
+    current_user.city = user_data.city.strip()
+    current_user.province = user_data.province.strip()
+    current_user.country = user_data.country.strip() if user_data.country else None
+    current_user.birthdate = user_data.birthdate # already validated in the model
+    current_user.phone = user_data.phone.strip()
     db_session.add(current_user)
     db_session.commit()
     return { "message": "Profile updated" }

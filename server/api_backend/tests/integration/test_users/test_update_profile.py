@@ -87,7 +87,7 @@ def test_update_profile_successful(client, db_session, test_baseuser):
     assert user.city == "New City"
     assert user.province == "New Province"
     assert user.country == "New Country"
-    assert str(user.birthdate) == "1990-01-01"
+    assert user.birthdate == "1990-01-01"
     assert user.phone == "1234567890"
     statement = select(User).where(User.id == user.id)
     result = db_session.exec(statement).first()
@@ -99,5 +99,64 @@ def test_update_profile_successful(client, db_session, test_baseuser):
     assert result.city == "New City"
     assert result.province == "New Province"
     assert result.country == "New Country"
-    assert str(result.birthdate) == "1990-01-01"
+    assert result.birthdate == "1990-01-01"
     assert result.phone == "1234567890"
+
+def test_update_profile_normalize_input_case_1(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    assert user.id is not None
+    headers={"Authorization": f"Bearer {test_baseuser['access_token']}"}
+    response = client.put("/api/profile", headers=headers, json={
+        "firstname": " NewFirstName ",
+        "surname": " NewSurname ",
+        "street": " New Street ",
+        "postal_code": " 12345 ",
+        "city": " New City ",
+        "province": " New Province ",
+        "country": " New Country ",
+        "birthdate": "1990-01-01",
+        "phone": "  1234567890  "
+    })
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.firstname == "NewFirstName"
+    assert user.surname == "NewSurname"
+    assert user.street == "New Street"
+    assert user.postal_code == "12345"
+    assert user.city == "New City"
+    assert user.province == "New Province"
+    assert user.country == "New Country"
+    assert user.birthdate == "1990-01-01"
+    assert user.phone == "1234567890"
+
+def test_update_profile_normalize_input_case_2(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    assert user.id is not None
+    # We set the country to a non-null value first, 
+    # then we update it to None to test that it is correctly set to None in the database
+    user.country = "Old Country"
+    db_session.add(user)
+    db_session.commit()
+    headers={"Authorization": f"Bearer {test_baseuser['access_token']}"}
+    response = client.put("/api/profile", headers=headers, json={
+        "firstname": " NewFirstName ",
+        "surname": " NewSurname ",
+        "street": " New Street ",
+        "postal_code": " 12345 ",
+        "city": " New City ",
+        "province": " New Province ",
+        "country": None,
+        "birthdate": "1990-01-01",
+        "phone": "  1234567890  "
+    })
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user)
+    assert user.firstname == "NewFirstName"
+    assert user.surname == "NewSurname"
+    assert user.street == "New Street"
+    assert user.postal_code == "12345"
+    assert user.city == "New City"
+    assert user.province == "New Province"
+    assert user.country == None
+    assert user.birthdate == "1990-01-01"
+    assert user.phone == "1234567890"

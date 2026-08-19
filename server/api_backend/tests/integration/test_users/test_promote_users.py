@@ -819,6 +819,31 @@ def test_promote_users_modify_authorizer_called_by_admin(client, db_session, tes
     assert chief1.authorized_by == "officer2@example.com"
     assert chief1.updated_by == test_admin["user"].email
 
+def test_promote_users_modify_authorizer_normalize_input(client, db_session, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {
+        "email": "chief1@example.com"
+    }
+    data = {
+        "authorizer": " Officer2@EXAMPLE.com "
+    }
+    statement = select(User).where(User.email=="chief1@example.com")
+    chief1 = db_session.exec(statement).first()
+    assert chief1 is not None
+    assert chief1.authorized_by != "officer2@example.com"
+    assert chief1.authorized_by != " officer2@example.com "
+    assert chief1.authorized_by != " Officer2@EXAMPLE.com "
+    response = client.post("/api/users/promote", params=params, json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["updated_count"] == 1
+    db_session.refresh(chief1)
+    # The authorizer email should have whitespaces trimmed
+    assert chief1.authorized_by == "officer2@example.com"
+
 async def test_promote_users_modify_type_called_by_admin(client, db_session, redis_session, test_admin):
     user: User = test_admin['user']
     assert user is not None
@@ -1450,6 +1475,26 @@ def test_promote_users_by_emails_modify_authorizer_called_by_admin(client, db_se
     assert testuser2.authorized_by == user.email
     assert testuser1.updated_by == user.email
     assert testuser2.updated_by == user.email
+
+def test_promote_users_by_emails_modify_authorizer_normalize_input(client, db_session, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # We try to change the authorizer of 1 user, but we add some spaces
+    data = {
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
+        "update_fields": {"authorizer": "  Officer2@EXAMPLE.com  "}
+    }
+    response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["updated_count"] == 1
+    statement = select(User).where(User.email=="testuser1@example.com")
+    testuser1 = db_session.exec(statement).first()
+    db_session.refresh(testuser1)
+    # The authorizer email should have whitespaces trimmed and lowercased
+    assert testuser1.authorized_by == "officer2@example.com"
 
 async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_session, redis_session, test_admin):
     user: User = test_admin['user']

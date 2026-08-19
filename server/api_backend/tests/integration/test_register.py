@@ -27,6 +27,17 @@ def test_register_invalid_email_format(client):
     assert response.status_code == 422
     assert "email" in str(response.json()["detail"]).lower()
 
+def test_register_with_blank_email(client):
+    payload = {
+        "firstname": "John",
+        "surname": "Doe",
+        "email": "", # blank email
+        "password": "Password123!"
+    }  
+    response = client.post("/api/register", json=payload)
+    assert response.status_code == 422
+    assert "email" in str(response.json()["detail"]).lower()
+
 def test_register_password_too_short(client):
     payload = {
         "firstname": "John",
@@ -221,9 +232,39 @@ def test_register_in_whitelist_with_email_uppercase(client, db_session, superuse
     statement = select(User).where(User.email == whitelist_entry.email)
     results = db_session.exec(statement).all()
     assert len(results) == 1
-    assert results[0].email == whitelist_entry.email # it should be lowercase
+    # The email should be equal to the whitelist entry email, so it should be normalized
+    assert results[0].email == whitelist_entry.email
     assert results[0].firstname == payload["firstname"]
     assert results[0].surname == payload["surname"]
+    assert results[0].language == UserLanguage.en.value # default language should be English if not specified in the payload
+
+def test_register_in_whitelist_normalize_input(client, db_session, superuser_in_db, whitelist_entry):
+    # Check the database to ensure the superuser already exists
+    # We also check that the whitelist entry exists with the correct email (lowercase)
+    users = db_session.exec(select(User)).all()
+    assert len(users) == 1
+    assert users[0].is_superuser == True
+    assert superuser_in_db.is_superuser == True
+    assert users[0].id == superuser_in_db.id
+    # We check that the whitelist entry exists with the correct email (lowercase and without external whitespaces)
+    assert whitelist_entry.email.lower().strip() == whitelist_entry.email
+    payload = {
+        "firstname": " John ",
+        "surname": " Doe ",
+        # This email is in uppercase, but it should still be accepted as valid and converted to lowercase
+        "email": " " + whitelist_entry.email.upper() + "   ", # with external whitespaces
+        "password": "MyValidPassword123!"
+    }
+    response = client.post("/api/register", json=payload)
+    assert response.status_code in [200, 201, 202]
+    # Check the database to ensure that the user was created with the email in the whitelist (case-insensitive)
+    statement = select(User).where(User.email == whitelist_entry.email)
+    results = db_session.exec(statement).all()
+    assert len(results) == 1
+    # The email should be equal to the whitelist entry email, so it should be normalized
+    assert results[0].email == whitelist_entry.email
+    assert results[0].firstname == payload["firstname"].strip()
+    assert results[0].surname == payload["surname"].strip()
     assert results[0].language == UserLanguage.en.value # default language should be English if not specified in the payload
 
 def test_register_duplicate_user(client, db_session, superuser_in_db, whitelist_entry):
