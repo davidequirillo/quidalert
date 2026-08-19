@@ -124,6 +124,24 @@ def test_add_whitelist_entries_success(client, db_session, test_admin):
     results = db_session.exec(statement).all()
     assert len(results) == 2
 
+def test_add_whitelist_entries_normalize_input(client, db_session, test_admin):
+    headers = {
+        "Authorization": f"Bearer {test_admin['access_token']}"
+    }
+    data = {
+        "emails": ["  test1@example.com  ", "TEST2@EXAMPLE.COM "]
+    }
+    response = client.post("/api/whitelist-entries", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["total_count"] == 2
+    assert response_data["added_count"] == 2
+    statement = select(WhiteListEntry)
+    results = db_session.exec(statement).all()
+    assert len(results) == 2
+    assert any(entry.email == "test1@example.com" for entry in results)
+    assert any(entry.email == "test2@example.com" for entry in results)
+
 def test_add_whitelist_entries_with_existing_email(client, db_session, test_admin):
     admin: User = test_admin["user"]
     # Add an entry to the database first

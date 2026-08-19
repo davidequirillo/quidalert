@@ -4,14 +4,14 @@
 
 from unittest.mock import ANY
 from fastapi import status
-from sqlmodel import select, delete
+from sqlmodel import select, delete, update
 from core.exceptions import (
     token_not_valid_exception,
     forbidden_exception,
     not_found_exception
 )
 from models.general import (
-    User, Alert, AlertType, AlertedUser,
+    User, RefreshToken, Alert, AlertType, AlertedUser,
     ALERT_MAX_MESSAGES_NUM, Message
 )
 from tests.fixtures.alerts import (
@@ -49,6 +49,18 @@ def test_create_message_content_too_long(client, test_alert, test_baseuser):
     data = {
         "content": "A" * 513,
     }
+    alert_id = test_alert.id
+    response = client.post(
+        f"/api/alerts/{alert_id}/messages", json=data, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+def test_create_message_content_not_provided(client, test_alert, test_baseuser):
+    user: User = test_baseuser['user']
+    access_token = test_baseuser['access_token']
+    assert user is not None, "No user found in the database for testing"
+    assert access_token is not None, "No access token found in the database for testing"
+    assert test_alert is not None, "No alert found in the database for testing"
+    data = {}
     alert_id = test_alert.id
     response = client.post(
         f"/api/alerts/{alert_id}/messages", json=data, headers={"Authorization": f"Bearer {access_token}"})
@@ -118,6 +130,60 @@ def test_create_message_not_sender_not_alert_manager(client, db_session, test_ba
     assert "Only the alert sender or the chief alert manager can create messages for this alert" in response.json()["detail"]
 
 def test_create_message_alert_is_local_and_caller_not_reliable(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    access_token = test_baseuser['access_token']
+    assert user is not None, "No user found in the database for testing"
+    assert access_token is not None, "No access token found in the database for testing"
+    # We select an alert from database where the alert sender is test_baseuser, 
+    # and test_baseuser is not reliable. We will set the user as unreliable before calling the API.
+    statement = select(Alert).where(Alert.user_id == user.id, Alert.type == AlertType.local.value)
+    alert = db_session.exec(statement).first()
+    assert alert is not None, "No suitable alert found in the database for testing"
+    assert alert.user_id == user.id
+    # Set the caller as unreliable, to simulate the case where the caller is not reliable
+    user.is_reliable = False
+    db_session.add(user)
+    db_session.commit()
+    # Call the API endpoint to create a message for the alert
+    data = {
+            "content": "This is a test message",
+        }
+    alert_id = alert.id
+    response = client.post(
+        f"/api/alerts/{alert_id}/messages", json=data, headers={"Authorization": f"Bearer {access_token}"})
+    # When the alert is local and the caller (if he is the alert sender) is not reliable, 
+    # the API should return a forbidden exception with a message indicating that the user is not reliable.
+    assert response.status_code == forbidden_exception().status_code
+    assert "You are not a reliable user" in response.json()["detail"]
+
+def test_create_message_alert_is_local_and_caller_with_negative_reliability(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    access_token = test_baseuser['access_token']
+    assert user is not None, "No user found in the database for testing"
+    assert access_token is not None, "No access token found in the database for testing"
+    # We select an alert from database where the alert sender is test_baseuser, 
+    # and test_baseuser is not reliable. We will set the user as unreliable before calling the API.
+    statement = select(Alert).where(Alert.user_id == user.id, Alert.type == AlertType.local.value)
+    alert = db_session.exec(statement).first()
+    assert alert is not None, "No suitable alert found in the database for testing"
+    assert alert.user_id == user.id
+    # Set the caller as unreliable, to simulate the case where the caller is not reliable
+    user.reliability_score = -1
+    db_session.add(user)
+    db_session.commit()
+    # Call the API endpoint to create a message for the alert
+    data = {
+            "content": "This is a test message",
+        }
+    alert_id = alert.id
+    response = client.post(
+        f"/api/alerts/{alert_id}/messages", json=data, headers={"Authorization": f"Bearer {access_token}"})
+    # When the alert is local and the caller (if he is the alert sender) is not reliable, 
+    # the API should return a forbidden exception with a message indicating that the user is not reliable.
+    assert response.status_code == forbidden_exception().status_code
+    assert "You are not a reliable user" in response.json()["detail"]
+
+def test_create_message_alert_is_local_and_caller_with_zero_reliability(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     access_token = test_baseuser['access_token']
     assert user is not None, "No user found in the database for testing"
@@ -455,9 +521,8 @@ def test_create_message_success_by_alert_manager(client, db_session, test_chief,
         ANY, ANY
     )
     args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
-    for id in alerted_user_ids:
+    for id in users_to_notify_ids:
         assert str(id) in args[0]
-
 
 def test_create_message_with_no_alerted_users(client, db_session, test_baseuser, setup_fake_functions):
     user: User = test_baseuser['user']
@@ -503,3 +568,128 @@ def test_create_message_with_no_alerted_users(client, db_session, test_baseuser,
     # Notifications are not sent because there are no alerted users for this alert,
     # so the notify_on_new_message function should not be called
     setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
+
+def test_create_message_with_alerted_users_having_no_fcm_token(client, db_session, test_baseuser, setup_fake_functions):
+    user: User = test_baseuser['user']
+    access_token = test_baseuser['access_token']
+    assert user is not None, "No user found in the database for testing"
+    assert access_token is not None, "No access token found in the database for testing"
+    # We select an alert from database where the alert sender is test_baseuser and the alert is local
+    statement = select(Alert).where(Alert.user_id == user.id, Alert.type == AlertType.local.value)
+    alert = db_session.exec(statement).first()
+    # The caller is the alert sender in this case 
+    # (the alert sender calls the API to create a message for the alert)
+    assert alert is not None, "No suitable alert found in the database for testing"
+    assert alert.user_id == user.id
+    messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
+    # We set all alerted users for this alert to have no FCM token,
+    # to simulate the case where there are alerted users but none of them has an FCM token
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    assert len(alerted_users) > 0, "No alerted users found for the local alert in the database for testing"
+    alerted_user_uuids = [alerted_user.user_id for alerted_user in alerted_users]
+    statement = (update(RefreshToken)
+            .where(RefreshToken.user_id.in_(alerted_user_uuids)) # type: ignore
+            .values(fcm_token=None))
+    db_session.exec(statement)
+    db_session.commit()
+    # Call the API endpoint to create a message for the alert
+    data = {
+        "content": "This is a test message",
+    }
+    alert_id = alert.id
+    response = client.post(
+        f"/api/alerts/{alert_id}/messages", json=data, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["message"] == "Message created successfully"
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
+    # Verify that the messages_num field in the alert has been incremented
+    db_session.refresh(alert)
+    assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
+    # Notifications are not sent because alerted users have no FCM token,
+    # so the notify_on_new_message function should not be called
+    setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
+
+def test_create_message_with_alert_sender_having_no_fcm_token(client, db_session, test_chief, setup_fake_functions):
+    chief: User = test_chief['user']
+    access_token = test_chief['access_token']
+    assert chief is not None, "No chief found in the database for testing"
+    assert access_token is not None, "No access token found in the database for testing"
+    # We select an alert where test_chief is an alerted user
+    statement = (select(Alert, AlertedUser).join(AlertedUser, Alert.id == AlertedUser.alert_id) # type: ignore
+        .where(AlertedUser.user_id == chief.id))
+    result = db_session.exec(statement).first()
+    assert result is not None
+    alert = result[0]
+    alerted_user = result[1]
+    assert alert is not None
+    assert alerted_user is not None
+    assert alerted_user.user_id == chief.id
+    assert alerted_user.alert_id == alert.id
+    # We simulate that the alerted user (test_chief) is the alert manager
+    alerted_user.is_manager = True
+    db_session.add(alerted_user)
+    db_session.commit()
+    db_session.refresh(alerted_user)
+    # We also select all alerted user for this alert
+    statement = select(AlertedUser).where(AlertedUser.alert_id == alert.id)
+    alerted_users = db_session.exec(statement).all()
+    assert len(alerted_users) > 0
+    alerted_user_ids = [str(alerted_user.user_id) for alerted_user in alerted_users]
+    messages_count_before_api = alert.messages_num
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
+    # The sender of the alert has no FCM token in this test case
+    sender_rtoken = db_session.exec(select(RefreshToken).where(RefreshToken.user_id == alert.user_id)).first()
+    assert sender_rtoken is not None
+    sender_rtoken.fcm_token = None
+    db_session.add(sender_rtoken)
+    db_session.commit()
+    # Call the API endpoint to create a message for the alert
+    data = {
+        "content": "This is a test message",
+    }
+    alert_id = alert.id
+    response = client.post(
+        f"/api/alerts/{alert_id}/messages", json=data, headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["message"] == "Message created successfully"
+    msg_id = response_data["message_id"]
+    assert msg_id is not None
+    # Verify that the messages_num field in the alert has been incremented
+    db_session.refresh(alert)
+    assert alert.messages_num == messages_count_before_api + 1
+    messages_stmt = select(Message).where(Message.alert_id == alert.id)
+    messages = db_session.exec(messages_stmt).all()
+    assert len(messages) == alert.messages_num
+    # Notifications are sent because the alert is local
+    # and there are some alerted users for this alert.
+    # So the notify_on_new_message function should be called once
+    setup_fake_functions["mock_notify_on_new_message"].assert_called_once()
+    msg_name = f"{chief.firstname} {chief.surname}"
+    msg_content = data["content"]
+    if len(msg_content) > 30:
+        msg_content = msg_content[:30] + "..."
+    # In this case we notify all alerted users 
+    # (except the alert manager, who is the caller),
+    # but we don't notify the sender because he has no fcm_token.
+    alerted_user_ids.remove(str(chief.id))
+    users_to_notify_ids = alerted_user_ids
+    setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
+        ANY, ANY, chief.language,
+        ANY, msg_name, msg_id, msg_content,
+        ANY, ANY
+    )
+    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    for id in users_to_notify_ids:
+        assert str(id) in args[0]

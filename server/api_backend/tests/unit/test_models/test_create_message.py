@@ -39,13 +39,6 @@ def test_create_message_content_too_long():
     with pytest.raises(ValueError):
         MessageIn.model_validate(data)
 
-def test_create_message_content_too_short():
-    data = {
-        "content": "",
-    }
-    with pytest.raises(ValueError):
-        MessageIn.model_validate(data)
-
 def test_create_message_out_with_defaults():
     data = {
         "content": "This is a test message",

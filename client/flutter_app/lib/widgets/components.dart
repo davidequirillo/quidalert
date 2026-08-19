@@ -25,12 +25,30 @@ class CAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    String currentRoute = ModalRoute.of(context)?.settings.name ?? '';
+    Icon customBackIcon = const Icon(Icons.arrow_back);
+    String customBackRoute = '';
+    Object? customBackArgs;
+    if (Navigator.canPop(context) == false) {
+      customBackIcon = const Icon(Icons.arrow_back);
+      customBackRoute = '/home';
+      customBackArgs = null;
+      if (currentRoute == '/alerts/view-alert-messages') {
+        final currentAlertId =
+            ModalRoute.of(context)?.settings.arguments as int? ?? -1;
+        if (currentAlertId != -1) {
+          customBackIcon = const Icon(Icons.arrow_back);
+          customBackRoute = '/alerts/view-alert-details';
+          customBackArgs = currentAlertId;
+        }
+      }
+    }
     if (showBackButton) {
       return AppBar(
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
         title: Text(title),
-        leading: Navigator.canPop(context)
+        leading: customBackRoute.isEmpty
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () {
@@ -38,11 +56,13 @@ class CAppBar extends StatelessWidget implements PreferredSizeWidget {
                 },
               )
             : IconButton(
-                icon: const Icon(Icons.home),
+                icon: customBackIcon,
                 onPressed: () {
-                  Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil('/home', (route) => false);
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    customBackRoute,
+                    (route) => false,
+                    arguments: customBackArgs,
+                  );
                 },
               ),
       );

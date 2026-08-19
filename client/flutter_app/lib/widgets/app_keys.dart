@@ -9,8 +9,37 @@
 import 'package:flutter/material.dart';
 
 class AppKeys {
+  // Global keys for navigation and snackbar management
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
   static final GlobalKey<ScaffoldMessengerState> snackbarKey =
       GlobalKey<ScaffoldMessengerState>();
+  // Keeps track of the current route name to allow navigation from anywhere in the app
+  static String? currentRouteName;
+  // Keeps track of the current route arguments to allow navigation from anywhere in the app
+  static Object? currentRouteArguments;
+}
+
+class AppRouteObserver extends NavigatorObserver {
+  void _updateContext(Route<dynamic>? route) {
+    if (route is PageRoute) {
+      AppKeys.currentRouteName = route.settings.name;
+      AppKeys.currentRouteArguments = route.settings.arguments;
+    }
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _updateContext(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _updateContext(previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _updateContext(newRoute);
+  }
 }
