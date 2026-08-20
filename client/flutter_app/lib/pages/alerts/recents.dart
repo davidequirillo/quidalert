@@ -105,10 +105,14 @@ class RecentAlertsBody extends StatelessWidget {
                 alertCreatedAt,
                 includeTimezone: false,
               );
+              final shortAlertId = convertToShortId(
+                alert.id.toString(),
+                lastCharsNum: 3,
+              );
               return ListTile(
                 title: Text(description),
                 subtitle: Text(
-                  "${loc.labelType}: ${loc.getAlertTypeString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getAlertStatusString(alertStatusKey)}",
+                  "ID: $shortAlertId, ${loc.labelType}: ${loc.getAlertTypeString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getAlertStatusString(alertStatusKey)}",
                 ),
                 trailing: Text(alertDateTimeStr),
                 onTap: () {

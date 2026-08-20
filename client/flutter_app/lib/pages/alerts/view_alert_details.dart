@@ -363,6 +363,10 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
   Widget alertColumn(BuildContext context, AlertWithInfo alertWithInfo) {
     final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
+    final shortAlertId = convertToShortId(
+      alertWithInfo.alert.id.toString(),
+      lastCharsNum: 3,
+    );
     final createdAt = datetimeAsStringWithoutMilliseconds(
       alertWithInfo.alert.createdAt,
       includeTimezone: false,
@@ -433,7 +437,9 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildSectionTitle("Alert Info"),
+        buildSectionTitle(loc.sectionAlertInfo),
+        Text('ID: ${alertWithInfo.alert.id}'),
+        Text('${loc.labelShortID}: $shortAlertId'),
         Text('${loc.labelDatetime}: $createdAt'),
         Text('${loc.labelType}: ${alertTypeStr.toLowerCase()}'),
         Text('${loc.labelStatus}: ${alertStatusStr.toLowerCase()}'),

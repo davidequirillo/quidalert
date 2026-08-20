@@ -1283,6 +1283,12 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get labelYes;
 
+  /// No description provided for @labelShortID.
+  ///
+  /// In en, this message translates to:
+  /// **'Short ID'**
+  String get labelShortID;
+
   /// No description provided for @menuSettings.
   ///
   /// In en, this message translates to:
@@ -1330,6 +1336,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Registration white list'**
   String get menuWhiteList;
+
+  /// No description provided for @notificationSwipeDownToHide.
+  ///
+  /// In en, this message translates to:
+  /// **'⬇ to hide'**
+  String get notificationSwipeDownToHide;
+
+  /// No description provided for @sectionAlertInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert Info'**
+  String get sectionAlertInfo;
 
   /// No description provided for @sectionAlertVote.
   ///
