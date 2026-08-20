@@ -605,6 +605,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelYes => 'Yes';
 
   @override
+  String get labelShortID => 'Short ID';
+
+  @override
   String get menuSettings => 'Settings';
 
   @override
@@ -627,6 +630,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuWhiteList => 'Registration white list';
+
+  @override
+  String get notificationSwipeDownToHide => '⬇ to hide';
+
+  @override
+  String get sectionAlertInfo => 'Alert Info';
 
   @override
   String get sectionAlertVote => 'Vote';

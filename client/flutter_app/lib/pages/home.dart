@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:quidalert_flutter/models/general.dart';
 import 'dart:convert';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
@@ -271,6 +272,7 @@ class _HomeBodyState extends State<HomeBody> {
   Widget _buildProfileCard(Map<String, dynamic> user) {
     String type;
     String status;
+    String role = user['role'] ?? UserRoleExtended.citizen.name;
     final lastRefreshAtStr = user['last_refresh_at'] != null
         ? datetimeAsStringWithoutMilliseconds(
             DateTime.parse(user['last_refresh_at']),
@@ -314,7 +316,9 @@ class _HomeBodyState extends State<HomeBody> {
                 "${loc.userAuthorizedBy}: ${user['authorized_by'] ?? "N/A"}",
               ),
               Text("${loc.userType}: $type"),
-              Text("${loc.userRole}: ${user['role']}"),
+              Text(
+                "${loc.userRole}: ${loc.getUserRoleString(role).toLowerCase()}",
+              ),
               Text("Status: $status"),
               Text("${loc.userReliabilityScore}: ${user['reliability_score']}"),
               Text("${loc.userHeroScore}: ${user['hero_score']}"),

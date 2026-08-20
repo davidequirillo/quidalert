@@ -8,6 +8,12 @@
 
 import 'package:flutter/foundation.dart';
 
+void debugPrintC(String message) {
+  if (kDebugMode) {
+    print(message);
+  }
+}
+
 String timezoneOffsetAsString(DateTime datetime) {
   final offset = datetime.timeZoneOffset;
   final hours = offset.inHours.abs().toString().padLeft(2, '0');
@@ -27,8 +33,13 @@ String gpsCoordinatesAsString(double latitude, double longitude) {
   return "${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}";
 }
 
-void debugPrintC(String message) {
-  if (kDebugMode) {
-    print(message);
+String convertToShortId(String s, {int lastCharsNum = 3, String prefix = '*'}) {
+  // We took the last [lastCharsNum] characters of the string
+  if (lastCharsNum <= 0) {
+    return '';
   }
+  if (s.length > lastCharsNum) {
+    s = s.substring(s.length - lastCharsNum);
+  }
+  return '$prefix$s';
 }

@@ -25,7 +25,7 @@ class NotificationProvider extends ChangeNotifier {
   bool initDone = false;
   AuthClient? _authClient;
   String prevNotificationOrigin = '';
-  int notificationOriginCounter = 0;
+  String prevNotificationAlertId = '';
 
   NotificationProvider() : super() {
     fcmToken = null;
@@ -166,15 +166,16 @@ class NotificationProvider extends ChangeNotifier {
           'Notification: received a message while in the foreground: ${message.messageId}',
         );
         final actionLabel = message.data['action_label'] ?? "Ok";
-        final messageTitle = message.notification?.title ?? 'Notification';
+        String messageTitle = message.notification?.title ?? 'Notification';
         final origin = message.data['origin'] ?? 'unknown';
-        final alertId = message.data['alert_id'] ?? 'unknown';
+        final alertId = message.data['alert_id'] ?? '';
         final currentRouteName = AppKeys.currentRouteName ?? '';
         if (currentRouteName.isNotEmpty) {
           debugPrintC('Notification: current route: $currentRouteName');
           if (origin == 'new_message' &&
               currentRouteName == '/alerts/view-alert-messages') {
-            final currentAlertId = AppKeys.currentRouteArguments as int? ?? -1;
+            final int currentAlertId =
+                AppKeys.currentRouteArguments as int? ?? -1;
             if (currentAlertId != -1 && currentAlertId.toString() == alertId) {
               debugPrintC(
                 'Notification: received a new_message for alert_id $alertId while already on the alert messages page. Not showing snackbar. Refreshing page instead.',
@@ -184,42 +185,34 @@ class NotificationProvider extends ChangeNotifier {
             }
           }
         }
-        String notificationCounterStr = '';
-        if (origin == prevNotificationOrigin) {
-          if ((origin == 'new_message') || (origin == 'expand_alert')) {
-            AppKeys.messengerKey.currentState?.removeCurrentSnackBar();
-            AppKeys.messengerKey.currentState?.removeCurrentMaterialBanner();
-            notificationOriginCounter++;
-            notificationCounterStr = ' ($notificationOriginCounter)';
-            debugPrintC(
-              'Notification: received a message with the same origin "$origin" as the previous one. Incrementing counter to $notificationOriginCounter.',
-            );
-          }
-        } else {
-          notificationOriginCounter = 1;
-          notificationCounterStr = '';
+        if (origin == prevNotificationOrigin &&
+            alertId == prevNotificationAlertId) {
+          debugPrintC(
+            'Notification: received a message with the same origin "$origin" and alert ID "$alertId" as the previous one. Closing previous snackbar/banner and showing a new one...',
+          );
+          AppKeys.messengerKey.currentState?.removeCurrentSnackBar();
+          AppKeys.messengerKey.currentState?.removeCurrentMaterialBanner();
         }
         prevNotificationOrigin = origin;
+        prevNotificationAlertId = alertId;
+        final String shortAlertId = (alertId.isNotEmpty)
+            ? convertToShortId(alertId, lastCharsNum: 3)
+            : '';
+        if (shortAlertId.isNotEmpty) {
+          messageTitle += ', alert_id: $shortAlertId';
+        }
         if (currentRouteName == '/alerts/view-alert-messages') {
-          _showMaterialBanner(
-            '$messageTitle$notificationCounterStr',
-            actionLabel,
-            () {
-              notificationOriginCounter = 0;
-              prevNotificationOrigin = '';
-              handleNavigation(message.data);
-            },
-          );
+          _showMaterialBanner(messageTitle, actionLabel, () {
+            prevNotificationOrigin = '';
+            prevNotificationAlertId = '';
+            handleNavigation(message.data);
+          });
         } else {
-          _showSnackBar(
-            '$messageTitle$notificationCounterStr',
-            actionLabel,
-            () {
-              notificationOriginCounter = 0;
-              prevNotificationOrigin = '';
-              handleNavigation(message.data);
-            },
-          );
+          _showSnackBar(messageTitle, actionLabel, () {
+            prevNotificationOrigin = '';
+            prevNotificationAlertId = '';
+            handleNavigation(message.data);
+          });
         }
       },
       onError: (error, stackTrace) {
