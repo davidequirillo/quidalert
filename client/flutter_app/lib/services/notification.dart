@@ -24,8 +24,8 @@ class NotificationProvider extends ChangeNotifier {
   String? fcmToken;
   bool initDone = false;
   AuthClient? _authClient;
-  String currentNotificationOrigin = '';
-  int currentNotificationOriginCounter = 0;
+  String prevNotificationOrigin = '';
+  int notificationOriginCounter = 0;
 
   NotificationProvider() : super() {
     fcmToken = null;
@@ -177,7 +177,7 @@ class NotificationProvider extends ChangeNotifier {
             final currentAlertId = AppKeys.currentRouteArguments as int? ?? -1;
             if (currentAlertId != -1 && currentAlertId.toString() == alertId) {
               debugPrintC(
-                'Notification: received a new_message for alert_id $alertId while already on the alert messages page. Not showing snackbar.',
+                'Notification: received a new_message for alert_id $alertId while already on the alert messages page. Not showing snackbar. Refreshing page instead.',
               );
               _refreshMessagesPage(currentAlertId);
               return;
@@ -185,26 +185,28 @@ class NotificationProvider extends ChangeNotifier {
           }
         }
         String notificationCounterStr = '';
-        if (origin == currentNotificationOrigin) {
+        if (origin == prevNotificationOrigin) {
           if ((origin == 'new_message') || (origin == 'expand_alert')) {
-            AppKeys.snackbarKey.currentState?.removeCurrentSnackBar();
-            currentNotificationOriginCounter++;
-            notificationCounterStr = ' ($currentNotificationOriginCounter)';
+            AppKeys.messengerKey.currentState?.removeCurrentSnackBar();
+            AppKeys.messengerKey.currentState?.removeCurrentMaterialBanner();
+            notificationOriginCounter++;
+            notificationCounterStr = ' ($notificationOriginCounter)';
             debugPrintC(
-              'Notification: received a message with the same origin "$origin" as the previous one. Incrementing counter to $currentNotificationOriginCounter.',
+              'Notification: received a message with the same origin "$origin" as the previous one. Incrementing counter to $notificationOriginCounter.',
             );
           }
         } else {
-          currentNotificationOriginCounter = 1;
+          notificationOriginCounter = 1;
           notificationCounterStr = '';
         }
-        currentNotificationOrigin = origin;
+        prevNotificationOrigin = origin;
         if (currentRouteName == '/alerts/view-alert-messages') {
           _showMaterialBanner(
             '$messageTitle$notificationCounterStr',
             actionLabel,
             () {
-              currentNotificationOriginCounter = 0;
+              notificationOriginCounter = 0;
+              prevNotificationOrigin = '';
               handleNavigation(message.data);
             },
           );
@@ -213,7 +215,8 @@ class NotificationProvider extends ChangeNotifier {
             '$messageTitle$notificationCounterStr',
             actionLabel,
             () {
-              currentNotificationOriginCounter = 0;
+              notificationOriginCounter = 0;
+              prevNotificationOrigin = '';
               handleNavigation(message.data);
             },
           );
@@ -231,7 +234,7 @@ class NotificationProvider extends ChangeNotifier {
     String actionLabel,
     VoidCallback onAction,
   ) {
-    AppKeys.snackbarKey.currentState?.showSnackBar(
+    AppKeys.messengerKey.currentState?.showSnackBar(
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
@@ -249,14 +252,14 @@ class NotificationProvider extends ChangeNotifier {
     String actionLabel,
     VoidCallback onAction,
   ) {
-    AppKeys.snackbarKey.currentState?.showMaterialBanner(
+    AppKeys.messengerKey.currentState?.showMaterialBanner(
       MaterialBanner(
         content: Text(message),
         leading: const Icon(Icons.notifications_active),
         actions: [
           TextButton(
             onPressed: () {
-              AppKeys.snackbarKey.currentState?.hideCurrentMaterialBanner();
+              AppKeys.messengerKey.currentState?.removeCurrentMaterialBanner();
               onAction();
             },
             child: Text(actionLabel),
@@ -264,7 +267,7 @@ class NotificationProvider extends ChangeNotifier {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
-              AppKeys.snackbarKey.currentState?.hideCurrentMaterialBanner();
+              AppKeys.messengerKey.currentState?.hideCurrentMaterialBanner();
             },
           ),
         ],

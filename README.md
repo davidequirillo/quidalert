@@ -2,9 +2,7 @@
 
 *"Together we are stronger"*
 
-NOTE: at the moment the project is under development.
-
-Quidalert is a network alert manager that can be used by users to send alerts and receive help from others: when the server receives an alert from a client (which runs the mobile app), it takes the alert description and the alert gps location, and then it sends a push notification to all geolocalized nearby clients and to the closest chief (called "chief manager"), to notify them about the alert.  
+Quidalert is a network alert manager that can be used by users to send alerts and receive help from others: when the server receives an alert from a client (which runs the mobile app), it takes the alert description and the alert gps location, then it sends a push notification to all geolocalized nearby clients and to the closest chief (called "chief manager"), to notify them about the alert.  
 At this point a group chat will be automatically created by the system and will include the user who sent the alert, nearby users (these ones in read-only mode) and the "chief manager", who will be able to write messages to them, helping them.  
 Obviously chief manager and nearby users will be able to see the alert gps coordinates with the related address in the map, to help the alert sender, if possible.
 
