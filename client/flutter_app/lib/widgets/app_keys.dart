@@ -9,14 +9,14 @@
 import 'package:flutter/material.dart';
 
 class AppKeys {
-  // Global keys for navigation and snackbar management
+  // Global keys for navigation and foreground notification handling (e.g., showing snackbars, banners, etc.)
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
-  static final GlobalKey<ScaffoldMessengerState> snackbarKey =
+  static final GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
-  // Keeps track of the current route name to allow navigation from anywhere in the app
+  // Keeps track of the current route name from anywhere in the app
   static String? currentRouteName;
-  // Keeps track of the current route arguments to allow navigation from anywhere in the app
+  // Keeps track of the current route arguments from anywhere in the app
   static Object? currentRouteArguments;
 }
 

@@ -103,7 +103,7 @@ class QuidalertWidget extends StatelessWidget {
       child: MaterialApp(
         navigatorKey: AppKeys.navigatorKey,
         navigatorObservers: [AppRouteObserver()],
-        scaffoldMessengerKey: AppKeys.snackbarKey,
+        scaffoldMessengerKey: AppKeys.messengerKey,
         title: config.appName,
         debugShowCheckedModeBanner: false,
         localizationsDelegates: [
