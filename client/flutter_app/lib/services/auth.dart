@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:jose/jose.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/config.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 
@@ -75,7 +75,7 @@ class UnknownException implements Exception {
 class AuthClient extends ChangeNotifier {
   static String msgTokenExpired = 'Token expired';
   static String msgTokenNotValid = 'Token not valid';
-  final String baseUrl = config.apiBaseUrl;
+  final String baseUrl = AppConfig.apiUrl;
   final FlutterSecureStorage _secureStorage;
   String? refreshToken;
   String? accessToken;

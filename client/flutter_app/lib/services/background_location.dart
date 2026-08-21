@@ -13,7 +13,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jose/jose.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/config.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 
 // The following class is used for background location tracking.
@@ -258,7 +258,7 @@ class BackgroundLocationService {
     }
     if (token == null) return false;
     debugPrintC("Sending to backend: Lat=$lat, Lng=$lng");
-    final String url = "${config.apiBaseUrl}/update-gps-position";
+    final String url = "${AppConfig.apiUrl}/update-gps-position";
     try {
       final uri = Uri.parse(url);
       final response = await http.post(
