@@ -6,10 +6,15 @@
 // This program may be linked with the "flutter_background_geolocation"
 // plugin by Transistor Software. See the LICENSE file for full details.
 
-const appName = 'Quidalert';
-const apiBaseUrl = 'http://10.0.2.2:8000/api';
-
-// The competence territory, examples:
-// "Rome", "Milan", "Milan City and near", "California", "New York", etc. etc.
-// It's simply an information for the users.
-const competenceTerritory = 'Italy';
+abstract class AppConfig {
+  // The API URL is set via environment variable at build time.
+  // If not set, it defaults to "defaultValue" for local development.
+  static const String apiUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://10.0.2.2:8000/api',
+  );
+  static const appName = 'Quidalert';
+  // The competence territory, examples:
+  // Italy, France, Germany, Spain, Britain, United States, Canada, etc.
+  static const competenceTerritory = 'Italy';
+}

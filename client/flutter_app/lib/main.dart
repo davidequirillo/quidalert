@@ -17,7 +17,7 @@ import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/services/headless_task.dart';
 import 'package:quidalert_flutter/firebase_options.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
-import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/config.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/location.dart';
@@ -104,7 +104,7 @@ class QuidalertWidget extends StatelessWidget {
         navigatorKey: AppKeys.navigatorKey,
         navigatorObservers: [AppRouteObserver()],
         scaffoldMessengerKey: AppKeys.messengerKey,
-        title: config.appName,
+        title: AppConfig.appName,
         debugShowCheckedModeBanner: false,
         localizationsDelegates: [
           AppLocalizations.delegate,

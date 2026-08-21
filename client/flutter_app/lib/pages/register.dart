@@ -15,7 +15,7 @@ import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
-import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/config.dart';
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
@@ -86,7 +86,7 @@ class _RegisterBodyState extends State<RegisterBody> {
     String endTitle;
     final http.Response response;
     try {
-      final url = Uri.parse('${config.apiBaseUrl}/register');
+      final url = Uri.parse('${AppConfig.apiUrl}/register');
       response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},

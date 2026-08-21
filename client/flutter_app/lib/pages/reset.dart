@@ -14,7 +14,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/utils/validators.dart';
-import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/config.dart';
 
 class ResetPage extends StatelessWidget {
   const ResetPage({super.key});
@@ -84,7 +84,7 @@ class _ResetBodyState extends State<ResetBody> {
     String endTitle;
     final http.Response response;
     try {
-      final url = Uri.parse('${config.apiBaseUrl}/password-reset/request');
+      final url = Uri.parse('${AppConfig.apiUrl}/password-reset/request');
       response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -130,7 +130,7 @@ class _ResetBodyState extends State<ResetBody> {
     String endTitle;
     final http.Response response;
     try {
-      final url = Uri.parse('${config.apiBaseUrl}/password-reset/confirm');
+      final url = Uri.parse('${AppConfig.apiUrl}/password-reset/confirm');
       response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},

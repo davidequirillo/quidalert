@@ -15,7 +15,7 @@ import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
-import 'package:quidalert_flutter/config.dart' as config;
+import 'package:quidalert_flutter/config.dart';
 
 class TermsPage extends StatelessWidget {
   const TermsPage({super.key});
@@ -36,7 +36,7 @@ class TermsBody extends StatelessWidget {
 
   Future<String> _loadFromServer(BuildContext context, {String? lang}) async {
     final loc = AppLocalizations.of(context)!;
-    final url = Uri.parse('${config.apiBaseUrl}/terms');
+    final url = Uri.parse('${AppConfig.apiUrl}/terms');
     final http.Response response;
     try {
       response = await http.get(url, headers: {"Accept-Language": "$lang"});
@@ -163,7 +163,7 @@ class InfoBody extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                '${loc.labelCompetenceTerritory}: ${config.competenceTerritory}',
+                '${loc.labelCompetenceTerritory}: ${AppConfig.competenceTerritory}',
               ),
               Expanded(
                 child: Markdown(
