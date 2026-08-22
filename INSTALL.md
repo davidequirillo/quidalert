@@ -124,7 +124,7 @@ Compile the app, distribute it (or install it in the mobile/client device manual
 
 Change default settings in config.py file, and read the comments contained in the file, to know how to proceed with the env variables.
 
-Copy ".env.example" to ".env" file and change the desired environment variables (useful for development).
+Copy ".env.example" to ".env" file and change the desired environment variables.
 
 See ".env.example" for additional info about those variables.
 
@@ -173,7 +173,13 @@ IMPORTANT: at database empty, using the client flutter app, register the first u
 After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
 
 NOTE: user registration, login, reset, require a smtp server to send some mail notifications to user email address. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in "config.py" file, or as environment variables.  
-For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the user using its web interface available at the following url: "http://localhost:8025".
+For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025". Additionally, messages to email addresses with the example.com suffix pass through this fake server, even in production mode.
+
+### Redis ram database integration
+
+The application employs a dual-database strategy to optimize performance and scalability. While PostgreSQL serves as the primary relational database for standard queries and persistent data storage, Redis is utilized as a high-performance sidecar to handle intensive, high-frequency workloads. This is particularly critical for tasks such as the periodic ingestion of GPS coordinates from clients, where low-latency throughput is essential. To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes.
+
+Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended, see server/api_backend/config.py for details). Do not lower the number of shards: logical shards are 16 and they must remain that way, but the cluster nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose.yml, if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 Redis nodes.
 
 ### Debugging (run)
 
@@ -205,10 +211,6 @@ The Windows version is not supported at the moment.
 To send push notifications to the client, the backend need to connect to FCM cloud using the account secret key assigned to it by the FCM platform.
 
 In your Firebase Project web console, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
-
-### Redis ram database integration
-
-The application employs a dual-database strategy to optimize performance and scalability. While PostgreSQL serves as the primary relational database for standard queries and persistent data storage, Redis is utilized as a high-performance sidecar to handle intensive, high-frequency workloads. This is particularly critical for tasks such as the periodic ingestion of GPS coordinates from clients, where low-latency throughput is essential. To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes.
 
 ## Simple production environment
 
