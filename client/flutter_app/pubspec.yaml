@@ -38,7 +38,7 @@ dependencies:
   flutter_markdown_plus: ^1.0.7
   shared_preferences: ^2.5.4
   flutter_secure_storage: ^10.0.0
-  jose: ^0.3.5
+  jose: ^0.3.5+2
   file_picker: ^10.3.9
   geocoding: ^4.0.0
   flutter_background_geolocation: ^5.0.5 # it requires commercial license key for production release
@@ -53,8 +53,18 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  rename_app: ^1.6.5
   change_app_package_name: ^1.5.0
+  flutter_launcher_icons: ^0.14.4
+
+# Quidalert: add flutter_launcher_icons configuration to generate app icons for Android and iOS
+flutter_launcher_icons:
+  android: "launcher_icon"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/icon.png"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

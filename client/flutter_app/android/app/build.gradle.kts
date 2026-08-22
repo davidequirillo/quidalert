@@ -14,15 +14,15 @@ android {
 
     compileOptions {
         // Quidalert: default version was VERSION_17
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         // Quidalert: enable core desugaring and Java version
         isCoreLibraryDesugaringEnabled = true 
     }
 
     kotlinOptions {
         // Quidalert: default version was VERSION_17
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
