@@ -26,21 +26,38 @@ flutter clean
 flutter pub get
 ```
 
-### Change the app name
-
-Change the app name and the distribution name.
-
-```
-dart run rename_app:main all="My App Name"
-
-dart run change_app_package_name:main com.new.package.name
-```
-
-Note: the last renaming instruction, is useful to change the name and the "distribution name" with a new custom desired name, and it's necessary only if you want to distribute the app to the public (for android store, ios store, etc.). Otherwise, for testing purposes, this specific renaming is optional.
-
 Note: in some cases, in windows operative system, you must enable "developer mode" (in windows settings), otherwise the command "flutter pub get" could return an error.
 
-In "lib/config.dart", change appName (facultative), and change apiBaseUrl, to connect to the correct relative server.  
+### Customization & App Store Deployment
+
+To publish your own instance of this application to the app stores (Google Play Store / Apple App Store), **you do not need to rename the project at the Flutter structural level** (e.g., `pubspec.yaml` or Dart `import` statements). 
+
+You only need to configure the distribution identifiers by following these steps:
+
+1. In-App Title (Top Bar): the visible app title inside the UI is centralized. Open `lib/config.dart` and update the variable:
+```dart
+const String appName = "Your Custom App Name";
+```
+
+2. Package Name / Bundle ID (Store Unique Identifier): to prevent store conflicts, you must set your own unique ID (e.g., com.yourdomain.appname). You can update this automatically using the included package.
+```bash
+flutter pub run change_app_package_name:main com.yourdomain.yourapp
+```
+
+3. Display Name (Name under the phone icon):
+- Android: Update the android:label value in android/app/src/main/AndroidManifest.xml.
+- iOS: Update the CFBundleDisplayName entry in ios/Runner/Info.plist.
+
+4. Customizing the App Icon (Optional): If you want to change the application icon:
+- Replace the source image at `assets/icon/icon.png` with your new icon (recommended: PNG, 1024x1024px or higher, squared without pre-rounded corners).
+- Automatically generate the launcher icons for Android and iOS by running these commands:
+
+```bash
+flutter pub get
+dart run flutter_launcher_icons
+```
+
+In "lib/config.dart", change appName, and change apiUrl, to connect to the correct relative server.  
 Change "competenceTerritory" too, to inform the public about the zone where your app can operate. 
 
 ### Push notifications setup
@@ -136,7 +153,7 @@ To download them automatically, and start them, you only need to write this sing
 docker-compose up -d --build
 ```
 
-If you want to use Redis in cluster mode (not in single mode), you must join redis nodes:
+To use Redis in cluster mode (not in single mode), you must join redis nodes:
 
 ```
 docker exec -it redis-node-1 redis-cli --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
@@ -171,19 +188,17 @@ code .quidalert.code-workspace
 NOTE: code workspace has been configured to ignore some useless folders from the programming IDE view (for example “build” directories)
 
 To run (debug) client, go to VS Code menu -> View -> Run.
-- Choose "Debug - Client (Flutter) Windows" and click to play to debug the client.
 - Choose "Debug - Client (Flutter) Android" and click to play to debug the client
 
 The backend is already running (it has started when we have done "docker-compose up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping).  
 To intensively debug the backend (FastAPI), we can attach VSCode to running fastapi container and read/edit the code there. 
 
 NOTES
-- "Debug - Client (Flutter) Windows" requires Microsoft Visual Studio (C++ desktop development package).   
 - "Debug - Client (Flutter) Android" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE)
 
-Flutter Web device (Chrome) is not completely supported at the moment.
+Flutter Web device (Chrome) is not supported at the moment.
 
-The Windows version currently has a problem with Firebase package (so probably we will create a specific version for desktop)
+The Windows version is not supported at the moment.
 
 ### Send push notification to client
 
@@ -195,31 +210,10 @@ In your Firebase Project web console, you must go to "Account Service" and gener
 
 The application employs a dual-database strategy to optimize performance and scalability. While PostgreSQL serves as the primary relational database for standard queries and persistent data storage, Redis is utilized as a high-performance sidecar to handle intensive, high-frequency workloads. This is particularly critical for tasks such as the periodic ingestion of GPS coordinates from clients, where low-latency throughput is essential. To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes.
 
-### Notes about production (run)
+## Simple production environment
 
-In the backend machine (behind nginx reverse proxy):
+VPS: Debian 12.0 "Bookworm"  
 
-```
-uvicorn main:app --host 127.0.0.1 --port 8000 --no-access-log
-```
+### Install docker
 
-In nginx reverse proxy machine we do this, to forward the request id to the backend framework:
-
-```
-map $http_x_request_id $req_id {
-    default $http_x_request_id;
-    ""      $request_id;
-}
-proxy_set_header X-Request-ID $req_id;
-```
-
-To log the request_id in nginx too:
-
-```
-log_format main_ext '$remote_addr - $remote_user [$time_local] '
-                   '"$request" $status $body_bytes_sent '
-                   'req_id=$req_id '
-                   '"$http_user_agent"';
-
-access_log /var/log/nginx/access.log main_ext;
-```
+In progress
