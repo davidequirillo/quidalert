@@ -3,13 +3,9 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import random
+import math
 import asyncio
 import pytest
-from scripts.seed_redis_data import (
-    CENTER_LAT, 
-    CENTER_LON,
-    get_random_coords
-)
 from sqlmodel import delete, select
 from models.general import (
     User, UserRole, RefreshToken, UserLanguage,
@@ -26,8 +22,25 @@ from core.dbmgr import (
 
 GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
 ROLE_PROBABILITY = 0.10  # 10% of users have a role assigned (the rest have role equal to None)
-RADIUS_KM = 5  # Radius in kilometers for random location generation around the central point (CENTER_LAT, CENTER_LON) for testing purposes
+CENTER_LAT = 39.7392 # Denver, Colorado, USA
+CENTER_LON = -104.9903 # Denver, Colorado, USA
+RADIUS_KM = 5.0
 
+def get_random_coords(lat, lon, max_km):
+    # We convert the maximum distance from kilometers to degrees (for latitude it's approximately 111.32 km per degree)
+    max_radius_degrees = max_km / 111.32
+    # We generate a random angle and a random radius (with a distribution that ensures uniformity in the area)
+    angle = random.uniform(0, 2 * math.pi)
+    # The square root ensures uniform distribution over the area
+    radius = math.sqrt(random.uniform(0, 1)) * max_radius_degrees
+    # Calculate the deltas in degrees
+    delta_lat = radius * math.cos(angle)
+    # For longitude, we need to divide by the cosine of the latitude
+    # (meridians converge as we approach the poles)
+    lat_in_radians = math.radians(lat)
+    delta_lon = (radius * math.sin(angle)) / math.cos(lat_in_radians)
+    return lat + delta_lat, lon + delta_lon
+    
 def print_closest_chiefs_and_nearby_users(alert, user, closest_chiefs, nearby_users):
     # Print alert coordinates, closest chiefs and nearby users for debugging purposes
     print()

@@ -15,11 +15,7 @@ from services.security import now_tz_naive
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_fake_functions,
-    RADIUS_KM,
-)
-from scripts.seed_redis_data import (
-    CENTER_LAT, 
-    CENTER_LON
+    CENTER_LAT, CENTER_LON, RADIUS_KM,
 )
 from services.alert_btasks import (
     GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM,

@@ -30,7 +30,7 @@ def send_activation_code_mail(email: str, token: str, lang: str, request_info: d
     msg["To"] = email
     msg.set_content(localize_activation_code_mail(act_url, lang))
     try:
-        send_mail_message(msg)
+        send_mail_message(msg, request_info)
     except Exception as e:
         log_user_activation_code_mail_error(email, request_info, detail=str(e))
 
@@ -41,7 +41,7 @@ def send_reset_code_mail(email: str, code: str, lang: str, request_info: dict):
     msg["To"] = email
     msg.set_content(localize_reset_code_mail(code, lang))     
     try:
-        send_mail_message(msg)
+        send_mail_message(msg, request_info)
     except Exception as e:
         log_user_reset_code_mail_error(email, request_info, detail=str(e))
 
@@ -52,7 +52,7 @@ def send_reset_successful_mail(email: str, lang: str, request_info: dict):
     msg["To"] = email
     msg.set_content(localize_reset_successful_mail(lang))     
     try:
-        send_mail_message(msg)
+        send_mail_message(msg, request_info)
     except Exception as e:
         log_user_reset_successful_mail_error(email, request_info, detail=str(e))
 
@@ -63,7 +63,7 @@ def send_login_code_mail(email: str, code: str, lang: str, request_info: dict):
     msg["To"] = email
     msg.set_content(localize_login_code_mail(code, lang))     
     try:
-        send_mail_message(msg)
+        send_mail_message(msg, request_info)
     except Exception as e:
         log_user_login_code_mail_error(email, request_info, detail=str(e))
 
@@ -74,6 +74,6 @@ def send_login_successful_mail(email: str, lang: str, request_info: dict):
     msg["To"] = email
     msg.set_content(localize_login_successful_mail(lang))
     try:
-        send_mail_message(msg)
+        send_mail_message(msg, request_info)
     except Exception as e:
         log_user_login_successful_mail_error(email, request_info, detail=str(e))

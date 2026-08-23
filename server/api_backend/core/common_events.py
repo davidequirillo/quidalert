@@ -43,3 +43,9 @@ def log_notify_many_clients_error(request_info: dict, detail: str = ""):
         f"notify_many_clients_error, detail={detail}",
         extra=request_info
     )
+
+def log_user_email_redirected(email: str, redirected_to: str, request_info: dict, detail: str = ""):
+    logger.warning(
+        f"user_email_redirected, email={email}, redirected_to={redirected_to}, detail={detail}",
+        extra=request_info
+    )
