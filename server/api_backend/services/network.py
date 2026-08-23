@@ -20,12 +20,10 @@ def send_mail_message(data):
     if not settings.send_emails: # in testing mode we can disable sending emails
         return
     if ((settings.app_mode == 'production') 
-            and (not data["To"].endswith("@example.com"))):
-        smtp_host = settings.smtp_host
-        smtp_port = settings.smtp_port
-    else:
-        smtp_host = settings.smtp_host_test
-        smtp_port = settings.smtp_port_test
+            and (data["To"].endswith("@example.com"))):
+        return
+    smtp_host = settings.smtp_host
+    smtp_port = settings.smtp_port
     with smtplib.SMTP(host=smtp_host, port=smtp_port) as server:
         server.send_message(data)
 
