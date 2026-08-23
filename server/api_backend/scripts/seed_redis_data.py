@@ -3,11 +3,11 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 from datetime import datetime, timedelta
+import math
 import argparse
 import asyncio
 import random
 from sqlmodel import Session, select
-from tests.fixtures.alerts import get_random_coords
 from core.dbmgr import (
     get_engine, get_redis_handle,
     cluster, redis, RedisHandleTypeError,
@@ -31,8 +31,28 @@ GPS_LOCATION_EXPIRATION_PROBABILITY = 0.05  # 5% of GPS locations are expired (f
 DEMOTION_PROBABILITY = 0.02  # 2% chance that a user was a chief and has been demoted to regular user (for testing purposes)
 DEMOTION_EXPIRATION_PROBABILITY = 0.50  # 50% of demotions are expired (for testing purposes)
 
-db_engine = get_engine()
-redis_handle = get_redis_handle()
+db_engine = None
+redis_handle = None
+
+def initialize_db_and_redis():
+    global db_engine, redis_handle
+    db_engine = get_engine()
+    redis_handle = get_redis_handle()
+
+def get_random_coords(lat, lon, max_km):
+    # We convert the maximum distance from kilometers to degrees (for latitude it's approximately 111.32 km per degree)
+    max_radius_degrees = max_km / 111.32
+    # We generate a random angle and a random radius (with a distribution that ensures uniformity in the area)
+    angle = random.uniform(0, 2 * math.pi)
+    # The square root ensures uniform distribution over the area
+    radius = math.sqrt(random.uniform(0, 1)) * max_radius_degrees
+    # Calculate the deltas in degrees
+    delta_lat = radius * math.cos(angle)
+    # For longitude, we need to divide by the cosine of the latitude
+    # (meridians converge as we approach the poles)
+    lat_in_radians = math.radians(lat)
+    delta_lon = (radius * math.sin(angle)) / math.cos(lat_in_radians)
+    return lat + delta_lat, lon + delta_lon
 
 def get_users_from_db(db_session):
     print("Fetching users from the database...")
@@ -170,4 +190,5 @@ if __name__ == "__main__":
     CENTER_LON = args.central_lon
     RADIUS_KM = args.radius
     print(f"Seeding Redis with random GPS locations around central point ({CENTER_LAT}, {CENTER_LON}) with radius {RADIUS_KM} km...")
+    initialize_db_and_redis()
     asyncio.run(main())
