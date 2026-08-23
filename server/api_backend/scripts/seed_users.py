@@ -104,7 +104,6 @@ def seed_users():
         languages = [lang.value for lang in UserLanguage]
         user_roles = [role.value for role in UserRole]
         print(f"Populating PostgreSQL with users...")
-        specialists_num = 0
         try:
             for category, user_type, cardinality in zip(user_categories, user_types, user_cardinalities):
                 for i in range(1, cardinality+1):
@@ -119,7 +118,6 @@ def seed_users():
                         random_value = fake.random.random()
                         if random_value < ROLE_PROBABILITY:
                             role = fake.random.choice(user_roles)
-                            specialists_num += 1
                         else:
                             role = None
                     else:
@@ -160,7 +158,9 @@ def seed_users():
             print(f"Base users inserted: {TOTAL_BASEUSERS}")
             print("-------------------")
             print(f"Total users inserted: {sum(user_cardinalities)} + 1 (superuser) = {sum(user_cardinalities) + 1}")
-            print("Number of specialists (users with a role): ", specialists_num)
+            specialists = session.exec(select(User).where(User.role != None)).all()
+            specialists_num = len(specialists)
+            print("Number of specialists (users with a role):", specialists_num)
         except Exception as e:
             print(f"Error during user seeding: {e}")
             session.rollback()
