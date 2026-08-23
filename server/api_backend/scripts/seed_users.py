@@ -10,6 +10,7 @@ from services.security import (
     get_password_hash, activation_expiry, now_tz_naive)
 from sqlmodel import Session, select
 from core.dbmgr import get_engine
+from services.network import FAKE_EMAIL_DOMAIN
 
 fake = Faker('en_US')
 TOTAL_ADMINS = 3
@@ -37,7 +38,7 @@ def seed_superuser_if_db_is_empty():
         superuser = User.model_validate({
             "firstname": "Admin",
             "surname": "User",
-            "email": "superuser@example.com",
+            "email": f"superuser@{FAKE_EMAIL_DOMAIN}",
             "language": UserLanguage.en.value,
             "password_hash": get_password_hash(settings.admin_pass),
             "is_superuser": True,
@@ -63,22 +64,22 @@ def seed_users_whitelist():
             for category, user_type, cardinality in zip(user_categories, user_types, user_cardinalities):
                 for i in range(1, cardinality+1):
                     if user_type == "admin":
-                        created_by = "superuser@example.com"
+                        created_by = f"superuser@{FAKE_EMAIL_DOMAIN}"
                         created_at = now_tz_naive()
                     elif user_type == "officer":
                         rand_admin_index = fake.random.randint(1, TOTAL_ADMINS)
-                        created_by = f"admin{rand_admin_index}@example.com"
+                        created_by = f"admin{rand_admin_index}@{FAKE_EMAIL_DOMAIN}"
                         created_at = now_tz_naive()
                     elif user_type == "chief":
                         rand_admin_index = fake.random.randint(1, TOTAL_ADMINS)
-                        created_by = f"admin{rand_admin_index}@example.com"
+                        created_by = f"admin{rand_admin_index}@{FAKE_EMAIL_DOMAIN}"
                         created_at = now_tz_naive()
                     else:  # baseuser
                         rand_officer_index = fake.random.randint(1, TOTAL_OFFICERS)
-                        created_by = f"officer{rand_officer_index}@example.com"
+                        created_by = f"officer{rand_officer_index}@{FAKE_EMAIL_DOMAIN}"
                         created_at = now_tz_naive()
                     entry = WhiteListEntry.model_validate({
-                        "email": f"{user_type}{i}@example.com",
+                        "email": f"{user_type}{i}@{FAKE_EMAIL_DOMAIN}",
                         "created_by": created_by,
                         "created_at": created_at
                     })
@@ -107,7 +108,7 @@ def seed_users():
         try:
             for category, user_type, cardinality in zip(user_categories, user_types, user_cardinalities):
                 for i in range(1, cardinality+1):
-                    email = f"{user_type}{i}@example.com"
+                    email = f"{user_type}{i}@{FAKE_EMAIL_DOMAIN}"
                     whitelist_entry = session.exec(select(WhiteListEntry).where(WhiteListEntry.email == email)).first()
                     if not whitelist_entry:
                         print(f"Skipping {email} as it is not in the whitelist.")
@@ -126,7 +127,7 @@ def seed_users():
                     user = User.model_validate({
                         "firstname": fake.first_name(),
                         "surname": fake.last_name(),
-                        "email": f"{user_type}{i}@example.com",
+                        "email": f"{user_type}{i}@{FAKE_EMAIL_DOMAIN}",
                         "language": fake.random.choice(languages),
                         "password_hash": common_password_hash,
                         "is_superuser": False,

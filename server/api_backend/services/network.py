@@ -3,6 +3,7 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import smtplib
+from email.message import EmailMessage
 from firebase_admin import messaging as firebase_messaging
 from sqlmodel import select, update
 from models.general import string_as_uuid, RefreshToken
@@ -13,15 +14,27 @@ from core.common_events import (
     log_notify_single_client_success,
     log_notify_many_clients_unregistered_warning,
     log_notify_many_clients_info,
-    log_notify_many_clients_error
+    log_notify_many_clients_error,
+    log_user_email_redirected
 )
 
-def send_mail_message(data):
+FAKE_EMAIL_DOMAIN = "example.com"
+
+def send_mail_message(data: EmailMessage, request_info: dict):
     if not settings.send_emails: # in testing mode we can disable sending emails
         return
-    if ((settings.app_mode == 'production') 
-            and (data["To"].endswith("@example.com"))):
-        return
+    if (data["To"].endswith(f"@{FAKE_EMAIL_DOMAIN}")):
+        # If the environment variable SMTP_ALLOW_REDIRECT_FAKE_USERS_EMAIL is enabled, 
+        # we redirect all emails for fake users to a single email address (SMTP_REDIRECT_FAKE_USERS_EMAIL_TO).
+        # See the comments in env.example file for more details about security risks of this feature.
+        if settings.smtp_allow_redirect_fake_users_email == "yes":
+            original_to = data["To"]
+            data.replace_header("To", settings.smtp_redirect_fake_users_email_to)
+            log_user_email_redirected(original_to, data["To"], request_info=request_info, detail="Redirecting email for fake user to a single email address for testing purposes.")
+        else:
+            if settings.app_mode == "production":
+                log_user_email_redirected(data["To"], "none", request_info=request_info, detail="Not sending email for fake user")
+                return
     smtp_host = settings.smtp_host
     smtp_port = settings.smtp_port
     with smtplib.SMTP(host=smtp_host, port=smtp_port) as server:

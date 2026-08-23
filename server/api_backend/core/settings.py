@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 import config 
 
 ## IMPORTANT, settings are read in the following priority: 
-# docker environment variables > .env file > default values in config.py > default values at codebase level (in this file).
+# docker environment variables > .env file > default values (in config.py or at codebase level).
 
 class Settings(BaseSettings):
     # App conf
@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     smtp_host: str = config.SMTP_HOST
     smtp_port: int = config.SMTP_PORT
     smtp_from: str = config.SMTP_FROM
+    # If you are not sure, leave it as "no" (default value). 
+    # If you set it to "yes", be careful: it can be a security risk in production.
+    smtp_allow_redirect_fake_users_email: str = "no" # from environment, critical for security
+    smtp_redirect_fake_users_email_to: str = "" # from environment, critical for security
     # MinIO conf
     s3_user: str = "" # from environment, critical for security
     s3_pass: str = "" # same as above
