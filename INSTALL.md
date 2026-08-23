@@ -173,7 +173,7 @@ IMPORTANT: at database empty, using the client flutter app, register the first u
 After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
 
 NOTE: user registration, login, reset, require a smtp server to send some mail notifications to user email address. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in "config.py" file, or as environment variables.  
-For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025". Additionally, messages to email addresses with the example.com suffix pass through this fake server, even in production mode.
+For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025".
 
 ### Redis ram database integration
 
