@@ -53,10 +53,6 @@ class Settings(BaseSettings):
     smtp_host: str = config.SMTP_HOST
     smtp_port: int = config.SMTP_PORT
     smtp_from: str = config.SMTP_FROM
-    smtp_host_test: str = config.SMTP_HOST_TEST
-    smtp_port_test: int = config.SMTP_PORT_TEST
-    smtp_user_test: str = ""
-    smtp_pass_test: str = ""
     # MinIO conf
     s3_user: str = "" # from environment, critical for security
     s3_pass: str = "" # same as above

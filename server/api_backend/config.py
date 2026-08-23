@@ -43,9 +43,6 @@ REDIS_LOGICAL_SHARDS_NUM = 16
 SMTP_HOST = "mailserver" # to send activation mail messages to clients
 SMTP_PORT = 465
 SMTP_FROM = "no-reply@myservername"
-# Fake SMTP server for testing purposes
-SMTP_HOST_TEST = "localhost"
-SMTP_PORT_TEST = 1025
 
 ## Firebase configuration (not used at the moment)
 FIREBASE_POOL_SIZE = 10 # the maximum number of concurrent connections to Firebase, default is 10
