@@ -4,7 +4,10 @@
 
 # IMPORTANT
 # The following configurations are the default fallback values for the application. 
-# They can be overridden by environment variables (defined in system, in container, or in a ".env" file) 
+# They can be overridden by environment variables (defined in system, in container, or in a ".env" file).
+# So the application will use the values following this priority order:
+# 1. Environment variables (defined in system, in container, or in a ".env" file)
+# 2. Default values specified in this configuration file
 
 SERVER_NAME = "myservername" # the server name (publicly accessible, for example the reverse proxy)
 SERVER_PORT = 8080 # the server port (publicly accessible) 
@@ -32,8 +35,11 @@ REDIS_MAX_CONNECTIONS_PER_NODE = 32 # in cluster mode
 
 # REDIS_LOGICAL_SHARDS_NUM: don't change this value at the moment, 
 # because it's the recommended value (used for testing).
-# But, in theory, values ​​from 16 up to 128 should not represent a problem.
-# Important note: if you increase this value, some cleanup tests (where batch size is tested) 
+# More importantly, don't change this value if the Redis database is not empty, because it can cause data loss 
+# (it affects the distribution of data across the shards, and changing the number of shards will change the distribution).
+# So, if you want to change this value, do it when the Redis database is empty.
+# Theoretically, values from 16 up to 128 should not represent a problem.
+# Another important note: if you increase this value, some cleanup tests (where batch size is tested) 
 # may fail, due to the fact that the number of shards is increased (the data is distributed accordingly across the shards),
 # and for each shard we have only a few expired records to delete, so the batch size is not reached.
 # In this case, we must increase the number of testing records to test those cases, or reduce the testing batch size (specified in those tests). 

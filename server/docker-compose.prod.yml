@@ -1,0 +1,92 @@
+# Docker compose file for production mode.
+# This is the production version, which uses a reverse proxy (Caddy)
+name: quidalert-prod
+services:
+  # --- BACKEND FASTAPI ---
+  fastapi:
+    build:
+      context: ./api_backend
+      dockerfile: Dockerfile.prod
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+    networks:
+      - serverside-net
+    depends_on:
+      - postgres
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+
+  # --- REDIS CLUSTER (3 NODES) ---
+  redis-node-1:
+    image: redis:7.4-alpine
+    restart: always
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - redis_node_1_data:/data
+    networks:
+      - serverside-net
+
+  redis-node-2:
+    image: redis:7.4-alpine
+    restart: always
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - redis_node_2_data:/data
+    networks:
+      - serverside-net
+
+  redis-node-3:
+    image: redis:7.4-alpine
+    restart: always
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
+    volumes:
+      - redis_node_3_data:/data
+    networks:
+      - serverside-net
+
+  # --- POSTGRESQL DBMS ---
+  postgres:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - serverside-net
+
+  # --- REVERSE PROXY HTTPS (CADDY) ---
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SERVER_NAME: ${SERVER_NAME}
+    volumes:     
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - serverside-net
+
+## Volume definitions (for persistent data storage)
+volumes:
+  postgres_data:
+  redis_node_1_data:
+  redis_node_2_data:
+  redis_node_3_data:
+  caddy_data:
+  caddy_config:
+
+## Network definitions (internal network for containers)
+networks:
+  serverside-net:
+    driver: bridge
