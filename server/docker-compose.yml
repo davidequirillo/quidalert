@@ -8,7 +8,7 @@ services:
     build:
       context: ./api_backend
       dockerfile: Dockerfile
-    container_name: fastapi_backend
+    container_name: fastapi_backend_dev
     restart: always
     ports:
       - "8000:8000"
@@ -32,7 +32,7 @@ services:
   # --- Relational DBMS ---
   postgres:
     image: postgres:17-alpine
-    container_name: postgres_dbms
+    container_name: postgres_dbms_dev
     restart: always
     environment:
       # If variables are not found in .env, use defaults after :-
@@ -48,8 +48,8 @@ services:
 
   # --- DBMS for speedy operations (Redis single) ---
   redis:
-    image: redis:7.4-alpine
-    container_name: redis_cache
+    image: redis:7-alpine
+    container_name: redis_cache_dev
     restart: always
     ports:
       - "6379:6379"
@@ -60,8 +60,8 @@ services:
 
   # --- DBMS for speedy operations (Redis cluster) ---
   redis-node-1:
-    image: redis:7.4-alpine
-    container_name: redis-node-1
+    image: redis:7-alpine
+    container_name: redis_node_1_dev
     volumes:
       - redis-data-1:/data
     command: redis-server --port 7001 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0 --cluster-announce-ip redis-node-1 --cluster-announce-port 7001 --cluster-announce-bus-port 17001
@@ -72,8 +72,8 @@ services:
       - serverside-net
 
   redis-node-2:
-    image: redis:7.4-alpine
-    container_name: redis-node-2
+    image: redis:7-alpine
+    container_name: redis_node_2_dev
     volumes:
       - redis-data-2:/data
     command: redis-server --port 7002 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0 --cluster-announce-ip redis-node-2 --cluster-announce-port 7002 --cluster-announce-bus-port 17002
@@ -84,8 +84,8 @@ services:
       - serverside-net
 
   redis-node-3:
-    image: redis:7.4-alpine
-    container_name: redis-node-3
+    image: redis:7-alpine
+    container_name: redis_node_3_dev
     volumes:
       - redis-data-3:/data
     command: redis-server --port 7003 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0 --cluster-announce-ip redis-node-3 --cluster-announce-port 7003 --cluster-announce-bus-port 17003
@@ -97,8 +97,8 @@ services:
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
-    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
-    container_name: minio_storage
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: minio_storage_dev
     restart: always
     ports:
       - "9000:9000" # API port
@@ -114,8 +114,8 @@ services:
 
   # --- SERVER SMTP for testing (MAILPIT) ---
   mailpit:
-    image: axllent/mailpit:v1.28.4
-    container_name: mailpit_server
+    image: axllent/mailpit:v1.31
+    container_name: mailpit_server_dev
     restart: always
     ports:
       - "1025:1025" # SMTP port

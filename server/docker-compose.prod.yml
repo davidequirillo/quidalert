@@ -22,7 +22,7 @@ services:
 
   # --- REDIS CLUSTER (3 NODES) ---
   redis-node-1:
-    image: redis:7.4-alpine
+    image: redis:7-alpine
     restart: always
     command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
     volumes:
@@ -31,7 +31,7 @@ services:
       - serverside-net
 
   redis-node-2:
-    image: redis:7.4-alpine
+    image: redis:7-alpine
     restart: always
     command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
     volumes:
@@ -40,7 +40,7 @@ services:
       - serverside-net
 
   redis-node-3:
-    image: redis:7.4-alpine
+    image: redis:7-alpine
     restart: always
     command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes
     volumes:
@@ -60,6 +60,23 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - serverside-net
+  
+  # --- STORAGE for uploads (s3 compatible) ---
+  minio:
+      image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+      container_name: minio_storage
+      restart: always
+      ports:
+        - "9000:9000" # API port
+        - "9001:9001" # Web console port
+      environment:
+        MINIO_ROOT_USER: ${S3_USER:-s3user}
+        MINIO_ROOT_PASSWORD: ${S3_PASS:-s3pass}
+      volumes:
+        - minio_data:/data
+      command: server /data --console-address ":9001"
+      networks:
+        - serverside-net
 
   # --- REVERSE PROXY HTTPS (CADDY) ---
   caddy:

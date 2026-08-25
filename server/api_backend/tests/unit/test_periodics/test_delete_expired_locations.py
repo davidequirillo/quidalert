@@ -15,7 +15,7 @@ from services.periodics import (
 )
 from core.dbmgr import (
     REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT,
-    REDIS_TOTAL_SHARDS,
+    get_redis_shards_num,
     REDIS_LOCATION_LAST_UPDATES_KEY,
     REDIS_SPEC_LOCATION_LAST_UPDATES_KEY,
     REDIS_USER_LOCATIONS_KEY,
@@ -81,7 +81,7 @@ async def test_delete_expired_locations_for_each_shard(redis_session):
     exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
     exp_int_ts = int(exp_dt.timestamp())
     print(f"Calling cleanup_expired_locations for each shard with expiration threshold timestamp: {exp_int_ts}")
-    for shard_index in range(REDIS_TOTAL_SHARDS):
+    for shard_index in range(get_redis_shards_num()):
         deleted_count = await cleanup_expired_locations_shard(shard_index, exp_int_ts, redis_session, batch_size=batch_size)
         # we check that the number of deleted locations is equal to the number of expired locations we inserted for that shard
         shard_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
@@ -139,7 +139,7 @@ async def test_delete_expired_locations(redis_session):
     # Now, we can check that all expired locations have been deleted and only valid locations remain
     total_location_updates_after = 0
     shards = get_all_redis_location_last_updates_keys()
-    for shard_index in range(REDIS_TOTAL_SHARDS):
+    for shard_index in range(get_redis_shards_num()):
         last_updates_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
         user_locations_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
         chief_locations_key = REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
@@ -303,7 +303,7 @@ async def test_delete_expired_special_locations_for_each_shard(redis_session):
     exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
     exp_int_ts = int(exp_dt.timestamp())
     print(f"Calling cleanup_expired_special_locations for each shard with expiration threshold timestamp: {exp_int_ts}")
-    for shard_index in range(REDIS_TOTAL_SHARDS):
+    for shard_index in range(get_redis_shards_num()):
         deleted_count_from_function = await cleanup_expired_special_locations_shard(shard_index, exp_int_ts, redis_session, batch_size=batch_size)
         # We check that the number of deleted special locations from the periodic function 
         # is equal to the number of expired special locations we inserted for that shard (shard_index).
@@ -396,7 +396,7 @@ async def test_delete_expired_normal_and_special_locations(redis_session):
     # Now, we can check that only valid normal locations remain
     total_location_updates_after = 0
     shards = get_all_redis_location_last_updates_keys()
-    for shard_index in range(REDIS_TOTAL_SHARDS):
+    for shard_index in range(get_redis_shards_num()):
         last_updates_key = REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
         user_locations_key = REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
         chief_locations_key = REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
@@ -414,7 +414,7 @@ async def test_delete_expired_normal_and_special_locations(redis_session):
     total_location_updates_after = 0
     shards = get_all_redis_location_last_updates_keys()
     for role in [r.value for r in UserRole]:
-        for shard_index in range(REDIS_TOTAL_SHARDS):
+        for shard_index in range(get_redis_shards_num()):
             spec_last_updates_key = REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=shard_index, role=role)
             spec_locations_key = REDIS_SPEC_LOCATIONS_KEY.format(i=shard_index, role=role)
             spec_last_updates_count = await redis_session.zcard(spec_last_updates_key)

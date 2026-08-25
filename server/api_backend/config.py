@@ -24,6 +24,8 @@ DB_POOL_TIMEOUT = 30
 DB_POOL_RECYCLE = 1800
 
 ## Redis DBMS (redis mode can be "single" or "cluster")
+# Redis "single" mode uses REDIS_URL to connect to the single Redis node.
+# Redis "cluster" mode uses REDIS_CLUSTER_NODES to connect to the cluster nodes.
 # Important note about cluster mode: the number of cluster nodes 
 # must be less or equal than the number of logical shards.
 # An equal number is recommended (redis nodes number = logical shards number)
@@ -32,17 +34,13 @@ REDIS_URL="redis://localhost:6379/0"
 REDIS_CLUSTER_NODES="redis-node-1:7001,redis-node-2:7002,redis-node-3:7003"
 REDIS_MAX_CONNECTIONS = 200
 REDIS_MAX_CONNECTIONS_PER_NODE = 32 # in cluster mode
-
-# REDIS_LOGICAL_SHARDS_NUM: don't change this value at the moment, 
-# because it's the recommended value (used for testing).
-# More importantly, don't change this value if the Redis database is not empty, because it can cause data loss 
-# (it affects the distribution of data across the shards, and changing the number of shards will change the distribution).
-# So, if you want to change this value, do it when the Redis database is empty.
-# Theoretically, values from 16 up to 128 should not represent a problem.
-# Another important note: if you increase this value, some cleanup tests (where batch size is tested) 
-# may fail, due to the fact that the number of shards is increased (the data is distributed accordingly across the shards),
-# and for each shard we have only a few expired records to delete, so the batch size is not reached.
-# In this case, we must increase the number of testing records to test those cases, or reduce the testing batch size (specified in those tests). 
+# The number of logical shards must be one of the following values: 16, 32, 64, 96, 128.
+# If you are unsure, keep REDIS_LOGICAL_SHARDS_NUM = 16 because it's the recommended value for most cases.
+# CAUTION: don't change the REDIS_LOGICAL_SHARDS_NUM if the Redis database is not empty, 
+# because this variable affects the distribution of data across the shards at runtime, 
+# so changing it in non-empty Redis database can cause data loss or corruption.
+# Note: REDIS_LOGICAL_SHARDS_NUM is used in both Redis single and cluster modes,
+# so if you are using Redis single mode, keep REDIS_LOGICAL_SHARDS_NUM = 16 for obvious performance reasons.
 REDIS_LOGICAL_SHARDS_NUM = 16
 
 ## Mail sender configuration

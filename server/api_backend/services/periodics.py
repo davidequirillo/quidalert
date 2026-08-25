@@ -58,7 +58,7 @@ from core.dbmgr import (
     REDIS_COOLDOWN_USERS_CLEANUP_TIMEOUT,
     REDIS_COOLDOWN_ALERTS_CLEANUP_KEY,
     REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT,
-    REDIS_TOTAL_SHARDS)
+    get_redis_shards_num)
 
 LOCATIONS_TTL_HOURS = 48
 
@@ -90,6 +90,7 @@ async def do_locations_cleanup(redis_handle):
         raise RedisHandleTypeError(redis_handle)
 
 async def cleanup_expired_locations(redis_client): # Redis client can be either a redis_handle (in cluster mode) or a redis_session from pool (in single node mode)
+    redis_shards_num = get_redis_shards_num()
     now = now_tz_aware()
     exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
     exp_int_ts = int(exp_dt.timestamp())
@@ -110,32 +111,32 @@ async def cleanup_expired_locations(redis_client): # Redis client can be either 
     # We run the location cleanup in parallel across all shards, 
     # to cleanup expired locations for users and chiefs
     log_cleanup_expired_locations_started(
-            detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
+            detail=f"Starting parallel cleanup across {redis_shards_num} shards. Threshold: {exp_int_ts}"
         )
     try:
         tasks = [cleanup_expired_locations_shard(
                 i, exp_int_ts, redis_client
-            ) for i in range(REDIS_TOTAL_SHARDS)]
+            ) for i in range(redis_shards_num)]
         results = await asyncio.gather(*tasks)
         normal_locations_del_num = sum(results)       
         log_cleanup_expired_locations_completed(
-            detail=f"Cleanup completed: {normal_locations_del_num} locations removed across {REDIS_TOTAL_SHARDS} shards"
+            detail=f"Cleanup completed: {normal_locations_del_num} locations removed across {redis_shards_num} shards"
         )
     except Exception as e:
         log_cleanup_expired_locations_error(detail=str(e))
     # We also run the special locations cleanup in parallel across all shards, 
     # to cleanup expired locations for specialists (users with specific roles)
     log_cleanup_expired_special_locations_started(
-            detail=f"Starting parallel cleanup for all roles across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
+            detail=f"Starting parallel cleanup for all roles across {redis_shards_num} shards. Threshold: {exp_int_ts}"
         )
     try:
         tasks = [cleanup_expired_special_locations_shard(
                 i, exp_int_ts, redis_client
-            ) for i in range(REDIS_TOTAL_SHARDS)]
+            ) for i in range(redis_shards_num)]
         results = await asyncio.gather(*tasks)
         special_locations_del_num = sum(results)
         log_cleanup_expired_special_locations_completed(
-            detail=f"Cleanup completed for all roles: {special_locations_del_num} special locations removed across {REDIS_TOTAL_SHARDS} shards"
+            detail=f"Cleanup completed for all roles: {special_locations_del_num} special locations removed across {redis_shards_num} shards"
         )
     except Exception as e:
         log_cleanup_expired_special_locations_error(detail=str(e))
@@ -215,6 +216,7 @@ async def do_demotions_cleanup(redis_handle):
         raise RedisHandleTypeError(redis_handle)
 
 async def cleanup_expired_demotions(redis_client): # Redis client can be either a redis_handle (in cluster mode) or a redis_session from pool (in single node mode)
+    redis_shards_num = get_redis_shards_num()
     now =  now_tz_aware()
     exp_dt = now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES) 
     exp_int_ts = int(exp_dt.timestamp())
@@ -232,16 +234,16 @@ async def cleanup_expired_demotions(redis_client): # Redis client can be either 
         )
         return 0
     log_cleanup_expired_demotions_started(
-        detail=f"Starting parallel cleanup across {REDIS_TOTAL_SHARDS} shards. Threshold: {exp_int_ts}"
+        detail=f"Starting parallel cleanup across {redis_shards_num} shards. Threshold: {exp_int_ts}"
     )
     try:
         tasks = [cleanup_expired_demotions_shard(
                 i, exp_int_ts, redis_client
-            ) for i in range(REDIS_TOTAL_SHARDS)]
+            ) for i in range(redis_shards_num)]
         results = await asyncio.gather(*tasks)
         total_deleted = sum(results)       
         log_cleanup_expired_demotions_completed(
-            detail=f"Cleanup completed: {total_deleted} demotions removed across {REDIS_TOTAL_SHARDS} shards"
+            detail=f"Cleanup completed: {total_deleted} demotions removed across {redis_shards_num} shards"
         )
         return total_deleted
     except Exception as e:

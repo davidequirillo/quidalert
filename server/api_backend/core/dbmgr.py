@@ -104,10 +104,12 @@ async def shutdown_redis_handle(handle: RedisHandle):
 ## REDIS data management: logic sharding, 
 # useful to distribute data across multiple keys and avoid bottlenecks.
 
-# Note: ideally the cluster size (number of nodes) should be equal to REDIS_TOTAL_SHARDS,
+def get_redis_shards_num() -> int:
+    return settings.redis_logical_shards_num
+
+# Note: ideally the Redis cluster size (number of Redis nodes) should be equal to get_redis_shards_num(),
 # but it works fine even in a cluster with fewer nodes (or even in Redis single mode), 
 # as the shards will be distributed across the available nodes.
-REDIS_TOTAL_SHARDS = settings.redis_logical_shards_num
 REDIS_MUTEX_CHIEF_UPDATE_KEY = "{shard:0}:mutexes:chief_update"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_KEY = "{shard:0}:cooldowns:locations_cleanup"
 REDIS_COOLDOWN_LOCATIONS_CLEANUP_TIMEOUT = 3600  # 1 hour in seconds
@@ -134,73 +136,87 @@ REDIS_SPEC_LOCATION_LAST_UPDATES_KEY = "{{shard:{i}}}:locations:last_updates:rol
 #   identical, ensuring the code works without modifications regardless of scale.
 
 def get_redis_user_locations_key(uuid: str) -> str:
+    shards_num = settings.redis_logical_shards_num
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
-    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    shard_index = hash_value % shards_num
     return REDIS_USER_LOCATIONS_KEY.format(i=shard_index)
 
 def get_redis_chief_locations_key(uuid: str) -> str:
+    shards_num = settings.redis_logical_shards_num
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
-    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    shard_index = hash_value % shards_num
     return REDIS_CHIEF_LOCATIONS_KEY.format(i=shard_index)
 
 def get_redis_location_last_updates_key(uuid: str) -> str:
+    shards_num = settings.redis_logical_shards_num
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
-    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    shard_index = hash_value % shards_num
     return REDIS_LOCATION_LAST_UPDATES_KEY.format(i=shard_index)
 
 def get_redis_chief_demotions_key(uuid: str) -> str:
+    shards_num = settings.redis_logical_shards_num
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
-    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    shard_index = hash_value % shards_num
     return REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
 
 def get_all_redis_user_locations_keys() -> list[str]:
-    return [REDIS_USER_LOCATIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
+    shards_num = settings.redis_logical_shards_num
+    return [REDIS_USER_LOCATIONS_KEY.format(i=k) for k in range(shards_num)]
 
 def get_all_redis_chief_locations_keys() -> list[str]:
-    return [REDIS_CHIEF_LOCATIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
+    shards_num = settings.redis_logical_shards_num
+    return [REDIS_CHIEF_LOCATIONS_KEY.format(i=k) for k in range(shards_num)]
 
 def get_all_redis_location_last_updates_keys() -> list[str]:
-    return [REDIS_LOCATION_LAST_UPDATES_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
+    shards_num = settings.redis_logical_shards_num
+    return [REDIS_LOCATION_LAST_UPDATES_KEY.format(i=k) for k in range(shards_num)]
 
 def get_all_redis_chief_demotions_keys() -> list[str]:
-    return [REDIS_CHIEF_DEMOTIONS_KEY.format(i=k) for k in range(REDIS_TOTAL_SHARDS)]
+    shards_num = settings.redis_logical_shards_num
+    return [REDIS_CHIEF_DEMOTIONS_KEY.format(i=k) for k in range(shards_num)]
 
 # Functions for specialist locations and last updates keys, sharded by user UUID and role
 # Specialist locations are for users with a specific role (e.g., firefighters, medics, etc.), 
 # and we want to manage their locations separately in Redis.
 
 def get_redis_spec_locations_key(uuid: str, role: str) -> str:
+    shards_num = settings.redis_logical_shards_num
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
-    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    shard_index = hash_value % shards_num
     return REDIS_SPEC_LOCATIONS_KEY.format(i=shard_index, role=role)
 
 def get_redis_spec_location_last_updates_key(uuid: str, role: str) -> str:
+    shards_num = settings.redis_logical_shards_num
     data_bytes = uuid.encode('utf-8')
     hash_value = zlib.crc32(data_bytes) # hash value is a 32-bit unsigned integer
-    shard_index = hash_value % REDIS_TOTAL_SHARDS
+    shard_index = hash_value % shards_num
     return REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=shard_index, role=role)
 
 def get_all_redis_spec_locations_keys() -> list[str]:
+    shards_num = settings.redis_logical_shards_num
     keys = []
-    for k in range(REDIS_TOTAL_SHARDS):
+    for k in range(shards_num):
         for role in [r.value for r in UserRole]:
             keys.append(REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role))
     return keys
 
 def get_all_redis_spec_location_last_updates_keys() -> list[str]:
+    shards_num = settings.redis_logical_shards_num
     keys = []
-    for k in range(REDIS_TOTAL_SHARDS):
+    for k in range(shards_num):
         for role in [r.value for r in UserRole]:
             keys.append(REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role))
     return keys
 
 def get_all_redis_spec_locations_keys_for_a_role(role: str) -> list[str]:
-    return [REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)]
+    shards_num = settings.redis_logical_shards_num
+    return [REDIS_SPEC_LOCATIONS_KEY.format(i=k, role=role) for k in range(shards_num)]
 
 def get_all_redis_spec_location_last_updates_keys_for_a_role(role: str) -> list[str]:
-    return [REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role) for k in range(REDIS_TOTAL_SHARDS)]
+    shards_num = settings.redis_logical_shards_num
+    return [REDIS_SPEC_LOCATION_LAST_UPDATES_KEY.format(i=k, role=role) for k in range(shards_num)]
