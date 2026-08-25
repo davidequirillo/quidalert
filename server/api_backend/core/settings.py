@@ -93,6 +93,10 @@ except Exception as e:
     print(f"Configuration error: {e}")
     raise SystemExit(1)
 
+if (settings.redis_logical_shards_num not in [16, 32, 64, 96, 128]):
+    print(f"Configuration error: environment var REDIS_LOGICAL_SHARDS_NUM must be one of [16, 32, 64, 96, 128].")
+    raise SystemExit(1)
+
 if (not settings.admin_pass) or (settings.admin_pass==""):
     print(f"Configuration error: environment var ADMIN_PASS not found")
     raise SystemExit(1)

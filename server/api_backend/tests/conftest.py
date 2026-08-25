@@ -73,19 +73,35 @@ def disable_emails():
 
 @pytest.fixture(name="db_session")
 def db_session_fixture():
-    # Create all tables in the test database
-    SQLModel.metadata.create_all(db_engine_test)
-    # Yield a session to be used in tests
-    with Session(db_engine_test) as session:
-        yield session
-    # Drop all tables after the tests are done
-    SQLModel.metadata.drop_all(db_engine_test)
+    original_app_mode = settings.app_mode
+    settings.app_mode = "test"
+    try:
+        # Create all tables in the test database
+        SQLModel.metadata.create_all(db_engine_test)
+        # Yield a session to be used in tests
+        with Session(db_engine_test) as session:
+            yield session
+        # Drop all tables after the tests are done
+        SQLModel.metadata.drop_all(db_engine_test)
+    finally:
+        settings.app_mode = original_app_mode
 
 @pytest.fixture(name="redis_session")
 async def redis_session_fixture():
-    yield redis_engine_test
-    await redis_engine_test.flushall()
-    await redis_engine_test.aclose()
+    original_app_mode = settings.app_mode
+    original_redis_mode = settings.redis_mode
+    original_redis_logical_shards_num = settings.redis_logical_shards_num
+    settings.app_mode = "test"
+    settings.redis_mode = "cluster"
+    settings.redis_logical_shards_num = 16
+    try:
+        yield redis_engine_test
+        await redis_engine_test.flushall()
+        await redis_engine_test.aclose()
+    finally:
+        settings.app_mode = original_app_mode
+        settings.redis_mode = original_redis_mode
+        settings.redis_logical_shards_num = original_redis_logical_shards_num
 
 @pytest.fixture(name="client")
 def client_fixture(db_session: Session):
@@ -108,9 +124,11 @@ def client_fixture(db_session: Session):
     # Override some settings for testing
     original_app_mode = settings.app_mode
     original_redis_mode = settings.redis_mode
+    original_redis_logical_shards_num = settings.redis_logical_shards_num
     original_bucket_name = settings.s3_bucket_name
     settings.app_mode = "test"
     settings.redis_mode = "cluster"
+    settings.redis_logical_shards_num = 16
     settings.s3_bucket_name = bucket_name
     # Override some dependencies in the app with our "fake" function
     app.dependency_overrides[get_db_session] = get_db_session_override
@@ -138,6 +156,7 @@ def client_fixture(db_session: Session):
             # Restore original settings
             settings.app_mode = original_app_mode
             settings.redis_mode = original_redis_mode
+            settings.redis_logical_shards_num = original_redis_logical_shards_num
             settings.s3_bucket_name = original_bucket_name
             mock.stop()
 

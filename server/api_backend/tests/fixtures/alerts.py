@@ -19,6 +19,7 @@ from core.dbmgr import (
     get_redis_spec_location_last_updates_key
 )
 from scripts.seed_redis_data import get_random_coords
+from core.settings import settings
 
 GPS_PROBABILITY = 0.90  # 90% of users have GPS enabled
 ROLE_PROBABILITY = 0.10  # 10% of users have a role assigned (the rest have role equal to None)

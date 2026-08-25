@@ -13,7 +13,7 @@ from services.periodics import (
 )
 from core.dbmgr import (
     REDIS_COOLDOWN_DEMOTIONS_CLEANUP_TIMEOUT,
-    REDIS_TOTAL_SHARDS,
+    get_redis_shards_num,
     REDIS_CHIEF_DEMOTIONS_KEY,
     get_redis_chief_demotions_key,
     get_all_redis_chief_demotions_keys,
@@ -57,7 +57,7 @@ async def test_delete_expired_demotions_for_each_shard(redis_session):
     exp_dt = now - timedelta(minutes=CHIEF_DEMOTIONS_TTL_MINUTES)
     exp_int_ts = int(exp_dt.timestamp())
     print(f"Calling cleanup_expired_demotions for each shard with expiration threshold timestamp: {exp_int_ts}")
-    for shard_index in range(REDIS_TOTAL_SHARDS):
+    for shard_index in range(get_redis_shards_num()):
         deleted_count = await cleanup_expired_demotions_shard(shard_index, exp_int_ts, redis_session, batch_size=batch_size)
         # we check that the number of deleted demotions is equal to the number of expired demotions we inserted for that shard
         shard_key = REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
@@ -103,7 +103,7 @@ async def test_delete_expired_demotions(redis_session):
     # Now, we can check that all expired demotions have been deleted and only valid demotions remain
     total_demotions_after = 0
     shards = get_all_redis_chief_demotions_keys()
-    for shard_index in range(REDIS_TOTAL_SHARDS):
+    for shard_index in range(get_redis_shards_num()):
         chief_demotions_key = REDIS_CHIEF_DEMOTIONS_KEY.format(i=shard_index)
         demotions_count = await redis_session.zcard(chief_demotions_key)
         total_demotions_after += demotions_count

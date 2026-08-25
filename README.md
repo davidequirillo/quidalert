@@ -6,9 +6,9 @@ Quidalert is a network alert manager that can be used by users to send alerts an
 At this point a group chat will be automatically created by the system and will include the user who sent the alert, nearby users (these ones in read-only mode) and the "chief manager", who will be able to write messages to them, helping them.  
 Obviously chief manager and nearby users will be able to see the alert gps coordinates with the related address in the map, to help the alert sender, if possible.
 
-For this reasons, this project is mainly intended for the public entities/governements (municipalities, states, regions, countries), which can install the server-side components on a real cluster infrastructure, and can compile and offer the client app to end users.
+For this reasons, this project is mainly intended for the public entities/governements (municipalities, states, regions, countries): they can install the server-side components (called "containers", which can be imagined as lightweight virtual machines working in parallel) on a real cloud infrastructure, and can compile and offer the client app to end users.
 
-For simple testing, the server-side system can also be installed on a single generic machine that simulates a cluster architecture, to which all clients will connect (in the client source code, in config.dart), just set the server name (or more precisely, API base url) before compiling and installing the client on a mobile device.
+For a simple production environment, with the aim to do some tests, the server-side "containers" can also be installed on a single generic machine, simulating a cloud architecture, to which all clients will connect.
 
 ## 💡 Interesting features
 
@@ -32,9 +32,11 @@ Chief users will also be able to expand an existing alert, increasing the radius
 
 ## ⛓️ The architecture
 
-The backend (server-side architecture) can obviously be composed of many docker containers working in clusters with the aim to distribute the processing load: for example, 1 reverse proxy (load balancer), 10 FastApi, 5 dbms (Postgres), 1 RedisCluster (a cluster of 16 nodes, working in parallel).
+The server-side architecture is based on docker containers, which can be imagined as lightweight virtual machines that work in parallel, with the aim to distribute the processing load. For example, we can have: 1 Nginx (reverse proxy, load balancer), 12 Fastapi workers, 3 Postgres dbms, 1 RedisCluster composed of 16 nodes.
 
-The reverse proxy (ex. "nginx") will be seen by the client as the only server to connect to.
+Obviously, the performance advantage is achieved if the containers are installed on separate physical machines, for example 12 Fastapi workers distributed on 3 physical machines, 3 physical machines for the 3 Postgres, and 16 physical machines for the 16 nodes of the Redis cluster.
+
+The reverse proxy (ex. "Nginx" or "Caddy") will be seen by the client as the only server to connect to.
 
 ## 🌍 Notes about GPS location
 
