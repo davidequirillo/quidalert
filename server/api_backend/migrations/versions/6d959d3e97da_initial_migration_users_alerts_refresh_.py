@@ -1,8 +1,8 @@
-"""create tables: whitelist_entries, users, alerts, etc. etc.
+"""initial migration: users, alerts, refresh_tokens, etc.
 
-Revision ID: e2870de89414
+Revision ID: 6d959d3e97da
 Revises: 
-Create Date: 2026-08-06 16:44:41.558578
+Create Date: 2026-08-25 00:12:53.589754
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e2870de89414'
+revision: str = '6d959d3e97da'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -112,6 +112,7 @@ def upgrade() -> None:
     sa.Column('is_expanded', sa.Boolean(), nullable=False),
     sa.Column('spread_count', sa.Integer(), nullable=False),
     sa.Column('is_closed', sa.Boolean(), nullable=False),
+    sa.Column('messages_num', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
@@ -149,12 +150,12 @@ def upgrade() -> None:
     op.create_index(op.f('ix_alerted_users_alert_id'), 'alerted_users', ['alert_id'], unique=False)
     op.create_index(op.f('ix_alerted_users_user_id'), 'alerted_users', ['user_id'], unique=False)
     op.create_table('messages',
+    sa.Column('content', sqlmodel.sql.sqltypes.AutoString(length=512), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('alert_id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.Uuid(), nullable=False),
-    sa.Column('content', sqlmodel.sql.sqltypes.AutoString(length=512), nullable=False),
     sa.Column('is_banned', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('user_id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['alert_id'], ['alerts.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

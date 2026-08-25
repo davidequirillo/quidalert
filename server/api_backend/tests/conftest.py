@@ -2,7 +2,7 @@
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
-from start import app
+from main import app
 import random
 import pytest
 import boto3

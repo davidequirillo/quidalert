@@ -212,10 +212,19 @@ To send push notifications to the client, the backend need to connect to FCM clo
 
 In your Firebase Project web console, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
 
-## Simple production environment
+## Simple production environment (server-side)
 
-VPS: Debian 12.0 "Bookworm"  
+VPS: Debian 12.0 "Bookworm"
 
-### Install docker
+```bash
+apt update && apt upgrade
+apt install -y curl ca-certificates gnupg git
+```
 
-In progress
+### Install docker engine
+
+Install docker engine from official docker repository.
+
+Installation instruction from: https://docs.docker.com/engine/install/debian/
+
+In progress...

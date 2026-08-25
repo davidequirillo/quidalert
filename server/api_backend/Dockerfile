@@ -1,14 +1,18 @@
-# Python official image
+# This Dockerfile is for the API backend of the application.
+# Use it only for local development (not for production).
+# For production, please use the Dockerfile.prod file.
+
+# 1. Python official image
 FROM python:3.12-slim
 
-# Useful environment variables for Python
+# 2. Useful environment variables for Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Working directory inside container
+# 3. Working directory inside container
 WORKDIR /app
 
-# Build-essential is needed for some Python packages that require compilation (like numpy, scipy, etc.)
+# 4. Build-essential is needed if some Python packages require compilation tools at build time.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -24,4 +28,4 @@ COPY . .
 
 # 7. Start FastAPI
 # --host 0.0.0.0 is required to make the app accessible outside the container
-CMD ["uvicorn", "start:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

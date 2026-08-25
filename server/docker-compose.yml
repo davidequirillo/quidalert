@@ -1,25 +1,25 @@
-# Docker compose file (this is only for development)
-# For production, we will use a different deployment method (like Kubernetes or Docker Swarm)
+# Docker compose file for development mode.
+# For production, we will use a different Docker compose file (docker-compose.prod.yml), 
+# or we will use a different deployment method (like Kubernetes, Docker Swarm, etc.)
+name: quidalert-dev
 services:
   # --- FastAPI Backend ---
   fastapi:
-    build: .
+    build:
+      context: ./api_backend
+      dockerfile: Dockerfile
     container_name: fastapi_backend
     restart: always
     ports:
       - "8000:8000"
     volumes:
-      - .:/app  # Only for development. Important: do not use this for production!
+      - ./api_backend:/app  # Only for development. Important: do not use this for production!
     env_file:
-      - .env    # Load all variables from .env file
+      - .env
     environment:
-      # Override hosts to point to Docker container names
       DB_HOST: postgres
-      REDIS_URL: redis://redis:6379/0
-      REDIS_CLUSTER_NODES: redis-node-1:7001,redis-node-2:7002,redis-node-3:7003
-      S3_ENDPOINT: http://minio:9000
     networks:
-      - redis-cluster-net
+      - serverside-net
     depends_on:
       - postgres
       - redis
@@ -44,7 +44,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - redis-cluster-net
+      - serverside-net
 
   # --- DBMS for speedy operations (Redis single) ---
   redis:
@@ -56,7 +56,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - redis-cluster-net
+      - serverside-net
 
   # --- DBMS for speedy operations (Redis cluster) ---
   redis-node-1:
@@ -69,7 +69,7 @@ services:
       - "7001:7001"
       - "17001:17001"
     networks:
-      - redis-cluster-net
+      - serverside-net
 
   redis-node-2:
     image: redis:7.4-alpine
@@ -81,7 +81,7 @@ services:
       - "7002:7002"
       - "17002:17002"
     networks:
-      - redis-cluster-net
+      - serverside-net
 
   redis-node-3:
     image: redis:7.4-alpine
@@ -93,7 +93,7 @@ services:
       - "7003:7003"
       - "17003:17003"
     networks:
-      - redis-cluster-net
+      - serverside-net
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
@@ -110,7 +110,7 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     networks:
-      - redis-cluster-net
+      - serverside-net
 
   # --- SERVER SMTP for testing (MAILPIT) ---
   mailpit:
@@ -123,7 +123,7 @@ services:
     volumes:
       - mailpit_data:/data
     networks:
-      - redis-cluster-net
+      - serverside-net
       
 # Volumes definition
 volumes:
@@ -137,5 +137,5 @@ volumes:
 
 # Networks definition
 networks:
-  redis-cluster-net:
+  serverside-net:
     driver: bridge

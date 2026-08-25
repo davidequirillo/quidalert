@@ -12,10 +12,11 @@ class Settings(BaseSettings):
     # App conf
     app_mode: str = "production" # you can change it to "development" in the ".env" file, not here, because this is the default value, and it will be overridden by the environment (.env file)
     send_emails: bool = True
-    host: str = "localhost" # backend host
-    port: int = 8080 # backend port
     protocol: str = "https"
-    server_name: str = config.SERVER_NAME # the server name is used for CORS and other security policies, it should be the same as the one used in the frontend conf
+    # The server name is used for CORS and other security policies, 
+    # it should be the same as the one used in the client app (frontend). 
+    # It should be the domain name of the server, without the protocol and port. For example: "example.com" or "api.example.com".
+    server_name: str = config.SERVER_NAME
     server_port: int = config.SERVER_PORT
     app_log_level: str = config.APP_LOG_LEVEL
     # CORS conf

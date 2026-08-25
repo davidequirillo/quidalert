@@ -13,12 +13,5 @@ __pycache__/
 # Logs
 *.log
 
-# Files (upload, etc.)
-files/terms_en.md
-files/terms_it.md
-
 # Firebase keys (secret)
 firebase_keys.json
-
-# Docker compose for production
-docker-compose.prod.yml
