@@ -29,7 +29,7 @@ DB_POOL_RECYCLE = 1800
 # Important note about cluster mode: the number of cluster nodes 
 # must be less or equal than the number of logical shards.
 # An equal number is recommended (redis nodes number = logical shards number)
-REDIS_MODE = "single" # "single" or "cluster"
+REDIS_MODE = "cluster" # "single" or "cluster"
 REDIS_URL="redis://localhost:6379/0"
 REDIS_CLUSTER_NODES="redis-node-1:7001,redis-node-2:7002,redis-node-3:7003"
 REDIS_MAX_CONNECTIONS = 200
