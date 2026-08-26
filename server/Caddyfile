@@ -1,0 +1,11 @@
+# Reverse proxy configuration for production mode
+{$SERVER_NAME} {
+    reverse_proxy fastapi:8000 {
+        # Use request id from client if present, otherwise generate a new UUID as request id
+        header_up X-Request-ID {header.X-Request-ID}
+        header_up X-Request-ID {uuid}
+    }
+    request_body {
+        max_size 10MB
+    }
+}

@@ -212,7 +212,7 @@ To send push notifications to the client, the backend need to connect to FCM clo
 
 In your Firebase Project web console, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
 
-## Simple production environment (server-side)
+## A simple production environment (server-side)
 
 VPS: Debian 12.0 "Bookworm"
 
@@ -223,8 +223,27 @@ apt install -y curl ca-certificates gnupg git
 
 ### Install docker engine
 
-Install docker engine from official docker repository.
+In the VPS machine, install docker engine from official docker repository
 
 Installation instruction from: https://docs.docker.com/engine/install/debian/
 
-In progress...
+### Git project clone 
+
+In the VPS machine, make the project directory e clone the repository
+
+```bash
+cd /opt
+mkdir -p quidalert
+chown -R $USER:$USER /opt/quidalert
+cd /opt/quidalert
+git clone https://github.com/davidequirillo/quidalert.git .
+```
+
+Go to /opt/quidalert/server folder and create .env file from .env.example
+
+```bash
+cp env.example .env
+```
+
+Using "nano" text editor, edit .env file, setting environment variables for production (APP_MODE="production", etc., etc. ).  
+IMPORTANT SECURITY NOTICE: env.example file contains simple credentials (passwords, keys, salts and peppers) for convenience, but in production we must change them and use complex passwords, complex keys, complex salts and peppers.
