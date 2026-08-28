@@ -182,7 +182,7 @@ docker exec -it redis_node_1_dev redis-cli --cluster create redis-node-1:7001 re
 
 Minio is used to upload files into it.
 
-First of all you need to create two temporary keys (access key and secret key) for the administrator user. These keys must be the same used as "S3_USER" and "S3_PASS" in .env file.
+First of all you need to create two temporary keys (access key and secret key) for the administrator user. These keys must be the same used as "S3_USER" and "S3_PASS" in .env file. In other words, the access key is S3_USER value, and the secret key is S3_PASS value.
 
 ```bash
 docker exec -it minio_storage_dev mc alias list
@@ -226,7 +226,7 @@ NOTE: code workspace has been configured to ignore some useless folders from the
 To run (debug) client, go to VS Code menu -> View -> Run.
 - Choose "Debug - Client (Flutter) Android" and click to play to debug the client
 
-The backend is already running (it has started when we have done "docker-compose -f docker-compose.dev.yml up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping defined in docker-compose.dev.yml file, which is the docker-compose file used only for development). 
+The backend is already running (it has started when we have done "docker compose -f docker-compose.dev.yml up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping defined in docker-compose.dev.yml file, which is the docker-compose file used only for development). 
 
 NOTES ABOUT THE CLIENT:
 - "Debug - Client (Flutter) Android" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE)
@@ -320,7 +320,7 @@ We run docker compose command with our production yml file as input (docker-comp
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-### Postgres database migration
+### Postgres db init
 
 To initialize your Postgres database, run this command:
 
@@ -330,10 +330,10 @@ docker exec -it fastapi_backend alembic upgrade head
 
 ### Join Redis Cluster nodes
 
-To join Redis Cluster nodes, run the following command:
+Redis is configured in cluster mode. To join Redis Cluster nodes, run the following command:
 
 ```bash
-REDIS_PASS='your_env_redis_password'
+REDIS_PASS='your_redis_password_from_env'
 docker exec -it redis_node_1 redis-cli -a "${REDIS_PASS}" --cluster create \
   redis-node-1:6379 \
   redis-node-2:6379 \
@@ -341,3 +341,24 @@ docker exec -it redis_node_1 redis-cli -a "${REDIS_PASS}" --cluster create \
   --cluster-replicas 0 \
   --cluster-yes
 ```
+
+### S3 bucket (minio) configuration
+
+First of all we need to create two temporary keys (access key and secret key) for the administrator user. These keys must be the same used as "S3_USER" and "S3_PASS" in .env file. In other words, the access key is S3_USER value ("admin"), and the secret key is S3_PASS value ("a complex password for production").
+
+```bash
+S3_PASS='your_s3_password_from_env'
+docker exec -it minio_storage mc alias list
+docker exec -it minio_storage mc alias set local http://localhost:9000 admin "${S3_PASS}"
+```
+
+Create an additional service account, choosing access key and secret key.
+
+```bash
+S3_AKEY='your_s3_access_key_from_env'
+S3_SKEY='your_s3_access_key_from_env'
+docker exec -it minio_storage_dev mc admin user svcacct add local admin --access-key "${S3_AKEY}" --secret-key "${S3_SKEY}"
+```
+
+Now we must create the bucket: to do it, we must connect to the web minio administration console, but from the ouside this service is not reachable, so we must do a ssh tunnel to connect to the vps minio administration console from the vps itself, via ssh tunnel.
+
