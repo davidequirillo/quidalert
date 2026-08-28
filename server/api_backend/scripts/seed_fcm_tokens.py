@@ -14,6 +14,7 @@ from services.security import (
 from sqlmodel import Session, select
 from core.dbmgr import get_engine
 from core.settings import settings
+from services.network import FAKE_EMAIL_DOMAIN
 
 settings.db_engine_echo = False  # Disable database engine echo for cleaner output during seeding
 db_engine = get_engine()
@@ -31,14 +32,17 @@ def get_refresh_token_for_user(user):
     else:
         return None
 
-def assign_fcm_token_to_all_users(refresh_token, db_session):
+def assign_fcm_token_to_all_fake_users(refresh_token, db_session):
     now = now_tz_naive() 
-    print("Selecting all users from the database...")
-    users = db_session.exec(select(User)).all()
-    print(f"Found {len(users)} users. Updating their FCM tokens...")
-    for user in users:
+    print("Selecting all fake users from the database...")
+    fake_users = db_session.exec(select(User).where(User.email.endswith(f"@{FAKE_EMAIL_DOMAIN}"))).all()
+    print(f"Found {len(fake_users)} fake users. Updating their FCM tokens...")
+    for user in fake_users:
         if user.id == refresh_token.user_id:
             print(f"Skipping user '{user.email}' as it is the seeding user (he already has the valid FCM token).")
+            continue
+        if not user.email.endswith(f"@{FAKE_EMAIL_DOMAIN}"):
+            print(f"Skipping user '{user.email}' as it is not a fake user.")
             continue
         # Select user refresh token if exists, otherwise we create a new one
         statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
@@ -58,7 +62,7 @@ def assign_fcm_token_to_all_users(refresh_token, db_session):
     db_session.commit()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Seed FCM tokens for all users using the FCM token from a specific user: after running this script, all users will have the same FCM token as the specified user.")
+    parser = argparse.ArgumentParser(description=f"Seed FCM tokens for all fake users (users with emails ending with @{FAKE_EMAIL_DOMAIN}) using the FCM token from a specific user: after running this script, all fake users will have the same FCM token as the specified user.")
     parser.add_argument("--email", type=str, required=True, help="Email of the user whose FCM token will be used for seeding.")
     args = parser.parse_args()
     email = args.email
@@ -71,7 +75,7 @@ if __name__ == "__main__":
         if not refresh_token:
             print(f"No refresh token found for user '{email}'. Please ensure the user has a valid refresh token before seeding.")
             sys.exit(1)
-        print(f"Seeding FCM tokens for all users using the FCM token from user '{email}'...")
+        print(f"Seeding FCM tokens for all fake users using the FCM token from user '{email}'...")
         print(f"FCM token to be assigned: {refresh_token.fcm_token}")
-        assign_fcm_token_to_all_users(refresh_token, db_session)
-        print("All users have been updated with the new FCM token.")
+        assign_fcm_token_to_all_fake_users(refresh_token, db_session)
+        print("All fake users have been updated with the new FCM token.")

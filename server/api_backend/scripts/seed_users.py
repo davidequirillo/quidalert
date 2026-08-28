@@ -103,7 +103,7 @@ def seed_users():
     with Session(db_engine) as session:
         languages = [lang.value for lang in UserLanguage]
         user_roles = [role.value for role in UserRole]
-        print(f"Populating PostgreSQL with users...")
+        print(f"Populating PostgreSQL with fake users... (emails ending with @{FAKE_EMAIL_DOMAIN})")
         try:
             for category, user_type, cardinality in zip(user_categories, user_types, user_cardinalities):
                 for i in range(1, cardinality+1):

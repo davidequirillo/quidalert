@@ -21,6 +21,7 @@ from core.dbmgr import (
 from models.general import User, UserRole
 from services.security import now_tz_aware
 from services.periodics import CHIEF_DEMOTIONS_TTL_MINUTES, LOCATIONS_TTL_HOURS
+from services.network import FAKE_EMAIL_DOMAIN
 
 # --- CONFIGURATION ---
 CENTER_LAT = 39.7392 # Denver, Colorado, USA (default central point if no arguments are provided to the script)
@@ -54,14 +55,14 @@ def get_random_coords(lat, lon, max_km):
     delta_lon = (radius * math.sin(angle)) / math.cos(lat_in_radians)
     return lat + delta_lat, lon + delta_lon
 
-def get_users_from_db(db_session):
-    print("Fetching users from the database...")
-    users = db_session.exec(select(User)).all()
-    print(f"Found {len(users)} users.")
+def get_fake_users_from_db(db_session):
+    print("Fetching fake users from the database...")
+    users = db_session.exec(select(User).where(User.email.endswith(f"@{FAKE_EMAIL_DOMAIN}"))).all()
+    print(f"Found {len(users)} fake users.")
     return users
 
 async def flush_redis(redis_session):
-    print("Flushing Redis data...")
+    print("Flushing all Redis data...")
     await redis_session.flushdb()
     print("Redis flushed.")
     # We check that Redis is empty after flushing
@@ -69,8 +70,8 @@ async def flush_redis(redis_session):
     if len(keys) == 0:
         print("Redis is empty after flushing.")
 
-async def seed_redis_gps_and_demotions(users, redis_session):
-    print(f"Assigning positions to users (GPS Probability: {GPS_PROBABILITY*100}%)...")
+async def seed_redis_gps_and_demotions(fake_users, redis_session):
+    print(f"Assigning positions to fake users (GPS Probability: {GPS_PROBABILITY*100}%)...")
     print(f"Central point: ({CENTER_LAT}, {CENTER_LON}), Radius: {RADIUS_KM} km")
     print(f"GPS Location Expiration Probability: {GPS_LOCATION_EXPIRATION_PROBABILITY*100}%")
     print(f"Demotion Probability: {DEMOTION_PROBABILITY*100}%") 
@@ -89,7 +90,7 @@ async def seed_redis_gps_and_demotions(users, redis_session):
     spec_locations_expired_count = 0
     demoted_chiefs_count = 0
     demoted_chiefs_expired_count = 0
-    for user in users:
+    for user in fake_users:
         random_gps_num = random.random()
         random_gps_expiration_num = random.random()
         random_demotion_num = random.random()
@@ -154,7 +155,7 @@ async def seed_redis_gps_and_demotions(users, redis_session):
                 placed_count += 1
         else:
             not_placed_count += 1
-    print(f"Total users in SQL database: {len(users)}")
+    print(f"Total fake users in SQL database: {len(fake_users)}")
     print(f"Users with a GPS location placed: {placed_count}")
     print(f"Users without a GPS location placed: {not_placed_count}")
     print(f"Users with a GPS location (total): {locations_count}")
@@ -167,19 +168,19 @@ async def seed_redis_gps_and_demotions(users, redis_session):
 async def main():
     users = []
     with Session(db_engine) as db_session:
-        users = get_users_from_db(db_session)
+        fake_users = get_fake_users_from_db(db_session)
     if isinstance(redis_handle, cluster.RedisCluster):
         await flush_redis(redis_handle)
-        await seed_redis_gps_and_demotions(users, redis_handle)
+        await seed_redis_gps_and_demotions(fake_users, redis_handle)
     elif isinstance(redis_handle, redis.ConnectionPool):
         async with redis.Redis(connection_pool=redis_handle, decode_responses=True) as redis_session:
             await flush_redis(redis_session)
-            await seed_redis_gps_and_demotions(users, redis_session)
+            await seed_redis_gps_and_demotions(fake_users, redis_session)
     else:
         raise RedisHandleTypeError(redis_handle)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Seed Redis with random GPS locations around a central point and other test Redis data for users.")
+    parser = argparse.ArgumentParser(description=f"Seed Redis database with random GPS locations around a central point and other test Redis data for fake users (emails ending with @{FAKE_EMAIL_DOMAIN}).")
     # Add central point coordinates and radius as optional arguments
     parser.add_argument("--central-lat", type=float, default=CENTER_LAT, help="Central latitude for generating random GPS locations")
     parser.add_argument("--central-lon", type=float, default=CENTER_LON, help="Central longitude for generating random GPS locations")

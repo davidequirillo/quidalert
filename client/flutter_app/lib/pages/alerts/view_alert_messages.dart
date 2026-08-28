@@ -64,8 +64,12 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
     } on GenericNotAuthorizedException catch (_) {
       retMessage = loc.errorNotAuthorizedDoLogin;
       loginIsRequired = true;
-    } on ForbiddenRequestException catch (_) {
-      retMessage = loc.errorPermissionsNotValid;
+    } on ForbiddenRequestException catch (e) {
+      if (e.toString().contains("Alert is closed")) {
+        retMessage = loc.errorAlertIsClosed;
+      } else {
+        retMessage = loc.errorPermissionsNotValid;
+      }
     } on BadRequestException catch (e) {
       retMessage = loc.errorBadRequest;
       retMessage += ": ${e.toString()}";
