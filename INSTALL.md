@@ -20,7 +20,7 @@ Install Flutter SDK
 
 On terminal, go to "quidalert/client/flutter_app" folder and call these commands:
 
-```
+```bash
 flutter clean
 
 flutter pub get
@@ -41,7 +41,7 @@ const String appName = "Your Custom App Name";
 
 2. Package Name / Bundle ID (Store Unique Identifier): to prevent store conflicts, you must set your own unique ID (e.g., com.yourdomain.appname). You can update this automatically using the included package.
 ```bash
-flutter pub run change_app_package_name:main com.yourdomain.yourapp
+dart run change_app_package_name:main com.yourdomain.yourapp
 ```
 
 3. Display Name (Name under the phone icon):
@@ -97,11 +97,11 @@ You must:
    ```
    Follow the instructions: this will generate lib/firebase_options.dart and fetches other files from Google, for your environment.
 
-- Download and place the required platform files, only if they have not been downloaded automatically by "flutterfire configure":
+- If "flutterfire configure" has not downloaded and placed automatically the following platform files, you must manually download them and place them:
     - android/app/google-services.json
     - ios/Runner/GoogleService-Info.plist
 
-- In your backend
+- About your backend (server-side)
     - Create a Service Account in Firebase Console (Google)
     - Download the serviceAccountKey.json
     - Configure it in your Python backend (see backend section, "sending push notification" subsection)
@@ -122,11 +122,11 @@ Compile the app, distribute it (or install it in the mobile/client device manual
 
 ## Backend
 
-Change default settings in config.py file, and read the comments contained in the file, to know how to proceed with the env variables.
+Read default settings in config.py file to have an idea of base configuration variables, and read the comments contained in the file. NOTE: to modify these variables, it is not recommended to act here in this file, but it is recommended to modify them in the .env file (see the following explanation). 
 
-Copy ".env.example" to ".env" file and change the desired environment variables.
+See ".env.example" to read additional info about those environment configuration variables.
 
-See ".env.example" for additional info about those variables.
+Copy ".env.example" to ".env" file, and edit .env file, to change the desired environment variables.
 
 Conda environment is not required for our fastapi backend (because fastapi runs inside a container, see docker-compose.yml), but it can be useful for development and testing.
 
@@ -136,58 +136,88 @@ Install miniconda:
 
 On miniconda prompt (terminal), go to "quidalert/server/api_backend" folder and write:
 
-```
+```bash
 conda env create -f environment.yml
 ```
 
 To activate the created environment, call the following:
 
-```
+```bash
 conda activate quidalert_env
 ```
 
-FastAPI, Postgres DBMS, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file, so read this file for more info about them.
-To download them automatically, and start them, you only need to write this single command:
+FastAPI, Postgres DBMS, Redis, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file (docker-compose.yml for development, docker-compose.prod.yml for production), so read this file for more info about them.
 
-```
+To download these container images from internet, build them, and start them, you only need to write this single command:
+
+```bash
 docker-compose up -d --build
 ```
 
+Now, the backend is running as a docker container.
+
+### Postgres container configuration
+
+To build the entire database tables from existent migration sources, you can run the following command:
+
+```bash
+docker exec -it postgres_dbms_dev alembic upgrade head
+```
+
+### Redis container configuration
+
+The application employs a dual-database strategy to optimize performance and scalability: while PostgreSQL serves as the primary relational database for standard queries and persistent data storage, Redis is utilized as a high-performance sidecar to handle intensive, high-frequency workloads. This is particularly critical for tasks such as the periodic ingestion of GPS coordinates from clients, where low-latency throughput is essential. 
+
+To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes (see .env file).
+
+Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose.yml, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
+
 To use Redis in cluster mode (not in single mode), you must join redis nodes:
 
-```
-docker exec -it redis-node-1 redis-cli --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
-```
-
-Now you will have all the required servers ready to receive requests.
-
-Do all migrations to postgres database (to build the entire database tables) from existent migration sources using the following command:
-
-```
-alembic upgrade head
+```bash
+docker exec -it redis_node_1_dev redis-cli --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
 ```
 
-Now, the backend is running as a docker container, and you can launch the client via VSCode launcher (see debugging/run section).
+### Bucket s3 (minio) configuration
 
-IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using your custom password you have placed in ADMIN_PASS environment variable.  
-After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
+Minio is used to upload files into it.
 
-NOTE: user registration, login, reset, require a smtp server to send some mail notifications to user email address. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in "config.py" file, or as environment variables.  
+First of all you need to create two temporary keys (access key and secret key) for the administrator user. These keys must be the same used as "S3_USER" and "S3_PASS" in .env file.
+
+```bash
+docker exec -it minio_storage_dev mc alias list
+docker exec -it minio_storage_dev mc alias set local http://localhost:9000 admin password123
+```
+
+Create an additional service account, choosing access key and secret key.
+
+```bash
+docker exec -it minio_storage_dev mc admin user svcacct add local admin --access-key "my-fastapi-complex-key" --secret-key "my-fastapi-complex-secret-123"
+```
+
+These two keys ("my-fastapi-complex-key" and "my-fastapi-complex-secret-123"), must be inserted in .env file, assigning them to S3_ACCESS_KEY and S3_SECRET_KEY variables.
+
+Now you must create the bucket. Go to http://localhost:9001, login as admin user, and create the bucket (see S3_BUCKET_NAME in .env).
+
+### About SMTP
+
+Some API, for example registration, login, password reset, etc., require a smtp server to send email messages to users. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in environment file (.env file).
+
 For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025".
 
-### Redis ram database integration
+### Sending push notifications to clients
 
-The application employs a dual-database strategy to optimize performance and scalability. While PostgreSQL serves as the primary relational database for standard queries and persistent data storage, Redis is utilized as a high-performance sidecar to handle intensive, high-frequency workloads. This is particularly critical for tasks such as the periodic ingestion of GPS coordinates from clients, where low-latency throughput is essential. To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes.
+To be able to send push notifications to the clients, the backend need to connect to FCM cloud using the account secret key assigned to it by the FCM platform.
 
-Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended, see server/api_backend/config.py for details). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose.yml, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
+In your Firebase Project web console, you must go to "Account Service" and generate private key (service Account Key). Download the json file and place it in your backend folder renaming it as "firebase_keys.json" (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
 
-### Debugging (run)
+### Project debugging (run)
 
 Clone repository 
 
 Go to quidalert local folder and write the following command to open the entire project workspace with VS Code:
 
-```
+```bash
 code .quidalert.code-workspace
 ```
 
@@ -196,21 +226,40 @@ NOTE: code workspace has been configured to ignore some useless folders from the
 To run (debug) client, go to VS Code menu -> View -> Run.
 - Choose "Debug - Client (Flutter) Android" and click to play to debug the client
 
-The backend is already running (it has started when we have done "docker-compose up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping).  
-To intensively debug the backend (FastAPI), we can attach VSCode to running fastapi container and read/edit the code there. 
+The backend is already running (it has started when we have done "docker-compose up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping defined in docker-compose.yml file, which is the docker-compose used only for development). 
 
-NOTES
+NOTES ABOUT THE CLIENT:
 - "Debug - Client (Flutter) Android" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE)
 
 Flutter Web device (Chrome) is not supported at the moment.
 
 The Windows version is not supported at the moment.
 
-### Send push notification to client
+### Run the client
 
-To send push notifications to the client, the backend need to connect to FCM cloud using the account secret key assigned to it by the FCM platform.
+You can launch the client via VSCode launcher (see debugging/run section).
 
-In your Firebase Project web console, you must go to "Account Service" and generate private key (service Account Key). Download the json file and place it in your backend folder renaming it as "firebase_keys.json" (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
+IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using your custom password you have placed in ADMIN_PASS environment variable.  
+After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
+
+In server/api_backend/scripts folder there are some seeding scripts, useful to populate the database with fake users (pass --help option as input argument to these scripts to see some useful details):
+
+```bash
+docker exec -it fastapi_backend_dev python -m scripts.seed_users
+```
+
+There is also a script to populate Redis database with random gps locations and other temp data for fake users. Note, fake gps locations will be considered expired after a certain period (more or less 48 hours) and consequently they will be deleted, so, after that period you will need to run the same script to re-populate the cache with new random gps locations. 
+
+```bash
+docker exec -it fastapi_backend_dev python -m scripts.seed_redis_data
+```
+
+There is a script to assign the same FCM token (related to your client device logged user) to all fake users (whose email ends with "@example.com"), to send all push notifications destined to them in bulk to your device.  
+Note: use this feature with caution as your single device will receive notifications intended for all fake users, thus bombarding your device with notifications.
+
+```bash
+docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --email device-logged-user-email
+```
 
 ## A simple production environment (server-side)
 
@@ -271,9 +320,20 @@ We run docker compose command with our production yml file as input (docker-comp
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-### Join Redis Cluster nodes
+### Postgres database migration
+
+To initialize your Postgres database, run this command:
 
 ```bash
+docker exec -it fastapi_backend alembic upgrade head
+```
+
+### Join Redis Cluster nodes
+
+To join Redis Cluster nodes, run the following command:
+
+```bash
+REDIS_PASS='your_env_redis_password'
 docker exec -it redis_node_1 redis-cli -a "${REDIS_PASS}" --cluster create \
   redis-node-1:6379 \
   redis-node-2:6379 \
