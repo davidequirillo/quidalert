@@ -210,11 +210,19 @@ The Windows version is not supported at the moment.
 
 To send push notifications to the client, the backend need to connect to FCM cloud using the account secret key assigned to it by the FCM platform.
 
-In your Firebase Project web console, you must go to "Account Service" and generate private key. Download the json file and place it in your backend folder (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
+In your Firebase Project web console, you must go to "Account Service" and generate private key (service Account Key). Download the json file and place it in your backend folder renaming it as "firebase_keys.json" (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
 
 ## A simple production environment (server-side)
 
 VPS: Debian 12.0 "Bookworm"
+
+Connect to VPS using ssh:
+
+```bash
+ssh root@quidalert.example.com
+```
+
+Update debian and install some useful packets:
 
 ```bash
 apt update && apt upgrade
@@ -239,11 +247,37 @@ cd /opt/quidalert
 git clone https://github.com/davidequirillo/quidalert.git .
 ```
 
+### Configure environment
+
 Go to /opt/quidalert/server folder and create .env file from .env.example
 
 ```bash
 cp env.example .env
+chmod 600 .env
 ```
 
 Using "nano" text editor, edit .env file, setting environment variables for production (APP_MODE="production", etc., etc. ).  
-IMPORTANT SECURITY NOTICE: env.example file contains simple credentials (passwords, keys, salts and peppers) for convenience, but in production we must change them and use complex passwords, complex keys, complex salts and peppers.
+IMPORTANT SECURITY NOTICE: env.example file, for convenience, contains simple strings for credentials (passwords, keys, salts and peppers), but in production we must change them and use complex passwords, complex secret keys, complex peppers.
+
+### Firebase credentials
+
+Go to /opt/quidalert/server/api_backend folder and put firebase_keys.json file inside it (this is the private file downloaded from our Firebase account, which contains the credentials useful to connect to FCM server).
+
+### Run docker compose (production version)
+
+We run docker compose command with our production yml file as input (docker-compose-prod.yml) to start the containers, using --build option to build the container images before starting them.
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+### Join Redis Cluster nodes
+
+```bash
+docker exec -it redis_node_1 redis-cli -a "${REDIS_PASS}" --cluster create \
+  redis-node-1:6379 \
+  redis-node-2:6379 \
+  redis-node-3:6379 \
+  --cluster-replicas 0 \
+  --cluster-yes
+```
