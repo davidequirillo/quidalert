@@ -128,7 +128,7 @@ See ".env.example" to read additional info about those environment configuration
 
 Copy ".env.example" to ".env" file, and edit .env file, to change the desired environment variables.
 
-Conda environment is not required for our fastapi backend (because fastapi runs inside a container, see docker-compose.yml), but it can be useful for development and testing.
+Conda environment is not required for our fastapi backend (because fastapi runs inside a container, see docker-compose.dev.yml), but it can be useful for development and testing.
 
 Install miniconda:
 
@@ -146,12 +146,12 @@ To activate the created environment, call the following:
 conda activate quidalert_env
 ```
 
-FastAPI, Postgres DBMS, Redis, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.yml" file (docker-compose.yml for development, docker-compose.prod.yml for production), so read this file for more info about them.
+FastAPI, Postgres DBMS, Redis, SMTP server (useful to send mail notification to users), minIO server (s3 bucket for file upload), are configured as containers. They are defined in "docker-compose.dev.yml" file (docker-compose.dev.yml for development, docker-compose.prod.yml for production), so read this file for more info about them.
 
 To download these container images from internet, build them, and start them, you only need to write this single command:
 
 ```bash
-docker-compose up -d --build
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
 Now, the backend is running as a docker container.
@@ -170,7 +170,7 @@ The application employs a dual-database strategy to optimize performance and sca
 
 To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes (see .env file).
 
-Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose.yml, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
+Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose file, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
 
 To use Redis in cluster mode (not in single mode), you must join redis nodes:
 
@@ -203,7 +203,7 @@ Now you must create the bucket. Go to http://localhost:9001, login as admin user
 
 Some API, for example registration, login, password reset, etc., require a smtp server to send email messages to users. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in environment file (.env file).
 
-For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025".
+For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.dev.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025".
 
 ### Sending push notifications to clients
 
@@ -226,7 +226,7 @@ NOTE: code workspace has been configured to ignore some useless folders from the
 To run (debug) client, go to VS Code menu -> View -> Run.
 - Choose "Debug - Client (Flutter) Android" and click to play to debug the client
 
-The backend is already running (it has started when we have done "docker-compose up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping defined in docker-compose.yml file, which is the docker-compose used only for development). 
+The backend is already running (it has started when we have done "docker-compose -f docker-compose.dev.yml up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping defined in docker-compose.dev.yml file, which is the docker-compose file used only for development). 
 
 NOTES ABOUT THE CLIENT:
 - "Debug - Client (Flutter) Android" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE)
@@ -314,7 +314,7 @@ Go to /opt/quidalert/server/api_backend folder and put firebase_keys.json file i
 
 ### Run docker compose (production version)
 
-We run docker compose command with our production yml file as input (docker-compose-prod.yml) to start the containers, using --build option to build the container images before starting them.
+We run docker compose command with our production yml file as input (docker-compose.prod.yml) to start the containers, using --build option to build the container images before starting them.
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
