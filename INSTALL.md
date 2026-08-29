@@ -175,7 +175,7 @@ Redis cluster mode features 16 logical shards (this number can theoretically be 
 To use Redis in cluster mode (not in single mode), you must join redis nodes:
 
 ```bash
-docker exec -it redis_node_1_dev redis-cli --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
+docker exec -it redis_node_1_dev redis-cli --cluster create redis-node-1:7001 redis-node-2:7001 redis-node-3:7001 --cluster-replicas 0 --cluster-yes
 ```
 
 ### Bucket s3 (minio) configuration
@@ -185,14 +185,25 @@ Minio is used to upload files into it.
 First of all you need to create two temporary keys (access key and secret key) for the administrator user. These keys must be the same used as "S3_USER" and "S3_PASS" in .env file. In other words, the access key is S3_USER value, and the secret key is S3_PASS value.
 
 ```bash
-docker exec -it minio_storage_dev mc alias list
 docker exec -it minio_storage_dev mc alias set local http://localhost:9000 admin password123
+```
+
+We can verify the operation using this list command:
+
+```bash
+docker exec -it minio_storage_dev mc alias list
 ```
 
 Create an additional service account, choosing access key and secret key.
 
 ```bash
 docker exec -it minio_storage_dev mc admin user svcacct add local admin --access-key "my-fastapi-complex-key" --secret-key "my-fastapi-complex-secret-123"
+```
+
+We can verify the operation using this list command:
+
+```bash
+docker exec -it minio_storage_dev mc admin user svcacct list local admin
 ```
 
 These two keys ("my-fastapi-complex-key" and "my-fastapi-complex-secret-123"), must be inserted in .env file, assigning them to S3_ACCESS_KEY and S3_SECRET_KEY variables.
@@ -348,17 +359,52 @@ First of all we need to create two temporary keys (access key and secret key) fo
 
 ```bash
 S3_PASS='your_s3_password_from_env'
-docker exec -it minio_storage mc alias list
 docker exec -it minio_storage mc alias set local http://localhost:9000 admin "${S3_PASS}"
 ```
 
-Create an additional service account, choosing access key and secret key.
+We can verify the operation using this list command. 
+
+```bash
+docker exec -it minio_storage mc alias list
+```
+
+After that, we create an additional service account, choosing access key and secret key.
 
 ```bash
 S3_AKEY='your_s3_access_key_from_env'
-S3_SKEY='your_s3_access_key_from_env'
-docker exec -it minio_storage_dev mc admin user svcacct add local admin --access-key "${S3_AKEY}" --secret-key "${S3_SKEY}"
+S3_SKEY='your_s3_secret_key_from_env'
+docker exec -it minio_storage mc admin user svcacct add local admin --access-key "${S3_AKEY}" --secret-key "${S3_SKEY}"
 ```
 
-Now we must create the bucket: to do it, we must connect to the web minio administration console, but from the ouside this service is not reachable, so we must do a ssh tunnel to connect to the vps minio administration console from the vps itself, via ssh tunnel.
+We verify the operation using this list command
 
+```bash
+docker exec -it minio_storage mc admin user svcacct list local admin
+```
+
+Now we must create the bucket: to do it, we must connect to the web minio administration console, but from the outside this service is not reachable, so we must do a ssh tunnel to connect to the minio webconsole located in the VPS, from the vps itself, via ssh tunnel coming from our local machine.
+
+In our local machine, we run the following command, to start a ssh tunnel from our local machine to the remote VPS machine.
+Note: before running the following command, we need to make sure that port 9001 on our local PC is not being used by any other service.
+
+```bash
+ssh -L 9001:localhost:9001 root@quidalert.example.com
+```
+
+Now, with the web browser in our local machine, we connect to the following url
+
+http://localhost:9001
+
+Thanks to the ssh tunnel, the remote web console of the s3 bucket, located in the VPS, will open. We login with minio credentials (S3_USER value and S3_PASS value, defined in .env file, in the vps), and we create "quidalert-uploads" bucket.
+
+### SMTP server
+
+To be able to send email messages to clients, the VPS backend must connect to a SMTP server. We can use Resend online platform.
+
+https://resend.com/
+
+We open an account and we follow the instructions to connect to Resend SMTP server from our VPS.
+
+We won't need to change anything in the backend code. We'll just need to set the SMTP protocol variables to the correct values (SMTP server, user, password, etc.) in the .env file.
+
+In progress...
