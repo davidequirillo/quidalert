@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     smtp_host: str = config.SMTP_HOST
     smtp_port: int = config.SMTP_PORT
     smtp_from: str = config.SMTP_FROM
+    smtp_from_name: str = config.SMTP_FROM_NAME
+    smtp_use_tls: str = config.SMTP_USE_TLS
     # If you are not sure, leave it as "no" (default value). 
     # If you set it to "yes", be careful: it can be a security risk in production.
     smtp_allow_redirect_fake_users_email: str = "no" # from environment, critical for security
@@ -87,7 +89,7 @@ try:
         settings.cors_allow_origins = ["*"]
     else:
         settings.cors_allow_origins = [
-            f'https://{settings.server_name}:{settings.server_port}'
+            f'{settings.protocol}://{settings.server_name}:{settings.server_port}'
         ]
 except Exception as e:
     print(f"Configuration error: {e}")
@@ -125,13 +127,12 @@ if (not settings.s3_pass) or (settings.s3_pass==""):
     print(f"Configuration error: environment var S3_PASS not found")
     raise SystemExit(1)
 
+# SMTP configuration check (user and password not mandatory)
 if (not settings.smtp_user) or (settings.smtp_user==""):
-    print(f"Configuration error: environment var SMTP_USER not found")
-    raise SystemExit(1)
+    pass
 
 if (not settings.smtp_pass) or (settings.smtp_pass==""):
-    print(f"Configuration error: environment var SMTP_PASS not found")
-    raise SystemExit(1)
+    pass
 
 if (not settings.db_user) or (settings.db_user==""):
     print(f"Configuration error: environment var DB_USER not found")

@@ -9,6 +9,7 @@ from fastapi.concurrency import run_in_threadpool
 from sqlmodel import Session, select, insert
 from fakeredis.aioredis import FakeRedis
 from email.message import EmailMessage
+from email.utils import formataddr
 from models.general import (
     string_as_uuid,
     RefreshToken, User, 
@@ -555,7 +556,7 @@ def send_mail_to_chief_manager(chief_id, chief_email,
         request_info: dict):
     msg = EmailMessage()
     msg["Subject"] = alert_langmap[language]["new_alert_mail_subject"]
-    msg["From"] = settings.smtp_from
+    msg["From"] = formataddr((settings.smtp_from_name, settings.smtp_from))
     msg["To"] = chief_email
     msg.set_content(localize_new_alert_mail(alert, sender, language))
     try:
