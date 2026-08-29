@@ -154,7 +154,19 @@ To download these container images from internet, build them, and start them, yo
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-Now, the backend is running as a docker container.
+Now, the backend and all related services are running as docker containers.
+
+To stop them:
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+To start them:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+```
 
 ### Postgres container configuration
 
@@ -214,7 +226,17 @@ Now you must create the bucket. Go to http://localhost:9001, login as admin user
 
 Some API, for example registration, login, password reset, etc., require a smtp server to send email messages to users. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in environment file (.env file).
 
-For local testing/development purposes, there is already a "fake" local smtp server (defined as a container in docker-compose.dev.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025".
+For local testing/development purposes, there is already a fake local smtp server (called "mailpit" defined as a container in docker-compose.dev.yml). You can view the mail messages sent to the users using its web interface available at the following url: "http://localhost:8025". 
+
+NOTE: mailpit does not support authentication and TLS, so in your development env file (.env) you must set SMTP_USER='', SMTP_PASS='', SMPT_USE_TLS='no'. See .env.example file for details.
+
+There is a script useful to test email delivery.
+
+```bash
+docker exec -it fastapi_backend_dev python -m scripts.send_sample_mail --to_email recipient@example.com
+```
+
+As we just said, in development mode email messages will be displayed in the local mailpit web application (http://localhost:8025).
 
 ### Sending push notifications to clients
 
@@ -253,6 +275,8 @@ You can launch the client via VSCode launcher (see debugging/run section).
 IMPORTANT: at database empty, using the client flutter app, register the first user (admin) using your custom password you have placed in ADMIN_PASS environment variable.  
 After that, you can reset the password at runtime using the client app functionality labeled "forgot password?", and choose a new desired password.
 
+### Server-side seeding scripts
+
 In server/api_backend/scripts folder there are some seeding scripts, useful to populate the database with fake users (pass --help option as input argument to these scripts to see some useful details):
 
 ```bash
@@ -270,6 +294,14 @@ Note: use this feature with caution as your single device will receive notificat
 
 ```bash
 docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --email device-logged-user-email
+```
+
+### Automatic test cases
+
+To automatically test the FastAPI backend (API endpoints and various internal functions), we use a SQLite database and a Redis cache that are separate from the development and production environments. The S3 test bucket is also separate, and no notifications or emails are sent during any automated test cases. So, don't worry about running this useful command for automatically run unit and integration tests.
+
+```bash
+docker exec -it fastapi_backend_dev pytest -v -s
 ```
 
 ## A simple production environment (server-side)
@@ -329,6 +361,20 @@ We run docker compose command with our production yml file as input (docker-comp
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Now, the backend and all related services are running as docker containers.
+
+To stop them:
+
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+To start them:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
 ```
 
 ### Postgres db init
@@ -397,14 +443,34 @@ http://localhost:9001
 
 Thanks to the ssh tunnel, the remote web console of the s3 bucket, located in the VPS, will open. We login with minio credentials (S3_USER value and S3_PASS value, defined in .env file, in the vps), and we create "quidalert-uploads" bucket.
 
+### A note about .env security
+
+The .env file, which contains the environment variables required for the FastAPI backend and various related services to function properly, is located outside of the containers and is owned exclusively by the system's root user (the Debian machine root user). This ensures that the passwords and keys contained in the .env file are basically secure.
+
+However, for added security, you can remove these critical environment variables (passwords, secret keys, peppers) from the .env file, encrypt them and use Docker Secrets to manage them securely.
+
 ### SMTP server
 
-To be able to send email messages to clients, the VPS backend must connect to a SMTP server. We can use Resend online platform.
+To be able to send email messages to clients, the VPS backend must connect to a SMTP server. We can use a SMTP server provided by Resend online platform. We create an account on this platform.
 
 https://resend.com/
 
-We open an account and we follow the instructions to connect to Resend SMTP server from our VPS.
+By following the instructions provided by the platform immediately after creating the account, we receive the "Resend API key" required to send email messages (from our VPS) and we declare the domain from which we send our emails, verifying it by adding some DNS entries in our domain configuration.
 
-We won't need to change anything in the backend code. We'll just need to set the SMTP protocol variables to the correct values (SMTP server, user, password, etc.) in the .env file.
+After that, we won't need to change anything in our fastapi backend code. We'll just need to set the SMTP environment variables to the correct values (SMTP server, user, password, etc.) in the .env file.
 
-In progress...
+```bash
+SMTP_HOST='smtp.resend.com'
+SMTP_PORT=587
+SMTP_USER='resend'
+SMTP_PASS='re_12345_YourResendReceivedAPIKey'
+SMTP_FROM='example.com'
+SMTP_FROM_NAME='Quidalert'
+SMTP_USE_TLS='yes'
+```
+
+There is a script useful to test email delivery from our production VPS.
+
+```bash
+docker exec -it fastapi_backend python -m scripts.send_sample_mail --to_email recipient@example.com
+```

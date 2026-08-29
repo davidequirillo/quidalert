@@ -27,7 +27,7 @@ def send_mail_message(data: EmailMessage, request_info: dict):
         # If the environment variable SMTP_ALLOW_REDIRECT_FAKE_USERS_EMAIL is enabled, 
         # we redirect all emails for fake users to a single email address (SMTP_REDIRECT_FAKE_USERS_EMAIL_TO).
         # See the comments in env.example file for more details about security risks of this feature.
-        if settings.smtp_allow_redirect_fake_users_email == "yes":
+        if settings.smtp_allow_redirect_fake_users_email.lower() in ("true", "1", "yes"):
             original_to = data["To"]
             data.replace_header("To", settings.smtp_redirect_fake_users_email_to)
             log_user_email_redirected(original_to, data["To"], request_info=request_info, detail="Redirecting email for fake user to a single email address for testing purposes.")
@@ -37,7 +37,13 @@ def send_mail_message(data: EmailMessage, request_info: dict):
                 return
     smtp_host = settings.smtp_host
     smtp_port = settings.smtp_port
-    with smtplib.SMTP(host=smtp_host, port=smtp_port) as server:
+    with smtplib.SMTP(host=smtp_host, port=smtp_port, timeout=10) as server:
+        server.ehlo()
+        if settings.smtp_use_tls.lower() in ("true", "1", "yes"):
+            server.starttls()
+            server.ehlo()
+        if settings.smtp_user and settings.smtp_pass:
+            server.login(user=settings.smtp_user, password=settings.smtp_pass)
         server.send_message(data)
 
 def get_user_fcm_token(user_id, db_session):
