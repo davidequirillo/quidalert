@@ -64,7 +64,16 @@ services:
     container_name: redis_node_1_dev
     volumes:
       - redis-data-1:/data
-    command: redis-server --port 7001 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0
+    command: > 
+      redis-server 
+      --port 7001 
+      --cluster-enabled yes 
+      --cluster-config-file nodes.conf 
+      --cluster-node-timeout 5000 
+      --appendonly yes 
+      --bind 0.0.0.0 
+      --requirepass ${REDIS_PASS}
+      --masterauth ${REDIS_PASS}
     ports:
       - "7001:7001"
       - "17001:17001"
@@ -76,7 +85,16 @@ services:
     container_name: redis_node_2_dev
     volumes:
       - redis-data-2:/data
-    command: redis-server --port 7001 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0
+    command: > 
+      redis-server 
+      --port 7001 
+      --cluster-enabled yes 
+      --cluster-config-file nodes.conf 
+      --cluster-node-timeout 5000 
+      --appendonly yes 
+      --bind 0.0.0.0 
+      --requirepass ${REDIS_PASS} 
+      --masterauth ${REDIS_PASS}
     ports:
       - "7002:7001"
       - "17002:17001"
@@ -88,7 +106,16 @@ services:
     container_name: redis_node_3_dev
     volumes:
       - redis-data-3:/data
-    command: redis-server --port 7001 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --bind 0.0.0.0
+    command: > 
+      redis-server 
+      --port 7001 
+      --cluster-enabled yes 
+      --cluster-config-file nodes.conf 
+      --cluster-node-timeout 5000 
+      --appendonly yes 
+      --bind 0.0.0.0 
+      --requirepass ${REDIS_PASS} 
+      --masterauth ${REDIS_PASS}
     ports:
       - "7003:7001"
       - "17003:17001"
