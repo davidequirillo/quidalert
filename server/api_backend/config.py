@@ -9,8 +9,9 @@
 # 1. Environment variables (defined in system, in container, or in a ".env" file)
 # 2. Default values specified in this configuration file
 
-SERVER_NAME = "myservername" # the server name (publicly accessible, for example the reverse proxy)
-SERVER_PORT = 8080 # the server port (publicly accessible) 
+SERVER_NAME = "quidalert.example.com" # the server name (publicly accessible, for example the reverse proxy)
+DOMAIN_NAME = "example.com" # at the moment, this is not used
+SERVER_PORT = 8080 # the server port (publicly accessible, 8080 in this case or 443 in production)
 APP_LOG_LEVEL = 'warning' # 'info', 'warning'
 
 ## The database connection URL and db engine logging
