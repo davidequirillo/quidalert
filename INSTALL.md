@@ -128,7 +128,7 @@ See ".env.example" to read additional info about those environment configuration
 
 Copy ".env.example" to ".env" file, and edit .env file, to change the desired environment variables.
 
-Conda environment is not required for our fastapi backend (because fastapi runs inside a container, see docker-compose.dev.yml), but it can be useful for development and testing.
+Conda environment is not required for our fastapi backend (because fastapi runs inside a container, see docker-compose.dev.yml), but it's useful in VSCode for the development.
 
 Install miniconda:
 
@@ -154,7 +154,7 @@ To download these container images from internet, build them, and start them, yo
 docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-Now, the backend and all related services are running as docker containers.
+Now, the backend and all related services are running as docker containers. 
 
 To stop them:
 
@@ -162,11 +162,13 @@ To stop them:
 docker compose -f docker-compose.dev.yml down
 ```
 
-To start them:
+To start them without rebuild:
 
 ```bash
 docker compose -f docker-compose.dev.yml up -d
 ```
+
+NOTE: in development mode, there's a "real-time" mapping between the fastapi backend directory (server/api_backend) and the /app directory in the fastapi_backend_dev container (see docker-compose.dev.yml). Additionally, almost every change to the source code automatically reloads the uvicorn server (see Dockerfile.dev). This eliminates the need to rebuild and restart the fastapi_backend_dev container image (with --build option) every time we modify a piece of source code.
 
 ### Postgres container configuration
 
@@ -357,7 +359,7 @@ Go to /opt/quidalert/server/api_backend folder and put firebase_keys.json file i
 
 ### Run docker compose (production version)
 
-We run docker compose command with our production yml file as input (docker-compose.prod.yml) to start the containers, using --build option to build the container images before starting them. The build option (--build) is useful to construct the container images. If we sync the local project with a new version of the repository (for example, if we run "git pull"), we must re-build the containers with --build option.
+We run docker compose command with our production yml file as input (docker-compose.prod.yml) to start the containers, using --build option to build the container images before starting them. The build option (--build) is useful to construct the container images.
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
@@ -371,11 +373,13 @@ To stop them:
 docker compose -f docker-compose.prod.yml down
 ```
 
-To start them:
+To start them without rebuild:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d
 ```
+
+NOTE: in production mode, if we make a change to the fastapi backend source code, or more generally we sync the project directory with a new version of the remote repository (git pull), and this version affects the fastapi backend or other containers, we need to rebuild the container images with the --build option.
 
 ### Postgres db init
 
