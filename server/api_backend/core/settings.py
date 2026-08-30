@@ -5,18 +5,22 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import config 
 
+def build_public_baseurl(protocol: str, server_name: str, server_port: int) -> str:
+    if server_port in (80, 443):
+        return f"{protocol}://{server_name}"
+    return f"{protocol}://{server_name}:{server_port}"
+
 ## IMPORTANT, settings are read in the following priority: 
 # docker environment variables > .env file > default values (in config.py or at codebase level).
 
 class Settings(BaseSettings):
-    # App conf
-    app_mode: str = "production" # you can change it to "development" in the ".env" file, not here, because this is the default value, and it will be overridden by the environment (.env file)
+    # App settings
+    # Don't change environment values here. They should be set in the ".env" file.
+    app_mode: str = "production"
     send_emails: bool = True
-    protocol: str = "https"
-    # The server name is used for CORS and other security policies, 
-    # it should be the same as the one used in the client app (frontend). 
-    # It should be the domain name of the server, without the protocol and port. For example: "example.com" or "api.example.com".
+    protocol: str = "https" 
     server_name: str = config.SERVER_NAME
+    domain_name: str = config.DOMAIN_NAME
     server_port: int = config.SERVER_PORT
     app_log_level: str = config.APP_LOG_LEVEL
     # CORS conf
@@ -56,8 +60,6 @@ class Settings(BaseSettings):
     smtp_from: str = config.SMTP_FROM
     smtp_from_name: str = config.SMTP_FROM_NAME
     smtp_use_tls: str = config.SMTP_USE_TLS
-    # If you are not sure, leave it as "no" (default value). 
-    # If you set it to "yes", be careful: it can be a security risk in production.
     smtp_allow_redirect_fake_users_email: str = "no" # from environment, critical for security
     smtp_redirect_fake_users_email_to: str = "" # from environment, critical for security
     # MinIO conf
@@ -89,7 +91,7 @@ try:
         settings.cors_allow_origins = ["*"]
     else:
         settings.cors_allow_origins = [
-            f'{settings.protocol}://{settings.server_name}:{settings.server_port}'
+            build_public_baseurl(settings.protocol, settings.server_name, settings.server_port)
         ]
 except Exception as e:
     print(f"Configuration error: {e}")

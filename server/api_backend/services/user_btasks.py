@@ -4,7 +4,7 @@
 
 from email.message import EmailMessage
 from email.utils import formataddr
-from core.settings import settings
+from core.settings import settings, build_public_baseurl
 from services.network import send_mail_message
 from services.localization import (user_langmap, 
     localize_activation_code_mail, localize_reset_code_mail, 
@@ -21,10 +21,8 @@ from core.btask_events import (
 )
 
 def send_activation_code_mail(email: str, token: str, lang: str, request_info: dict):
-    prot = settings.protocol
-    sname = settings.server_name
-    sport = settings.server_port
-    act_url = f"{prot}://{sname}:{sport}/api/activate?email={email}&token={token}"
+    baseurl = build_public_baseurl(settings.protocol, settings.server_name, settings.server_port)
+    act_url = f"{baseurl}/api/activate?email={email}&token={token}"
     msg = EmailMessage()
     msg["Subject"] = user_langmap[lang]["reg_subject"]
     msg["From"] = formataddr((settings.smtp_from_name, settings.smtp_from))
