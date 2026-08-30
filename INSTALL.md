@@ -464,7 +464,7 @@ SMTP_HOST='smtp.resend.com'
 SMTP_PORT=587
 SMTP_USER='resend'
 SMTP_PASS='re_12345_YourResendReceivedAPIKey'
-SMTP_FROM='example.com'
+SMTP_FROM='noreply@example.com'
 SMTP_FROM_NAME='Quidalert'
 SMTP_USE_TLS='yes'
 ```
