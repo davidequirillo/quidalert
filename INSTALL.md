@@ -357,7 +357,7 @@ Go to /opt/quidalert/server/api_backend folder and put firebase_keys.json file i
 
 ### Run docker compose (production version)
 
-We run docker compose command with our production yml file as input (docker-compose.prod.yml) to start the containers, using --build option to build the container images before starting them.
+We run docker compose command with our production yml file as input (docker-compose.prod.yml) to start the containers, using --build option to build the container images before starting them. The build option (--build) is useful to construct the container images. If we sync the local project with a new version of the repository (for example, if we run "git pull"), we must re-build the containers with --build option.
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
