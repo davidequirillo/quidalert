@@ -62,6 +62,7 @@ def get_redis_cluster_client() -> cluster.RedisCluster:
         startup_nodes.append(cluster.ClusterNode(host=host, port=int(port)))
     options = {
         "startup_nodes": startup_nodes,
+        "password": settings.redis_pass,
         "max_connections": settings.redis_max_connections_per_node,
         "socket_connect_timeout": 5,  # seconds
         # Note: socket_timeout is very long because of some periodic tasks 

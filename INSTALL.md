@@ -184,10 +184,10 @@ To provide maximum deployment flexibility, the system supports both "single" and
 
 Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose file, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
 
-To use Redis in cluster mode (not in single mode), you must join redis nodes:
+To use Redis in cluster mode (not in single mode), you must join redis nodes. Note: use the password defined in .env file:
 
 ```bash
-docker exec -it redis_node_1_dev redis-cli --cluster create redis-node-1:7001 redis-node-2:7001 redis-node-3:7001 --cluster-replicas 0 --cluster-yes
+docker exec -it redis_node_1_dev redis-cli -a "testpassword123" --cluster create redis-node-1:7001 redis-node-2:7001 redis-node-3:7001 --cluster-replicas 0 --cluster-yes
 ```
 
 ### Bucket s3 (minio) configuration

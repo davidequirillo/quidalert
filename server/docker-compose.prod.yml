@@ -26,7 +26,7 @@ services:
     image: redis:7-alpine
     container_name: redis_node_1
     restart: always
-    command:
+    command: >
       redis-server
       --port 6379
       --cluster-enabled yes
@@ -44,8 +44,9 @@ services:
     image: redis:7-alpine
     container_name: redis_node_2
     restart: always
-    command:
+    command: >
       redis-server
+      --port 6379
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
@@ -63,6 +64,7 @@ services:
     restart: always
     command: > 
       redis-server
+      --port 6379
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
