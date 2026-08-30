@@ -6,7 +6,7 @@ import argparse
 import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
-from core.settings import settings
+from core.settings import settings, build_public_baseurl
 
 FROM_EMAIL = settings.smtp_from
 FROM_NAME = settings.smtp_from_name
@@ -22,10 +22,12 @@ def run_test(email_recipient: str):
     msg["From"] = formataddr((FROM_NAME, FROM_EMAIL))
     msg["To"] = email_recipient
     msg["Subject"] = "Test email delivery"
+    baseurl = build_public_baseurl(settings.protocol, settings.server_name, settings.server_port)
     # Plain text body for the email
     text_body = (
         "Hello!\n\n"
         f"This is a test message sent from {FROM_NAME} ({FROM_EMAIL}) to verify email delivery.\n\n"
+        f"Sample activation link: {baseurl}/api/activate?email={email_recipient}&token=sampletoken\n\n"
         "Thank you for testing our email system.\n"
     )
     msg.set_content(text_body)
