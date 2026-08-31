@@ -9,7 +9,6 @@ services:
       context: ./api_backend
       dockerfile: Dockerfile.dev
     container_name: fastapi_backend_dev
-    restart: always
     ports:
       - "8000:8000"
     volumes:
@@ -21,19 +20,25 @@ services:
     networks:
       - serverside-net
     depends_on:
-      - postgres
-      - redis
-      - redis-node-1
-      - redis-node-2
-      - redis-node-3
-      - minio
-      - mailpit
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      redis-node-1:
+        condition: service_healthy
+      redis-node-2:
+        condition: service_healthy
+      redis-node-3:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      mailpit:
+        condition: service_started
   
   # --- Relational DBMS ---
   postgres:
     image: postgres:17-alpine
     container_name: postgres_dbms_dev
-    restart: always
     environment:
       # If variables are not found in .env, use defaults after :-
       POSTGRES_USER: ${DB_USER:-dbuser}
@@ -50,7 +55,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis_cache_dev
-    restart: always
     ports:
       - "6379:6379"
     volumes:
@@ -70,15 +74,24 @@ services:
       --cluster-enabled yes 
       --cluster-config-file nodes.conf 
       --cluster-node-timeout 5000 
-      --appendonly yes 
-      --bind 0.0.0.0 
+      --appendonly yes  
       --requirepass ${REDIS_PASS}
       --masterauth ${REDIS_PASS}
+      --cluster-announce-hostname redis-node-1
+      --cluster-announce-port 7001
+      --cluster-announce-bus-port 17001
+      --cluster-preferred-endpoint-type hostname
     ports:
       - "7001:7001"
       - "17001:17001"
     networks:
       - serverside-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "-p", "7001", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
 
   redis-node-2:
     image: redis:7-alpine
@@ -87,19 +100,31 @@ services:
       - redis-data-2:/data
     command: > 
       redis-server 
-      --port 7001 
+      --port 7002 
       --cluster-enabled yes 
       --cluster-config-file nodes.conf 
       --cluster-node-timeout 5000 
       --appendonly yes 
-      --bind 0.0.0.0 
       --requirepass ${REDIS_PASS} 
       --masterauth ${REDIS_PASS}
+      --cluster-announce-hostname redis-node-2
+      --cluster-announce-port 7002
+      --cluster-announce-bus-port 17002
+      --cluster-preferred-endpoint-type hostname
     ports:
-      - "7002:7001"
-      - "17002:17001"
+      - "7002:7002"
+      - "17002:17002"
     networks:
       - serverside-net
+    depends_on:
+      redis-node-1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "-p", "7002", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
 
   redis-node-3:
     image: redis:7-alpine
@@ -108,25 +133,36 @@ services:
       - redis-data-3:/data
     command: > 
       redis-server 
-      --port 7001 
+      --port 7003 
       --cluster-enabled yes 
       --cluster-config-file nodes.conf 
       --cluster-node-timeout 5000 
       --appendonly yes 
-      --bind 0.0.0.0 
       --requirepass ${REDIS_PASS} 
       --masterauth ${REDIS_PASS}
+      --cluster-announce-hostname redis-node-3
+      --cluster-announce-port 7003
+      --cluster-announce-bus-port 17003
+      --cluster-preferred-endpoint-type hostname
     ports:
-      - "7003:7001"
-      - "17003:17001"
+      - "7003:7003"
+      - "17003:17003"
     networks:
       - serverside-net
+    depends_on:
+      redis-node-2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "-p", "7003", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 3s
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: minio_storage_dev
-    restart: always
     ports:
       - "9000:9000" # API port
       - "9001:9001" # Web console port
@@ -143,7 +179,6 @@ services:
   mailpit:
     image: axllent/mailpit:v1.31
     container_name: mailpit_server_dev
-    restart: always
     ports:
       - "1025:1025" # SMTP port
       - "8025:8025" # Web console port
