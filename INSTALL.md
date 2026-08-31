@@ -189,7 +189,7 @@ Redis cluster mode features 16 logical shards (this number can theoretically be 
 To use Redis in cluster mode (not in single mode), you must join redis nodes. Note: use the password defined in .env file:
 
 ```bash
-docker exec -it redis_node_1_dev redis-cli -a "testpassword123" --cluster create redis-node-1:7001 redis-node-2:7001 redis-node-3:7001 --cluster-replicas 0 --cluster-yes
+docker exec -it redis_node_1_dev redis-cli -a "testpassword123" --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
 ```
 
 ### Bucket s3 (minio) configuration
@@ -379,7 +379,7 @@ To start them without rebuild:
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-NOTE: in production mode, if we make a change to the fastapi backend source code, or more generally we sync the project directory with a new version of the remote repository (git pull), and this version affects the fastapi backend or other containers, we need to rebuild the container images with the --build option.
+NOTE: in production mode, if we make a change to the fastapi backend source code, or more generally we sync the project directory with a new version of the remote repository (git pull), and the updates affect the fastapi backend or other containers, we need to rebuild the container images with the --build option.
 
 ### Postgres db init
 
