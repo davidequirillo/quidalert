@@ -140,8 +140,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         relativeUrl,
       );
       final Map<String, dynamic> respObj = json.decode(response.body);
-      retMessage =
-          '${loc.entriesDeleted}: ${respObj['deleted_count']}\n${loc.entriesTotal}: ${respObj['total_count']}';
+      retMessage = '${loc.entriesDeleted}: ${respObj['deleted_count']}';
       retTitle = loc.successGeneric;
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
