@@ -333,10 +333,7 @@ class BackgroundLocationService {
           ? DateTime.parse(locationTimestampStr).toLocal()
           : null;
       final String locationDatetimeStr = locationDatetime != null
-          ? datetimeAsStringWithoutMilliseconds(
-              locationDatetime,
-              includeTimezone: false,
-            )
+          ? datetimeAsStringWithoutMilliseconds(locationDatetime)
           : "n/a";
       locations.add({
         "uuid": location["uuid"]?.toString() ?? "n/a",

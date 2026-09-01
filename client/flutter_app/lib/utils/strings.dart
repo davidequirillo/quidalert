@@ -24,7 +24,7 @@ String timezoneOffsetAsString(DateTime datetime) {
 
 String datetimeAsStringWithoutMilliseconds(
   DateTime datetime, {
-  bool includeTimezone = true,
+  bool includeTimezone = false,
 }) {
   return "${datetime.toIso8601String().replaceFirst('T', ' ').split('.').first}${includeTimezone ? timezoneOffsetAsString(datetime) : ''}";
 }

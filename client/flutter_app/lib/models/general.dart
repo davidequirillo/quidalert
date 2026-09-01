@@ -36,7 +36,7 @@ class WhiteListEntry {
 
   factory WhiteListEntry.fromJson(Map<String, dynamic> json) {
     final createdAt = json['created_at'] != null
-        ? DateTime.parse("${json['created_at']}Z")
+        ? DateTime.parse("${json['created_at']}Z").toLocal()
         : DateTime(0);
     final createdBy = json['created_by'] ?? '';
     final userIsRegistered = json['user_is_registered'] ?? false;
@@ -132,7 +132,7 @@ class UserSmall {
     final String sname = json['surname'] ?? '';
     final String? authBy = json['authorized_by'];
     final DateTime? authAt = json['authorized_at'] != null
-        ? DateTime.parse("${json['authorized_at']}Z")
+        ? DateTime.parse("${json['authorized_at']}Z").toLocal()
         : null;
     final String phone = json['phone'] ?? '';
     final bool isAdmin = json['is_admin'] ?? false;
@@ -273,29 +273,29 @@ class User {
     final int heroScore = json['hero_score'] ?? 0;
     final bool isActive = json['is_active'] ?? false;
     final DateTime? resetLockedUntil = json['reset_locked_until'] != null
-        ? DateTime.parse("${json['reset_locked_until']}Z")
+        ? DateTime.parse("${json['reset_locked_until']}Z").toLocal()
         : null;
     final DateTime? lastResetDoneAt = json['last_reset_done_at'] != null
-        ? DateTime.parse("${json['last_reset_done_at']}Z")
+        ? DateTime.parse("${json['last_reset_done_at']}Z").toLocal()
         : null;
     final DateTime? loginLockedUntil = json['login_locked_until'] != null
-        ? DateTime.parse("${json['login_locked_until']}Z")
+        ? DateTime.parse("${json['login_locked_until']}Z").toLocal()
         : null;
     final DateTime? lastLoginDoneAt = json['last_login_done_at'] != null
-        ? DateTime.parse("${json['last_login_done_at']}Z")
+        ? DateTime.parse("${json['last_login_done_at']}Z").toLocal()
         : null;
     final DateTime? lastRefreshAt = json['last_refresh_at'] != null
-        ? DateTime.parse("${json['last_refresh_at']}Z")
+        ? DateTime.parse("${json['last_refresh_at']}Z").toLocal()
         : null;
     final DateTime? creatAt = json['created_at'] != null
-        ? DateTime.parse("${json['created_at']}Z")
+        ? DateTime.parse("${json['created_at']}Z").toLocal()
         : null;
     final String? authBy = json['authorized_by'];
     final DateTime? authAt = json['authorized_at'] != null
-        ? DateTime.parse("${json['authorized_at']}Z")
+        ? DateTime.parse("${json['authorized_at']}Z").toLocal()
         : null;
     final DateTime? updAt = json['updated_at'] != null
-        ? DateTime.parse("${json['updated_at']}Z")
+        ? DateTime.parse("${json['updated_at']}Z").toLocal()
         : null;
     final String? updBy = json['updated_by'];
     final String street = json['street'] ?? '';

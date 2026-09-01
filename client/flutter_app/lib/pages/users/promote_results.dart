@@ -60,6 +60,7 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
     bool newLoginRequired = false;
     String retMessage = "";
     String retTitle = "";
+    String backRoute = "";
     final args = ModalRoute.of(context)!.settings.arguments;
     final loc = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) {
@@ -69,8 +70,10 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       Map<String, dynamic> respObj;
       if (args is List<String>) {
         respObj = await promoteUsersByEmails(args);
+        backRoute = "/accounts/users/search-by-csv";
       } else if (args is Map<String, String?>) {
         respObj = await promoteUsersByFields(args);
+        backRoute = "/accounts/users/search-module";
       } else {
         throw Exception("Invalid arguments for search results page");
       }
@@ -119,10 +122,10 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
       if (error == false) {
-        if (mounted) {
+        if (mounted && backRoute.isNotEmpty) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            "/accounts/users/search-module",
+            backRoute,
             ModalRoute.withName("/accounts"),
           );
         }

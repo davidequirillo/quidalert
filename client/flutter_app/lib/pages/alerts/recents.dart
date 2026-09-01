@@ -103,7 +103,6 @@ class RecentAlertsBody extends StatelessWidget {
               final alertCreatedAt = alert.createdAt;
               final alertDateTimeStr = datetimeAsStringWithoutMilliseconds(
                 alertCreatedAt,
-                includeTimezone: false,
               );
               final shortAlertId = convertToShortId(
                 alert.id.toString(),
