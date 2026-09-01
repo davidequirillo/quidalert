@@ -275,7 +275,7 @@ class _HomeBodyState extends State<HomeBody> {
     String role = user['role'] ?? UserRoleExtended.citizen.name;
     final lastRefreshAtStr = user['last_refresh_at'] != null
         ? datetimeAsStringWithoutMilliseconds(
-            DateTime.parse(user['last_refresh_at']),
+            DateTime.parse("${user['last_refresh_at']}Z").toLocal(),
           )
         : "N/A";
     if (user['is_superuser'] == true) {

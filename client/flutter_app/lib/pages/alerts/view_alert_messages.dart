@@ -266,10 +266,7 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final createdAtStr = datetimeAsStringWithoutMilliseconds(
-      message.createdAt,
-      includeTimezone: false,
-    );
+    final createdAtStr = datetimeAsStringWithoutMilliseconds(message.createdAt);
     String msgSenderStr = message.isCaller
         ? ""
         : "${message.firstname} ${message.surname}";

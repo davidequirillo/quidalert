@@ -369,7 +369,6 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
     );
     final createdAt = datetimeAsStringWithoutMilliseconds(
       alertWithInfo.alert.createdAt,
-      includeTimezone: false,
     );
     final alertIsLocal = (alertWithInfo.alert.type == AlertType.local.name)
         ? true
