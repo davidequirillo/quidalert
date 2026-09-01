@@ -392,16 +392,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Sessione non valida o scaduta';
 
   @override
+  String get errorUserNotReliable => 'L\'utente non è affidabile';
+
+  @override
+  String get errorUserBlocked => 'Account bloccato';
+
+  @override
+  String get errorUserNotFound => 'Utente non trovato';
+
+  @override
   String get errorUnknownState => 'Stato sconosciuto';
 
   @override
   String get errorUnableToOpenMap => 'Impossibile aprire la mappa';
 
   @override
-  String get errorUserNotReliable => 'L\'utente non è affidabile';
-
-  @override
-  String get errorUserBlocked => 'Account bloccato';
+  String get errorWhitelistCannotDelForRegUsers => 'Non posso effettuare l\'eliminazione se l\'utente si è già registrato';
 
   @override
   String get exceptionBadRequest => 'Richiesta non accettata';
@@ -473,7 +479,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelAddress => 'Indirizzo';
 
   @override
-  String get labelAddEmailsToWhiteList => 'Aggiungi indirizzi email alla white list';
+  String get labelAddEmailsToWhitelist => 'Aggiungi indirizzi email alla white list';
 
   @override
   String get labelAdvice => 'Consigli';
@@ -500,7 +506,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get labelConfirmNewPassword => 'Conferma nuova password';
 
   @override
-  String get labelCurrentWhiteListEntries => 'Voci presenti nella white list';
+  String get labelCurrentWhitelistEntries => 'Voci presenti nella white list';
 
   @override
   String get labelDatetime => 'Data/ora';
@@ -629,7 +635,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuUsers => 'Utenti';
 
   @override
-  String get menuWhiteList => 'White list per registrazione';
+  String get menuWhitelist => 'White list per registrazione';
 
   @override
   String get notificationSwipeDownToHide => '⬇ per nascondere';
@@ -666,6 +672,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sectionWhitelistAddInfoForOfficer => 'Per entrambe le modalità di inserimento, è possibile selezionare il ruolo';
+
+  @override
+  String get sectionWhitelistDeleteSingleEntry => 'Elimina una singola voce';
+
+  @override
+  String get sectionWhitelistDeleteAllOwnedEntry => 'Elimina tutte le voci da te autorizzate';
+
+  @override
+  String get sectionWhitelistDeleteInfo => 'Verranno eliminati solo gli indirizzi email non associati ad utenti già registrati.';
 
   @override
   String get sectionLocationLog => 'Log posizioni gps in background';

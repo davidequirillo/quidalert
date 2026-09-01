@@ -171,9 +171,15 @@ async def promote_users(
     if authorizer and (not current_user.is_admin):
         raise forbidden_exception(detail="Only admins can filter by authorizer")
     if (promotion_schema.type) and (not current_user.is_admin): # officers cannot change users type
-        raise forbidden_exception()
+        raise forbidden_exception(detail="Only admins can change user type")
     if (not email) and (not surname) and (not type) and (not role) and (not status):
         raise invalid_request_exception(detail="At least one search filter keyword must be provided to promote/demote users")
+    if email:
+        target_user = db_session.exec(select(User).where(User.email == email.lower())).first()
+        if not target_user:
+            raise not_found_exception(detail=f"User with email '{email}' not found")
+        if (not current_user.is_admin) and (target_user.authorized_by != current_user.email):
+            raise forbidden_exception(detail=f"User with email '{email}' is not authorized by you")
     def db_update_logic():
         if email:
             statement = update(User).where(User.email == email.lower()) # type:ignore

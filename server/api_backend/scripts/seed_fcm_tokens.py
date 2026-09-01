@@ -27,10 +27,7 @@ def select_the_seeding_user(email, db_session):
 def get_refresh_token_for_user(user):
     statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
     refresh_token = db_session.exec(statement).first()
-    if refresh_token:
-        return refresh_token
-    else:
-        return None
+    return refresh_token
 
 def assign_fcm_token_to_all_fake_users(refresh_token, db_session):
     now = now_tz_naive() 
@@ -40,9 +37,6 @@ def assign_fcm_token_to_all_fake_users(refresh_token, db_session):
     for user in fake_users:
         if user.id == refresh_token.user_id:
             print(f"Skipping user '{user.email}' as it is the seeding user (he already has the valid FCM token).")
-            continue
-        if not user.email.endswith(f"@{FAKE_EMAIL_DOMAIN}"):
-            print(f"Skipping user '{user.email}' as it is not a fake user.")
             continue
         # Select user refresh token if exists, otherwise we create a new one
         statement = select(RefreshToken).where(RefreshToken.user_id == user.id)

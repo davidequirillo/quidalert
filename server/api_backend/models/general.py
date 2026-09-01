@@ -376,6 +376,9 @@ class WhiteListEntry(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: now_tz_naive(), nullable=False)
     registration_type: Optional[str] = Field(default=None, nullable=True, min_length=1, max_length=32)
     registration_role: Optional[str] = Field(default=None, nullable=True, min_length=1, max_length=32)
+    # Note: this field causes a denormalization of the database, 
+    # since we can derive if the user has been registered from the users table,
+    # but having this field can improve query performance and simplify certain operations.
     user_is_registered: bool = Field(default=False, nullable=False)
 
     __table_args__ = (

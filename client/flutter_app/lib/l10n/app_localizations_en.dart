@@ -392,16 +392,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorSessionNotValidOrExpired => 'Session not valid or expired';
 
   @override
+  String get errorUserNotReliable => 'User is not reliable';
+
+  @override
+  String get errorUserBlocked => 'Account blocked';
+
+  @override
+  String get errorUserNotFound => 'User not found';
+
+  @override
   String get errorUnknownState => 'Unknown state';
 
   @override
   String get errorUnableToOpenMap => 'Unable to open map';
 
   @override
-  String get errorUserNotReliable => 'User is not reliable';
-
-  @override
-  String get errorUserBlocked => 'Account blocked';
+  String get errorWhitelistCannotDelForRegUsers => 'Cannot delete entries for already registered users';
 
   @override
   String get exceptionBadRequest => 'Bad request';
@@ -473,7 +479,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelAddress => 'Address';
 
   @override
-  String get labelAddEmailsToWhiteList => 'Add email addressed to white list';
+  String get labelAddEmailsToWhitelist => 'Add email addressed to white list';
 
   @override
   String get labelAdvice => 'Advice';
@@ -500,7 +506,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelConfirmNewPassword => 'Confirm new password';
 
   @override
-  String get labelCurrentWhiteListEntries => 'Current white list entries';
+  String get labelCurrentWhitelistEntries => 'Current white list entries';
 
   @override
   String get labelDatetime => 'Datetime';
@@ -629,7 +635,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuUsers => 'Users';
 
   @override
-  String get menuWhiteList => 'Registration white list';
+  String get menuWhitelist => 'Registration white list';
 
   @override
   String get notificationSwipeDownToHide => '⬇ to hide';
@@ -666,6 +672,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionWhitelistAddInfoForOfficer => 'For both entry modes, it\'s possible to select the role';
+
+  @override
+  String get sectionWhitelistDeleteSingleEntry => 'Delete single entry';
+
+  @override
+  String get sectionWhitelistDeleteAllOwnedEntry => 'Delete all entries owned by you';
+
+  @override
+  String get sectionWhitelistDeleteInfo => 'Only email addresses not associated with already registered users will be deleted.';
 
   @override
   String get sectionLocationLog => 'Background locations log';

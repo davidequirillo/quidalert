@@ -166,7 +166,7 @@ async def seed_redis_gps_and_demotions(fake_users, redis_session):
     print(f"Demoted chiefs with expired timestamp: {demoted_chiefs_expired_count}")
 
 async def main():
-    users = []
+    fake_users = []
     with Session(db_engine) as db_session:
         fake_users = get_fake_users_from_db(db_session)
     if isinstance(redis_handle, cluster.RedisCluster):

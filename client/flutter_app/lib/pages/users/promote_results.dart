@@ -96,6 +96,10 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
       retTitle = loc.errorError;
       retMessage = loc.errorPermissionsNotValid;
       error = true;
+    } on NotFoundException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorUserNotFound;
+      error = true;
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
@@ -118,9 +122,8 @@ class _UsersPromoteResultsBodyState extends State<UsersPromoteResultsBody> {
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            "/accounts/users/search-results",
-            ModalRoute.withName("/accounts/users/search-module"),
-            arguments: args,
+            "/accounts/users/search-module",
+            ModalRoute.withName("/accounts"),
           );
         }
       } else if (newLoginRequired == true) {

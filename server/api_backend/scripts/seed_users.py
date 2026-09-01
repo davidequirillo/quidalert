@@ -144,6 +144,8 @@ def seed_users():
                     if dbuser:
                         print(f"User with email {user.email} already exists. Skipping.")
                         continue
+                    whitelist_entry.user_is_registered = True
+                    session.add(whitelist_entry)
                     session.add(user)
                     # Commit every 100 users to keep the transaction light
                     if i % 100 == 0:
@@ -166,7 +168,7 @@ def seed_users():
             session.rollback()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Seed the database with a superuser, whitelist entries, and users.")
+    parser = argparse.ArgumentParser(description="Seed the database with fake users (with their whitelist entries).")
     # Add argument baseusers_count to specify the number of base users to seed
     parser.add_argument("--baseusers_count", type=int, default=TOTAL_BASEUSERS)
     args = parser.parse_args()
@@ -175,8 +177,8 @@ if __name__ == "__main__":
     if TOTAL_BASEUSERS < 1000:
         print("The number of base users to seed must be at least 1000 (the default). Exiting.")
         exit(1)
-    if TOTAL_BASEUSERS > 10000:
-        print("The number of base users to seed is too high (max 10000). Exiting.")
+    if TOTAL_BASEUSERS > 5000:
+        print("The number of base users to seed is too high (max 5000). Exiting.")
         exit(1)
     seed_superuser_if_db_is_empty()
     seed_users_whitelist()

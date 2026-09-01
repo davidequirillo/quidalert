@@ -857,6 +857,24 @@ abstract class AppLocalizations {
   /// **'Session not valid or expired'**
   String get errorSessionNotValidOrExpired;
 
+  /// No description provided for @errorUserNotReliable.
+  ///
+  /// In en, this message translates to:
+  /// **'User is not reliable'**
+  String get errorUserNotReliable;
+
+  /// No description provided for @errorUserBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Account blocked'**
+  String get errorUserBlocked;
+
+  /// No description provided for @errorUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found'**
+  String get errorUserNotFound;
+
   /// No description provided for @errorUnknownState.
   ///
   /// In en, this message translates to:
@@ -869,17 +887,11 @@ abstract class AppLocalizations {
   /// **'Unable to open map'**
   String get errorUnableToOpenMap;
 
-  /// No description provided for @errorUserNotReliable.
+  /// No description provided for @errorWhitelistCannotDelForRegUsers.
   ///
   /// In en, this message translates to:
-  /// **'User is not reliable'**
-  String get errorUserNotReliable;
-
-  /// No description provided for @errorUserBlocked.
-  ///
-  /// In en, this message translates to:
-  /// **'Account blocked'**
-  String get errorUserBlocked;
+  /// **'Cannot delete entries for already registered users'**
+  String get errorWhitelistCannotDelForRegUsers;
 
   /// No description provided for @exceptionBadRequest.
   ///
@@ -1019,11 +1031,11 @@ abstract class AppLocalizations {
   /// **'Address'**
   String get labelAddress;
 
-  /// No description provided for @labelAddEmailsToWhiteList.
+  /// No description provided for @labelAddEmailsToWhitelist.
   ///
   /// In en, this message translates to:
   /// **'Add email addressed to white list'**
-  String get labelAddEmailsToWhiteList;
+  String get labelAddEmailsToWhitelist;
 
   /// No description provided for @labelAdvice.
   ///
@@ -1073,11 +1085,11 @@ abstract class AppLocalizations {
   /// **'Confirm new password'**
   String get labelConfirmNewPassword;
 
-  /// No description provided for @labelCurrentWhiteListEntries.
+  /// No description provided for @labelCurrentWhitelistEntries.
   ///
   /// In en, this message translates to:
   /// **'Current white list entries'**
-  String get labelCurrentWhiteListEntries;
+  String get labelCurrentWhitelistEntries;
 
   /// No description provided for @labelDatetime.
   ///
@@ -1331,11 +1343,11 @@ abstract class AppLocalizations {
   /// **'Users'**
   String get menuUsers;
 
-  /// No description provided for @menuWhiteList.
+  /// No description provided for @menuWhitelist.
   ///
   /// In en, this message translates to:
   /// **'Registration white list'**
-  String get menuWhiteList;
+  String get menuWhitelist;
 
   /// No description provided for @notificationSwipeDownToHide.
   ///
@@ -1408,6 +1420,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'For both entry modes, it\'s possible to select the role'**
   String get sectionWhitelistAddInfoForOfficer;
+
+  /// No description provided for @sectionWhitelistDeleteSingleEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete single entry'**
+  String get sectionWhitelistDeleteSingleEntry;
+
+  /// No description provided for @sectionWhitelistDeleteAllOwnedEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all entries owned by you'**
+  String get sectionWhitelistDeleteAllOwnedEntry;
+
+  /// No description provided for @sectionWhitelistDeleteInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Only email addresses not associated with already registered users will be deleted.'**
+  String get sectionWhitelistDeleteInfo;
 
   /// No description provided for @sectionLocationLog.
   ///

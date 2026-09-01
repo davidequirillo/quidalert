@@ -633,6 +633,7 @@ def register_user(user_in: UserIn, background_tasks: BackgroundTasks, db_session
     if whitelist_entry:
         whitelist_entry.registration_type = None
         whitelist_entry.registration_role = None
+        # See the note in the WhiteListEntry model about denormalization, concerning the user_is_registered field.
         whitelist_entry.user_is_registered = True
         db_session.add(whitelist_entry)
     db_session.commit()
