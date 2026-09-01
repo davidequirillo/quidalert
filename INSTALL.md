@@ -285,7 +285,7 @@ In server/api_backend/scripts folder there are some seeding scripts, useful to p
 docker exec -it fastapi_backend_dev python -m scripts.seed_users
 ```
 
-There is also a script to populate Redis database with random gps locations and other temp data for fake users. Note, fake gps locations will be considered expired after a certain period (more or less 48 hours) and consequently they will be deleted, so, after that period you will need to run the same script to re-populate the cache with new random gps locations. 
+There is also a script to populate Redis database with random gps locations and other temp data for fake users. Note, fake gps locations will be considered expired after a certain period (more or less 48 hours) and consequently they will be deleted, so, after that period, if you want to assign new random locations to fake users you will need to run the same script. 
 
 ```bash
 docker exec -it fastapi_backend_dev python -m scripts.seed_redis_data
@@ -297,6 +297,8 @@ Note: use this feature with caution as your single device will receive notificat
 ```bash
 docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --email device-logged-user-email
 ```
+
+IMPORTANT NOTE: these scripts are very good for development, but they can also be used in production because they don't alter the real users in the database. However, be careful: if your database grows and the number of real users becomes very high, using these scripts with the --all option, which selects all fake users (whose email address ends with "@example.com"), will cause significant efficiency issues. In conclusion, avoid using all seeding scripts (seed_*.py and delete_*.py) contained in the "api_backend/scripts" folder, if the database become large in production, unless you're sure of what you're doing.
 
 ### Automatic test cases
 

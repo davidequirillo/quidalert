@@ -46,17 +46,17 @@ class AccountsBody extends StatelessWidget {
           children: [
             buildSectionLink(
               context,
-              '${loc.menuWhiteList} (${loc.buttonAdd.toLowerCase()})',
+              '${loc.menuWhitelist} (${loc.buttonAdd.toLowerCase()})',
               "/accounts/whitelist/add-entries",
             ),
             buildSectionLink(
               context,
-              '${loc.menuWhiteList} (${loc.buttonSearch.toLowerCase()})',
+              '${loc.menuWhitelist} (${loc.buttonSearch.toLowerCase()})',
               "/accounts/whitelist/search-entries",
             ),
             buildSectionLink(
               context,
-              '${loc.menuWhiteList} (${loc.buttonDelete.toLowerCase()})',
+              '${loc.menuWhitelist} (${loc.buttonDelete.toLowerCase()})',
               "/accounts/whitelist/delete-entries",
             ),
             buildSectionLink(

@@ -88,10 +88,10 @@ services:
       - serverside-net
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "-p", "7001", "ping"]
-      interval: 5s
+      interval: 6s
       timeout: 3s
       retries: 3
-      start_period: 3s
+      start_period: 5s
 
   redis-node-2:
     image: redis:7-alpine
@@ -121,10 +121,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "-p", "7002", "ping"]
-      interval: 5s
+      interval: 6s
       timeout: 3s
       retries: 3
-      start_period: 3s
+      start_period: 5s
 
   redis-node-3:
     image: redis:7-alpine
@@ -154,10 +154,10 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASS}", "-p", "7003", "ping"]
-      interval: 5s
+      interval: 6s
       timeout: 3s
       retries: 3
-      start_period: 3s
+      start_period: 5s
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:

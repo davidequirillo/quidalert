@@ -275,7 +275,7 @@ def test_promote_users_modify_type_called_by_officer(client, test_officer):
     response = client.post("/api/users/promote", params=params, json=data, headers=headers)
     # Officer role is not allowed to modify the type of the users (only admin can modify it)
     assert response.status_code == forbidden_exception().status_code
-    assert response.json()["detail"] == forbidden_exception().detail
+    assert "Only admins can change user type" in response.json()["detail"]
 
 def test_promote_users_called_by_officer(client, db_session, test_officer):
     user: User = test_officer['user']
@@ -295,10 +295,9 @@ def test_promote_users_called_by_officer(client, db_session, test_officer):
         "role": UserRole.medic.value
     }
     response = client.post("/api/users/promote", params=params, json=data, headers=headers)
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data["updated_count"] == 0
-    # Another example
+    assert response.status_code == forbidden_exception().status_code
+    assert "is not authorized by you" in response.json()["detail"].lower()
+    # Another example (only admins can filter by authorizer)
     select_stmt = select(User).where(User.email=="officer1@example.com")
     officer1 = db_session.exec(select_stmt).first()
     assert officer1 is not None
@@ -312,7 +311,7 @@ def test_promote_users_called_by_officer(client, db_session, test_officer):
     }
     response = client.post("/api/users/promote", params=params, json=data, headers=headers)
     assert response.status_code == forbidden_exception().status_code
-    assert "Only admins can" in response.json()["detail"]
+    assert "Only admins can filter by authorizer" in response.json()["detail"]
     # Now try to promote a user authorized by test_officer, the promotion should be applied
     # But we must first create a user authorized test_officer
     new_user = User(
@@ -645,11 +644,9 @@ def test_promote_users_modify_authorizer_called_by_officer(client, db_session, t
         "authorizer": "officer1@example.com"
     }
     response = client.post("/api/users/promote", params=params, json=data, headers=headers)
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    # 0 users have been updated, because test_officer is not the authorizer of chief1
-    # so, the authorizer of chief1 is unchanged
-    assert response_data["updated_count"] == 0
+    assert response.status_code == forbidden_exception().status_code
+    assert "is not authorized by you" in response.json()["detail"].lower()
+    # The authorizer of chief1 is unchanged
     db_session.refresh(chief1)
     assert chief1.authorized_by != "officer1@example.com"
     # Another example:
@@ -661,9 +658,9 @@ def test_promote_users_modify_authorizer_called_by_officer(client, db_session, t
         "authorizer": user.email
     }
     response = client.post("/api/users/promote", params=params, json=data, headers=headers)
-    assert response.status_code == status.HTTP_200_OK
-    response_data = response.json()
-    assert response_data["updated_count"] == 0
+    assert response.status_code == forbidden_exception().status_code
+    assert "is not authorized by you" in response.json()["detail"].lower()
+    # The authorizer of chief1 remains unchanged after the forbidden attempts
     db_session.refresh(chief1)
     assert chief1.authorized_by != user.email
     # Another example:

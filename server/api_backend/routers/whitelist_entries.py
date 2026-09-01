@@ -4,7 +4,11 @@
 
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select, delete, desc
-from core.exceptions import forbidden_exception, invalid_request_exception
+from core.exceptions import (
+    forbidden_exception, 
+    invalid_request_exception,
+    not_found_exception
+)
 from models.general import User, WhiteListEntry, EmailListWithPrivileges
 from dependencies import get_db_session, get_current_user
 
@@ -115,33 +119,35 @@ def delete_whitelist_entries(
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
     deleted_count = 0
-    total_count = 0
-    if mode == "single" and email:
+    if mode == "single":
+        if not email:
+            raise not_found_exception("Email not provided")
+        # Delete a specific whitelist entry by email
         q = select(WhiteListEntry).where(WhiteListEntry.email == email.lower())
         entry = db_session.exec(q).first()
-        if entry: # officers can delete only their own entries
-            total_count = 1
-            if (not current_user.is_admin) and (entry.created_by != current_user.email):
-                raise forbidden_exception()
-            db_session.delete(entry)
-            db_session.commit()
-            deleted_count = 1
-    elif mode == "mine":
-        statement = delete(WhiteListEntry).where(WhiteListEntry.created_by == current_user.email) # type: ignore
-        result = db_session.exec(statement)
-        deleted_count = result.rowcount
-        total_count = deleted_count
+        if not entry:
+            raise not_found_exception("Whitelist entry not found")
+        # Officers can delete only their own entries
+        if (not current_user.is_admin) and (entry.created_by != current_user.email):
+            raise forbidden_exception("Whitelist entry not created by you")
+        if entry.user_is_registered:
+            raise forbidden_exception("Cannot delete whitelist entry for a registered user")
+        db_session.delete(entry)
         db_session.commit()
+        deleted_count = 1
     elif mode == "all":
-        if not current_user.is_admin: # officers cannot delete all entries, but only their owned entries
-            raise forbidden_exception()
-        statement = delete(WhiteListEntry)
+        # If no specific email is provided, 
+        # delete all entries created by the current user 
+        # (we delete only entries that are not associated with registered users).
+        statement = (delete(WhiteListEntry)
+                .where(WhiteListEntry.created_by == current_user.email) # type: ignore
+                .where(WhiteListEntry.user_is_registered == False)) # type: ignore
         result = db_session.exec(statement)
         deleted_count = result.rowcount
-        total_count = deleted_count
         db_session.commit()
+    else:
+        raise invalid_request_exception("Invalid mode")
     return {
         "message": "Entries deleted",
-        "total_count": total_count,
         "deleted_count": deleted_count
     }

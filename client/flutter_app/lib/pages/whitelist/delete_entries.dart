@@ -22,7 +22,7 @@ class WhiteListDeletePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuWhiteList, showBackButton: true),
+      appBar: CAppBar(title: loc.menuWhitelist, showBackButton: true),
       body: SafeArea(top: false, child: WhiteListDeleteBody()),
     );
   }
@@ -41,14 +41,12 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
   final _formDelAllEntriesKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final _emailController = TextEditingController();
-  final _confirmation1Controller = TextEditingController();
-  final _confirmation2Controller = TextEditingController();
+  final _confirmationController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
-    _confirmation1Controller.dispose();
-    _confirmation2Controller.dispose();
+    _confirmationController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -103,24 +101,22 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
       );
       final Map<String, dynamic> respObj = json.decode(response.body);
       final int deletedCount = respObj['deleted_count'];
-      final int totalCount = respObj['total_count'];
-      if (totalCount > deletedCount) {
-        retTitle = loc.errorError;
-        retMessage = loc.errorError;
-      } else if (deletedCount == 0) {
-        retTitle = loc.errorError;
-        retMessage = loc.errorEmailNotFound;
-      } else {
-        retTitle = loc.successGeneric;
-        retMessage = '${loc.entriesDeleted}: $deletedCount';
-      }
+      retTitle = loc.successGeneric;
+      retMessage = '${loc.entriesDeleted}: $deletedCount';
     } on GenericNotAuthorizedException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorNotAuthorizedDoLogin;
       newLoginRequired = true;
-    } on ForbiddenRequestException catch (_) {
+    } on ForbiddenRequestException catch (e) {
       retTitle = loc.errorError;
-      retMessage = loc.errorPermissionsNotValid;
+      if (e.toString().contains("registered user")) {
+        retMessage = loc.errorWhitelistCannotDelForRegUsers;
+      } else {
+        retMessage = loc.errorPermissionsNotValid;
+      }
+    } on NotFoundException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorEmailNotFound;
     } on BadRequestException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorBadRequest;
@@ -188,10 +184,8 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } finally {
       if (mounted) {
         setState(() {
-          if (relativeUrl.contains('/mine')) {
-            _confirmation1Controller.text = "";
-          } else if (relativeUrl.contains('/all')) {
-            _confirmation2Controller.text = "";
+          if (relativeUrl.contains('/all')) {
+            _confirmationController.text = "";
           }
         });
         await showSimpleAlertDialog(context, retTitle, retMessage);
@@ -206,7 +200,6 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
 
   @override
   Widget build(BuildContext context) {
-    final authClient = context.read<AuthClient>();
     final loc = AppLocalizations.of(context)!;
     return Scrollbar(
       thumbVisibility: true,
@@ -216,9 +209,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            buildSectionTitle(
-              '${loc.buttonDelete} ${loc.entriesSingle.toLowerCase()} (by email)',
-            ),
+            buildSectionTitle(loc.sectionWhitelistDeleteSingleEntry),
             Form(
               key: _formDelByEmailKey,
               child: Column(
@@ -261,12 +252,10 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
               key: _formDelMyEntriesKey,
               child: Column(
                 children: [
-                  buildSectionTitle(
-                    '${loc.buttonDelete} ${loc.entriesAuthorizedByMe.toLowerCase()}',
-                  ),
+                  buildSectionTitle(loc.sectionWhitelistDeleteAllOwnedEntry),
                   const SizedBox(height: 10),
                   TextFormField(
-                    controller: _confirmation1Controller,
+                    controller: _confirmationController,
                     decoration: InputDecoration(
                       labelText: loc.labelTypeDeleteToConfirm,
                       border: OutlineInputBorder(),
@@ -295,48 +284,6 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
                 ],
               ),
             ),
-            SizedBox(height: 15),
-            Divider(thickness: 0.25),
-            SizedBox(height: 15),
-            if (authClient.isAdmin()) ...[
-              Form(
-                key: _formDelAllEntriesKey,
-                child: Column(
-                  children: [
-                    buildSectionTitle(
-                      '${loc.buttonDelete} ${loc.entriesAll.toLowerCase()}',
-                    ),
-                    TextFormField(
-                      controller: _confirmation2Controller,
-                      decoration: InputDecoration(
-                        labelText: loc.labelTypeDeleteToConfirm,
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        return validateDeleteConfirmation(context, value);
-                      },
-                    ),
-                    const SizedBox(height: 35),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            submitDeleteAllEntries();
-                          },
-                          child: Text(loc.buttonDelete),
-                        ),
-                        const SizedBox(width: 25),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(loc.buttonBack),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
       ),
