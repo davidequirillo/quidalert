@@ -8,6 +8,7 @@ import argparse
 import asyncio
 import random
 from sqlmodel import Session, select
+from core.settings import settings
 from core.dbmgr import (
     get_engine, get_redis_handle,
     cluster, redis, RedisHandleTypeError,
@@ -180,6 +181,9 @@ async def main():
         raise RedisHandleTypeError(redis_handle)
 
 if __name__ == "__main__":
+    if settings.fake_user_scripts_enabled.lower() not in ("true", "1", "yes"):
+        print("Fake user scripts are disabled. Exiting.")
+        raise SystemExit(0)
     parser = argparse.ArgumentParser(description=f"Seed Redis database with random GPS locations around a central point and other test Redis data for fake users (emails ending with @{FAKE_EMAIL_DOMAIN}).")
     # Add central point coordinates and radius as optional arguments
     parser.add_argument("--central-lat", type=float, default=CENTER_LAT, help="Central latitude for generating random GPS locations")

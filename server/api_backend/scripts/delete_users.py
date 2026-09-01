@@ -58,6 +58,9 @@ def delete_all_fake_users(db_session):
     print(f"Deleted {deleted_num_whitelist_entries} related fake whitelist entries. Note: the fake superuser has not a whitelist entry.")
 
 if __name__ == "__main__":
+    if settings.fake_user_scripts_enabled.lower() not in ("true", "1", "yes"):
+        print("Fake user scripts are disabled. Exiting.")
+        raise SystemExit(0)
     parser = argparse.ArgumentParser(description="Delete fake users for specific emails or all fake users.")
     parser.add_argument("--emails", type=str, nargs="*", help="Email addresses of the users to be deleted. If not provided, all users will be deleted.")
     parser.add_argument("--all", action="store_true", help="Delete all users. If this flag is set, the --emails argument will be ignored.")

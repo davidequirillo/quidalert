@@ -298,7 +298,7 @@ Note: use this feature with caution as your single device will receive notificat
 docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --email device-logged-user-email
 ```
 
-IMPORTANT NOTE: these scripts are very good for development, but they can also be used in production because they don't alter the real users in the database. However, be careful: if your database grows and the number of real users becomes very high, using these scripts with the --all option, which selects all fake users (whose email address ends with "@example.com"), will cause significant efficiency issues. In conclusion, avoid using all seeding scripts (seed_*.py and delete_*.py) contained in the "api_backend/scripts" folder, if the database become large in production, unless you're sure of what you're doing.
+IMPORTANT NOTE: scripts related to fake users are very good for development, and they can also be used in production because they don't alter the real users in the database. However, be careful: if your database grows and the number of real users becomes very high, using these scripts could cause significant efficiency issues. In .env file, you can configure FAKE_USER_SCRIPTS_ENABLED='no' to avoid accidentally running one of them. 
 
 ### Automatic test cases
 

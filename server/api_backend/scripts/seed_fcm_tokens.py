@@ -56,6 +56,9 @@ def assign_fcm_token_to_all_fake_users(refresh_token, db_session):
     db_session.commit()
 
 if __name__ == "__main__":
+    if settings.fake_user_scripts_enabled.lower() not in ("true", "1", "yes"):
+        print("Fake user scripts are disabled. Exiting.")
+        raise SystemExit(0)
     parser = argparse.ArgumentParser(description=f"Seed FCM tokens for all fake users (users with emails ending with @{FAKE_EMAIL_DOMAIN}) using the FCM token from a specific user: after running this script, all fake users will have the same FCM token as the specified user.")
     parser.add_argument("--email", type=str, required=True, help="Email of the user whose FCM token will be used for seeding.")
     args = parser.parse_args()
