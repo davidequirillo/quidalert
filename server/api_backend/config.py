@@ -14,6 +14,13 @@ DOMAIN_NAME = "example.com" # at the moment, this is not used
 SERVER_PORT = 8080 # the server port (publicly accessible, 8080 in this case or 443 in production)
 APP_LOG_LEVEL = 'warning' # 'info', 'warning'
 
+## Scripting conf
+# Enable or disable the execution of any scripts related to fake users (example seed_users.py or seed_redis_data.py).
+# IMPORTANT: this option can be enabled in both development and production environments,
+# but if the database becomes large in production, it is recommended to disable fake user scripts, 
+# to avoid accidental execution of these scripts and subsequent performance issues.
+FAKE_USER_SCRIPTS_ENABLED='yes'
+
 ## The database connection URL and db engine logging
 DB_NAME = "quidalert_db"
 DB_PORT = 5432

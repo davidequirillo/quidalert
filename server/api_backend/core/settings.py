@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     domain_name: str = config.DOMAIN_NAME
     server_port: int = config.SERVER_PORT
     app_log_level: str = config.APP_LOG_LEVEL
+    # Scripting conf
+    fake_user_scripts_enabled: str = config.FAKE_USER_SCRIPTS_ENABLED
     # CORS conf
     cors_allow_origins: list = []
     # Security conf

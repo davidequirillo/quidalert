@@ -31,6 +31,9 @@ def delete_refresh_token_by_emails(emails, db_session):
     print("NOTE: the number of refresh tokens deleted can be less than the number of emails provided, because not all users may have a refresh token in the database (e.g. if they never logged in).")
 
 if __name__ == "__main__":
+    if settings.fake_user_scripts_enabled.lower() not in ("true", "1", "yes"):
+        print("Fake user scripts are disabled. Exiting.")
+        raise SystemExit(0)
     parser = argparse.ArgumentParser(description="Delete refresh tokens for specific fake users")
     parser.add_argument("--emails", type=str, nargs="*", help="Email addresses of the users whose refresh tokens will be deleted.")
     args = parser.parse_args()

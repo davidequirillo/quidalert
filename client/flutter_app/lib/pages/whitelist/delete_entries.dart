@@ -38,7 +38,6 @@ class WhiteListDeleteBody extends StatefulWidget {
 class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
   final _formDelByEmailKey = GlobalKey<FormState>();
   final _formDelMyEntriesKey = GlobalKey<FormState>();
-  final _formDelAllEntriesKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final _emailController = TextEditingController();
   final _confirmationController = TextEditingController();
@@ -64,20 +63,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     }
     final loc = AppLocalizations.of(context)!;
     showLoadingDialog(context, loc.labelWaitPlease);
-    deleteMyEntries().whenComplete(() {
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    });
-  }
-
-  void submitDeleteAllEntries() {
-    if (!_formDelAllEntriesKey.currentState!.validate()) {
-      return;
-    }
-    final loc = AppLocalizations.of(context)!;
-    showLoadingDialog(context, loc.labelWaitPlease);
-    deleteAllEntries().whenComplete(() {
+    deleteEntries().whenComplete(() {
       if (mounted) {
         Navigator.pop(context);
       }
@@ -90,9 +76,6 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     String retMessage = loc.successGeneric;
     String retTitle = loc.successGeneric;
     bool newLoginRequired = false;
-    if (!_formDelByEmailKey.currentState!.validate()) {
-      return;
-    }
     String email = _emailController.text.trim().toLowerCase();
     try {
       final response = await authClient.doProtectedApiRequest(
@@ -142,15 +125,10 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     return;
   }
 
-  Future<void> deleteMyEntries() async {
-    await deleteEntries('/whitelist-entries/mine');
-  }
-
-  Future<void> deleteAllEntries() async {
-    await deleteEntries('/whitelist-entries/all');
-  }
-
-  Future<void> deleteEntries(String relativeUrl) async {
+  Future<void> deleteEntries() async {
+    // Note: This function deletes "all" whitelist entries
+    // owned by the current user (not "all" in absolute terms).
+    final relativeUrl = '/whitelist-entries/all';
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
     String retMessage = loc.successGeneric;
@@ -184,9 +162,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } finally {
       if (mounted) {
         setState(() {
-          if (relativeUrl.contains('/all')) {
-            _confirmationController.text = "";
-          }
+          _confirmationController.text = "";
         });
         await showSimpleAlertDialog(context, retTitle, retMessage);
       }
@@ -209,6 +185,8 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            Text(loc.sectionWhitelistDeleteInfo),
+            SizedBox(height: 20),
             buildSectionTitle(loc.sectionWhitelistDeleteSingleEntry),
             Form(
               key: _formDelByEmailKey,

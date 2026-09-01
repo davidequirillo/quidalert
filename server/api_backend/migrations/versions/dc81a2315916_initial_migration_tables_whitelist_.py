@@ -1,8 +1,8 @@
-"""initial migration: users, alerts, refresh_tokens, etc.
+"""Initial migration. Tables: whitelist_entries, users, refresh_tokens, alerts, alerted_users, etc.
 
-Revision ID: 6d959d3e97da
+Revision ID: dc81a2315916
 Revises: 
-Create Date: 2026-08-25 00:12:53.589754
+Create Date: 2026-09-01 10:51:31.224553
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6d959d3e97da'
+revision: str = 'dc81a2315916'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -30,7 +30,7 @@ common_password_hash = get_password_hash(common_password)
 
 def seed_superuser_if_db_is_empty():
     with Session(db_engine) as session:
-        first_user = session.exec(select(User)).first()
+        first_user = session.exec(select(User).limit(1)).first()
         if first_user:
             print("Superuser already exists because the database is not empty. Skipping superuser seeding.")
             return
@@ -160,7 +160,10 @@ def seed_users():
             print(f"Base users inserted: {TOTAL_BASEUSERS}")
             print("-------------------")
             print(f"Total users inserted: {sum(user_cardinalities)} + 1 (superuser) = {sum(user_cardinalities) + 1}")
-            specialists = session.exec(select(User).where(User.role != None)).all()
+            statement = (select(User)
+                    .where(User.role != None)
+                    .where(User.email.endswith(f"@{FAKE_EMAIL_DOMAIN}")))
+            specialists = session.exec(statement).all()
             specialists_num = len(specialists)
             print("Number of specialists (users with a role):", specialists_num)
         except Exception as e:
@@ -168,7 +171,10 @@ def seed_users():
             session.rollback()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Seed the database with fake users (with their whitelist entries).")
+    if settings.fake_user_scripts_enabled.lower() not in ("true", "1", "yes"):
+        print("Fake user scripts are disabled. Exiting.")
+        raise SystemExit(0)
+    parser = argparse.ArgumentParser(description=f"Seed the database with fake users (with their whitelist entries). The email domain for fake users is {FAKE_EMAIL_DOMAIN}")
     # Add argument baseusers_count to specify the number of base users to seed
     parser.add_argument("--baseusers_count", type=int, default=TOTAL_BASEUSERS)
     args = parser.parse_args()
