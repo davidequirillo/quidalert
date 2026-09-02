@@ -30,33 +30,38 @@ common_password_hash = get_password_hash(common_password)
 
 def seed_superuser_if_db_is_empty():
     with Session(db_engine) as session:
-        first_user = session.exec(select(User).limit(1)).first()
-        if first_user:
-            print("Superuser already exists because the database is not empty. Skipping superuser seeding.")
-            return
-        print("Creating superuser...")
-        superuser = User.model_validate({
-            "firstname": "Admin",
-            "surname": "User",
-            "email": f"superuser@{FAKE_EMAIL_DOMAIN}",
-            "language": UserLanguage.en.value,
-            "password_hash": get_password_hash(settings.admin_pass),
-            "is_superuser": True,
-            "is_admin": True,
-            "is_officer": False,
-            "is_chief": False,
-            "role": None,
-            "is_active": True,
-            "activation_code": "fake-superuser-activation-code",
-            "activation_code_expires_at": activation_expiry(),
-            "pending_delete_since": None,
-            "authorized_by": None,
-            "authorized_at": None
-        })
-        session.add(superuser)
-        session.commit()
-        print("Superuser created successfully.")
-
+        try:
+            first_user = session.exec(select(User).limit(1)).first()
+            if first_user:
+                print("Superuser already exists because the database is not empty. Skipping superuser seeding.")
+                return False
+            print("Creating superuser...")
+            superuser = User.model_validate({
+                "firstname": "Admin",
+                "surname": "User",
+                "email": f"superuser@{FAKE_EMAIL_DOMAIN}",
+                "language": UserLanguage.en.value,
+                "password_hash": get_password_hash(settings.admin_pass),
+                "is_superuser": True,
+                "is_admin": True,
+                "is_officer": False,
+                "is_chief": False,
+                "role": None,
+                "is_active": True,
+                "activation_code": "fake-superuser-activation-code",
+                "activation_code_expires_at": activation_expiry(),
+                "pending_delete_since": None,
+                "authorized_by": None,
+                "authorized_at": None
+            })
+            session.add(superuser)
+            session.commit()
+            print("Superuser created successfully.")
+            return True
+        except Exception as e:
+            print(f"Error occurred while seeding superuser: {e}")
+            raise SystemExit(0)
+    
 def seed_users_whitelist():
     with Session(db_engine) as session:
         print(f"Populating PostgreSQL with whitelist entries...")
@@ -159,7 +164,7 @@ def seed_users():
             print(f"Chiefs inserted: {TOTAL_CHIEFS}")
             print(f"Base users inserted: {TOTAL_BASEUSERS}")
             print("-------------------")
-            print(f"Total users inserted: {sum(user_cardinalities)} + 1 (superuser) = {sum(user_cardinalities) + 1}")
+            print(f"Total users inserted: {sum(user_cardinalities)}")
             statement = (select(User)
                     .where(User.role != None)
                     .where(User.email.endswith(f"@{FAKE_EMAIL_DOMAIN}")))
@@ -186,6 +191,11 @@ if __name__ == "__main__":
     if TOTAL_BASEUSERS > 5000:
         print("The number of base users to seed is too high (max 5000). Exiting.")
         exit(1)
-    seed_superuser_if_db_is_empty()
+    is_su_inserted = seed_superuser_if_db_is_empty()
     seed_users_whitelist()
     seed_users()
+    if is_su_inserted:
+        print("Superuser has been inserted.")
+    else:
+        print("Superuser already existed.")
+    print("User seeding script completed.")
