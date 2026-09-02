@@ -19,9 +19,13 @@ from core.dbmgr import (
     get_all_redis_chief_demotions_keys,
 )
 from services.periodics import CHIEF_DEMOTIONS_TTL_MINUTES
+from core.settings import settings
 
 async def test_delete_expired_demotions_for_each_shard(redis_session):
-    # get all redis shard keys for chief demotions
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Get all redis shard keys for chief demotions
     shards = get_all_redis_chief_demotions_keys()
     shard_valid_counts = {}
     shard_expired_counts = {}
@@ -69,6 +73,9 @@ async def test_delete_expired_demotions_for_each_shard(redis_session):
         assert count == expected_count, f"Shard {shard}: expected {expected_count} demotions after cleanup, got {count}"
 
 async def test_delete_expired_demotions(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # This test is similar to the previous one, but it tests the delete_expired_demotions function that processes all shards in one call
     # We create many demotions (some expired and some not) to test the delete_expired_demotions function
     # we begin inserting 100 demotions valid (not expired)
@@ -110,6 +117,9 @@ async def test_delete_expired_demotions(redis_session):
     assert total_demotions_after == 100, f"Expected 100 demotions after cleanup, got {total_demotions_after}"
 
 async def test_cleanup_expired_demotions_lock_already_acquired(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We insert some expired chief demotions to ensure that there is something to clean up
     now = now_tz_aware()
     for i in range(10):
@@ -141,6 +151,9 @@ async def test_cleanup_expired_demotions_lock_already_acquired(redis_session):
     assert total_count == 8, f"Expected 8 expired demotions to still be present since lock is active, got {total_count}"
 
 async def test_cleanup_expired_demotions_lock_released(redis_session, frozen_now):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # This test is similar to the previous one, 
     # but the time between the first call to do_demotions_cleanup and the second call is longer than the lock cooldown,
     # so the lock should have been released, and the do_demotions_cleanup function should be able to acquire the lock and execute a new cleanup.

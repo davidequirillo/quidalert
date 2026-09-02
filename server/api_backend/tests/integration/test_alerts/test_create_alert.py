@@ -21,6 +21,7 @@ from services.alert_btasks import (
     GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM,
     alert_notification_templates
 )
+from core.settings import settings
 
 def test_create_alert_not_authorized_missing_token(client):
     data = {
@@ -380,6 +381,10 @@ def test_create_alert_similar_managed_exists(client, db_session, test_chief):
     assert response.json()["similarity"] >= 50
 
 def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session, test_baseuser, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Access token for the test base user
     access_token = test_baseuser['access_token']
     user: User = test_baseuser['user']
     # We assert that test_baseuser has fcm token not null
@@ -445,6 +450,10 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
 def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_session, test_baseuser, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Access token for the test base user
     access_token = test_baseuser['access_token']
     user: User = test_baseuser['user']
     # We create an alert in a location where there are closest chiefs but no nearby users
@@ -507,6 +516,10 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
 def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Access token for the test chief
     access_token = test_chief['access_token']
     user: User = test_chief['user']
     # We simulate the absence of closest chiefs
@@ -576,6 +589,10 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
         assert str(alerted_user.user_id) in notified_nearby_user_ids
 
 def test_create_local_closest_chief_and_nearby_users(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Access token for the test chief
     access_token = test_chief['access_token']
     user: User = test_chief['user']
     description = "Test local alert with closest chiefs and nearby users"
@@ -686,6 +703,10 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     assert len(new_alerted_nearby_users) < len(alerted_nearby_users)
 
 def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Access token for the test chief
     access_token = test_chief['access_token']
     user: User = test_chief['user']
     description = "Test managed alert with no nearby users"
@@ -740,6 +761,10 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
 def test_create_alert_managed_with_nearby_users_found(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
+    # Access token for the test chief
     access_token = test_chief['access_token']
     user: User = test_chief['user']
     description = "Test managed alert with nearby users"

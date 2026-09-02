@@ -34,21 +34,20 @@ DB_POOL_RECYCLE = 1800
 ## Redis DBMS (redis mode can be "single" or "cluster")
 # Redis "single" mode uses REDIS_URL to connect to the single Redis node.
 # Redis "cluster" mode uses REDIS_CLUSTER_NODES to connect to the cluster nodes.
-# Important note about cluster mode: the number of cluster nodes 
+# Important note about "cluster" mode: the number of cluster nodes 
 # must be less or equal than the number of logical shards.
 # An equal number is recommended (redis nodes number = logical shards number)
 REDIS_MODE = "cluster" # "single" or "cluster"
 REDIS_URL="redis://localhost:6379/0"
 REDIS_CLUSTER_NODES="redis-node-1:7001,redis-node-2:7002,redis-node-3:7003"
-REDIS_MAX_CONNECTIONS = 200
+REDIS_MAX_CONNECTIONS = 200 # in single mode
 REDIS_MAX_CONNECTIONS_PER_NODE = 32 # in cluster mode
-# The number of logical shards must be one of the following values: 16, 32, 64, 96, 128.
+# In "cluster" mode, the number of logical shards must be one of the following values: 16, 32, 64, 96, 128.
 # If you are unsure, keep REDIS_LOGICAL_SHARDS_NUM = 16 because it's the recommended value for most cases.
 # CAUTION: don't change the REDIS_LOGICAL_SHARDS_NUM if the Redis database is not empty, 
 # because this variable affects the distribution of data across the shards at runtime, 
 # so changing it in non-empty Redis database can cause data loss or corruption.
-# Note: REDIS_LOGICAL_SHARDS_NUM is used in both Redis single and cluster modes,
-# so if you are using Redis single mode, keep REDIS_LOGICAL_SHARDS_NUM = 16 for obvious performance reasons.
+# In "single" mode, logical shards number is ignored and is forced to 1, so it cannot be changed.
 REDIS_LOGICAL_SHARDS_NUM = 16
 
 ## Mail sender configuration

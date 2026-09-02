@@ -86,6 +86,7 @@ class Settings(BaseSettings):
     )
 
 try:
+    print("Loading settings...")
     settings = Settings()
     settings.db_url = f"postgresql://{settings.db_user}:{settings.db_pass}@{settings.db_host}:{settings.db_port}/{settings.db_name}"
     settings.db_engine_echo = settings.db_engine_log_enabled.lower() in ("true", "1", "yes")
@@ -95,12 +96,15 @@ try:
         settings.cors_allow_origins = [
             build_public_baseurl(settings.protocol, settings.server_name, settings.server_port)
         ]
+    # If Redis is not in cluster mode, set the number of logical shards to 1
+    if settings.redis_mode != 'cluster':
+        settings.redis_logical_shards_num = 1
 except Exception as e:
     print(f"Configuration error: {e}")
     raise SystemExit(1)
 
-if (settings.redis_logical_shards_num not in [16, 32, 64, 96, 128]):
-    print(f"Configuration error: environment var REDIS_LOGICAL_SHARDS_NUM must be one of [16, 32, 64, 96, 128].")
+if (settings.redis_mode == 'cluster') and (settings.redis_logical_shards_num not in [16, 32, 64, 96, 128]):
+    print(f"Configuration error: environment var REDIS_LOGICAL_SHARDS_NUM, in cluster mode, must be one of [16, 32, 64, 96, 128].")
     raise SystemExit(1)
 
 if (not settings.admin_pass) or (settings.admin_pass==""):

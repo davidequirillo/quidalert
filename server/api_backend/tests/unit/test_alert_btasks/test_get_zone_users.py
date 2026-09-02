@@ -20,6 +20,7 @@ from tests.fixtures.alerts import (
     create_test_alert, # required (fixture test_alert)
     create_test_request_info # required (fixture test_request_info)
 )
+from core.settings import settings
 
 # The function "get_zone_users" is used by the alert expansion background task to extract all users who are within a certain radius from the alert location, 
 # or if role is specified, all specialists (users with a specific role) within the same area. 
@@ -27,6 +28,9 @@ from tests.fixtures.alerts import (
 # The function uses Redis to get the locations of users or specialists, and filters them based on the role and radius.
 
 async def test_get_zone_users_who_have_no_role(redis_session, test_alert, test_request_info):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Some checks on test_alert and test_request_info
     assert test_alert.user_id is not None
     assert test_alert.radius == 1 # 1 km radius
@@ -90,6 +94,9 @@ async def test_get_zone_users_who_have_no_role(redis_session, test_alert, test_r
     assert len(zone_users_with_larger_radius) == 14
 
 async def test_get_zone_users_with_role(redis_session, test_alert, test_request_info):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We add some specialist locations to Redis, near the test alert (inside alert.radius)
     # For example, we add 5 medics
     role = UserRole.medic.value

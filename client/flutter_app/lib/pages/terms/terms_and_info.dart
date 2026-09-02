@@ -37,6 +37,7 @@ class TermsBody extends StatelessWidget {
   Future<String> _loadFromServer(BuildContext context, {String? lang}) async {
     final loc = AppLocalizations.of(context)!;
     final url = Uri.parse('${AppConfig.apiUrl}/terms');
+    debugPrint("Fetching terms from server: $url");
     final http.Response response;
     try {
       response = await http.get(url, headers: {"Accept-Language": "$lang"});
