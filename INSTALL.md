@@ -184,7 +184,8 @@ The application employs a dual-database strategy to optimize performance and sca
 
 To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes (see .env file).
 
-Redis "cluster" mode features 16 logical shards (if you need, this number can be increased to a value in [32, 64, 96, 128], although 16 is the recommended value). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose file, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
+Redis "cluster" mode features 16 logical shards (if you need, this number can be increased to a value in [32, 64, 96, 128], although 16 is the recommended value). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose file, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.  
+IMPORTANT: don't change logical shards number when Redis database is not empty, to avoid serious data corruption or loss.
 
 In Redis "single" mode, logical shards number is forced to 1 (Redis data all goes into one logical shard).
 

@@ -1,6 +1,17 @@
 # Docker compose file for production mode.
 # This is the production version, which uses a reverse proxy (Caddy)
+
+## Common configuration for logging
+x-logging-config: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+## Name of the Docker Compose project
 name: quidalert-prod
+
+## Services configuration
 services:
   # --- BACKEND FASTAPI ---
   fastapi:
@@ -26,6 +37,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    logging: *default-logging
       
   # --- POSTGRESQL DBMS ---
   postgres:
@@ -40,6 +52,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - serverside-net
+    logging: *default-logging
 
   # --- REDIS CLUSTER (3 NODES) ---
   redis-node-1:
@@ -69,6 +82,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging: *default-logging
 
   redis-node-2:
     image: redis:7-alpine
@@ -100,6 +114,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging: *default-logging
   
   redis-node-3:
     image: redis:7-alpine
@@ -131,6 +146,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    logging: *default-logging
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
@@ -150,6 +166,7 @@ services:
     command: server /data --console-address ":9001"
     networks:
       - serverside-net
+    logging: *default-logging
 
   # --- REVERSE PROXY HTTPS (CADDY) ---
   caddy:
@@ -169,6 +186,7 @@ services:
       - serverside-net
     depends_on:
       - fastapi
+    logging: *default-logging
 
 ## Volume definitions (for persistent data storage)
 volumes:
