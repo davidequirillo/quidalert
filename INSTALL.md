@@ -184,9 +184,11 @@ The application employs a dual-database strategy to optimize performance and sca
 
 To provide maximum deployment flexibility, the system supports both "single" and "cluster" modes for Redis, which can be easily toggled via the REDIS_MODE environment variable without requiring any architectural changes (see .env file).
 
-Redis cluster mode features 16 logical shards (this number can theoretically be increased as needed, although it's not currently recommended). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose file, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
+Redis "cluster" mode features 16 logical shards (if you need, this number can be increased to a value in [32, 64, 96, 128], although 16 is the recommended value). Do not lower the number of shards: logical shards are 16 and they must remain that way, while the cluster redis nodes do not necessarily have to be 16, but they can be as few as 3, as defined in my personal docker-compose file, especially if you don't expect a high user load. However, for very heavy workloads, with a large number of users, it's recommended to have a number of Redis nodes equal to the number of logical shards, i.e., a RedisCluster composed of 16 redis nodes.
 
-To use Redis in cluster mode (not in single mode), you must join redis nodes. Note: use the password defined in .env file:
+In Redis "single" mode, logical shards number is forced to 1 (Redis data all goes into one logical shard).
+
+If you use Redis in "cluster" mode, you must join redis nodes. Note: use the password defined in .env file:
 
 ```bash
 docker exec -it redis_node_1_dev redis-cli -a "testpassword123" --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes
@@ -258,17 +260,15 @@ code .quidalert.code-workspace
 
 NOTE: code workspace has been configured to ignore some useless folders from the programming IDE view (for example “build” directories)
 
-To run (debug) client, go to VS Code menu -> View -> Run.
-- Choose "Debug - Client (Flutter) Android" and click to play to debug the client
+To run (debug) client, inside VS Code IDE start the Android emulator, wait for the emulator to fully boot, and then go to VS Code menu -> View -> Run.
+- Choose "Debug client (Android Emulator)" and click to play to debug the client.
 
 The backend is already running (it has started when we have done "docker compose -f docker-compose.dev.yml up -d") and if we modify the python code in the backend directory of this project, the code in the container will be modified too (due to fastapi container volume mapping defined in docker-compose.dev.yml file, which is the docker-compose file used only for development). 
 
 NOTES ABOUT THE CLIENT:
-- "Debug - Client (Flutter) Android" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE)
+- "Debug client (Android Emulator)" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE), and at least one Android emulator device created (for example Pixel 8 emulator).
 
-Flutter Web device (Chrome) is not supported at the moment.
-
-The Windows version is not supported at the moment.
+Flutter Web device (Chrome) and Windows are not supported at the moment.
 
 ### Run the client
 
@@ -480,3 +480,23 @@ There is a script useful to test email delivery from our production VPS.
 ```bash
 docker exec -it fastapi_backend python -m scripts.send_sample_mail --to_email recipient@example.com
 ```
+
+## Run the client (in production mode)
+
+### Case 1: Android emulator
+
+Start VS Code, inside VS Code start the Android Emulator, wait for the emulator to fully boot.
+
+In your terminal, execute the following command:
+
+```bash
+flutter run --dart-define=API_URL=https://quidalert.example.com -d emulator-5554
+```
+
+This way, the apiUrl configuration variable, used by the client, will be set with this environment variable (API_URL) and not with the default fallback variable contained in the config.dart file (used for development).
+
+Note: obviously, replace "quidalert.example.com" with your production public server name.
+
+### Case 2: Android real device
+
+In progress...

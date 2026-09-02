@@ -52,6 +52,7 @@ def set_sqlite_pragma(dbapi_connection, _):
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
+# We set the fake Redis for testing purposes to operate in cluster mode.
 redis_engine_test = FakeRedis(
     decode_responses=True,
     cluster_mode=True,
@@ -92,6 +93,9 @@ async def redis_session_fixture():
     original_redis_mode = settings.redis_mode
     original_redis_logical_shards_num = settings.redis_logical_shards_num
     settings.app_mode = "test"
+    # For testing purposes, we force the system to operate in cluster mode with 16 logical shards.
+    # This ensures that the test environment closely mimics the production setup for Redis clustering.
+    # This also ensures the validity of some test cases that depend on batch size distribution across 16 shards.
     settings.redis_mode = "cluster"
     settings.redis_logical_shards_num = 16
     try:
@@ -127,6 +131,9 @@ def client_fixture(db_session: Session):
     original_redis_logical_shards_num = settings.redis_logical_shards_num
     original_bucket_name = settings.s3_bucket_name
     settings.app_mode = "test"
+    # For testing purposes, we force the system to operate in cluster mode with 16 logical shards.
+    # This ensures that the test environment closely mimics the production setup for Redis clustering.
+    # This also ensures the validity of some test cases that depend on batch size distribution across 16 shards.
     settings.redis_mode = "cluster"
     settings.redis_logical_shards_num = 16
     settings.s3_bucket_name = bucket_name

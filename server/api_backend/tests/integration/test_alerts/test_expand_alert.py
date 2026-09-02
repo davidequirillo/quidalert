@@ -22,6 +22,7 @@ from tests.fixtures.alerts import (
     create_test_alert, # required by the fixture named "test_alert", and manually called as function argument when needed in test cases.
     setup_fake_functions
 )
+from core.settings import settings
 
 def test_expand_alert_not_authorized_missing_token(client, test_alert):
     assert test_alert is not None
@@ -256,6 +257,9 @@ def test_expand_alert_type_general_not_allowed(client, db_session, test_chief):
     assert "General alerts can't be expanded" in response.json()["detail"]
 
 def test_expand_alert_local_success(client, db_session, test_chief):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Test_chief is a chief user
     chief: User = test_chief['user']
     assert chief is not None
@@ -340,6 +344,9 @@ def test_expand_alert_local_success(client, db_session, test_chief):
     assert alert.radius == 30.0
 
 def test_expand_alert_local_success_verify_notifications_called(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Test_chief is a chief user
     chief: User = test_chief['user']
     assert chief is not None
@@ -449,6 +456,9 @@ def test_expand_alert_local_success_verify_notifications_called(client, db_sessi
     assert alerted_users_after_2nd_expansion_ids == alerted_users_after_1st_expansion_ids
     
 def test_expand_alert_local_success_but_no_new_users(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Test_chief is a chief user
     chief: User = test_chief['user']
     assert chief is not None
@@ -524,6 +534,9 @@ def test_expand_alert_local_success_but_no_new_users(client, db_session, test_ch
     setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
 
 def test_expand_alert_local_success_but_no_fcm_tokens(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Test_chief is a chief user
     chief: User = test_chief['user']
     assert chief is not None
@@ -599,7 +612,10 @@ def test_expand_alert_local_success_but_no_fcm_tokens(client, db_session, test_c
     setup_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
     setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
 
-def test_expand_alert_managed_success(client, db_session, test_chief, setup_fake_functions):
+def test_expand_alert_managed_success(client, db_session, test_chief, setup_fake_functions):    
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Test_chief is a chief user
     chief: User = test_chief['user']
     assert chief is not None
@@ -670,6 +686,9 @@ def test_expand_alert_managed_success(client, db_session, test_chief, setup_fake
         setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
 
 def test_expand_alert_type_empty_success(client, db_session, test_chief, setup_fake_functions):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Test_chief is a chief user
     chief: User = test_chief['user']
     assert chief is not None

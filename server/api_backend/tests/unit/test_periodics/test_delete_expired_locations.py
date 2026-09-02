@@ -30,8 +30,12 @@ from core.dbmgr import (
     get_redis_chief_locations_key,
 )
 from services.periodics import LOCATIONS_TTL_HOURS
+from core.settings import settings
 
 async def test_delete_expired_locations_for_each_shard(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Get all redis shard keys 
     shards = get_all_redis_location_last_updates_keys()
     shard_valid_counts = {}
@@ -93,6 +97,9 @@ async def test_delete_expired_locations_for_each_shard(redis_session):
         assert count == expected_count, f"Shard {shard}: expected {expected_count} locations after cleanup, got {count}"
     
 async def test_delete_expired_locations(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We test the do_locations_cleanup function that processes all shards in one call.
     # We create many locations (some expired and some not) to test the delete_expired_locations function
     # we begin inserting 100 locations valid (not expired)
@@ -155,6 +162,9 @@ async def test_delete_expired_locations(redis_session):
     assert total_location_updates_after == 100, f"Expected 100 locations after cleanup, got {total_location_updates_after}"
 
 async def test_cleanup_expired_locations_lock_already_acquired(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We insert some expired locations to ensure that there is something to clean up
     now = now_tz_aware()
     for i in range(10):
@@ -204,6 +214,9 @@ async def test_cleanup_expired_locations_lock_already_acquired(redis_session):
     assert total_count == 8, f"Expected 8 expired locations to still be present since lock is active, got {total_count}"
 
 async def test_cleanup_expired_locations_lock_released(redis_session, frozen_now):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # This test is similar to the previous one, 
     # but the time between the first call to do_locations_cleanup and the second call is longer than the lock cooldown,
     # so the lock should have been released, and the do_locations_cleanup function should be able to acquire the lock and execute a new cleanup.
@@ -257,6 +270,9 @@ async def test_cleanup_expired_locations_lock_released(redis_session, frozen_now
     assert total_count == 0, f"Expected all expired locations to be deleted after lock cooldown expired, but some are still present, total count: {total_count}"
 
 async def test_delete_expired_special_locations_for_each_shard(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # This test is similar to the test_delete_expired_locations_shard test, 
     # but it tests the cleanup of expired special locations for a specific shard (testing each shard individually).
     # For each role, we insert 100 valid special locations (not expired) and 200 expired special locations
@@ -321,6 +337,9 @@ async def test_delete_expired_special_locations_for_each_shard(redis_session):
         assert count == expected_count, f"Shard {shard}: expected {expected_count} special locations after cleanup, got {count}"
 
 async def test_delete_expired_normal_and_special_locations(redis_session):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We test the do_locations_cleanup function that processes all shards in one call.
     # It cleans up both normal locations and special locations (special locations are created/updated by users with a role assigned).
     # We create many locations (some expired and some not) to test the do_locations_cleanup function

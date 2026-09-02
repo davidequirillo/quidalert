@@ -22,6 +22,7 @@ from tests.fixtures.alerts import (
     create_test_alert, # required (fixture test_alert)
     create_test_request_info # required (fixture test_request_info)
 )
+from core.settings import settings
 
 # The function "get_closest_chiefs_and_nearby_users" is used by the alert creation background task to extract the closest chiefs 
 # and all nearby users who are within a certain radius from the alert location.
@@ -30,6 +31,9 @@ from tests.fixtures.alerts import (
 # These two functions use Redis to get the locations of chiefs and users, and filter them based on the distance from the alert location.
 
 async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, test_request_info):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # Some checks on test_alert and test_request_info
     assert test_alert.user_id is not None
     assert test_alert.radius == 1 # 1 km radius
@@ -144,6 +148,9 @@ async def test_get_closest_chiefs_and_nearby_users(redis_session, test_alert, te
     assert len(nearby_users) == len(expected_nearby_user_ids)
 
 async def test_get_closest_chiefs_and_nearby_users_exclude_alert_user_id(db_session, redis_session, test_alert, test_request_info):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We insert some closest chiefs and nearby users in Redis
     for i in range(3):
         chief_id = f"chief_{i}"
@@ -228,6 +235,9 @@ async def test_get_closest_chiefs_and_nearby_users_exclude_alert_user_id(db_sess
     assert len(closest_chiefs) == 3  # only the other 3 chiefs
 
 async def test_get_closest_chiefs_and_nearby_users_no_redis_data(redis_session, test_alert, test_request_info):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We check that the function returns empty lists if there is no data in Redis
     redis_engine = redis_session # Redis session is a fake Redis engine in test mode
     closest_chiefs, nearby_users = await get_closest_chiefs_and_nearby_users(test_alert, test_request_info, redis_engine)
@@ -235,6 +245,9 @@ async def test_get_closest_chiefs_and_nearby_users_no_redis_data(redis_session, 
     assert len(nearby_users) == 0
 
 async def test_get_closest_chiefs_and_nearby_users_many_records(redis_session, test_alert, test_request_info):
+    # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
+    assert settings.redis_mode == 'cluster'
+    assert settings.redis_logical_shards_num in [16]
     # We insert many chief locations and user locations in Redis, around the alert
     # For convenience, we set the same nearby location for all chiefs and users, within the alert radius
     user_location = (test_alert.latitude + 0.0001, test_alert.longitude + 0.0001)

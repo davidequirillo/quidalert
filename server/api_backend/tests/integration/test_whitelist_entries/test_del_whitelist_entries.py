@@ -48,7 +48,7 @@ def test_del_whitelist_entries_single_email_blank(client, db_session, test_admin
         "Authorization": f"Bearer {test_admin['access_token']}"
     }
     data = {"email": ""}
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == not_found_exception().status_code
     assert "Email not provided" in response.json()["detail"]
     
@@ -59,7 +59,7 @@ def test_del_whitelist_entries_single_invalid_email(client, db_session, test_adm
     data = {
         "email": "invalid_email"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == not_found_exception().status_code
     assert "entry not found" in response.json()["detail"].lower()
 
@@ -71,7 +71,7 @@ def test_del_whitelist_entries_not_authorized_token_missing(client):
     data = {
         "email": "test@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_del_whitelist_entries_not_authorized_token_invalid(client):
@@ -82,7 +82,7 @@ def test_del_whitelist_entries_not_authorized_token_invalid(client):
     data = {
         "email": "test@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
@@ -94,7 +94,7 @@ def test_del_whitelist_entries_forbidden_request(client, test_chief):
     data = {
         "email": "test@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == forbidden_exception().status_code
     assert response.json()["detail"] == forbidden_exception().detail
 
@@ -113,7 +113,7 @@ def test_del_whitelist_entries_single_email_by_admin(client, db_session, test_ad
     data = {
         "email": "test@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     assert response_data["deleted_count"] == 1
@@ -135,7 +135,7 @@ def test_del_whitelist_entries_single_email_not_owned_by_officer(client, db_sess
     data = {
         "email": "test@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == forbidden_exception().status_code
     assert "entry not created by you" in response.json()["detail"].lower()
     # Obviously the entry should not be deleted cause the exception was raised
@@ -157,7 +157,7 @@ def test_del_whitelist_entries_single_email_by_officer(client, db_session, test_
     data = {
         "email": "test@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
     # Officers can delete their own entries, so the entry should be deleted
@@ -177,7 +177,7 @@ def test_del_whitelist_entries_single_email_not_existing(client, db_session, tes
     data = {
         "email": "nonexistent@example.com"
     }
-    response = client.delete("/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete("/api/whitelist-entries/one", params=data, headers=headers)
     assert response.status_code == not_found_exception().status_code
     assert "entry not found" in response.json()["detail"].lower()
 
@@ -249,7 +249,7 @@ def test_del_whitelist_entries_single_user_is_registered(client, db_session, tes
     data = {
         "email": "test1@example.com"
     }
-    response = client.delete(f"/api/whitelist-entries/single", params=data, headers=headers)
+    response = client.delete(f"/api/whitelist-entries/one", params=data, headers=headers)
     # The entry should not be deleted because user_is_registered is True
     assert response.status_code == forbidden_exception().status_code
     assert "registered user" in response.json()["detail"].lower()

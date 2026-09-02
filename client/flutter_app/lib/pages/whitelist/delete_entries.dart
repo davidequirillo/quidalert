@@ -80,7 +80,7 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     try {
       final response = await authClient.doProtectedApiRequest(
         "delete",
-        '/whitelist-entries/single?email=${Uri.encodeComponent(email)}',
+        '/whitelist-entries/one?email=${Uri.encodeComponent(email)}',
       );
       final Map<String, dynamic> respObj = json.decode(response.body);
       final int deletedCount = respObj['deleted_count'];

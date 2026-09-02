@@ -119,7 +119,7 @@ def delete_whitelist_entries(
     if (not current_user.is_admin) and (not current_user.is_officer):
         raise forbidden_exception()
     deleted_count = 0
-    if mode == "single":
+    if mode == "one":
         if not email:
             raise not_found_exception("Email not provided")
         # Delete a specific whitelist entry by email

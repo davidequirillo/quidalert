@@ -82,6 +82,7 @@ async def init_engines(app: FastAPI):
             print("Warning: the number of cluster nodes is greater than the number of logical shards. It's not good")
     else:
         print("Redis single mode enabled")
+        print(f"Number of redis logical shards in single mode is forced to: {settings.redis_logical_shards_num}")
     print("Testing redis connection...")
     try:
         redis_is_ok = await dbmgr.ping_redis(app.state.redis_handle)
