@@ -34,7 +34,7 @@ def seed_superuser_if_db_is_empty():
             first_user = session.exec(select(User).limit(1)).first()
             if first_user:
                 print("Superuser already exists because the database is not empty. Skipping superuser seeding.")
-                return False
+                return
             print("Creating superuser...")
             superuser = User.model_validate({
                 "firstname": "Admin",
@@ -57,7 +57,6 @@ def seed_superuser_if_db_is_empty():
             session.add(superuser)
             session.commit()
             print("Superuser created successfully.")
-            return True
         except Exception as e:
             print(f"Error occurred while seeding superuser: {e}")
             raise SystemExit(0)
@@ -158,13 +157,12 @@ def seed_users():
                         print(f"{i}/{cardinality} {category} inserted...")
             session.commit()
             print("User insertion completed!")
-            print(f"Superuser inserted: 1")
             print(f"Admins inserted: {TOTAL_ADMINS}")
             print(f"Officers inserted: {TOTAL_OFFICERS}")
             print(f"Chiefs inserted: {TOTAL_CHIEFS}")
             print(f"Base users inserted: {TOTAL_BASEUSERS}")
             print("-------------------")
-            print(f"Total users inserted: {sum(user_cardinalities)}")
+            print(f"Total users inserted (excluding superuser): {sum(user_cardinalities)}")
             statement = (select(User)
                     .where(User.role != None)
                     .where(User.email.endswith(f"@{FAKE_EMAIL_DOMAIN}")))
@@ -194,8 +192,4 @@ if __name__ == "__main__":
     is_su_inserted = seed_superuser_if_db_is_empty()
     seed_users_whitelist()
     seed_users()
-    if is_su_inserted:
-        print("Superuser has been inserted.")
-    else:
-        print("Superuser already existed.")
     print("User seeding script completed.")
