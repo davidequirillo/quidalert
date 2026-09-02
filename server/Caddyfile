@@ -1,5 +1,9 @@
 # Reverse proxy configuration for production mode
 {$SERVER_NAME} {
+    log {
+        output stdout
+        format json
+    }
     reverse_proxy fastapi:8000 {
         header_up X-Request-ID {uuid}
     }
