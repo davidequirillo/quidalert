@@ -486,9 +486,18 @@ docker exec -it fastapi_backend python -m scripts.send_sample_mail --to_email re
 
 ### Case 1: Android emulator
 
-Start VS Code, inside VS Code start the Android Emulator, wait for the emulator to fully boot.
+Start the Android emulator:
+```bash
+flutter emulators
+flutter emulators --launch <emulator id>
+```
 
-In your terminal, execute the following command:
+Now the emulator should be in the available devices:
+```bash
+flutter devices
+```
+
+In your terminal, execute the following command to compile and install the app in your emulator device:
 
 ```bash
 flutter run --dart-define=API_URL=https://quidalert.example.com -d emulator-5554
@@ -500,4 +509,21 @@ Note: obviously, replace "quidalert.example.com" with your production public ser
 
 ### Case 2: Android real device
 
-In progress...
+Put your Android device into developer (debugging) mode: go to device information section, and tap on the "build number" seven times.
+
+Go to your device's settings, security and privacy section, and disable auto-blocker (this is the automatic blocking of foreign apps and USB commands, and you must disable it to compile and execute the app in the real Android device).
+
+Go to settings, developer options, and enable "Debug USB".
+
+Connect your device to your computer with the USB cable and allow your PC.
+
+Now your Android device should appear in the device list. 
+```bash
+flutter devices
+```
+
+In your terminal, execute the following command to compile your app (in debug version) and install it in your device:
+
+```bash
+flutter run --dart-define=API_URL=https://quidalert.example.com -d <your-device-id>
+```

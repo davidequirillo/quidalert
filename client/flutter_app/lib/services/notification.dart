@@ -201,6 +201,13 @@ class NotificationProvider extends ChangeNotifier {
         if (shortAlertId.isNotEmpty) {
           messageTitle += ', alert_id: $shortAlertId';
         }
+        if (origin == 'new_alert') {
+          final messageBody = message.notification?.body ?? '';
+          messageTitle += '\n';
+          messageTitle += (messageBody.length <= 200)
+              ? messageBody
+              : '${messageBody.substring(0, 200)}...';
+        }
         if (currentRouteName == '/alerts/view-alert-messages') {
           _showMaterialBanner(messageTitle, actionLabel, () {
             prevNotificationOrigin = '';
