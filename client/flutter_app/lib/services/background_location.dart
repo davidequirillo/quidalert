@@ -102,7 +102,7 @@ class BackgroundLocationService {
             250, // in meters (movement threshold for update location events)
         heartbeatInterval: 1800, // heartbeat event every 30 minutes
         stopTimeout:
-            3, // the device is considered stationary after 3 minutes of "no movement" (see stationaryRadius)
+            1, // the device is considered stationary after 1 minute of "no movement" (see stationaryRadius)
         stationaryRadius:
             25, // 25 meters radius to consider the device not in movement
         stopOnStationary:
