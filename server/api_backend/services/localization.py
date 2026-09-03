@@ -213,7 +213,7 @@ If you haven't asked the login, we recommend to change your password immediately
 
 ## Mail body localization for alerts (new alert)
 
-def localize_new_alert_mail(alert: Alert, sender: User, lang: str):
+def localize_new_alert_mail(alert: Alert, sender: User, chief_email: str, lang: str):
     if (lang == UserLanguage.it.value):
         return f"""Ciao, 
 
@@ -225,6 +225,9 @@ Dati allerta:
 - Coordinate: {alert.latitude}, {alert.longitude}
 - Indirizzo approssimativo: {alert.address}
 - Data creazione: {alert.created_at} (Nota importante: l'orario è in UTC. Convertilo nella tua ora locale)
+
+Capo responsabile (chief manager):
+{chief_email}
 
 Dati mittente allerta: 
 - Nome: {sender.firstname}
@@ -249,6 +252,9 @@ Alert data:
 - Coordinates: {alert.latitude}, {alert.longitude}
 - Approximate address: {alert.address}
 - Creation date: {alert.created_at} (Important note: the time is in UTC. Please, convert it to your local time)
+
+Chief manager:
+{chief_email}
 
 Alert sender data:
 - Name: {sender.firstname}

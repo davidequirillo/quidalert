@@ -555,10 +555,10 @@ def send_mail_to_chief_manager(chief_id, chief_email,
         language: str, alert: Alert, sender: User, 
         request_info: dict):
     msg = EmailMessage()
-    msg["Subject"] = alert_langmap[language]["new_alert_mail_subject"]
+    msg["Subject"] = alert_langmap[language]["new_alert_mail_subject"] + " n. " + str(alert.id)
     msg["From"] = formataddr((settings.smtp_from_name, settings.smtp_from))
     msg["To"] = chief_email
-    msg.set_content(localize_new_alert_mail(alert, sender, language))
+    msg.set_content(localize_new_alert_mail(alert, sender, chief_email, language))
     try:
         send_mail_message(msg, request_info)
         log_alert_success_sending_mail_to_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=f"Email message sent successfully to chief {chief_id}")
