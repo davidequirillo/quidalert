@@ -2,6 +2,7 @@
 # Copyright (C) 2026  Davide Quirillo
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
+import pytest
 from datetime import timedelta
 from fastapi import status
 from sqlmodel import select
@@ -30,6 +31,13 @@ from core.exceptions import (
     two_factor_locked_exception,
     forbidden_exception)
 from core.responses import two_factor_required_response
+
+@pytest.fixture(autouse=True)
+def setup_fake_functions(mocker):  
+    send_login_successful_mail_mocked = mocker.patch("api.send_login_successful_mail", return_value=True)
+    yield {
+        "mock_send_login_successful_mail": send_login_successful_mail_mocked
+    }
 
 def test_login_request_missing_credentials(client):
     payload = {}
@@ -269,7 +277,7 @@ def test_login_2fa_too_many_attempts(client, db_session, not_logged_test_user):
     assert response_login.status_code == two_factor_locked_exception().status_code
     assert response_login.json()["detail"] == two_factor_locked_exception().detail
 
-def test_login_2fa_successful(client, db_session, not_logged_test_user):
+def test_login_2fa_successful(client, db_session, not_logged_test_user, setup_fake_functions):
     user: User = not_logged_test_user
     # Set a know valid password for the user
     valid_password = "ValidPass123!"
@@ -299,8 +307,10 @@ def test_login_2fa_successful(client, db_session, not_logged_test_user):
     assert user.login_locked_until is None
     assert user.last_login_done_at is not None
     assert user.last_login_mail_confirmation_at is not None
+    # Ensure that the login successful email message was sent
+    setup_fake_functions["mock_send_login_successful_mail"].assert_called_once()
 
-def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test_user):
+def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test_user, setup_fake_functions):
     user: User = not_logged_test_user
     # We can skip the initial login request and directly set the login code and expires_at for convenience
     # Set a know valid password for the user
@@ -319,6 +329,10 @@ def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test
     assert "access_token" in response1.json()
     assert response1.json()["token_type"] == "bearer"
     db_session.refresh(user)
+    # Check that the login successful mail was sent after the first successful 2FA login
+    mocked_function = setup_fake_functions["mock_send_login_successful_mail"]
+    mocked_function.assert_called_once()
+    mocked_function.reset_mock()
     # After successful login, the login code and expires_at should be cleared, and attempts reset
     assert user.login_code_hash is None
     assert user.login_expires_at is None
@@ -351,8 +365,11 @@ def test_login_2fa_successful_again_too_soon(client, db_session, not_logged_test
     assert user.last_login_mail_confirmation_at is not None
     # The last_login_mail_confirmation_at should be unchanged, because the mail should not be sent again, because we are within the cooldown period for sending a new mail
     assert user.last_login_mail_confirmation_at == old_last_mail_confirmation_at # No new mail should be sent, so the timestamp should be unchanged
+    # Ensure that the login successful email was not sent because we are within the cooldown period
+    mocked_function = setup_fake_functions["mock_send_login_successful_mail"]
+    mocked_function.assert_not_called()
 
-def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logged_test_user):
+def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logged_test_user, setup_fake_functions):
     user: User = not_logged_test_user
     # We can skip the initial login request and directly set the login code and expires_at for convenience
     # Set a know valid password for the user
@@ -383,8 +400,9 @@ def test_login_2fa_successful_again_after_cooldown(client, db_session, not_logge
     assert user.last_login_mail_confirmation_at is not None
     # A new mail should be sent, so the timestamp should be updated
     assert user.last_login_mail_confirmation_at > old_last_mail_confirmation_at
+    setup_fake_functions["mock_send_login_successful_mail"].assert_called_once()
 
-def test_login_2fa_successful_and_login_token_works(client, db_session, not_logged_test_user):
+def test_login_2fa_successful_and_login_token_works(client, db_session, not_logged_test_user, setup_fake_functions):
     user: User = not_logged_test_user
     # Last reset done at is a default timestamp, equal to created_at when the user is created
     assert user.last_reset_done_at is not None
@@ -406,6 +424,10 @@ def test_login_2fa_successful_and_login_token_works(client, db_session, not_logg
     payload_2fa = {"email": user.email, "password": valid_password, "login_code": valid_otp_code}
     response_2fa = client.post("/api/auth/login", json=payload_2fa)
     db_session.refresh(user) # Refresh to get the latest last_2fa_success_at
+    # Check that the login successful mail was sent
+    mocked_function = setup_fake_functions["mock_send_login_successful_mail"]
+    mocked_function.assert_called_once()
+    mocked_function.reset_mock()
     assert user.last_2fa_success_at is not None
     assert response_2fa.status_code == status.HTTP_200_OK
     assert "access_token" in response_2fa.json()
@@ -436,6 +458,11 @@ def test_login_2fa_successful_and_login_token_works(client, db_session, not_logg
     # The token should not be expired (expiration more or less at timedelta of LOGIN_TOKEN_TTL_MINUTES)
     assert login_token_exp > int((now_tz_aware() + timedelta(minutes=(LOGIN_TOKEN_TTL_MINUTES-1))).timestamp())
     assert login_token_exp <= int((now_tz_aware() + timedelta(minutes=LOGIN_TOKEN_TTL_MINUTES)).timestamp())
+    # We set the last mail confirmation time to the past, 
+    # so that the system considers it eligible to send a new login confirmation mail.
+    user.last_login_mail_confirmation_at = now_tz_naive() - timedelta(seconds=(MAIL_COOLDOWN_SECONDS + 1))
+    db_session.add(user)
+    db_session.commit()
     # Now we try to login again with the login token, without providing the 2FA code, and it should work
     payload = {"email": user.email, "password": valid_password, "login_token": login_token}
     response = client.post("/api/auth/login", json=payload)
@@ -443,6 +470,10 @@ def test_login_2fa_successful_and_login_token_works(client, db_session, not_logg
     db_session.refresh(user)
     assert user.last_login_done_at is not None
     assert user.last_refresh_at is not None
+    # Apparently, the mail confirmation should be sent because the cooldown period has passed (the user is eligible to receive a mail),
+    # but since we are using the login token, the system should not send the login successful email, 
+    # because if we use the login token to login, the system should not send the login successful email.
+    setup_fake_functions["mock_send_login_successful_mail"].assert_not_called()
 
 def test_login_token_expired(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user
@@ -493,7 +524,7 @@ def test_login_user_is_blocked_but_is_superuser(client, db_session, not_logged_t
     assert user.last_login_done_at is not None
     assert user.last_refresh_at is not None
 
-def test_login_2fa_code_and_login_token_together(client, db_session, not_logged_test_user):
+def test_login_2fa_code_and_login_token_together(client, db_session, not_logged_test_user, setup_fake_functions):
     user: User = not_logged_test_user
     # We skip the initial login request for convenience, and we directly set the login code and expires_at for convenience
     # Set a know valid password for the user
@@ -519,6 +550,9 @@ def test_login_2fa_code_and_login_token_together(client, db_session, not_logged_
     assert new_login_token is not None
     # The new login token should be different from the old one, because the old one should be ignored and a new one should be generated based on the successful 2FA authentication
     assert new_login_token != login_token
+    # Ensure that the login successful email was sent after a successful 2FA login, 
+    # because the user has successfully authenticated using 2FA (login code is provided)
+    setup_fake_functions["mock_send_login_successful_mail"].assert_called_once()
 
 def test_login_refresh_token_saved_in_db(client, db_session, not_logged_test_user):
     user: User = not_logged_test_user

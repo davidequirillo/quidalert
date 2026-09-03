@@ -18,7 +18,7 @@ from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
     create_test_alert, # required fixture (manually called as argument named "test_alert" in test functions when needed)
-    setup_fake_functions
+    setup_alert_fake_functions
 )
 
 def test_create_message_not_authorized_missing_token(client, test_alert):
@@ -268,7 +268,7 @@ def test_create_message_limit_reached(client, db_session, test_baseuser):
     assert response.status_code == forbidden_exception().status_code
     assert "alert has reached the maximum number of messages" in response.json()["detail"].lower()
 
-def test_create_message_success_for_general_alert(client, db_session, test_chief, setup_fake_functions):
+def test_create_message_success_for_general_alert(client, db_session, test_chief, setup_alert_fake_functions):
     chief: User = test_chief['user']
     access_token = test_chief['access_token']
     assert chief is not None, "No chief found in the database for testing"
@@ -302,9 +302,9 @@ def test_create_message_success_for_general_alert(client, db_session, test_chief
     messages = db_session.exec(messages_stmt).all()
     assert len(messages) == alert.messages_num
     # Notifications are not sent because the alert is general
-    setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_not_called()
 
-def test_create_message_success_for_empty_alert(client, db_session, test_chief, setup_fake_functions):
+def test_create_message_success_for_empty_alert(client, db_session, test_chief, setup_alert_fake_functions):
     chief: User = test_chief['user']
     access_token = test_chief['access_token']
     assert chief is not None, "No chief found in the database for testing"
@@ -338,9 +338,9 @@ def test_create_message_success_for_empty_alert(client, db_session, test_chief, 
     messages = db_session.exec(messages_stmt).all()
     assert len(messages) == alert.messages_num
     # Notifications are not sent because the alert is empty
-    setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_not_called()
 
-def test_create_message_success_for_managed_alert(client, db_session, test_chief, setup_fake_functions):
+def test_create_message_success_for_managed_alert(client, db_session, test_chief, setup_alert_fake_functions):
     chief: User = test_chief['user']
     access_token = test_chief['access_token']
     assert chief is not None, "No chief found in the database for testing"
@@ -382,21 +382,21 @@ def test_create_message_success_for_managed_alert(client, db_session, test_chief
     # Notifications are sent because the alert is managed
     # and there are some alerted users for this alert, 
     # so the mock_notify_on_new_message function should be called once
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_once()
     msg_name = f"{chief.firstname} {chief.surname}"
     msg_content = data["content"]
     if len(msg_content) > 30:
         msg_content = msg_content[:30] + "..."
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_with(
         ANY, ANY, chief.language,
         ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
-    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    args, _ = setup_alert_fake_functions["mock_notify_on_new_message"].call_args
     for id in alerted_user_ids:
         assert str(id) in args[0]
 
-def test_create_message_success_by_alert_sender(client, db_session, test_baseuser, setup_fake_functions):
+def test_create_message_success_by_alert_sender(client, db_session, test_baseuser, setup_alert_fake_functions):
     user: User = test_baseuser['user']
     access_token = test_baseuser['access_token']
     assert user is not None, "No user found in the database for testing"
@@ -440,21 +440,21 @@ def test_create_message_success_by_alert_sender(client, db_session, test_baseuse
     # Notifications are sent because the alert is local
     # and there are some alerted users for this alert.
     # So the notify_on_new_message function should be called once
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_once()
     msg_name = f"{user.firstname} {user.surname}"
     msg_content = data["content"]
     if len(msg_content) > 30:
         msg_content = msg_content[:30] + "..."
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_with(
         ANY, ANY, user.language,
         ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
-    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    args, _ = setup_alert_fake_functions["mock_notify_on_new_message"].call_args
     for id in alerted_user_ids:
         assert str(id) in args[0]
 
-def test_create_message_success_by_alert_manager(client, db_session, test_chief, setup_fake_functions):
+def test_create_message_success_by_alert_manager(client, db_session, test_chief, setup_alert_fake_functions):
     chief: User = test_chief['user']
     access_token = test_chief['access_token']
     assert chief is not None, "No chief found in the database for testing"
@@ -505,7 +505,7 @@ def test_create_message_success_by_alert_manager(client, db_session, test_chief,
     # Notifications are sent because the alert is local
     # and there are some alerted users for this alert.
     # So the notify_on_new_message function should be called once
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_once()
     msg_name = f"{chief.firstname} {chief.surname}"
     msg_content = data["content"]
     if len(msg_content) > 30:
@@ -515,16 +515,16 @@ def test_create_message_success_by_alert_manager(client, db_session, test_chief,
     # and we also notify the alert sender
     alerted_user_ids.remove(str(chief.id))
     users_to_notify_ids = [str(alert.user_id)] + alerted_user_ids
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_with(
         ANY, ANY, chief.language,
         ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
-    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    args, _ = setup_alert_fake_functions["mock_notify_on_new_message"].call_args
     for id in users_to_notify_ids:
         assert str(id) in args[0]
 
-def test_create_message_with_no_alerted_users(client, db_session, test_baseuser, setup_fake_functions):
+def test_create_message_with_no_alerted_users(client, db_session, test_baseuser, setup_alert_fake_functions):
     user: User = test_baseuser['user']
     access_token = test_baseuser['access_token']
     assert user is not None, "No user found in the database for testing"
@@ -567,9 +567,9 @@ def test_create_message_with_no_alerted_users(client, db_session, test_baseuser,
     assert len(messages) == alert.messages_num
     # Notifications are not sent because there are no alerted users for this alert,
     # so the notify_on_new_message function should not be called
-    setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_not_called()
 
-def test_create_message_with_alerted_users_having_no_fcm_token(client, db_session, test_baseuser, setup_fake_functions):
+def test_create_message_with_alerted_users_having_no_fcm_token(client, db_session, test_baseuser, setup_alert_fake_functions):
     user: User = test_baseuser['user']
     access_token = test_baseuser['access_token']
     assert user is not None, "No user found in the database for testing"
@@ -616,9 +616,9 @@ def test_create_message_with_alerted_users_having_no_fcm_token(client, db_sessio
     assert len(messages) == alert.messages_num
     # Notifications are not sent because alerted users have no FCM token,
     # so the notify_on_new_message function should not be called
-    setup_fake_functions["mock_notify_on_new_message"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_not_called()
 
-def test_create_message_with_alert_sender_having_no_fcm_token(client, db_session, test_chief, setup_fake_functions):
+def test_create_message_with_alert_sender_having_no_fcm_token(client, db_session, test_chief, setup_alert_fake_functions):
     chief: User = test_chief['user']
     access_token = test_chief['access_token']
     assert chief is not None, "No chief found in the database for testing"
@@ -675,7 +675,7 @@ def test_create_message_with_alert_sender_having_no_fcm_token(client, db_session
     # Notifications are sent because the alert is local
     # and there are some alerted users for this alert.
     # So the notify_on_new_message function should be called once
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_once()
     msg_name = f"{chief.firstname} {chief.surname}"
     msg_content = data["content"]
     if len(msg_content) > 30:
@@ -685,11 +685,11 @@ def test_create_message_with_alert_sender_having_no_fcm_token(client, db_session
     # but we don't notify the sender because he has no fcm_token.
     alerted_user_ids.remove(str(chief.id))
     users_to_notify_ids = alerted_user_ids
-    setup_fake_functions["mock_notify_on_new_message"].assert_called_with(
+    setup_alert_fake_functions["mock_notify_on_new_message"].assert_called_with(
         ANY, ANY, chief.language,
         ANY, msg_name, msg_id, msg_content,
         ANY, ANY
     )
-    args, _ = setup_fake_functions["mock_notify_on_new_message"].call_args
+    args, _ = setup_alert_fake_functions["mock_notify_on_new_message"].call_args
     for id in users_to_notify_ids:
         assert str(id) in args[0]

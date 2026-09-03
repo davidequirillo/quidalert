@@ -476,8 +476,11 @@ def login(data: LoginSchema,
             user.last_reliability_score_at = now 
     # Cooldown check to avoid potential DoS attacks to the mail service
     can_send = ((not user.last_login_mail_confirmation_at) or 
-        ((now - user.last_login_mail_confirmation_at).total_seconds() > MAIL_COOLDOWN_SECONDS)) 
-    if can_send:
+        ((now - user.last_login_mail_confirmation_at).total_seconds() > MAIL_COOLDOWN_SECONDS))
+    # If data.login_token exists and is valid, and login_code is not provided, 
+    # we could skip sending the login confirmation mail.
+    can_skip_mail = (data.login_token) and (skip_2fa) and (not data.login_code)
+    if can_send and (not can_skip_mail):
         user.last_login_mail_confirmation_at = now
     db_session.add(refresh_token)
     db_session.add(user)
@@ -490,7 +493,7 @@ def login(data: LoginSchema,
         str(user.id), str(refresh_token.id), 
         raw_random_str, issued_at=now_tz)
     security_events.log_login_successful(str(user.id))
-    if can_send:
+    if can_send and (not can_skip_mail):
         req_info = get_request_info(str(user.id))
         background_tasks.add_task(
                 send_login_successful_mail, 

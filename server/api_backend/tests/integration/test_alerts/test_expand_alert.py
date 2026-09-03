@@ -20,7 +20,7 @@ from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
     create_test_alert, # required by the fixture named "test_alert", and manually called as function argument when needed in test cases.
-    setup_fake_functions
+    setup_alert_fake_functions
 )
 from core.settings import settings
 
@@ -343,7 +343,7 @@ def test_expand_alert_local_success(client, db_session, test_chief):
     # because the expansion is performed with role=None
     assert alert.radius == 30.0
 
-def test_expand_alert_local_success_verify_notifications_called(client, db_session, test_chief, setup_fake_functions):
+def test_expand_alert_local_success_verify_notifications_called(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -409,19 +409,19 @@ def test_expand_alert_local_success_verify_notifications_called(client, db_sessi
     # 1. the chief manager
     # 2. the alert sender
     # 3. new alerted users
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
         str(chief.id), ANY, 
         chief.language, ANY, 
         30.0, None, new_alerted_users_num,
         ANY, ANY)
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_called_once()
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_called_with(
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_called_once()
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_called_with(
         str(alert.user_id), ANY, 
         chief.language, ANY,
         ANY, ANY)
-    setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_called_once()
-    args, _ = setup_fake_functions["mock_notify_nearby_users_about_expansion"].call_args
+    setup_alert_fake_functions['mock_notify_nearby_users_about_expansion'].assert_called_once()
+    args, _ = setup_alert_fake_functions["mock_notify_nearby_users_about_expansion"].call_args
     notified_nearby_user_ids: list[str] = args[0] # the first argument is the list of notified user ids
     for user_id in notified_nearby_user_ids:
         assert user_id in alerted_users_after_1st_expansion_ids
@@ -455,7 +455,7 @@ def test_expand_alert_local_success_verify_notifications_called(client, db_sessi
     assert alerted_users_after_2nd_expansion_num == alerted_users_after_1st_expansion_num
     assert alerted_users_after_2nd_expansion_ids == alerted_users_after_1st_expansion_ids
     
-def test_expand_alert_local_success_but_no_new_users(client, db_session, test_chief, setup_fake_functions):
+def test_expand_alert_local_success_but_no_new_users(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -518,22 +518,22 @@ def test_expand_alert_local_success_but_no_new_users(client, db_session, test_ch
     # We verify that alert notifications have been called
     # for the chief manager, the alert sender, but not for nearby users, 
     # because no new users have been added as alerted users during the expansion.
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
         str(chief.id), ANY,
         chief.language, ANY,
         ANY, None, 0,
         ANY, ANY
     )
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_called_once()
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_called_with(
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_called_once()
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_called_with(
         str(alert.user_id), ANY,
         chief.language, ANY,
         ANY, ANY
     )
-    setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
+    setup_alert_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
 
-def test_expand_alert_local_success_but_no_fcm_tokens(client, db_session, test_chief, setup_fake_functions):
+def test_expand_alert_local_success_but_no_fcm_tokens(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -608,11 +608,11 @@ def test_expand_alert_local_success_but_no_fcm_tokens(client, db_session, test_c
     # No notification has been sent because 
     # the chief manager has no FCM token, the alert sender has no FCM token,
     # and new alerted users have no FCM token
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_not_called()
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
-    setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_not_called()
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
+    setup_alert_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
 
-def test_expand_alert_managed_success(client, db_session, test_chief, setup_fake_functions):    
+def test_expand_alert_managed_success(client, db_session, test_chief, setup_alert_fake_functions):    
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -670,8 +670,8 @@ def test_expand_alert_managed_success(client, db_session, test_chief, setup_fake
     # to send notifications to the following users:
     # 1. the chief manager
     # 2. new alerted users (if any)
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
         str(chief.id), ANY,
         chief.language, ANY,
         30.0, UserRole.alpinerescuer.value, new_alerted_users_num,
@@ -679,13 +679,13 @@ def test_expand_alert_managed_success(client, db_session, test_chief, setup_fake
     )
     # For non-local alerts, the alert sender is the chief manager, so no notification is sent to the alert sender.
     # (because we notify the chief manager, who is the alert sender, and we don't notify the same user twice)
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
     if new_alerted_users_num > 0:
-        setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_called_once()
+        setup_alert_fake_functions['mock_notify_nearby_users_about_expansion'].assert_called_once()
     else:
-        setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
+        setup_alert_fake_functions['mock_notify_nearby_users_about_expansion'].assert_not_called()
 
-def test_expand_alert_type_empty_success(client, db_session, test_chief, setup_fake_functions):
+def test_expand_alert_type_empty_success(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -743,8 +743,8 @@ def test_expand_alert_type_empty_success(client, db_session, test_chief, setup_f
     # to send notifications to the following users:
     # 1. the chief manager
     # 2. new alerted users
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
-    setup_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_once()
+    setup_alert_fake_functions['mock_notify_chief_manager_about_expansion'].assert_called_with(
         str(chief.id), ANY,
         chief.language, ANY,
         30.0, None, new_alerted_users_num,
@@ -752,9 +752,9 @@ def test_expand_alert_type_empty_success(client, db_session, test_chief, setup_f
     )
     # For non-local alerts, the alert sender is the chief manager, so no notification is sent to the alert sender.
     # (because we notify the chief manager, who is the alert sender, and we don't notify the same user twice)
-    setup_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
-    setup_fake_functions['mock_notify_nearby_users_about_expansion'].assert_called_once()
-    args, _ = setup_fake_functions["mock_notify_nearby_users_about_expansion"].call_args
+    setup_alert_fake_functions['mock_notify_sender_about_expansion'].assert_not_called()
+    setup_alert_fake_functions['mock_notify_nearby_users_about_expansion'].assert_called_once()
+    args, _ = setup_alert_fake_functions["mock_notify_nearby_users_about_expansion"].call_args
     notified_nearby_user_ids: list[str] = args[0] # the first argument is the list of notified user ids
     for user_id in notified_nearby_user_ids:
         assert user_id in [str(alerted_user.user_id) for alerted_user in alerted_users]
