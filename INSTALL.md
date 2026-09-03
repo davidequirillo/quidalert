@@ -511,7 +511,7 @@ Note: obviously, replace "quidalert.example.com" with your production public ser
 
 Put your Android device into developer (debugging) mode: go to device information section, and tap on the "build number" seven times.
 
-Go to your device's settings, security and privacy section, and disable auto-blocker (this is the automatic blocking of foreign apps and USB commands, and you must disable it to compile and execute the app in the real Android device).
+Go to your device's settings, security and privacy section, and disable auto-blocker (this is the automatic blocking of foreign apps and USB commands, and you must disable it to compile and execute the app in the device).
 
 Go to settings, developer options, and enable "Debug USB".
 
