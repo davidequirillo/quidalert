@@ -144,7 +144,7 @@ async def assign_redis_data_to_users(db_session, redis_session):
                 await pipe.execute()
 
 @pytest.fixture(autouse=True)
-def setup_fake_functions(mocker):
+def setup_alert_fake_functions(mocker):
     def fake_notify_nearby_users(user_ids, fcm_tokens, 
             language: str, alert: Alert, content: str, 
             request_info, db_session):

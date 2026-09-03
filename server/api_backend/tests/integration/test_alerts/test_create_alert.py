@@ -14,7 +14,7 @@ from models.general import RefreshToken, User, Alert, AlertType, AlertedUser
 from services.security import now_tz_naive
 from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
-    setup_fake_functions,
+    setup_alert_fake_functions,
     CENTER_LAT, CENTER_LON, RADIUS_KM,
 )
 from services.alert_btasks import (
@@ -380,7 +380,7 @@ def test_create_alert_similar_managed_exists(client, db_session, test_chief):
     assert response.json()["message"] == "Similar alert already exists in the area"
     assert response.json()["similarity"] >= 50
 
-def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session, test_baseuser, setup_fake_functions):
+def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session, test_baseuser, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -440,16 +440,16 @@ def test_create_alert_local_no_closest_chiefs_no_nearby_users(client, db_session
     # for all notifications (sender, chief, nearby users)
     language = user.language if user.language in alert_notification_templates else "en"
     message = alert_notification_templates[language]["no_chief_available_no_nearby_users"]
-    setup_fake_functions["mock_notify_sender"].assert_called_once()
-    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once_with(
             str(user.id), ANY, language=language, alert=ANY, content=message, request_info=ANY, db_session=ANY)
     # No chief is notified, because no chief is found
-    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
     # No nearby user is notified, because no nearby user is found
-    setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
-def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_session, test_baseuser, setup_fake_functions):
+def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_session, test_baseuser, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -502,20 +502,20 @@ def test_create_alert_local_closest_chiefs_but_no_nearby_users(client, db_sessio
     # for all notifications (sender, chief, nearby users)
     language = user.language if user.language in alert_notification_templates else "en"
     message_for_sender = alert_notification_templates[language]["only_chief_notified"]
-    setup_fake_functions["mock_notify_sender"].assert_called_once()
-    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # The chief is notified via fcm and via email, because a chief is found
-    setup_fake_functions["mock_notify_chief_manager"].assert_called_once()
-    setup_fake_functions["mock_notify_chief_manager"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_called_once_with(
         str(alerted_manager.user_id), ANY, language=language, alert=ANY, content=ANY, request_info=ANY, db_session=ANY)
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once()
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once_with(
         str(alerted_manager.user_id), alerted_manager_email, language=language, alert=ANY, sender=ANY, request_info=ANY)
     # No nearby user is notified, because no nearby user is found
-    setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
-def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_session, test_chief, setup_fake_functions):
+def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -574,21 +574,21 @@ def test_create_alert_local_no_closest_chiefs_but_nearby_users(client, db_sessio
     # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
     # for all notifications (sender, chief, nearby users)
     message_for_sender = alert_notification_templates[language]["no_chief_available_but_nearby_users"]
-    setup_fake_functions["mock_notify_sender"].assert_called_once()
-    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because no chief is found
-    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
     # Nearby users are notified, because nearby users are found
-    setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
-    args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
+    setup_alert_fake_functions["mock_notify_nearby_users"].assert_called_once()
+    args, _ = setup_alert_fake_functions["mock_notify_nearby_users"].call_args
     notified_nearby_user_ids = args[0] # the first argument is the list of notified user ids
     print("Number of notified nearby user ids:", len(notified_nearby_user_ids))
     for alerted_user in alerted_users:
         assert str(alerted_user.user_id) in notified_nearby_user_ids
 
-def test_create_local_closest_chief_and_nearby_users(client, db_session, test_chief, setup_fake_functions):
+def test_create_local_closest_chief_and_nearby_users(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -646,19 +646,19 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
     # for all notifications (sender, chief, nearby users), because the sender is the one who created the alert and he/she should understand the notifications
     message_for_sender = alert_notification_templates[language]["chief_and_nearby_users_notified"]
-    setup_fake_functions["mock_notify_sender"].assert_called_once()
-    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # Alert manager (the closest chief) is notified via fcm and via email, because a chief is found
-    setup_fake_functions["mock_notify_chief_manager"].assert_called_once()
-    setup_fake_functions["mock_notify_chief_manager"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_called_once_with(
         str(alerted_managers[0].user_id), ANY, language=language, alert=ANY, content=ANY, request_info=ANY, db_session=ANY)
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once()
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_called_once_with(
         str(alerted_manager.user_id), alerted_manager_email, language=language, alert=ANY, sender=ANY, request_info=ANY)
     # Nearby users are notified
-    setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
-    args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
+    setup_alert_fake_functions["mock_notify_nearby_users"].assert_called_once()
+    args, _ = setup_alert_fake_functions["mock_notify_nearby_users"].call_args
     notified_nearby_user_ids = args[0] # the first argument is the list of notified user ids
     print("Number of notified nearby user ids:", len(notified_nearby_user_ids))
     for alerted_user in alerted_nearby_users:
@@ -702,7 +702,7 @@ def test_create_local_closest_chief_and_nearby_users(client, db_session, test_ch
     assert len(new_alerted_nearby_users) == len(alerted_users) - len(alerted_managers)
     assert len(new_alerted_nearby_users) < len(alerted_nearby_users)
 
-def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chief, setup_fake_functions):
+def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -751,16 +751,16 @@ def test_create_alert_managed_with_no_nearby_users(client, db_session, test_chie
     # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
     # for all notifications (to sender, to chief, to nearby users)
     message_for_sender = alert_notification_templates[language]["no_nearby_users_available"]
-    setup_fake_functions["mock_notify_sender"].assert_called_once()
-    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because it's a managed alert, and the sender (a chief) is the alert manager
-    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
     # No nearby user is notified, because no nearby user is found
-    setup_fake_functions["mock_notify_nearby_users"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_nearby_users"].assert_not_called()
 
-def test_create_alert_managed_with_nearby_users_found(client, db_session, test_chief, setup_fake_functions):
+def test_create_alert_managed_with_nearby_users_found(client, db_session, test_chief, setup_alert_fake_functions):
     # In our test environment, we force Redis to operate in cluster mode with 16 logical shards.
     assert settings.redis_mode == 'cluster'
     assert settings.redis_logical_shards_num in [16]
@@ -814,15 +814,15 @@ def test_create_alert_managed_with_nearby_users_found(client, db_session, test_c
     # Note: the sender's language (API caller's language) is used as notification language for simplicity, 
     # for all notifications (to sender, to chief, to nearby users)
     message_for_sender = alert_notification_templates[language]["nearby_users_notified"]
-    setup_fake_functions["mock_notify_sender"].assert_called_once()
-    setup_fake_functions["mock_notify_sender"].assert_called_once_with(
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once()
+    setup_alert_fake_functions["mock_notify_sender"].assert_called_once_with(
         str(user.id), ANY, language=user.language, alert=ANY, content=message_for_sender, request_info=ANY, db_session=ANY)
     # No chief is notified, because it's a managed alert, and the sender is the alert manager
-    setup_fake_functions["mock_notify_chief_manager"].assert_not_called()
-    setup_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_chief_manager_via_email"].assert_not_called()
     # Nearby users are notified, because nearby users are found
-    setup_fake_functions["mock_notify_nearby_users"].assert_called_once()
-    args, _ = setup_fake_functions["mock_notify_nearby_users"].call_args
+    setup_alert_fake_functions["mock_notify_nearby_users"].assert_called_once()
+    args, _ = setup_alert_fake_functions["mock_notify_nearby_users"].call_args
     notified_nearby_user_ids = args[0] # the first argument is the list of notified user ids
     print("Number of notified nearby user ids:", len(notified_nearby_user_ids))
     for alerted_user in alerted_nearby_users:

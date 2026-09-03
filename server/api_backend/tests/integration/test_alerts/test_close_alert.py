@@ -24,7 +24,7 @@ from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
     create_test_alert, # required fixture (manually called as argument named "test_alert" in test functions when needed)
-    setup_fake_functions
+    setup_alert_fake_functions
 )
 
 def test_close_alert_not_authorized_missing_token(client, test_alert):
@@ -704,7 +704,7 @@ def test_close_alert_local_punitive_messages_banned(client, db_session, test_chi
         else:
             assert message.is_banned == False
 
-def test_close_alert_type_general_notifications_not_sent(client, db_session, test_chief, setup_fake_functions):
+def test_close_alert_type_general_notifications_not_sent(client, db_session, test_chief, setup_alert_fake_functions):
     caller: User = test_chief["user"]
     assert caller is not None
     access_token: str = test_chief["access_token"]
@@ -723,9 +723,9 @@ def test_close_alert_type_general_notifications_not_sent(client, db_session, tes
     # For general alerts, there should be no notification sent to the sender or any user, 
     # because general alerts are not associated with any alerted users.
     # (the background task is not called for general or empty alerts)
-    setup_fake_functions["mock_notify_about_closure"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_about_closure"].assert_not_called()
 
-def test_close_alert_type_empty_notifications_not_sent(client, db_session, test_chief, setup_fake_functions):
+def test_close_alert_type_empty_notifications_not_sent(client, db_session, test_chief, setup_alert_fake_functions):
     caller: User = test_chief["user"]
     assert caller is not None
     access_token: str = test_chief["access_token"]
@@ -744,9 +744,9 @@ def test_close_alert_type_empty_notifications_not_sent(client, db_session, test_
     # For empty alerts, there should be no notification sent to the sender or any user, 
     # because empty alerts are not associated with any alerted users.
     # (the background task is not called for general or empty alerts)
-    setup_fake_functions["mock_notify_about_closure"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_about_closure"].assert_not_called()
 
-def test_close_alert_type_local_notifications_sent(client, db_session, test_chief, setup_fake_functions):
+def test_close_alert_type_local_notifications_sent(client, db_session, test_chief, setup_alert_fake_functions):
     caller: User = test_chief["user"]
     assert caller is not None
     access_token: str = test_chief["access_token"]
@@ -819,8 +819,8 @@ def test_close_alert_type_local_notifications_sent(client, db_session, test_chie
     # (the background task is called for local alerts)
     # Note: in the implementation of alert notifications, we use the API caller's language for simplicity.
     language = caller.language
-    setup_fake_functions["mock_notify_about_closure"].assert_called_once()
-    args, kwargs = setup_fake_functions["mock_notify_about_closure"].call_args
+    setup_alert_fake_functions["mock_notify_about_closure"].assert_called_once()
+    args, kwargs = setup_alert_fake_functions["mock_notify_about_closure"].call_args
     print("Number of notified user ids: ", len(args[0]), "fcm_tokens: ", len(args[1]))
     # We check that the notified user ids and fcm tokens 
     # (used inside the mock_notify_about_closure call) 
@@ -834,7 +834,7 @@ def test_close_alert_type_local_notifications_sent(client, db_session, test_chie
     assert kwargs["alert"].id == alert.id
     assert kwargs["closing_type"] == closing_type
 
-def test_close_alert_type_managed_notifications_sent(client, db_session, test_chief, setup_fake_functions):
+def test_close_alert_type_managed_notifications_sent(client, db_session, test_chief, setup_alert_fake_functions):
     caller: User = test_chief["user"]
     assert caller is not None
     access_token: str = test_chief["access_token"]
@@ -878,8 +878,8 @@ def test_close_alert_type_managed_notifications_sent(client, db_session, test_ch
     assert response.status_code == status.HTTP_200_OK
     assert "alert closed successfully" in response.json()["message"].lower()
     db_session.refresh(alert)
-    setup_fake_functions["mock_notify_about_closure"].assert_called_once()
-    args, kwargs = setup_fake_functions["mock_notify_about_closure"].call_args
+    setup_alert_fake_functions["mock_notify_about_closure"].assert_called_once()
+    args, kwargs = setup_alert_fake_functions["mock_notify_about_closure"].call_args
     print("Number of notified user ids: ", len(args[0]), "fcm_tokens: ", len(args[1]))
     # We check that the notified user ids and fcm tokens 
     # (used inside the mock_notify_about_closure call) 
@@ -893,7 +893,7 @@ def test_close_alert_type_managed_notifications_sent(client, db_session, test_ch
     assert kwargs["alert"].id == alert.id
     assert kwargs["closing_type"] == closing_type
 
-def test_close_alert_all_users_without_fcm_token(client, db_session, test_chief, setup_fake_functions):
+def test_close_alert_all_users_without_fcm_token(client, db_session, test_chief, setup_alert_fake_functions):
     caller: User = test_chief["user"]
     assert caller is not None
     access_token: str = test_chief["access_token"]
@@ -928,4 +928,4 @@ def test_close_alert_all_users_without_fcm_token(client, db_session, test_chief,
     db_session.refresh(alert)
     # The alert is closed correctly, but the notification function should not be called, 
     # because all users (sender and alerted users) do not have fcm_token.
-    setup_fake_functions["mock_notify_about_closure"].assert_not_called()
+    setup_alert_fake_functions["mock_notify_about_closure"].assert_not_called()

@@ -17,7 +17,7 @@ from tests.fixtures.alerts import (
     setup_users_data_and_teardown, # required (fixture automatically called)
     setup_alerts_data_and_teardown, # required (fixture automatically called)
     create_test_alert, # required fixture (manually called as argument named "test_alert" in test functions when needed)
-    setup_fake_functions
+    setup_alert_fake_functions
 )
 
 def test_get_messages_not_authorized_missing_token(client, test_alert):
