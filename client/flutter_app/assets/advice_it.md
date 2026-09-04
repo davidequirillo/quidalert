@@ -8,7 +8,7 @@
 
 - Al primo avvio o login, l'app chiederà il permesso di ricevere notifiche, il permesso di rilevamento della propria propria posizione GPS "mentre l'app è in uso" e subito dopo anche il permesso di passare alla modalità "consenti sempre". Ecco, ricordarsi di impostare quest'ultima modalità, "consenti sempre", in modo che l'app possa tracciare la posizione GPS approssimativa del dispositivo anche quando essa si trova in background e non in uso.
 
-- Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione 'batteria' delle impostazioni di questa app e selezionare 'senza restrizioni'. È possibile raggiungere questa sezione dalle impostazioni generali: Impostazioni -> Applicazioni -> Quidalert -> Batteria -> "Senza restrizioni".
+- Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione 'batteria' delle impostazioni di questa app e selezionare 'senza restrizioni'. È possibile raggiungere questa sezione dalle impostazioni generali del dispositivo: Impostazioni -> Applicazioni -> Quidalert -> Batteria -> "Senza restrizioni".
 
 - Per interrompere il processo di tracciamento della posizione in background e non ricevere più notifiche, non è necessario disinstallare l'app, ma è sufficiente effettuare il "logout". Così facendo però non si potrà più ricevere o inviare allerte, fino ad un nuovo eventuale "login".
 
