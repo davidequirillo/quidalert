@@ -269,6 +269,8 @@ The backend is already running (it has started when we have done "docker compose
 NOTES ABOUT THE CLIENT:
 - "Debug client (Android Emulator)" requires Android SDK (Android Studio) with Android Studio "command line tools" (downloadable from the settings section of Android Studio IDE), and at least one Android emulator device created (for example Pixel 8 emulator).
 
+iOS is supported, but I haven't tested it yet, so it is not present in the VSCode run list.
+
 Flutter Web device (Chrome) and Windows are not supported at the moment.
 
 ### Run the client

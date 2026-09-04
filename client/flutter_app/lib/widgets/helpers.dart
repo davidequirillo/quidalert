@@ -73,8 +73,10 @@ Future<void> showSimpleAlertDialog(
 Future<bool?> showTwoWayAlertDialog(
   BuildContext context,
   String title,
-  String content,
-) async {
+  String content, {
+  String okText = "OK",
+}) async {
+  final loc = AppLocalizations.of(context)!;
   return await showDialog<bool?>(
     context: context,
     builder: (context) => AlertDialog(
@@ -88,13 +90,13 @@ Future<bool?> showTwoWayAlertDialog(
           onPressed: () {
             Navigator.of(context).pop(true);
           },
-          child: const Text("OK"),
+          child: Text(okText),
         ),
         TextButton(
           onPressed: () {
             Navigator.of(context).pop(false);
           },
-          child: Text(AppLocalizations.of(context)!.buttonCancel),
+          child: Text(loc.buttonCancel),
         ),
       ],
     ),

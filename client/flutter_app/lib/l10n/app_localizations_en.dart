@@ -224,6 +224,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonClosingPunitive => 'Punitive close';
 
   @override
+  String get buttonGoToAppSettings => 'Go to app settings';
+
+  @override
   String get entriesAll => 'All entries';
 
   @override
@@ -443,6 +446,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsPosition => 'GPS position';
 
   @override
+  String get gpsPositionForegroundInfo => 'Detecting your position… Wait on this screen… Indoors, the waiting time can be up to 60 seconds…';
+
+  @override
   String get gpsAccuracy => 'Accuracy';
 
   @override
@@ -462,6 +468,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gpsLocationLog => 'Background locations log';
+
+  @override
+  String get gpsBatteryIgnoreOptimizationTitle => 'Disable battery optimization';
+
+  @override
+  String get gpsBatteryIgnoreOptimizationMessage => 'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\'';
 
   @override
   String get labelAllPm => 'All';

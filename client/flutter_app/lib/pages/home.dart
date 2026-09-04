@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quidalert_flutter/models/general.dart';
 import 'dart:convert';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:quidalert_flutter/widgets/helpers.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
@@ -151,10 +152,29 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   Future<void> _startBackgroundLocationTracking() async {
+    final loc = AppLocalizations.of(context)!;
     try {
       await BackgroundLocationService.startTracking();
     } catch (e) {
       debugPrintC("Error initializing background location tracking: $e");
+    }
+    final isIgnored =
+        await BackgroundLocationService.isBatteryOptimizationIgnored();
+    if (!isIgnored) {
+      final bool result =
+          await showTwoWayAlertDialog(
+            context,
+            loc.gpsBatteryIgnoreOptimizationTitle,
+            loc.gpsBatteryIgnoreOptimizationMessage,
+          ) ??
+          false;
+      if (result == true) {
+        try {
+          openAppSettings();
+        } catch (e) {
+          debugPrintC("Error opening app settings: $e");
+        }
+      }
     }
   }
 
