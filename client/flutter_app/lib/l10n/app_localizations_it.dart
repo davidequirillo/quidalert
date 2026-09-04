@@ -473,7 +473,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsBatteryIgnoreOptimizationTitle => 'Disabilitare ottimizzazione batteria';
 
   @override
-  String get gpsBatteryIgnoreOptimizationMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni di questa app e selezionare \'senza restrizioni\'';
+  String get gpsBatteryIgnoreOptimizationMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni specifiche di questa app e selezionare \'senza restrizioni\'. Per alcuni dettagli utili c\'è il pulsante \'consigli\' in questa pagina';
 
   @override
   String get labelAllPm => 'Tutti';

@@ -473,7 +473,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsBatteryIgnoreOptimizationTitle => 'Disable battery optimization';
 
   @override
-  String get gpsBatteryIgnoreOptimizationMessage => 'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\'';
+  String get gpsBatteryIgnoreOptimizationMessage => 'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings (not device settings, but specific settings of this app), and select \'without restrictions\'. For some useful details there is the \'Advice\' button on this page';
 
   @override
   String get labelAllPm => 'All';
