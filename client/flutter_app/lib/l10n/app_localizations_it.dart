@@ -224,6 +224,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonClosingPunitive => 'Chiusura punitiva';
 
   @override
+  String get buttonGoToAppSettings => 'Vai alle impostazioni app';
+
+  @override
   String get entriesAll => 'Tutte le voci';
 
   @override
@@ -443,6 +446,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsPosition => 'Posizione GPS';
 
   @override
+  String get gpsPositionForegroundInfo => 'Sto rilevando la tua posizione… Attendere in questa schermata… Nei luoghi chiusi, l’attesa può durare fino a 60 secondi…';
+
+  @override
   String get gpsAccuracy => 'Accuratezza';
 
   @override
@@ -462,6 +468,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get gpsLocationLog => 'Log posizioni gps in background';
+
+  @override
+  String get gpsBatteryIgnoreOptimizationTitle => 'Disabilitare ottimizzazione batteria';
+
+  @override
+  String get gpsBatteryIgnoreOptimizationMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni di questa app e selezionare \'senza restrizioni\'';
 
   @override
   String get labelAllPm => 'Tutti';

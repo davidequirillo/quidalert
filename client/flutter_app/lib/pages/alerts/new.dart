@@ -356,7 +356,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
               ),
               const SizedBox(height: 20),
               if (alertRequestInProgress) ...[
-                Text(loc.labelWaitPlease),
+                Text(loc.gpsPositionForegroundInfo),
                 const SizedBox(height: 5),
                 const CircularProgressIndicator(),
               ],

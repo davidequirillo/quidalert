@@ -521,6 +521,12 @@ abstract class AppLocalizations {
   /// **'Punitive close'**
   String get buttonClosingPunitive;
 
+  /// No description provided for @buttonGoToAppSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to app settings'**
+  String get buttonGoToAppSettings;
+
   /// No description provided for @entriesAll.
   ///
   /// In en, this message translates to:
@@ -959,6 +965,12 @@ abstract class AppLocalizations {
   /// **'GPS position'**
   String get gpsPosition;
 
+  /// No description provided for @gpsPositionForegroundInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Detecting your position… Wait on this screen… Indoors, the waiting time can be up to 60 seconds…'**
+  String get gpsPositionForegroundInfo;
+
   /// No description provided for @gpsAccuracy.
   ///
   /// In en, this message translates to:
@@ -1000,6 +1012,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background locations log'**
   String get gpsLocationLog;
+
+  /// No description provided for @gpsBatteryIgnoreOptimizationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable battery optimization'**
+  String get gpsBatteryIgnoreOptimizationTitle;
+
+  /// No description provided for @gpsBatteryIgnoreOptimizationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\''**
+  String get gpsBatteryIgnoreOptimizationMessage;
 
   /// No description provided for @labelAllPm.
   ///

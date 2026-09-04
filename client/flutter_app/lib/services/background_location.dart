@@ -91,9 +91,13 @@ class BackgroundLocationService {
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
+        reset: true,
         allowIdenticalLocations: false,
-        persistMode: bg.Config.PERSIST_MODE_ALL,
-        maxRecordsToPersist: 50,
+        persistence: bg.PersistenceConfig(
+          persistMode: bg.PersistMode.all,
+          maxRecordsToPersist: 50,
+          maxDaysToPersist: 14,
+        ),
         autoSync: false,
         desiredAccuracy: bg
             .Config
@@ -109,8 +113,13 @@ class BackgroundLocationService {
             false, // we don't stop completely the background service when stationary
         stopOnTerminate: false,
         startOnBoot: true,
-        foregroundService:
-            true, // keep the service running in the foreground to prevent it from being killed by the OS
+        foregroundService: true,
+        notification: bg.Notification(
+          title: "Background Location Service",
+          text: "Tracking your location in the background.",
+          priority: bg.NotificationPriority.high,
+          sticky: true,
+        ),
         disableMotionActivityUpdates:
             true, // we don't need motion activity updates
         enableHeadless: true,
@@ -142,6 +151,29 @@ class BackgroundLocationService {
     debugPrintC("Background location tracking stopped.");
     _lastSentLocation = null;
     _lastSentTime = null;
+  }
+
+  static Future<bool> isBatteryOptimizationIgnored() async {
+    try {
+      final isIgnoring = await bg.DeviceSettings.isIgnoringBatteryOptimizations;
+      if (isIgnoring) {
+        debugPrintC("Battery optimization ignoring status: $isIgnoring");
+        return true;
+      }
+    } catch (e) {
+      debugPrintC("Error checking battery optimization status: $e");
+    }
+    return false;
+  }
+
+  // Not used at the moment, but kept for potential future use.
+  static Future<void> showIgnoreBatteryOptimizationsWindow() async {
+    try {
+      await bg.DeviceSettings.showIgnoreBatteryOptimizations();
+      debugPrintC("Requested to show ignore battery optimizations window.");
+    } catch (e) {
+      debugPrintC("Error showing ignore battery optimizations window: $e");
+    }
   }
 
   static Future<void> handleLocation(bg.Location location) async {
