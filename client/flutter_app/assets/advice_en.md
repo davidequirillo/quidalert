@@ -6,7 +6,7 @@
 
 - To localize the user's mobile device, the system mainly uses the GPS signal in open spaces, and triangulation techniques of surrounding Wi-Fi signals in closed spaces (where the GPS signal is not received). For this reason, it is recommended to keep the device's Wi-Fi enabled.
 
-- At first launch or login, the app will ask for permission to receive notifications, permission to track your GPS location "while the app is in use" and then the app will ask to change the GPS tracking to "Allow all the time". Remember to set it to "Allow all the time", to give the application the ability to track the device GPS position even when the app is in background and not in use.
+- At first launch or login, the app will ask for permission to receive notifications, permission to track your GPS location "while the app is in use" and then the app will ask to change the GPS tracking to "Allow all the time". Remember to set it to "Allow all the time", to give the application the ability to track the device GPS position even when the app is in background and not in use. You can check and enable these options manually, even later, by going to: Settings -> Applications -> Quidalert -> Permissions -> Location (and Notifications)
 
 - To prevent the background GPS position tracking from sleeping, you need to go to the 'battery' section of this app settings, and select 'without restrictions'. You can reach this section from the general device settings: Settings -> Applications -> Quidalert -> Battery -> "Without restrictions". 
 

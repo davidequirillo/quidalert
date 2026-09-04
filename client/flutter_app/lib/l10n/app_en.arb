@@ -154,7 +154,7 @@
   "gpsLongitude": "Longitude",
   "gpsLocationLog": "Background locations log",
   "gpsBatteryIgnoreOptimizationTitle": "Disable battery optimization",
-  "gpsBatteryIgnoreOptimizationMessage": "To prevent the background GPS position tracking from sleeping, you need to go to the 'battery' section of this app settings, and select 'without restrictions'",
+  "gpsBatteryIgnoreOptimizationMessage": "To prevent the background GPS position tracking from sleeping, you need to go to the 'battery' section of this app settings (not device settings, but specific settings of this app), and select 'without restrictions'. For some useful details there is the 'Advice' button on this page",
   "labelAllPm": "All",
   "labelAllPf": "All",
   "labelAllSm": "All",

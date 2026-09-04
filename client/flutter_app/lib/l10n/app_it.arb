@@ -154,7 +154,7 @@
   "gpsLongitude": "Longitudine",
   "gpsLocationLog": "Log posizioni gps in background",
   "gpsBatteryIgnoreOptimizationTitle": "Disabilitare ottimizzazione batteria",
-  "gpsBatteryIgnoreOptimizationMessage": "Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione 'batteria' delle impostazioni di questa app e selezionare 'senza restrizioni'",
+  "gpsBatteryIgnoreOptimizationMessage": "Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione 'batteria' delle impostazioni specifiche di questa app e selezionare 'senza restrizioni'. Per alcuni dettagli utili c'è il pulsante 'consigli' in questa pagina",
   "labelAllPm": "Tutti",
   "labelAllPf": "Tutte",
   "labelAllSm": "Tutto",
