@@ -313,7 +313,7 @@ class BackgroundLocationService {
           10, // 10 meters accuracy for foreground location fetches, since it's used for user-initiated actions that require more precision
       maximumAge:
           15000, // (in milliseconds) if a cached location is available and is not older than 15 seconds, it will be returned
-      timeout: 30, // Max time (in seconds) to wait for a location fix
+      timeout: 60, // Max time (in seconds) to wait for a location fix
       extras: {"reason": "foreground location"},
     );
     return location;
