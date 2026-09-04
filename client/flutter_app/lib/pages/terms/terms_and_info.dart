@@ -127,7 +127,7 @@ class InfoPage extends StatelessWidget {
     return Scaffold(
       appBar: CAppBar(title: 'Info'),
       drawer: const CAppDrawer(),
-      body: InfoBody(),
+      body: SafeArea(top: false, child: InfoBody()),
     ); // build
   }
 }

@@ -440,7 +440,8 @@ def test_promote_users_called_by_admin(client, db_session, test_admin):
     assert testuser1.role == UserRole.medic.value
     assert testuser1.updated_by == user.email
     assert testuser1.updated_at is not None
-    assert testuser1.updated_at > now_tz_naive() - timedelta(minutes=1) # The update should have been applied recently, so the updated_at should be within the last minute
+    # The updated_at timestamp should reflect the recent update
+    assert testuser1.updated_at > now_tz_naive() - timedelta(minutes=1)
     # Another example with authorizer filter (usable only by admins)
     # ...and test_admin is an admin :)
     select_stmt = select(User).where(User.authorized_by=="officer1@example.com")
@@ -948,6 +949,56 @@ async def test_promote_users_modify_type_called_by_admin(client, db_session, red
         chief_location_key = get_redis_chief_locations_key(str(chief.id))
         positions = await redis_session.geopos(chief_location_key, str(chief.id))
         assert all(p is None for p in positions)
+
+def test_promote_users_with_blank_notes(client, db_session, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    headers = {"Authorization": f"Bearer {access_token}"}
+    # We find in the db the user with email "testuser1@example.com"
+    select_stmt = select(User).where(User.email=="testuser1@example.com")
+    testuser1 = db_session.exec(select_stmt).first()
+    assert testuser1 is not None
+    # We set the notes field to an example value
+    testuser1.notes = "Initial notes"
+    db_session.add(testuser1)
+    db_session.commit()
+    db_session.refresh(testuser1)
+    # Now we call the promote API with notes set to None, 
+    # and we set role to volunteer (to make sure the update is applied)
+    params = {
+        "email": "testuser1@example.com"
+    }
+    data = {
+        "role": UserRole.volunteer.value,
+        "notes": None
+    }
+    response = client.post("/api/users/promote", params=params, json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["updated_count"] == 1
+    # We verify the update in the database
+    db_session.refresh(testuser1)
+    assert testuser1.role == UserRole.volunteer.value
+    # If the notes were set to None via the API, 
+    # the notes should not change and should remain as the initial value
+    assert testuser1.notes is not None
+    assert testuser1.notes == 'Initial notes'
+    # Now we try to call the promote API with an empty string for notes
+    params = {
+        "email": "testuser1@example.com"
+    }
+    data = {
+        "notes": ""
+    }
+    response = client.post("/api/users/promote", params=params, json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["updated_count"] == 1
+    db_session.refresh(testuser1)
+    # If the notes were set to an empty string via the API, 
+    # the notes should be updated to an empty string
+    assert testuser1.notes == ""
 
 ## TESTS: POST /api/users/promote-by-emails
 
@@ -1649,3 +1700,40 @@ async def test_promote_users_by_emails_modify_type_called_by_admin(client, db_se
     chief2_position_results = await redis_session.geopos(chief2_location_key, str(chief2.id))
     assert all(p is None for p in chief1_position_results)
     assert all(p is None for p in chief2_position_results)
+
+def test_promote_users_by_emails_with_blank_notes(client, db_session, test_admin):
+    user: User = test_admin['user']
+    assert user is not None
+    access_token = test_admin['access_token']
+    statement = select(User).where(User.email=="testuser1@example.com")
+    testuser1 = db_session.exec(statement).first()
+    # We set the target user's notes to an initial value not None
+    testuser1.notes = "Initial notes"
+    db_session.add(testuser1)
+    db_session.commit()
+    db_session.refresh(testuser1)
+    headers = {"Authorization": f"Bearer {access_token}"}
+    data = {
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
+        "update_fields": {"role": UserRole.alpinerescuer.value, "notes": None}
+    }
+    response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["updated_count"] == 1
+    assert testuser1.role == UserRole.alpinerescuer.value
+    # The notes should remain unchanged because we attempted to set them to None
+    assert testuser1.notes == "Initial notes"
+    assert testuser1.updated_by == user.email
+    # Now we try to update the notes to a blank string
+    data = {
+        "email_list_obj": {"emails": ["testuser1@example.com"]},
+        "update_fields": {"notes": ""}
+    }
+    response = client.post("/api/users/promote-by-emails", json=data, headers=headers)
+    assert response.status_code == status.HTTP_200_OK
+    response_data = response.json()
+    assert response_data["updated_count"] == 1
+    # The notes should now be updated to a blank string
+    assert testuser1.notes == ""
+    assert testuser1.updated_by == user.email
