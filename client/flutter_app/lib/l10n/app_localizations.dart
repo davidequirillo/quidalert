@@ -1022,7 +1022,7 @@ abstract class AppLocalizations {
   /// No description provided for @gpsBatteryIgnoreOptimizationMessage.
   ///
   /// In en, this message translates to:
-  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\''**
+  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings (not device settings, but specific settings of this app), and select \'without restrictions\'. For some useful details there is the \'Advice\' button on this page'**
   String get gpsBatteryIgnoreOptimizationMessage;
 
   /// No description provided for @labelAllPm.
