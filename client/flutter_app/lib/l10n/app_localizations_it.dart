@@ -284,6 +284,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorCodeOrEmailNotValid => 'Codice o indirizzo email non valido';
 
   @override
+  String get errorConnectionFailed => 'Connessione fallita';
+
+  @override
   String get errorDigitOnly => 'Sono ammesse solo cifre';
 
   @override
@@ -378,9 +381,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorServer => 'Errore nel server';
-
-  @override
-  String get errorConnectionFailed => 'Connessione fallita';
 
   @override
   String get errorSomeEntriesNotAdded => 'Alcune voci non sono state aggiunte';
@@ -485,7 +485,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsBatteryWithoutRestrictionsTitle => 'Disabilita limiti batteria';
 
   @override
-  String get gpsBatteryWithoutRestrictionsMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni di questa app e selezionare \'senza restrizioni\'. Premi su \'ok\' per aprire il pannello delle impostazioni dell\'app... Troverai la voce \'batteria\' (in alcuni dispositivi, è sulla parte destra dello schermo), poi seleziona \'senza restrizioni\'...';
+  String get gpsBatteryWithoutRestrictionsMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni di questa app e selezionare \'senza restrizioni\'. Premi su \'ok\' per aprire il pannello delle impostazioni dell\'app... (Troverai la voce \'batteria\', poi seleziona \'senza restrizioni\')';
 
   @override
   String get labelAllPm => 'Tutti';
