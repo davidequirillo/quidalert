@@ -23,7 +23,7 @@ The user will then be asked for the following permissions:
 
 This background tracking process will start automatically only after you have successfully logged in, and will be stopped immediately if you decide to disconnect from the server (logout).
 
-Note: the system is optimized to locally detect only GPS positions related to significant movements (about 250 meters), thus ensuring maximum battery and data savings, especially when the user remains in the same area. Furthermore, not all GPS positions detected by the device will be sent to the server, but only the most significant ones (stationary positions preceded by long movements, e.g., "the user goes to the bar and sits at a table." Only this last position will be sent to the server, only once).
+Note: the system is optimized to locally detect only GPS positions related to significant movements (about 250 meters), thus ensuring maximum battery and data savings, especially when the user remains in the same area. Furthermore, not all GPS positions detected by the device will be sent to the server, but only the most relevant ones (stationary positions preceded by significant movements, e.g., "the user goes to the bar and sits at a table." Only this last position will be sent to the server, only once).
 
 Note: the server will temporarily store only the last GPS location received for each user, not their entire tracking history. If the user logs out, their GPS location will no longer be updated, and after a few days, the system will automatically delete this old location.
 
