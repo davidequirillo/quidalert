@@ -113,8 +113,11 @@ class BackgroundLocationService {
             50, // 50 meters radius to consider the device not in movement
         stopOnStationary:
             false, // we don't stop completely the background service when stationary
+        speedJumpFilter: 40,
         stopOnTerminate: false,
         startOnBoot: true,
+        disableMotionActivityUpdates: false,
+        // Android specific settings: ensures the notification is shown while the service is running
         foregroundService: true,
         notification: bg.Notification(
           title: "Background Location Service",
@@ -122,8 +125,9 @@ class BackgroundLocationService {
           priority: bg.NotificationPriority.high,
           sticky: true,
         ),
-        disableMotionActivityUpdates: false,
-        speedJumpFilter: 40,
+        // iOS specific settings
+        pausesLocationUpdatesAutomatically: false,
+        showsBackgroundLocationIndicator: true,
       ),
     );
     debugPrintC("Background location service initialized.");

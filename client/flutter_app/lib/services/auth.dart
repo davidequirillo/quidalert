@@ -355,10 +355,6 @@ class AuthClient extends ChangeNotifier {
         debugPrintC(
           "Logout error, HTTP 401: Unauthorized, invalid or expired refresh token",
         );
-      } else if (resp.statusCode == 422) {
-        debugPrintC(
-          "Logout error, HTTP 422: Unprocessable entity, possibly invalid request",
-        );
       } else {
         debugPrintC("Logout error, HTTP ${resp.statusCode}: ${resp.body}");
         return resp;

@@ -641,6 +641,12 @@ abstract class AppLocalizations {
   /// **'Code or email not valid'**
   String get errorCodeOrEmailNotValid;
 
+  /// No description provided for @errorConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get errorConnectionFailed;
+
   /// No description provided for @errorDigitOnly.
   ///
   /// In en, this message translates to:
@@ -832,12 +838,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Server error'**
   String get errorServer;
-
-  /// No description provided for @errorConnectionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection failed'**
-  String get errorConnectionFailed;
 
   /// No description provided for @errorSomeEntriesNotAdded.
   ///
@@ -1046,7 +1046,7 @@ abstract class AppLocalizations {
   /// No description provided for @gpsBatteryWithoutRestrictionsMessage.
   ///
   /// In en, this message translates to:
-  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\'. Press \'ok\' to open the app settings panel... You will find \'battery\' section (in some device it\'s on the right), then select \'without restrictions\'...'**
+  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\'. Press \'ok\' to open the app settings panel... (You will find \'battery\' section, then select \'without restrictions\')'**
   String get gpsBatteryWithoutRestrictionsMessage;
 
   /// No description provided for @labelAllPm.
