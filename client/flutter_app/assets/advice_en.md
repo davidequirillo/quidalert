@@ -2,7 +2,7 @@
 
 - It is recommended to refresh at least once every 6 months to maintain the session, thus avoiding the needing of login, typing email and password.
 
-- Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations. There's also a log of the latest GPS locations detected locally in the background, allowing you to verify proper operation. Interestingly, only some of these locations will be sent to the server (those detected as "not moving").
+- Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations. There's also a log of the latest GPS locations detected locally in the background, allowing you to verify proper operation. Interestingly, only some of these locations will be sent to the server (only a part of those detected as "not moving").
 
 - To localize the user's mobile device, the system mainly uses the GPS signal in open spaces, and triangulation techniques of surrounding Wi-Fi signals in closed spaces (where the GPS signal is not received). For this reason, it is recommended to keep the device's Wi-Fi enabled, in addition to GPS.
 
