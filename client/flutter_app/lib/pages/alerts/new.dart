@@ -224,6 +224,10 @@ class _NewAlertBodyState extends State<NewAlertBody> {
       retTitle = loc.errorError;
       retMessage = loc.errorServer;
       error = true;
+    } on ConnectionFailedException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorConnectionFailed;
+      error = true;
     } catch (e) {
       debugPrint('Error: cannot receive or read response');
       retTitle = loc.errorError;

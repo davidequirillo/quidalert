@@ -77,6 +77,9 @@ class UserDetailsBody extends StatelessWidget {
           if (snapshot.error.toString().startsWith("Server")) {
             return Center(child: Text(loc.errorServer));
           }
+          if (snapshot.error.toString().startsWith("ConnectionFailed")) {
+            return Center(child: Text(loc.errorConnectionFailed));
+          }
           return Center(child: Text(loc.errorGeneric));
         }
         if (snapshot.hasData) {

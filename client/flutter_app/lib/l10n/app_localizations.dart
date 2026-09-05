@@ -833,6 +833,12 @@ abstract class AppLocalizations {
   /// **'Server error'**
   String get errorServer;
 
+  /// No description provided for @errorConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get errorConnectionFailed;
+
   /// No description provided for @errorSomeEntriesNotAdded.
   ///
   /// In en, this message translates to:
@@ -929,6 +935,12 @@ abstract class AppLocalizations {
   /// **'Server error'**
   String get exceptionServer;
 
+  /// No description provided for @exceptionConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get exceptionConnectionFailed;
+
   /// No description provided for @exceptionNotFound.
   ///
   /// In en, this message translates to:
@@ -1013,17 +1025,29 @@ abstract class AppLocalizations {
   /// **'Background locations log'**
   String get gpsLocationLog;
 
-  /// No description provided for @gpsBatteryIgnoreOptimizationTitle.
+  /// No description provided for @gpsPermissionsRequiredTitle.
   ///
   /// In en, this message translates to:
-  /// **'Disable battery optimization'**
-  String get gpsBatteryIgnoreOptimizationTitle;
+  /// **'Required permissions'**
+  String get gpsPermissionsRequiredTitle;
 
-  /// No description provided for @gpsBatteryIgnoreOptimizationMessage.
+  /// No description provided for @gpsPermissionsRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings (not device settings, but specific settings of this app), and select \'without restrictions\'. For some useful details there is the \'Advice\' button on this page'**
-  String get gpsBatteryIgnoreOptimizationMessage;
+  /// **'These permissions will be required: precise GPS position, \'allow all the time\', allow motion tracking, battery \'without restrictions\''**
+  String get gpsPermissionsRequiredMessage;
+
+  /// No description provided for @gpsBatteryWithoutRestrictionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable battery limits'**
+  String get gpsBatteryWithoutRestrictionsTitle;
+
+  /// No description provided for @gpsBatteryWithoutRestrictionsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\'. Press \'ok\' to open the app settings panel... You will find \'battery\' section (in some device it\'s on the right), then select \'without restrictions\'...'**
+  String get gpsBatteryWithoutRestrictionsMessage;
 
   /// No description provided for @labelAllPm.
   ///

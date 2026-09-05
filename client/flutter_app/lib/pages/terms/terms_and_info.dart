@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
+import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/services/shared.dart';
 import 'package:quidalert_flutter/widgets/components.dart';
@@ -41,26 +42,28 @@ class TermsBody extends StatelessWidget {
     final http.Response response;
     try {
       response = await http.get(url, headers: {"Accept-Language": "$lang"});
+    } on http.ClientException catch (e) {
+      debugPrint('HTTP Client Exception: ${e.toString()}');
+      throw ConnectionFailedException();
     } catch (e) {
       debugPrint(
         'Error: cannot receive or read response from server, ${e.toString()}',
       );
-      return loc.errorGeneric;
+      throw UnknownException();
     }
     if (response.statusCode < 200) {
       debugPrint("HTTP ${response.statusCode}: ${response.body}");
-      return loc.errorBadRequest;
+      throw BadRequestException();
     }
     if (response.statusCode >= 500) {
       debugPrint("HTTP ${response.statusCode}: ${response.body}");
-      return loc.errorServer;
+      throw ServerException();
     }
     if (response.statusCode >= 300) {
       debugPrint("HTTP ${response.statusCode}: ${response.body}");
-      return loc.errorBadRequest;
-    } else {
-      return response.body;
+      throw BadRequestException();
     }
+    return response.body;
   }
 
   @override
@@ -77,8 +80,10 @@ class TermsBody extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          debugPrint("${snapshot.error}");
-          return Center(child: Text(loc.errorLoading));
+          final exceptionName = snapshot.error.runtimeType.toString();
+          final errorMessage =
+              loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
+          return Center(child: Text(errorMessage));
         }
         return Padding(
           padding: EdgeInsets.all(16.0),

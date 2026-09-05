@@ -28,6 +28,8 @@ extension AppLocalizationsExtension on AppLocalizations {
         return exceptionNetwork;
       case 'ServerException':
         return exceptionServer;
+      case 'ConnectionFailedException':
+        return exceptionConnectionFailed;
       case 'NotFoundException':
         return exceptionNotFound;
       case 'FromJsonObjException':

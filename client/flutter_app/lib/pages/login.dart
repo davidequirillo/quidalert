@@ -88,6 +88,9 @@ class _LoginBodyState extends State<LoginBody> {
       } else {
         loginError = null;
       }
+    } on http.ClientException catch (_) {
+      debugPrintC('HTTP Client Exception occurred during login');
+      loginError = "Connection failed";
     } catch (e) {
       debugPrintC('Error: cannot receive or read response: ${e.toString()}');
       loginError = "Unknown error";
@@ -114,6 +117,9 @@ class _LoginBodyState extends State<LoginBody> {
           break;
         case 'Bad request':
           endMessage = loc.errorBadRequest;
+          break;
+        case 'Connection failed':
+          endMessage = loc.errorConnectionFailed;
           break;
         case 'Unknown error':
           endMessage = loc.errorGeneric;

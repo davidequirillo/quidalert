@@ -173,6 +173,10 @@ class _CompleteProfileBodyState extends State<CompleteProfileBody> {
       retTitle = loc.errorGeneric;
       retMessage = loc.errorServer;
       error = true;
+    } on ConnectionFailedException catch (_) {
+      retTitle = loc.errorGeneric;
+      retMessage = loc.errorConnectionFailed;
+      error = true;
     } catch (e) {
       debugPrint('Error: cannot receive or read response');
       retTitle = loc.errorGeneric;

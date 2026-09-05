@@ -74,7 +74,8 @@ Future<bool?> showTwoWayAlertDialog(
   BuildContext context,
   String title,
   String content, {
-  String okText = "OK",
+  String? okText = null,
+  String? cancelText = null,
 }) async {
   final loc = AppLocalizations.of(context)!;
   return await showDialog<bool?>(
@@ -90,13 +91,13 @@ Future<bool?> showTwoWayAlertDialog(
           onPressed: () {
             Navigator.of(context).pop(true);
           },
-          child: Text(okText),
+          child: okText != null ? Text(okText) : const Text("OK"),
         ),
         TextButton(
           onPressed: () {
             Navigator.of(context).pop(false);
           },
-          child: Text(loc.buttonCancel),
+          child: cancelText != null ? Text(cancelText) : Text(loc.buttonCancel),
         ),
       ],
     ),

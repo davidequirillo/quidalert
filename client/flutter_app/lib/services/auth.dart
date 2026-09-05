@@ -58,6 +58,13 @@ class ServerException implements Exception {
   String toString() => 'ServerException: $message';
 }
 
+class ConnectionFailedException implements Exception {
+  final String message;
+  ConnectionFailedException([this.message = 'Connection failed']);
+  @override
+  String toString() => 'ConnectionFailedException: $message';
+}
+
 class NotFoundException implements Exception {
   final String message;
   NotFoundException([this.message = 'Not found']);
@@ -110,6 +117,10 @@ class AuthClient extends ChangeNotifier {
       debugPrintC('AuthClient init, bad request during token refresh');
     } on ServerException catch (_) {
       debugPrintC('AuthClient init, server error during token refresh');
+    } on http.ClientException catch (_) {
+      debugPrintC(
+        'AuthClient init, HTTP client error during token refresh (connection failed)',
+      );
     } on GenericNotAuthorizedException catch (_) {
       debugPrintC('AuthClient init, not authorized during token refresh');
     } catch (e) {
@@ -275,7 +286,7 @@ class AuthClient extends ChangeNotifier {
   }
 
   bool isLoggedIn() {
-    return (refreshToken != null) && (accessToken != null);
+    return (refreshToken != null);
   }
 
   Map<String, String> _authHeaders() =>
@@ -340,8 +351,18 @@ class AuthClient extends ChangeNotifier {
       headers: {"Content-Type": "application/json"},
     );
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      debugPrintC("Logout error, HTTP ${resp.statusCode}: ${resp.body}");
-      return resp;
+      if (resp.statusCode == 401) {
+        debugPrintC(
+          "Logout error, HTTP 401: Unauthorized, invalid or expired refresh token",
+        );
+      } else if (resp.statusCode == 422) {
+        debugPrintC(
+          "Logout error, HTTP 422: Unprocessable entity, possibly invalid request",
+        );
+      } else {
+        debugPrintC("Logout error, HTTP ${resp.statusCode}: ${resp.body}");
+        return resp;
+      }
     }
     await setAuthTokens(null, null, null);
     lastFcmTokenSent = null;
@@ -555,6 +576,9 @@ class AuthClient extends ChangeNotifier {
     } on ServerException catch (e) {
       debugPrintC("$m (auth), server exception caught: ${e.toString()}");
       rethrow;
+    } on http.ClientException catch (_) {
+      debugPrintC("$m (auth), HTTP client exception caught");
+      throw ConnectionFailedException();
     } on GenericNotAuthorizedException catch (_) {
       rethrow;
     } catch (e) {
@@ -617,6 +641,9 @@ class AuthClient extends ChangeNotifier {
     } on ServerException catch (_) {
       debugPrintC('Server error');
       isError = true;
+    } on ConnectionFailedException catch (_) {
+      debugPrintC('Connection failed');
+      isError = true;
     } catch (e) {
       debugPrintC('Unexpected error: $e');
       isError = true;
@@ -659,6 +686,8 @@ class AuthClient extends ChangeNotifier {
       return;
     } on ServerException catch (_) {
       debugPrintC('Server error');
+    } on ConnectionFailedException catch (_) {
+      debugPrintC('Connection failed');
     } on BadRequestException catch (_) {
       debugPrintC('Bad request');
     } on ForbiddenRequestException catch (_) {

@@ -91,6 +91,9 @@ class _TwoFABodyState extends State<TwoFABody> {
       } else {
         error = null;
       }
+    } on ConnectionFailedException catch (_) {
+      debugPrintC('2FA error: connection failed');
+      error = "Connection failed";
     } catch (e) {
       debugPrintC(
         '2FA error: cannot receive or read response: ${e.toString()}',
@@ -107,6 +110,9 @@ class _TwoFABodyState extends State<TwoFABody> {
           break;
         case 'Server error':
           endMessage = loc.errorServer;
+          break;
+        case 'Connection failed':
+          endMessage = loc.errorConnectionFailed;
           break;
         case '2FA code not valid':
           endMessage = loc.errorCodeNotValid;

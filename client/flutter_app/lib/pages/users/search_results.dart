@@ -152,6 +152,8 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
       }
     } on ServerException catch (_) {
       retMessage = loc.errorServer;
+    } on ConnectionFailedException catch (_) {
+      retMessage = loc.errorConnectionFailed;
     } catch (e) {
       retMessage = e.toString();
     } finally {
