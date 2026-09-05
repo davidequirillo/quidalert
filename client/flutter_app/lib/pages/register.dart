@@ -106,6 +106,10 @@ class _RegisterBodyState extends State<RegisterBody> {
         endTitle = loc.successGeneric;
         endMessage = loc.successRegistration;
       }
+    } on http.ClientException catch (_) {
+      debugPrint('HTTP Client Exception occurred during registration');
+      endTitle = loc.errorError;
+      endMessage = loc.errorConnectionFailed;
     } catch (e) {
       debugPrint('Error: cannot receive or read response: ${e.toString()}');
       endTitle = loc.errorError;

@@ -106,6 +106,9 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on ServerException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorServer;
+    } on ConnectionFailedException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorConnectionFailed;
     } catch (e) {
       retTitle = loc.errorError;
       retMessage = e.toString();
@@ -155,6 +158,9 @@ class _WhiteListDeleteBodyState extends State<WhiteListDeleteBody> {
     } on ServerException catch (_) {
       retTitle = loc.errorError;
       retMessage = loc.errorServer;
+    } on ConnectionFailedException catch (_) {
+      retTitle = loc.errorError;
+      retMessage = loc.errorConnectionFailed;
     } catch (e) {
       retTitle = loc.errorError;
       retMessage = e.toString();

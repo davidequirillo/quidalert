@@ -380,6 +380,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorServer => 'Server error';
 
   @override
+  String get errorConnectionFailed => 'Connection failed';
+
+  @override
   String get errorSomeEntriesNotAdded => 'Some entries have not been added';
 
   @override
@@ -428,6 +431,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exceptionServer => 'Server error';
 
   @override
+  String get exceptionConnectionFailed => 'Connection failed';
+
+  @override
   String get exceptionNotFound => 'Resource not found';
 
   @override
@@ -470,10 +476,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsLocationLog => 'Background locations log';
 
   @override
-  String get gpsBatteryIgnoreOptimizationTitle => 'Disable battery optimization';
+  String get gpsPermissionsRequiredTitle => 'Required permissions';
 
   @override
-  String get gpsBatteryIgnoreOptimizationMessage => 'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings (not device settings, but specific settings of this app), and select \'without restrictions\'. For some useful details there is the \'Advice\' button on this page';
+  String get gpsPermissionsRequiredMessage => 'These permissions will be required: precise GPS position, \'allow all the time\', allow motion tracking, battery \'without restrictions\'';
+
+  @override
+  String get gpsBatteryWithoutRestrictionsTitle => 'Disable battery limits';
+
+  @override
+  String get gpsBatteryWithoutRestrictionsMessage => 'To prevent the background GPS position tracking from sleeping, you need to go to the \'battery\' section of this app settings, and select \'without restrictions\'. Press \'ok\' to open the app settings panel... You will find \'battery\' section (in some device it\'s on the right), then select \'without restrictions\'...';
 
   @override
   String get labelAllPm => 'All';

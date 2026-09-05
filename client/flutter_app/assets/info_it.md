@@ -4,24 +4,26 @@ Questa app è utile per inviare richieste di allerta al fine di ricevere aiuto: 
 
 Per poter usare questa applicazione, devi fare le seguenti cose:
 
-- Prima di tutto bisogna accettare i "Termini Legali" d'uso.
+- Recarsi presso l'autorità competente del territorio al fine di dichiarare (autorizzare) il proprio indirizzo email.
 
-- Dopodiché, bisogna recarsi presso l'autorità competente del territorio al fine di dichiarare (autorizzare) il proprio indirizzo email.
+- Dopo aver fatto questo, si può effettuare la registrazione del proprio account, usando questa app.
 
-- A questo punto si può effettuare la registrazione del proprio account, usando questa app.
-
-- Infine, effettuare il Login (l'app chiederà l'accettazione delle notifiche e il permesso di rilevamento della locazione GPS in "posizione esatta", e "consenti sempre").
+- Infine, effettuare il Login.
 
 ## Accesso alla posizione
 
 Per inviare una richiesta di aiuto (un'allerta), l'app accederà alla tua posizione GPS istantaneamente. 
 
-Viceversa, per ricevere le eventuali allerte provenienti da altri utenti nelle vicinanze, l'app ha bisogno di aggiornare la tua posizione in background approssimativamente ogni 30 minuti, anche quando l'applicazione è chiusa, pertanto, l'autorizzazione alla posizione GPS deve essere impostata su "consenti sempre" (oppure, in base al sistema operativo, bisogna fare click su "consenti mentre l'app è in uso", e subito dopo cambiare la modalità in "consenti sempre").  
+Viceversa, per ricevere le eventuali allerte provenienti da altri utenti presenti nelle vicinanze, l'app ha bisogno dell'abilitazione delle notifiche e di aggiornare periodicamente la tua posizione in background, anche quando l'applicazione è stata nascosta o chiusa.  
+Verranno quindi chieste all'utente le seguenti autorizzazioni:
+- Consenti notifiche
+- Posizione GPS esatta (e poi "Consenti sempre")
+- Consenti rilevamento attività fisica
+- Verrà chiesto di impostare la modalità batteria "Senza restrizioni" nel pannello delle impostazioni dell'app.
+
 Questo processo di tracciamento in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout).
 
-Nota: è preferibile impostare la modalità "esatta" del tracciamento GPS (non "approssimativa").
-
-Nota: il sistema è ottimizzato per inviare dati solo in caso di effettivo spostamento e tempo trascorso sufficiente, garantendo così il massimo risparmio della batteria e del traffico dati.
+Nota: il sistema è ottimizzato per rilevare localmente solo le posizioni GPS relative a spostamenti significativi (circa 250 metri), garantendo così il massimo risparmio della batteria e del traffico dati, soprattutto quando l'utente rimane nella stessa zona. Inoltre, non tutte le posizioni GPS rilevate dal dispositivo saranno inviate al server, ma soltanto quelle più significative (le posizioni stazionarie che sono precedute da lunghi spostamenti, esempio: "l'utente va al bar e si siede al tavolino". Ecco, verrà inviata al server solo quest'ultima posizione, una volta sola). 
 
 Nota: il server memorizzerà temporaneamente, per ciascun utente, solo l'ultima posizione GPS ricevuta, non l'intera cronologia di tracciamento. Se l'utente effettua il logout, la sua posizione GPS non verrà più aggiornata e, dopo alcuni giorni, il sistema eliminerà automaticamente questa vecchia posizione.
 

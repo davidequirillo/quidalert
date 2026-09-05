@@ -104,6 +104,12 @@ class _ResetBodyState extends State<ResetBody> {
         endMessage = loc.successResetRequest;
         isSuccess = true;
       }
+    } on http.ClientException catch (_) {
+      debugPrint(
+        'HTTP Client Exception occurred during password reset request',
+      );
+      endTitle = loc.errorError;
+      endMessage = loc.errorConnectionFailed;
     } catch (e) {
       debugPrint('Error: cannot receive or read response: ${e.toString()}');
       endTitle = loc.errorError;

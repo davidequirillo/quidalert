@@ -380,6 +380,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get errorServer => 'Errore nel server';
 
   @override
+  String get errorConnectionFailed => 'Connessione fallita';
+
+  @override
   String get errorSomeEntriesNotAdded => 'Alcune voci non sono state aggiunte';
 
   @override
@@ -428,6 +431,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get exceptionServer => 'Errore nel server';
 
   @override
+  String get exceptionConnectionFailed => 'Connessione fallita';
+
+  @override
   String get exceptionNotFound => 'Risorsa non trovata';
 
   @override
@@ -470,10 +476,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsLocationLog => 'Log posizioni gps in background';
 
   @override
-  String get gpsBatteryIgnoreOptimizationTitle => 'Disabilitare ottimizzazione batteria';
+  String get gpsPermissionsRequiredTitle => 'Permessi richiesti';
 
   @override
-  String get gpsBatteryIgnoreOptimizationMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni specifiche di questa app e selezionare \'senza restrizioni\'. Per alcuni dettagli utili c\'è il pulsante \'consigli\' in questa pagina';
+  String get gpsPermissionsRequiredMessage => 'Verranno richiesti i seguenti permessi: posizione GPS esatta, \'consenti sempre\', consenti rilevamento attività fisica, batteria \'senza restrizioni\'';
+
+  @override
+  String get gpsBatteryWithoutRestrictionsTitle => 'Disabilita limiti batteria';
+
+  @override
+  String get gpsBatteryWithoutRestrictionsMessage => 'Per evitare che il sistema di rilevamento della posizione GPS in background vada in sospensione, è necessario andare nella sezione \'batteria\' delle impostazioni di questa app e selezionare \'senza restrizioni\'. Premi su \'ok\' per aprire il pannello delle impostazioni dell\'app... Troverai la voce \'batteria\' (in alcuni dispositivi, è sulla parte destra dello schermo), poi seleziona \'senza restrizioni\'...';
 
   @override
   String get labelAllPm => 'Tutti';

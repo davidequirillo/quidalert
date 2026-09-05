@@ -90,6 +90,9 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
     } on ServerException catch (_) {
       retMessage = loc.errorServer;
       retColor = Colors.red;
+    } on ConnectionFailedException catch (_) {
+      retMessage = loc.errorConnectionFailed;
+      retColor = Colors.red;
     } catch (e) {
       retMessage = "Error: $e";
       retColor = Colors.red;

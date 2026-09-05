@@ -131,6 +131,8 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
       retMessage = loc.errorBadRequest;
     } on ServerException catch (_) {
       retMessage = loc.errorServer;
+    } on ConnectionFailedException catch (_) {
+      retMessage = loc.errorConnectionFailed;
     } catch (e) {
       retMessage = e.toString();
     } finally {

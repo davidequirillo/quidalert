@@ -91,8 +91,10 @@ class BackgroundLocationService {
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
-        reset: true,
+        reset: false,
+        debug: false,
         allowIdenticalLocations: false,
+        enableHeadless: true,
         persistence: bg.PersistenceConfig(
           persistMode: bg.PersistMode.all,
           maxRecordsToPersist: 50,
@@ -108,7 +110,7 @@ class BackgroundLocationService {
         stopTimeout:
             1, // the device is considered stationary after 1 minute of "no movement" (see stationaryRadius)
         stationaryRadius:
-            25, // 25 meters radius to consider the device not in movement
+            50, // 50 meters radius to consider the device not in movement
         stopOnStationary:
             false, // we don't stop completely the background service when stationary
         stopOnTerminate: false,
@@ -120,10 +122,8 @@ class BackgroundLocationService {
           priority: bg.NotificationPriority.high,
           sticky: true,
         ),
-        disableMotionActivityUpdates:
-            true, // we don't need motion activity updates
-        enableHeadless: true,
-        debug: false,
+        disableMotionActivityUpdates: false,
+        speedJumpFilter: 40,
       ),
     );
     debugPrintC("Background location service initialized.");
@@ -143,6 +143,11 @@ class BackgroundLocationService {
     } else {
       debugPrintC("Background location tracking is already running.");
     }
+  }
+
+  static Future<bool> isTrackingEnabled() async {
+    final state = await bg.BackgroundGeolocation.state;
+    return state.enabled;
   }
 
   static Future<void> stopTracking() async {

@@ -154,7 +154,16 @@ class _HomeBodyState extends State<HomeBody> {
   Future<void> _startBackgroundLocationTracking() async {
     final loc = AppLocalizations.of(context)!;
     try {
-      await BackgroundLocationService.startTracking();
+      final isTrackingEnabled =
+          await BackgroundLocationService.isTrackingEnabled();
+      if (!isTrackingEnabled) {
+        await showSimpleAlertDialog(
+          context,
+          loc.gpsPermissionsRequiredTitle,
+          loc.gpsPermissionsRequiredMessage,
+        );
+        await BackgroundLocationService.startTracking();
+      }
     } catch (e) {
       debugPrintC("Error initializing background location tracking: $e");
     }
@@ -164,8 +173,8 @@ class _HomeBodyState extends State<HomeBody> {
       final bool result =
           await showTwoWayAlertDialog(
             context,
-            loc.gpsBatteryIgnoreOptimizationTitle,
-            loc.gpsBatteryIgnoreOptimizationMessage,
+            loc.gpsBatteryWithoutRestrictionsTitle,
+            loc.gpsBatteryWithoutRestrictionsMessage,
           ) ??
           false;
       if (result == true) {
@@ -199,6 +208,9 @@ class _HomeBodyState extends State<HomeBody> {
           }
           if (snapshot.error.toString().startsWith("Server")) {
             return Center(child: Text(loc.errorServer));
+          }
+          if (snapshot.error.toString().startsWith("ConnectionFailed")) {
+            return Center(child: Text(loc.errorConnectionFailed));
           }
           return Center(child: Text(loc.errorGeneric));
         }

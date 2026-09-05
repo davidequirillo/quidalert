@@ -75,6 +75,8 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
       retMessage += ": ${e.toString()}";
     } on ServerException catch (_) {
       retMessage = loc.errorServer;
+    } on ConnectionFailedException catch (_) {
+      retMessage = loc.errorConnectionFailed;
     } catch (e) {
       retMessage = loc.errorError;
       retMessage += ": ${e.toString()}";
