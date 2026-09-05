@@ -36,7 +36,6 @@ class TermsBody extends StatelessWidget {
   const TermsBody({super.key});
 
   Future<String> _loadFromServer(BuildContext context, {String? lang}) async {
-    final loc = AppLocalizations.of(context)!;
     final url = Uri.parse('${AppConfig.apiUrl}/terms');
     debugPrint("Fetching terms from server: $url");
     final http.Response response;
