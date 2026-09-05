@@ -448,10 +448,14 @@ class AuthClient extends ChangeNotifier {
   }) async {
     final m = method.toUpperCase();
     late http.Response resp;
-    final merged = {..._authHeaders(), if (headers != null) ...headers};
-    debugPrintC('$m (auth), url: $baseUrl$relPath, headers: $merged');
-    final url = '$baseUrl$relPath';
     try {
+      if (_authHeaders().isEmpty && !retrying) {
+        debugPrintC('$m (auth), auth headers are empty, refreshing tokens...');
+        await refreshTokens();
+      }
+      final merged = {..._authHeaders(), if (headers != null) ...headers};
+      debugPrintC('$m (auth), url: $baseUrl$relPath, headers: $merged');
+      final url = '$baseUrl$relPath';
       if (file != null) {
         if (body is Map<String, String>) {
           resp = await sendMultipartFileUploadRequest(
