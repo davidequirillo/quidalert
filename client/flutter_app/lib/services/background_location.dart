@@ -91,14 +91,14 @@ class BackgroundLocationService {
     });
     await bg.BackgroundGeolocation.ready(
       bg.Config(
-        reset: false,
+        reset: true,
         debug: false,
         allowIdenticalLocations: false,
         enableHeadless: true,
         persistence: bg.PersistenceConfig(
           persistMode: bg.PersistMode.all,
           maxRecordsToPersist: 50,
-          maxDaysToPersist: 14,
+          maxDaysToPersist: 30,
         ),
         autoSync: false,
         desiredAccuracy: bg
@@ -366,7 +366,7 @@ class BackgroundLocationService {
     debugPrintC(
       "Retrieved ${storedLocations.length} stored locations from the database",
     );
-    for (var location in storedLocations.take(25)) {
+    for (var location in storedLocations) {
       // Convert the timestamp in ISO 8601 format
       // to a DateTime object (in local timezone)
       final String? locationTimestampStr = location["timestamp"];

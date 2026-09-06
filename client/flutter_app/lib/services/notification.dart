@@ -91,16 +91,6 @@ class NotificationProvider extends ChangeNotifier {
           'Firebase listeners for push notifications set up successfully',
         );
         debugPrintC('FCM token at startup: $fcmToken');
-        if (fcmToken != null && fcmToken!.isNotEmpty) {
-          debugPrintC('Syncing FCM token with backend...');
-          if ((_authClient != null) && _authClient!.isLoggedIn()) {
-            await _authClient!.syncFcmTokenWithBackendinBackground(fcmToken!);
-          } else {
-            debugPrintC(
-              'AuthClient is null or user is not logged in. Skipping FCM token sync with backend.',
-            );
-          }
-        }
       } catch (e) {
         debugPrintC('Error setting up Firebase listeners: $e');
         _tokenStream?.cancel();
