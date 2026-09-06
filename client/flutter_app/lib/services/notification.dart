@@ -194,9 +194,9 @@ class NotificationProvider extends ChangeNotifier {
         if (origin == 'new_alert') {
           final messageBody = message.notification?.body ?? '';
           messageTitle += '\n';
-          messageTitle += (messageBody.length <= 200)
+          messageTitle += (messageBody.length <= 500)
               ? messageBody
-              : '${messageBody.substring(0, 200)}...';
+              : '${messageBody.substring(0, 500)}...';
         }
         if (currentRouteName == '/alerts/view-alert-messages') {
           _showMaterialBanner(messageTitle, actionLabel, () {
