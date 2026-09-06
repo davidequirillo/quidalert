@@ -56,6 +56,24 @@ class StartupPageBodyState extends State<StartupPageBody> {
     }
   }
 
+  Future<void> syncFcmTokenWithBackend() async {
+    final authClient = context.read<AuthClient>();
+    final notifClient = context.read<NotificationProvider>();
+    notifClient.setAuthClient(authClient);
+    if (notifClient.fcmToken != null && notifClient.fcmToken!.isNotEmpty) {
+      debugPrintC('Syncing FCM token with backend...');
+      if (authClient.isLoggedIn()) {
+        await authClient.syncFcmTokenWithBackendinBackground(
+          notifClient.fcmToken!,
+        );
+      } else {
+        debugPrintC(
+          'AuthClient is null or user is not logged in. Skipping FCM token sync with backend.',
+        );
+      }
+    }
+  }
+
   void goToNextPagePostFrameCallback() {
     final authClient = context.read<AuthClient>();
     final notifProvider = context.read<NotificationProvider>();
@@ -78,6 +96,7 @@ class StartupPageBodyState extends State<StartupPageBody> {
   }
 
   Future<void> _doExtraInit() async {
+    await syncFcmTokenWithBackend();
     await startBackgroundLocationService();
     goToNextPagePostFrameCallback();
     return;
@@ -92,7 +111,6 @@ class StartupPageBodyState extends State<StartupPageBody> {
     AuthClient authClient = context.watch<AuthClient>();
     debugPrintC('Requesting NotificationProvider provider...');
     NotificationProvider notifProvider = context.watch<NotificationProvider>();
-    notifProvider.setAuthClient(authClient);
     if ((!shared.initDone) ||
         (!authClient.initDone) ||
         (!notifProvider.initDone)) {

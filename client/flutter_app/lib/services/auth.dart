@@ -248,8 +248,8 @@ class AuthClient extends ChangeNotifier {
     String? rToken = jsonResp['refresh_token'];
     String? aToken = jsonResp['access_token'];
     String? gToken = jsonResp['gps_token'];
-    debugPrintC('The refresh token is: $refreshToken');
     await setAuthTokens(rToken, aToken, gToken);
+    debugPrintC('The new refresh token is: $refreshToken');
   }
 
   Future<void> setAuthTokens(String? rtok, String? atok, String? gtok) async {
@@ -449,6 +449,7 @@ class AuthClient extends ChangeNotifier {
     final m = method.toUpperCase();
     late http.Response resp;
     try {
+      debugPrintC('$m (auth), url: $baseUrl$relPath, retrying: $retrying');
       if (_authHeaders().isEmpty && !retrying) {
         debugPrintC('$m (auth), auth headers are empty, refreshing tokens...');
         await refreshTokens();

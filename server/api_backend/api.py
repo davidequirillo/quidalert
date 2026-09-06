@@ -223,7 +223,7 @@ def check_refresh_token(token_data: dict | None, db_session: Session):
         raise TokenExpiredException()
     if not check_token_against_hash(token_raw_secret, refresh_token.raw_hash):
         raise TokenNotValidException()
-    return (user, refresh_token) # user and db refresh token
+    return (user, refresh_token) # user and refresh token from the database
 
 def check_login_token(token_data: dict | None, user: User):
     if token_data is None:
