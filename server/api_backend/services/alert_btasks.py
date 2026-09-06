@@ -15,7 +15,10 @@ from models.general import (
     RefreshToken, User, 
     Alert, AlertType, AlertedUser,
     Message)
-from services.localization import alert_langmap, localize_new_alert_mail
+from services.localization import (
+    alert_langmap as alert_notification_templates,
+    localize_new_alert_mail, 
+    localize_boolean)
 from services.network import (
     get_user_fcm_token,
     notify_single_client,
@@ -64,8 +67,6 @@ class AlertOperation(str, Enum):
     message = "message" # not used
     close = "close" # not used
 
-alert_notification_templates = alert_langmap
-
 # We search for chiefs within a very large radius, 
 # to be sure to find at least one closest chief (because a chief must be alerted, even if he is outside the alert radius)
 GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 10000
@@ -77,7 +78,11 @@ async def task_alert_search_and_notify(
     if (alert.id is None) or (alert.is_closed):
         return
     nearby_users_can_be_notified = False
+    nearby_users_included_count = 0
+    nearby_users_notified_count = 0
     chief_can_be_notified = False
+    chief_has_been_notified_via_email = False
+    chief_has_been_notified_via_fcm = False
     # The alert sender is the user who created the alert 
     # (the "current_user", the one who called the API endpoint to create the alert)
     sender_can_be_notified = False
@@ -145,50 +150,56 @@ async def task_alert_search_and_notify(
                         language=current_user.language, alert=alert, content=message, 
                         request_info=request_info, db_session=db_session)
                     log_alert_notify_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=f"Closest chief {chief_id} notified successfully")
+                    chief_has_been_notified_via_fcm = True
                 except Exception as e:
-                    chief_can_be_notified = False
                     log_alert_error_notifying_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=str(e))
                 try:
-                    await run_in_threadpool(
+                    result = await run_in_threadpool(
                         send_mail_to_chief_manager,
                         chief_id, chief_email, 
                         language=current_user.language, alert=alert, sender=current_user, 
                         request_info=request_info)
+                    # The result is a boolean indicating whether the email was successfully sent
+                    chief_has_been_notified_via_email = result
                 except Exception as e:
                     pass # exception already logged inside send_mail_to_chief_manager function, so we don't need to log it again here
             if nearby_users_can_be_notified:
                 try:
                     user_ids = list(nearby_users_to_fcm_tokens.keys())
                     fcm_tokens = list(nearby_users_to_fcm_tokens.values())
+                    nearby_users_included_count = len(user_ids)
                     notification_count = await run_in_threadpool(
                         notify_nearby_users,
                         user_ids, fcm_tokens,
                         language=current_user.language, alert=alert, content=message, 
                         request_info=request_info, db_session=db_session)
-                    if notification_count <= 0:
-                        nearby_users_can_be_notified = False
+                    if notification_count > 0:
+                        nearby_users_notified_count = notification_count
                     log_alert_notify_nearby_users(str(alert.id), None, AlertOperation.create.value, request_info, detail=f"Nearby users notified successfully, {notification_count} out of {len(user_ids)} users notified on alert creation")
                 except Exception as e:
-                    nearby_users_can_be_notified = False
                     log_alert_error_notifying_nearby_users(str(alert.id), None, AlertOperation.create.value, request_info, detail=str(e))
         if sender_can_be_notified:
+            notification_map = {
+                "chief_included_in_alert": localize_boolean(chief_can_be_notified, current_user.language),
+                "chief_notified_via_fcm": localize_boolean(chief_has_been_notified_via_fcm, current_user.language),
+                "chief_notified_via_email": localize_boolean(chief_has_been_notified_via_email, current_user.language),
+                "nearby_users_included_in_alert": str(nearby_users_included_count),
+                "nearby_users_notified": str(nearby_users_notified_count),
+            }
             msg_for_sender = ""
             if alert.type == AlertType.local.value:
+                msg_for_sender = alert_notification_templates[current_user.language]["new_alert_notification_to_sender"].format(
+                    **notification_map
+                )
+                msg_for_sender += "\n"
                 if not chief_can_be_notified:
-                    if nearby_users_can_be_notified:
-                        msg_for_sender = alert_notification_templates[current_user.language]["no_chief_available_but_nearby_users"]
-                    else:
-                        msg_for_sender = alert_notification_templates[current_user.language]["no_chief_available_no_nearby_users"]
+                    msg_for_sender += alert_notification_templates[current_user.language]["new_alert_no_chief_available"]
                 else:
-                    if nearby_users_can_be_notified:
-                        msg_for_sender = alert_notification_templates[current_user.language]["chief_and_nearby_users_notified"]
-                    else:
-                        msg_for_sender = alert_notification_templates[current_user.language]["only_chief_notified"]
+                    msg_for_sender += alert_notification_templates[current_user.language]["new_alert_contact_emergency_if_no_response"]
             else:
-                if nearby_users_can_be_notified:
-                    msg_for_sender = alert_notification_templates[current_user.language]["nearby_users_notified"]
-                else:
-                    msg_for_sender = alert_notification_templates[current_user.language]["no_nearby_users_available"]
+                msg_for_sender = alert_notification_templates[current_user.language]["new_alert_notification_to_sender_manager"].format(
+                    **notification_map
+                )
             try:
                 await run_in_threadpool(
                     notify_sender, 
@@ -555,15 +566,17 @@ def send_mail_to_chief_manager(chief_id, chief_email,
         language: str, alert: Alert, sender: User, 
         request_info: dict):
     msg = EmailMessage()
-    msg["Subject"] = alert_langmap[language]["new_alert_mail_subject"] + " n. " + str(alert.id)
+    msg["Subject"] = alert_notification_templates[language]["new_alert_mail_subject"] + " n. " + str(alert.id)
     msg["From"] = formataddr((settings.smtp_from_name, settings.smtp_from))
     msg["To"] = chief_email
     msg.set_content(localize_new_alert_mail(alert, sender, chief_email, language))
     try:
         send_mail_message(msg, request_info)
         log_alert_success_sending_mail_to_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=f"Email message sent successfully to chief {chief_id}")
+        return True
     except Exception as e:
         log_alert_error_sending_mail_to_chief_manager(str(alert.id), AlertOperation.create.value, request_info, detail=f"Error sending email message to chief {chief_id}: {e}")
+        return False
 
 ## CLOSE ALERT BTASK: this is the main function that will be executed as a background task when an alert is closed.
 def task_alert_notify_about_closure(
