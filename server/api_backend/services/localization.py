@@ -45,12 +45,10 @@ alert_langmap = {
         "new_alert_title": "New alert",
         "new_alert_prefix": "{name} has created a new alert:",
         "new_alert_action_label": "View",
-        "no_chief_available_but_nearby_users": "No chief is available, but there are other users nearby who have been notified. Contact emergency services by phone if the situation is serious.",
-        "no_chief_available_no_nearby_users": "No chief is available and there are no other users nearby to notify. Contact emergency services by phone if the situation is serious.",
-        "chief_and_nearby_users_notified": "The closest chief and nearby users have been notified about the new alert.",
-        "only_chief_notified": "The closest chief has been notified about the new alert, but there are no nearby users to notify.",
-        "nearby_users_notified": "Nearby users have been notified about the new alert.",
-        "no_nearby_users_available": "There are no nearby users to notify about the new alert.",
+        "new_alert_notification_to_sender": "You have created a new alert. Notifications have been sent as follows.\nChief included in alert: {chief_included_in_alert}\nChief notified via FCM (push): {chief_notified_via_fcm}\nChief notified via email: {chief_notified_via_email}\nNearby users included in alert: {nearby_users_included_in_alert}\nNearby users notified: {nearby_users_notified}",
+        "new_alert_notification_to_sender_manager": "You have created a new alert. Notifications have been sent as follows.\nNearby users included in alert: {nearby_users_included_in_alert}\nNearby users notified: {nearby_users_notified}",
+        "new_alert_contact_emergency_if_no_response": "Contact emergency services by phone if you do not receive a response in a short time.",
+        "new_alert_no_chief_available": "No chief found. Contact emergency services by phone if the situation is serious.",
         "close_alert_title": "Alert closed",
         "close_alert_text": "The alert created on date {date} hour {hour}, has been closed by the chief manager. Closure type: {closing_type}",
         "close_alert_action_label": "View",
@@ -73,12 +71,10 @@ alert_langmap = {
         "new_alert_title": "Nuova allerta",
         "new_alert_prefix": "{name} ha creato una nuova allerta:",
         "new_alert_action_label": "Vedi",
-        "no_chief_available_but_nearby_users": "Nessun capo è disponibile, ma ci sono altri utenti nelle vicinanze che sono stati notificati. Contatta telefonicamente i soccorsi se la situazione è grave.",
-        "no_chief_available_no_nearby_users": "Nessun capo è disponibile e non ci sono altri utenti nelle vicinanze da notificare. Contatta telefonicamente i soccorsi se la situazione è grave.",
-        "chief_and_nearby_users_notified": "Il capo più vicino e gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
-        "only_chief_notified": "Il capo più vicino è stato notificato riguardo alla nuova allerta, ma non ci sono utenti nelle vicinanze da notificare.",
-        "nearby_users_notified": "Gli utenti nelle vicinanze sono stati notificati riguardo alla nuova allerta.",
-        "no_nearby_users_available": "Non ci sono utenti nelle vicinanze da notificare riguardo alla nuova allerta.",
+        "new_alert_notification_to_sender": "Hai creato una nuova allerta. Le notifiche sono state inviate come segue.\nCapo incluso nell'allerta: {chief_included_in_alert}\nCapo notificato via FCM (push): {chief_notified_via_fcm}\nCapo notificato via email: {chief_notified_via_email}\nUtenti nelle vicinanze inclusi nell'allerta: {nearby_users_included_in_alert}\nUtenti nelle vicinanze notificati: {nearby_users_notified}",
+        "new_alert_notification_to_sender_manager": "Hai creato una nuova allerta. Le notifiche sono state inviate come segue.\nUtenti nelle vicinanze inclusi nell'allerta: {nearby_users_included_in_alert}\nUtenti nelle vicinanze notificati: {nearby_users_notified}",
+        "new_alert_contact_emergency_if_no_response": "Contatta telefonicamente i soccorsi se non ricevi una risposta in tempi brevi.",
+        "new_alert_no_chief_available": "Nessun capo trovato. Contatta telefonicamente i soccorsi se la situazione è grave.",
         "close_alert_title": "Allerta chiusa",
         "close_alert_text": "L'allerta creata in data {date} ora {hour}, è stata chiusa dal capo responsabile. Tipo di chiusura: {closing_type}",
         "close_alert_action_label": "Vedi",
@@ -96,6 +92,14 @@ alert_langmap = {
         "new_message_action_label": "Vedi"
     }
 }
+
+## General localizations
+
+def localize_boolean(value: bool, lang: str):
+    if (lang == UserLanguage.it.value):
+        return "sì" if (value is True) else "no"
+    else:
+        return "yes" if (value is True) else "no"
 
 ## Mail body localization for users (activation, reset, login)
 
