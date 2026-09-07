@@ -370,6 +370,7 @@ class BackgroundLocationService {
         "longitude": location["coords"]?["longitude"]?.toString() ?? "n/a",
         "accuracy": location["coords"]?["accuracy"]?.toString() ?? "n/a",
         "is_moving": location["is_moving"]?.toString() ?? "n/a",
+        "speed": location["coords"]?["speed"]?.toString() ?? "n/a",
         "timestamp": locationDatetimeStr,
       });
     }

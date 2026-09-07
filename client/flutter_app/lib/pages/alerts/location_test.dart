@@ -206,6 +206,8 @@ class _LocationTestBodyState extends State<LocationTestBody> {
               String subtitleText = "${loc.gpsPositionAccuracy}: $accuracy\n";
               subtitleText +=
                   "${loc.gpsPositionIsMoving}: ${isMovingStr.toLowerCase()}\n";
+              final String speed = location["speed"]!;
+              subtitleText += "${loc.gpsPositionSpeed}: $speed\n";
               subtitleText += "ID: $uuidPart";
               return ListTile(
                 title: Text(coords),

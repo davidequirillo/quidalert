@@ -464,6 +464,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsPositionIsMoving => 'Moving';
 
   @override
+  String get gpsPositionSpeed => 'Speed';
+
+  @override
   String get gpsPositionTest => 'GPS position test';
 
   @override
