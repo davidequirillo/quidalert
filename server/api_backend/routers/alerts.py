@@ -21,6 +21,9 @@ from core.exceptions import (
     invalid_request_exception
 )
 from core.logging import get_request_info
+from core.api_events import (
+    log_gps_position_updated
+)   
 from core.dbmgr import (
     get_redis_chief_locations_key, 
     get_redis_user_locations_key, 
@@ -589,6 +592,7 @@ async def update_gps_position(
                 pipe.geoadd(specloc_key, (lon, lat, user_id_str))
                 pipe.zadd(spec_last_upd_key, {user_id_str: now_int_ts})
             await pipe.execute()
+            log_gps_position_updated(user_id_str, lat, lon)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
     return {"status": "success", "message": "GPS position updated"}
