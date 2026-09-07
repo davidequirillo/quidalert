@@ -15,6 +15,9 @@ import 'package:quidalert_flutter/services/background_location.dart';
 @pragma('vm:entry-point')
 void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Ensure that the shared preferences instance is loaded
+  // in the background location service class before handling any location events.
+  await BackgroundLocationService.ensurePrefsLoaded();
   try {
     debugPrintC('[HeadlessTask] Triggered: ${event.name}');
     if (event.name == bg.Event.LOCATION) {
@@ -22,11 +25,10 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
       debugPrintC(
         "Headless location received (${event.name}): ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
-      if (location.isMoving) {
-        debugPrintC("The device is moving, skipping update");
-        return;
-      }
-      await BackgroundLocationService.handleLocation(location);
+      await BackgroundLocationService.handleLocation(
+        location,
+        withTimeIntervalCheck: true,
+      );
     } else if (event.name == bg.Event.HEARTBEAT) {
       bg.HeartbeatEvent heartbeatEvent = event.event as bg.HeartbeatEvent;
       bg.Location? location = heartbeatEvent.location;
@@ -35,11 +37,7 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
         debugPrintC(
           "Heartbeat event contains a location: ${location.coords.latitude}, ${location.coords.longitude} location_id: ${location.uuid}",
         );
-        if (location.isMoving) {
-          debugPrintC("The device is moving, skipping update");
-          return;
-        }
-        await BackgroundLocationService.handleHeartbeatLocation(location);
+        await BackgroundLocationService.handleLocation(location);
       } else {
         debugPrintC("No location data in heartbeat event, skipping update");
       }
@@ -48,10 +46,6 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
       debugPrintC(
         "Headless motion change received (${event.name}): ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
-      if (location.isMoving) {
-        debugPrintC("The device is moving, skipping update");
-        return;
-      }
       await BackgroundLocationService.handleLocation(location);
     }
   } catch (e) {

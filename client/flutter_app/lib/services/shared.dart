@@ -8,25 +8,22 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:quidalert_flutter/utils/strings.dart';
 
 class SharedVars extends ChangeNotifier {
   bool termsAccepted = false;
   bool initDone = false;
 
   SharedVars() : super() {
-    debugPrint("Inside SharedVars constructor");
+    debugPrintC("Inside SharedVars constructor");
     _init();
   }
 
   Future<void> _init() async {
-    if (kDebugMode) {
-      debugPrint('SharedVars initialization started');
-    }
+    debugPrintC('SharedVars initialization started');
     await loadPrefs();
     initDone = true;
-    if (kDebugMode) {
-      debugPrint('SharedVars initialization completed');
-    }
+    debugPrintC('SharedVars initialization completed');
     notifyListeners();
   }
 
