@@ -38,3 +38,9 @@ def log_fcm_token_registration_success(user_id: str):
         "fcm_token_registration_success",
         extra=get_request_info(user_id)
     )
+
+def log_gps_position_updated(user_id: str, latitude: float, longitude: float):
+    logger.info(
+        f"gps_position_updated, latitude={latitude}, longitude={longitude}",
+        extra=get_request_info(user_id)
+    )
