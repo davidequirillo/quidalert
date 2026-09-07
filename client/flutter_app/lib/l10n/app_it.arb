@@ -151,6 +151,7 @@
   "gpsAccuracy": "Accuratezza",
   "gpsPositionAccuracy": "Accuratezza posizione GPS",
   "gpsPositionIsMoving": "In movimento",
+  "gpsPositionSpeed": "Velocità",
   "gpsPositionTest": "Test positione GPS",
   "gpsLatitude": "Latitudine",
   "gpsLongitude": "Longitudine",

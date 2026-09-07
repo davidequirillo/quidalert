@@ -1001,6 +1001,12 @@ abstract class AppLocalizations {
   /// **'Moving'**
   String get gpsPositionIsMoving;
 
+  /// No description provided for @gpsPositionSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get gpsPositionSpeed;
+
   /// No description provided for @gpsPositionTest.
   ///
   /// In en, this message translates to:
