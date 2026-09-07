@@ -9,6 +9,7 @@
 import 'dart:math';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jose/jose.dart';
 import 'package:http/http.dart' as http;
@@ -20,29 +21,27 @@ import 'package:quidalert_flutter/utils/strings.dart';
 // It's a wrapper around the flutter_background_geolocation plugin,
 // which starts in the main.dart file and runs in the background even when the app is closed.
 class BackgroundLocationService {
-  static bg.Location? _lastSentLocation;
-  static DateTime? _lastSentTime;
+  static double SpeedLimitInKmH = 10; // 10 km/h
   static double distanceLimitInMeters = 250; // 250 meters
+  static int timeIntervalInSeconds = 600; // 10 minutes
   static int dailyLimitInSeconds = 3600 * 24; // 24 hours
   static double accuracyLimitInMeters = 150; // 150 meters
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
+  static SharedPreferences? _prefs;
 
   static Future<void> init() async {
+    await ensurePrefsLoaded();
     debugPrintC(
       "Cleaning pre-existing background location listeners and locations...",
     );
-    //await bg.BackgroundGeolocation.removeListeners(); // not needed probably
+    await bg.BackgroundGeolocation.removeListeners();
     debugPrintC("Initializing background location service...");
     bg.BackgroundGeolocation.onLocation((bg.Location location) async {
       debugPrintC(
         "Background location received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
-      if (location.isMoving) {
-        debugPrintC("The device is moving, skipping update");
-        return;
-      }
       try {
-        await handleLocation(location);
+        await handleLocation(location, withTimeIntervalCheck: true);
       } catch (e) {
         debugPrintC(
           '[BackgroundLocationService, onLocation] Unknown error handling location: $e',
@@ -58,12 +57,8 @@ class BackgroundLocationService {
         debugPrintC(
           "Heartbeat event contains a location: ${location.coords.latitude}, ${location.coords.longitude} location_id: ${location.uuid}",
         );
-        if (location.isMoving) {
-          debugPrintC("The device is moving, skipping update");
-          return;
-        }
         try {
-          await handleHeartbeatLocation(location);
+          await handleLocation(location);
         } catch (e) {
           debugPrintC(
             '[BackgroundLocationService, heartbeat] Unknown error handling location: $e',
@@ -77,10 +72,6 @@ class BackgroundLocationService {
       debugPrintC(
         "Background motion change received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
-      if (location.isMoving) {
-        debugPrintC("The device is moving, skipping update");
-        return;
-      }
       try {
         await handleLocation(location);
       } catch (e) {
@@ -133,9 +124,10 @@ class BackgroundLocationService {
     debugPrintC("Background location service initialized.");
   }
 
-  static Future<void> dispose() async {
-    await bg.BackgroundGeolocation.stop();
-    debugPrintC("Background location service disposed.");
+  // Ensures that the shared preferences instance is loaded.
+  // If the shared preferences instance is not null, it won't be reloaded.
+  static Future<void> ensurePrefsLoaded() async {
+    _prefs ??= await SharedPreferences.getInstance();
   }
 
   static Future<void> startTracking() async {
@@ -158,8 +150,8 @@ class BackgroundLocationService {
     await bg.BackgroundGeolocation.stop();
     await bg.BackgroundGeolocation.destroyLocations();
     debugPrintC("Background location tracking stopped.");
-    _lastSentLocation = null;
-    _lastSentTime = null;
+    await _prefs?.remove('lastSentLocation');
+    await _prefs?.remove('lastSentTime');
   }
 
   static Future<bool> isBatteryOptimizationIgnored() async {
@@ -185,29 +177,57 @@ class BackgroundLocationService {
     }
   }
 
-  static Future<void> handleLocation(bg.Location location) async {
+  static Future<void> handleLocation(
+    bg.Location location, {
+    bool withTimeIntervalCheck = false,
+  }) async {
     final now = DateTime.now();
     final locationAccuracy = location.coords.accuracy;
     debugPrintC(
       "Handling location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracy.toStringAsFixed(2)} meters",
     );
+    // Skip handling the location if it is a sample location.
+    if (location.sample == true) {
+      debugPrintC("Location is a sample, skipping update");
+      return;
+    }
+    // Calculate the speed limit in meters per second based on the configured km/h limit.
+    final speedLimit = BackgroundLocationService.SpeedLimitInKmH * 1000 / 3600;
+    if (location.isMoving &&
+        (location.coords.speed < 0 || location.coords.speed > speedLimit)) {
+      debugPrintC(
+        "The device is moving too fast or with an invalid speed, skipping update",
+      );
+      return;
+    }
+    // Skip handling the location if its accuracy is worse than the configured limit.
     if (locationAccuracy > accuracyLimitInMeters) {
       debugPrintC(
         "Location accuracy is worse than the limit (${accuracyLimitInMeters.toStringAsFixed(2)} meters), skipping update",
       );
       return;
     }
-    if (_lastSentLocation != null && _lastSentTime != null) {
+    // We retrieve the last sent location and timestamp from shared preferences
+    // to determine if we should send the new location to the backend (server).
+    final lastSentLocationLat = _prefs?.getDouble('lastSentLocationLat');
+    final lastSentLocationLng = _prefs?.getDouble('lastSentLocationLng');
+    final lastSentAt = _prefs?.getInt('lastSentAt');
+    final lastSentAtDatetime = lastSentAt != null
+        ? DateTime.fromMillisecondsSinceEpoch(lastSentAt)
+        : null;
+    if (lastSentLocationLat != null &&
+        lastSentLocationLng != null &&
+        lastSentAtDatetime != null) {
       final distance = calculateDistance(
-        _lastSentLocation!.coords.latitude,
-        _lastSentLocation!.coords.longitude,
+        lastSentLocationLat,
+        lastSentLocationLng,
         location.coords.latitude,
         location.coords.longitude,
       );
       // We skip sending the location to the backend if the distance is less than 250 meters,
       // but if 24 hours have passed, we send it anyway, even if the distance is less than 250 meters,
       // to ensure that the backend has a recent location for the user.
-      final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
+      final secondsSinceLast = now.difference(lastSentAtDatetime).inSeconds;
       debugPrintC(
         "Difference between last sent location and current location: ${distance.toStringAsFixed(2)} meters, $secondsSinceLast seconds",
       );
@@ -216,55 +236,23 @@ class BackgroundLocationService {
         debugPrintC("Location update skipped");
         return;
       }
+      if (withTimeIntervalCheck) {
+        if (secondsSinceLast < timeIntervalInSeconds) {
+          debugPrintC(
+            "Location update paused due to short interval since last update",
+          );
+          return;
+        }
+      }
     }
     final isSuccess = await sendToBackend(
       location.coords.latitude,
       location.coords.longitude,
     );
     if (isSuccess) {
-      _lastSentLocation = location;
-      _lastSentTime = now;
-    }
-  }
-
-  static Future<void> handleHeartbeatLocation(bg.Location location) async {
-    final now = DateTime.now();
-    bg.Location locationToSend;
-    final locationAccuracy = location.coords.accuracy;
-    debugPrintC(
-      "Handling heartbeat location: ${location.coords.latitude}, ${location.coords.longitude}, accuracy=${locationAccuracy.toStringAsFixed(2)} meters",
-    );
-    if (locationAccuracy > accuracyLimitInMeters) {
-      debugPrintC(
-        "Location accuracy is worse than the limit (${accuracyLimitInMeters.toStringAsFixed(2)} meters), skipping update",
-      );
-      return;
-    }
-    if (_lastSentLocation != null && _lastSentTime != null) {
-      final secondsSinceLast = now.difference(_lastSentTime!).inSeconds;
-      debugPrintC(
-        "Time between last sent location and current heartbeat location: $secondsSinceLast seconds",
-      );
-      if (secondsSinceLast < dailyLimitInSeconds) {
-        debugPrintC("Heartbeat location will not be sent to the backend");
-        return;
-      } else {
-        debugPrintC("Heartbeat location will be sent to the backend");
-        locationToSend = location;
-      }
-    } else {
-      debugPrintC(
-        "No last sent location available, sending current heartbeat location to the backend",
-      );
-      locationToSend = location;
-    }
-    final isSuccess = await sendToBackend(
-      locationToSend.coords.latitude,
-      locationToSend.coords.longitude,
-    );
-    if (isSuccess) {
-      _lastSentLocation = locationToSend;
-      _lastSentTime = now;
+      _prefs?.setDouble('lastSentLocationLat', location.coords.latitude);
+      _prefs?.setDouble('lastSentLocationLng', location.coords.longitude);
+      _prefs?.setInt('lastSentAt', now.millisecondsSinceEpoch);
     }
   }
 
