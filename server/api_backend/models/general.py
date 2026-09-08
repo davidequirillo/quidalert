@@ -428,7 +428,11 @@ class GpsTokenData(BaseModel):
 class GpsCoordinatesSchema(BaseModel):
     latitude: float
     longitude: float
-
+    location_id: Optional[str] = Field(default=None, max_length=256)
+    accuracy: Optional[float] = Field(default=None) # in meters
+    is_moving: Optional[bool] = Field(default=None)
+    speed: Optional[float] = Field(default=None) # in meters per second
+    
     @field_validator("latitude")
     @classmethod
     def validate_latitude(cls, v):

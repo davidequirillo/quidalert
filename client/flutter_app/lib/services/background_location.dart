@@ -252,6 +252,10 @@ class BackgroundLocationService {
     final isSuccess = await sendToBackend(
       location.coords.latitude,
       location.coords.longitude,
+      location.uuid,
+      location.coords.accuracy,
+      location.isMoving,
+      location.coords.speed,
     );
     if (isSuccess) {
       await _prefs?.setDouble('lastSentLocationLat', location.coords.latitude);
@@ -281,7 +285,14 @@ class BackgroundLocationService {
 
   static double _degreesToRadians(double degrees) => degrees * pi / 180;
 
-  static Future<bool> sendToBackend(double lat, double lng) async {
+  static Future<bool> sendToBackend(
+    double lat,
+    double lng,
+    String locationId,
+    double accuracy,
+    bool isMoving,
+    double speed,
+  ) async {
     String? token;
     try {
       token = await getGpsToken();
@@ -300,7 +311,14 @@ class BackgroundLocationService {
           "Authorization": "Bearer $token",
           "Content-Type": "application/json",
         },
-        body: jsonEncode({"latitude": lat, "longitude": lng}),
+        body: jsonEncode({
+          "latitude": lat,
+          "longitude": lng,
+          "location_id": locationId,
+          "accuracy": accuracy,
+          "is_moving": isMoving,
+          "speed": speed,
+        }),
       );
       if (response.statusCode == 200) {
         debugPrintC('Gps location update successful');
