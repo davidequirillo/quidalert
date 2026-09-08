@@ -368,10 +368,10 @@ class BackgroundLocationService {
       final String locationDatetimeStr = locationDatetime != null
           ? datetimeAsStringWithoutMilliseconds(locationDatetime)
           : "n/a";
-      final int? speed = location["coords"]?["speed"]?.toInt() ?? null;
-      final int? speedKmh = (speed != null) ? (speed * 3.6).toInt() : null;
+      final double? speed = location["coords"]?["speed"] as double?;
+      final double? speedKmh = (speed != null) ? (speed * 3.6) : null;
       final String speedKmhStr = (speedKmh != null) && (speedKmh >= 0)
-          ? speedKmh.toString() + " km/h"
+          ? speedKmh.toStringAsFixed(1) + " km/h"
           : "n/a";
       locations.add({
         "uuid": location["uuid"]?.toString() ?? "n/a",
