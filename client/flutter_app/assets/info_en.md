@@ -27,8 +27,8 @@ Note: the system is optimized to locally detect only GPS positions related to si
 
 Note: the server will temporarily store only the last GPS location received for each user, not their entire tracking history. If the user logs out, their GPS location will no longer be updated, and after a few days, the system will automatically delete this old location.
 
-[Legal terms](/terms)
+## [Login](/login)
 
-[Account registration](/register)
+## [Account registration](/register)
 
-[Login](/login)
+## [Legal terms](/terms)
