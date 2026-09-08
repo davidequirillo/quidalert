@@ -27,8 +27,8 @@ Nota: il sistema è ottimizzato per rilevare localmente solo le posizioni GPS re
 
 Nota: il server memorizzerà temporaneamente, per ciascun utente, solo l'ultima posizione GPS ricevuta, non l'intera cronologia di tracciamento. Se l'utente effettua il logout, la sua posizione GPS non verrà più aggiornata e, dopo alcuni giorni, il sistema eliminerà automaticamente questa vecchia posizione.
 
-[Termini legali](/terms)
+## [Login](/login)
 
-[Registrazione account](/register)
+## [Registrazione account](/register)
 
-[Login](/login)
+## [Termini legali](/terms)
