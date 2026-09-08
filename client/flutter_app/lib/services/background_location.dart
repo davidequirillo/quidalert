@@ -195,7 +195,7 @@ class BackgroundLocationService {
     // Calculate the speed limit in meters per second based on the configured km/h limit.
     final speedLimit = BackgroundLocationService.SpeedLimitInKmH * 1000 / 3600;
     if (location.isMoving &&
-        (location.coords.speed < 0 || location.coords.speed >= speedLimit)) {
+        (location.coords.speed < 0 || location.coords.speed > speedLimit)) {
       debugPrintC(
         "The device is moving too fast or with an invalid speed, skipping update",
       );
