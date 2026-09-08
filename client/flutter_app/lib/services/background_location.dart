@@ -150,8 +150,9 @@ class BackgroundLocationService {
     await bg.BackgroundGeolocation.stop();
     await bg.BackgroundGeolocation.destroyLocations();
     debugPrintC("Background location tracking stopped.");
-    await _prefs?.remove('lastSentLocation');
-    await _prefs?.remove('lastSentTime');
+    await _prefs?.remove('lastSentLocationLat');
+    await _prefs?.remove('lastSentLocationLng');
+    await _prefs?.remove('lastSentAt');
   }
 
   static Future<bool> isBatteryOptimizationIgnored() async {
@@ -209,6 +210,9 @@ class BackgroundLocationService {
     }
     // We retrieve the last sent location and timestamp from shared preferences
     // to determine if we should send the new location to the backend (server).
+    // Note: we cannot use static variables to store and retrieve them, because the two BackgroundLocationService classes
+    // (one running in the background as headless task, and one in the foreground at app level) run in separate isolates and do not share static variables,
+    // so we use shared preferences to persist the last sent location and related timestamp.
     final lastSentLocationLat = _prefs?.getDouble('lastSentLocationLat');
     final lastSentLocationLng = _prefs?.getDouble('lastSentLocationLng');
     final lastSentAt = _prefs?.getInt('lastSentAt');
@@ -250,9 +254,9 @@ class BackgroundLocationService {
       location.coords.longitude,
     );
     if (isSuccess) {
-      _prefs?.setDouble('lastSentLocationLat', location.coords.latitude);
-      _prefs?.setDouble('lastSentLocationLng', location.coords.longitude);
-      _prefs?.setInt('lastSentAt', now.millisecondsSinceEpoch);
+      await _prefs?.setDouble('lastSentLocationLat', location.coords.latitude);
+      await _prefs?.setDouble('lastSentLocationLng', location.coords.longitude);
+      await _prefs?.setInt('lastSentAt', now.millisecondsSinceEpoch);
     }
   }
 
@@ -364,13 +368,18 @@ class BackgroundLocationService {
       final String locationDatetimeStr = locationDatetime != null
           ? datetimeAsStringWithoutMilliseconds(locationDatetime)
           : "n/a";
+      final int? speed = location["coords"]?["speed"]?.toInt() ?? null;
+      final int? speedKmh = (speed != null) ? (speed * 3.6).toInt() : null;
+      final String speedKmhStr = (speedKmh != null) && (speedKmh >= 0)
+          ? speedKmh.toString() + " km/h"
+          : "n/a";
       locations.add({
         "uuid": location["uuid"]?.toString() ?? "n/a",
         "latitude": location["coords"]?["latitude"]?.toString() ?? "n/a",
         "longitude": location["coords"]?["longitude"]?.toString() ?? "n/a",
         "accuracy": location["coords"]?["accuracy"]?.toString() ?? "n/a",
         "is_moving": location["is_moving"]?.toString() ?? "n/a",
-        "speed": location["coords"]?["speed"]?.toString() ?? "n/a",
+        "speed": speedKmhStr,
         "timestamp": locationDatetimeStr,
       });
     }
