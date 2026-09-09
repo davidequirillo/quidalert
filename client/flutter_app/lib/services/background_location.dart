@@ -7,7 +7,6 @@
 // plugin by Transistor Software. See the LICENSE file for full details.
 
 import 'dart:math';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
 import 'package:shared_preferences/shared_preferences.dart';
