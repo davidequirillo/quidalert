@@ -66,7 +66,7 @@ class LocationClient extends ChangeNotifier {
   bg.Location? _currentPosition;
   String? _currentAddress;
   bool _isFetching = false;
-  double accuracyLimit = 50.0; // meters
+  double accuracyLimit = 75.0; // meters
 
   String? get currentAddress => _currentAddress;
 

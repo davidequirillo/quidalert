@@ -42,14 +42,8 @@ def log_fcm_token_registration_success(user_id: str):
 
 def log_gps_position_updated(user_id: str, latitude: float, longitude: float, 
         location_id: Optional[str] = None, accuracy: Optional[float] = None, 
-        is_moving: Optional[bool] = None, speed: Optional[float] = None):
-    if speed is not None:
-        speed_ms = f"{speed:.1f}"  # format to 1 decimal places
-        speed_kmh = f"{speed * 3.6:.1f}"  # convert to km/h and format to 1 decimal places
-    else:
-        speed_ms = None
-        speed_kmh = None
+        is_moving: Optional[bool] = None, speed: Optional[float] = None, activity: Optional[str] = None):
     logger.info(
-        f"gps_position_updated, latitude={latitude}, longitude={longitude}, location_id={location_id}, accuracy={accuracy}, is_moving={is_moving}, speed={speed_ms} m/s -> {speed_kmh} km/h",
+        f"gps_position_updated, latitude={latitude}, longitude={longitude}, location_id={location_id}, accuracy={accuracy}, is_moving={is_moving}, speed={speed} m/s, activity={activity}",
         extra=get_request_info(user_id)
     )

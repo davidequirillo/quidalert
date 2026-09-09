@@ -27,7 +27,7 @@ void backgroundLocationHeadlessTask(bg.HeadlessEvent event) async {
       );
       await BackgroundLocationService.handleLocation(
         location,
-        withTimeIntervalCheck: true,
+        withActivityCheck: true,
       );
     } else if (event.name == bg.Event.HEARTBEAT) {
       bg.HeartbeatEvent heartbeatEvent = event.event as bg.HeartbeatEvent;
