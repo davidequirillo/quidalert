@@ -253,8 +253,8 @@ class BackgroundLocationService {
     final currLocationLng = location.coords.longitude;
     final currLocationAt = now.millisecondsSinceEpoch;
     // Optimistically update the last sent location in SharedPreferences before sending to the backend
-    // so that even if sending to the backend fails, the app has the latest location stored locally.
-    // and if another similar location update occurs shortly after, it will have the latest location to compare against.
+    // so the app has the latest location stored quickly (locally).
+    // If another similar location is fetched shortly after the current one, it will have the correct latest location to compare against.
     await Future.wait([
       _prefs?.setDouble('lastSentLocationLat', currLocationLat) ??
           Future.value(false),
