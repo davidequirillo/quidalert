@@ -7,6 +7,7 @@
 // plugin by Transistor Software. See the LICENSE file for full details.
 
 import 'dart:math';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -249,18 +250,42 @@ class BackgroundLocationService {
         }
       }
     }
+    final currLocationLat = location.coords.latitude;
+    final currLocationLng = location.coords.longitude;
+    final currLocationAt = now.millisecondsSinceEpoch;
+    // Optimistically update the last sent location in SharedPreferences before sending to the backend
+    // so that even if sending to the backend fails, the app has the latest location stored locally.
+    // and if another similar location update occurs shortly after, it will have the latest location to compare against.
+    await Future.wait([
+      _prefs?.setDouble('lastSentLocationLat', currLocationLat) ??
+          Future.value(false),
+      _prefs?.setDouble('lastSentLocationLng', currLocationLng) ??
+          Future.value(false),
+      _prefs?.setInt('lastSentAt', currLocationAt) ?? Future.value(false),
+    ]);
     final isSuccess = await sendToBackend(
-      location.coords.latitude,
-      location.coords.longitude,
+      currLocationLat,
+      currLocationLng,
       location.uuid,
       location.coords.accuracy,
       location.isMoving,
       location.coords.speed,
     );
-    if (isSuccess) {
-      await _prefs?.setDouble('lastSentLocationLat', location.coords.latitude);
-      await _prefs?.setDouble('lastSentLocationLng', location.coords.longitude);
-      await _prefs?.setInt('lastSentAt', now.millisecondsSinceEpoch);
+    if (!isSuccess) {
+      // If sending to the backend fails, rollback the last sent location in SharedPreferences
+      await Future.wait([
+        lastSentLocationLat != null
+            ? (_prefs?.setDouble('lastSentLocationLat', lastSentLocationLat) ??
+                  Future.value(false))
+            : (_prefs?.remove('lastSentLocationLat') ?? Future.value(false)),
+        lastSentLocationLng != null
+            ? (_prefs?.setDouble('lastSentLocationLng', lastSentLocationLng) ??
+                  Future.value(false))
+            : (_prefs?.remove('lastSentLocationLng') ?? Future.value(false)),
+        lastSentAt != null
+            ? (_prefs?.setInt('lastSentAt', lastSentAt) ?? Future.value(false))
+            : (_prefs?.remove('lastSentAt') ?? Future.value(false)),
+      ]);
     }
   }
 
