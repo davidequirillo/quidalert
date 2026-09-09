@@ -1007,6 +1007,12 @@ abstract class AppLocalizations {
   /// **'Speed'**
   String get gpsPositionSpeed;
 
+  /// No description provided for @gpsPositionActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get gpsPositionActivity;
+
   /// No description provided for @gpsPositionTest.
   ///
   /// In en, this message translates to:

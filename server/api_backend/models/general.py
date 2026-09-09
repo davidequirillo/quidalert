@@ -432,7 +432,8 @@ class GpsCoordinatesSchema(BaseModel):
     accuracy: Optional[float] = Field(default=None) # in meters
     is_moving: Optional[bool] = Field(default=None)
     speed: Optional[float] = Field(default=None) # in meters per second
-    
+    activity: Optional[str] = Field(default=None, max_length=64) # e.g., "walking", "driving", "unknown"
+
     @field_validator("latitude")
     @classmethod
     def validate_latitude(cls, v):

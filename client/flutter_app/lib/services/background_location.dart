@@ -21,9 +21,7 @@ import 'package:quidalert_flutter/utils/strings.dart';
 // It's a wrapper around the flutter_background_geolocation plugin,
 // which starts in the main.dart file and runs in the background even when the app is closed.
 class BackgroundLocationService {
-  static double SpeedLimitInKmH = 10; // 10 km/h
-  static double distanceLimitInMeters = 250; // 250 meters
-  static int timeIntervalInSeconds = 600; // 10 minutes
+  static double distanceLimitInMeters = 350; // 350 meters
   static int dailyLimitInSeconds = 3600 * 24; // 24 hours
   static double accuracyLimitInMeters = 150; // 150 meters
   static final FlutterSecureStorage _storage = FlutterSecureStorage();
@@ -41,7 +39,7 @@ class BackgroundLocationService {
         "Background location received: ${location.coords.latitude}, ${location.coords.longitude}, location_id: ${location.uuid}",
       );
       try {
-        await handleLocation(location, withTimeIntervalCheck: true);
+        await handleLocation(location, withActivityCheck: true);
       } catch (e) {
         debugPrintC(
           '[BackgroundLocationService, onLocation] Unknown error handling location: $e',
@@ -96,8 +94,8 @@ class BackgroundLocationService {
             .Config
             .DESIRED_ACCURACY_MEDIUM, // balance between accuracy and battery
         distanceFilter:
-            250, // in meters (movement threshold for update location events)
-        heartbeatInterval: 1800, // heartbeat event every 30 minutes
+            distanceLimitInMeters, // in meters (movement threshold for update location events)
+        heartbeatInterval: 7200, // heartbeat event every 2 hours
         stopTimeout:
             1, // the device is considered stationary after 1 minute of "no movement" (see stationaryRadius)
         stationaryRadius:
@@ -180,7 +178,7 @@ class BackgroundLocationService {
 
   static Future<void> handleLocation(
     bg.Location location, {
-    bool withTimeIntervalCheck = false,
+    bool withActivityCheck = false,
   }) async {
     final now = DateTime.now();
     final locationAccuracy = location.coords.accuracy;
@@ -190,15 +188,6 @@ class BackgroundLocationService {
     // Skip handling the location if it is a sample location.
     if (location.sample == true) {
       debugPrintC("Location is a sample, skipping update");
-      return;
-    }
-    // Calculate the speed limit in meters per second based on the configured km/h limit.
-    final speedLimit = BackgroundLocationService.SpeedLimitInKmH * 1000 / 3600;
-    if (location.isMoving &&
-        (location.coords.speed < 0 || location.coords.speed > speedLimit)) {
-      debugPrintC(
-        "The device is moving too fast or with an invalid speed, skipping update",
-      );
       return;
     }
     // Skip handling the location if its accuracy is worse than the configured limit.
@@ -228,8 +217,8 @@ class BackgroundLocationService {
         location.coords.latitude,
         location.coords.longitude,
       );
-      // We skip sending the location to the backend if the distance is less than 250 meters,
-      // but if 24 hours have passed, we send it anyway, even if the distance is less than 250 meters,
+      // We skip sending the location to the backend if the distance is less than 350 meters,
+      // but if 24 hours have passed, we send it anyway, even if the distance is less than 350 meters,
       // to ensure that the backend has a recent location for the user.
       final secondsSinceLast = now.difference(lastSentAtDatetime).inSeconds;
       debugPrintC(
@@ -240,12 +229,64 @@ class BackgroundLocationService {
         debugPrintC("Location update skipped");
         return;
       }
-      if (withTimeIntervalCheck) {
-        if (secondsSinceLast < timeIntervalInSeconds) {
-          debugPrintC(
-            "Location update paused due to short interval since last update",
-          );
-          return;
+      // Activity-based location update check:
+      // "still", "walking", "on_foot", "running", "on_bicycle", "in_vehicle", "unknown"
+      // We perform an additional check based on a user's current activity type.
+      // If the activity check is enabled, we will skip location updates based on the user's current activity and the time since the last update.
+      // The time required between location updates varies depending on the activity type (more speed-intensive activities require longer intervals).
+      if (withActivityCheck) {
+        switch (location.activity.type) {
+          case "still":
+            if (secondsSinceLast < 60) {
+              debugPrintC(
+                "Location update skipped (not enough time since last 'still' activity)",
+              );
+              return;
+            }
+            break;
+          case "walking":
+          case "on_foot":
+            if (secondsSinceLast < 300) {
+              debugPrintC(
+                "Location update skipped (not enough time since last 'walking'/'on_foot' activity)",
+              );
+              return;
+            }
+            break;
+          case "running":
+            if (secondsSinceLast < 600) {
+              debugPrintC(
+                "Location update skipped (not enough time since last 'running' activity)",
+              );
+              return;
+            }
+            break;
+          case "on_bicycle":
+            if (secondsSinceLast < 900) {
+              debugPrintC(
+                "Location update skipped (not enough time since last 'on_bicycle' activity)",
+              );
+              return;
+            }
+            break;
+          case "in_vehicle":
+            if (secondsSinceLast < 1800) {
+              debugPrintC(
+                "Location update skipped (not enough time since last 'in_vehicle' activity)",
+              );
+              return;
+            }
+            break;
+          case "unknown":
+            if (secondsSinceLast < 3600) {
+              debugPrintC(
+                "Location update skipped (not enough time since last 'unknown' activity)",
+              );
+              return;
+            }
+            break;
+          default:
+            break;
         }
       }
     }
@@ -269,6 +310,7 @@ class BackgroundLocationService {
       location.coords.accuracy,
       location.isMoving,
       location.coords.speed,
+      location.activity.type,
     );
     if (!isSuccess) {
       // If sending to the backend fails, rollback the last sent location in SharedPreferences
@@ -316,6 +358,7 @@ class BackgroundLocationService {
     double accuracy,
     bool isMoving,
     double speed,
+    String activity,
   ) async {
     String? token;
     try {
@@ -342,6 +385,7 @@ class BackgroundLocationService {
           "accuracy": accuracy,
           "is_moving": isMoving,
           "speed": speed,
+          "activity": activity,
         }),
       );
       if (response.statusCode == 200) {
@@ -410,18 +454,13 @@ class BackgroundLocationService {
       final String locationDatetimeStr = locationDatetime != null
           ? datetimeAsStringWithoutMilliseconds(locationDatetime)
           : "n/a";
-      final double speed =
-          ((location["coords"]?["speed"] as num?)?.toDouble()) ?? -1.0;
-      final String speedStr = speed < 0
-          ? "n/a"
-          : "${(speed * 3.6).toStringAsFixed(1)} km/h";
       locations.add({
         "uuid": location["uuid"]?.toString() ?? "n/a",
         "latitude": location["coords"]?["latitude"]?.toString() ?? "n/a",
         "longitude": location["coords"]?["longitude"]?.toString() ?? "n/a",
         "accuracy": location["coords"]?["accuracy"]?.toString() ?? "n/a",
         "is_moving": location["is_moving"]?.toString() ?? "n/a",
-        "speed": speedStr,
+        "activity": location["activity"]?.toString() ?? "n/a",
         "timestamp": locationDatetimeStr,
       });
     }

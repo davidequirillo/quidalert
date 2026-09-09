@@ -592,7 +592,10 @@ async def update_gps_position(
                 pipe.geoadd(specloc_key, (lon, lat, user_id_str))
                 pipe.zadd(spec_last_upd_key, {user_id_str: now_int_ts})
             await pipe.execute()
-            log_gps_position_updated(user_id_str, lat, lon, gps_data.location_id, gps_data.accuracy, gps_data.is_moving, gps_data.speed)
+            log_gps_position_updated(
+                user_id_str, lat, lon, 
+                gps_data.location_id, gps_data.accuracy, 
+                gps_data.is_moving, gps_data.speed, gps_data.activity)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
     return {"status": "success", "message": "GPS position updated"}
