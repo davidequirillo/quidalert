@@ -95,6 +95,7 @@ class BackgroundLocationService {
             .DESIRED_ACCURACY_MEDIUM, // balance between accuracy and battery
         distanceFilter:
             distanceLimitInMeters, // in meters (movement threshold for update location events)
+        speedJumpFilter: 40,
         heartbeatInterval: 7200, // heartbeat event every 2 hours
         stopTimeout:
             1, // the device is considered stationary after 1 minute of "no movement" (see stationaryRadius)
@@ -102,7 +103,7 @@ class BackgroundLocationService {
             50, // 50 meters radius to consider the device not in movement
         stopOnStationary:
             false, // we don't stop completely the background service when stationary
-        speedJumpFilter: 40,
+        preventSuspend: false,
         stopOnTerminate: false,
         startOnBoot: true,
         disableMotionActivityUpdates: false,
