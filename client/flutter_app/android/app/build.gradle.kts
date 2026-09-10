@@ -7,6 +7,9 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+val backgroundGeolocation = project(":flutter_background_geolocation")
+apply { from("${backgroundGeolocation.projectDir}/background_geolocation.gradle") }
+
 android {
     namespace = "com.example.quidalert_flutter"
     compileSdk = flutter.compileSdkVersion
@@ -38,7 +41,10 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
+            // Quidalert: configuration required for the background geolocation plugin
+            isMinifyEnabled = true
+            isShrinkResources = false   // required            
+            // Quidalert TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }

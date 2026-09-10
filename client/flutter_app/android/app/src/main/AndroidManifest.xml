@@ -4,13 +4,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Quidalert: needs file browsing permission -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <!-- Quidalert: needs gps localization permission, even in background -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="Quidalert"
         android:name="${applicationName}"
@@ -37,11 +30,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Quidalert: background service for gps location updates -->
-        <service
-            android:name="com.transistorsoft.locationmanager.service.TrackingService"
-            android:foregroundServiceType="location" />
-        <!-- Quidalert: background service tag end -->
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -54,8 +42,8 @@
         <!-- Quidalert: Background location plugin license, 
         insert your app distribution name and license key -->
         <meta-data
-            android:name="com.example.app.LICENSE_KEY"
-            android:value="INSERT-YOUR-LICENSE-HERE" />
+            android:name="com.transistorsoft.locationmanager.license"
+            android:value="YOUR_LICENSE_KEY_JWT" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

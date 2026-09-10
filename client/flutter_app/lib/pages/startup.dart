@@ -43,6 +43,9 @@ class StartupPageBodyState extends State<StartupPageBody> {
 
   Future<void> startBackgroundLocationService() async {
     final authClient = context.read<AuthClient>();
+    debugPrintC("Initializing background location service...");
+    BackgroundLocationService.setAuthClient(authClient);
+    await BackgroundLocationService.init();
     if (!authClient.isLoggedIn()) {
       debugPrintC(
         "User is not logged in, skipping background location tracking.",
@@ -51,7 +54,7 @@ class StartupPageBodyState extends State<StartupPageBody> {
       try {
         await BackgroundLocationService.startTracking();
       } catch (e) {
-        debugPrintC("Error initializing background location service: $e");
+        debugPrintC("Error starting background location service: $e");
       }
     }
   }
