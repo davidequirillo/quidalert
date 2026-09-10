@@ -24,16 +24,20 @@ from core.dbmgr import (
 def test_update_gps_position_missing_token(client):
     # We don't provide any token in the request headers, so we expect an unauthorized error
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        },
     })
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 def test_update_gps_position_invalid_token(client):
     # We provide an invalid token in the request headers, so we expect an unauthorized error
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': 'Bearer invalidtoken'
     })
@@ -51,8 +55,10 @@ def test_update_gps_position_expired_token(client, test_baseuser, frozen_now):
     )
     # We provide the expired token in the request headers, so we expect an unauthorized error
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {expired_token}'
     })
@@ -68,8 +74,10 @@ def test_update_gps_position_expired_token(client, test_baseuser, frozen_now):
     # to make the default GPS token expired as well, and we expect the same error
     frozen_now.tick(delta=timedelta(minutes=GEOPOSITION_TOKEN_TTL_MINUTES + 1))
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {default_gps_token}'
     })
@@ -90,38 +98,48 @@ def test_update_gps_position_invalid_coordinates(client, test_baseuser):
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # We provide the valid token but invalid coordinates in the request body, so we expect a validation error
     response = client.post('/api/update-gps-position', json={
-        'latitude': "a",  # Invalid latitude
-        'longitude': "b"  # Invalid longitude
+        'location': {
+            'latitude': "a",  # Invalid latitude
+            'longitude': "b"  # Invalid longitude
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Another case of invalid coordinates (latitude out of range)
     response = client.post('/api/update-gps-position', json={
-        'latitude': 100.0,  # Invalid latitude
-        'longitude': 9.0
+        'location': {
+            'latitude': 100.0,  # Invalid latitude
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Another case of invalid coordinates (longitude out of range)
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 200.0  # Invalid longitude
+        'location': {
+            'latitude': 45.0,
+            'longitude': 200.0  # Invalid longitude
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Another example: latitude not present
     response = client.post('/api/update-gps-position', json={
-        'longitude': 9.0
+        'location': {
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     # Another example: longitude not present
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
+        'location': {
+            'latitude': 45.0,
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -136,8 +154,10 @@ async def test_update_gps_position_success_as_normal_user(client, redis_session,
     assert user_is_chief == 0, "The GPS token should indicate that the user is not a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -174,8 +194,10 @@ async def test_update_gps_position_success_as_chief(client, redis_session, test_
     assert user_is_chief == 1, "The GPS token should indicate that the user is a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -222,8 +244,10 @@ async def test_update_gps_position_as_demoted_chief(client, db_session, redis_se
     assert user_is_chief == 1, "The GPS token should indicate that the user is a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -270,8 +294,10 @@ async def test_update_gps_position_as_demoted_chief_then_repromoted(client, db_s
     assert user_is_chief == 1, "The GPS token should indicate that the user is a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -300,8 +326,10 @@ async def test_update_gps_position_promoted_user_as_chief(client, db_session, re
     assert user_is_chief == 0, "The GPS token should indicate that the user is not a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -326,8 +354,10 @@ async def test_update_gps_position_promoted_user_as_chief(client, db_session, re
     assert new_user_is_chief == 1, "The new GPS token should indicate that the user is a chief after promotion and refresh"
     # Now we provide the new GPS token in the request body, so we expect a successful update and the user should be treated as a chief in Redis
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {new_gps_token}'
     })
@@ -362,8 +392,10 @@ async def test_update_gps_position_promote_user_as_chief_then_demote_again(clien
     assert user_is_chief == 0, "The GPS token should indicate that the user is not a chief"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -399,8 +431,10 @@ async def test_update_gps_position_called_by_specialist_user(client, redis_sessi
     assert user_role != "citizen", "The GPS token should indicate that the user has a role other than 'citizen'"
     # We provide the valid token and valid coordinates in the request body, so we expect a successful update
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })
@@ -448,8 +482,10 @@ async def test_update_gps_position_called_by_a_non_specialist_user(client, test_
     # So, the GPS token has a user_role of "citizen" (not a specialist role)
     assert user_role == "citizen", "The GPS token should indicate that the user has a role of 'citizen'"
     response = client.post('/api/update-gps-position', json={
-        'latitude': 45.0,
-        'longitude': 9.0
+        'location': {
+            'latitude': 45.0,
+            'longitude': 9.0
+        }
     }, headers={
         'Authorization': f'Bearer {gps_token}'
     })

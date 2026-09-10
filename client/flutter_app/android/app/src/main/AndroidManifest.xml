@@ -7,7 +7,9 @@
     <application
         android:label="Quidalert"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon">
+        android:icon="@mipmap/launcher_icon"
+        android:usesCleartextTraffic="true">
+        <!-- Quidalert: allows clear text traffic (network) for development purposes -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

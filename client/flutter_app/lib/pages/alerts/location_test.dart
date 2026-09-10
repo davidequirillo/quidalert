@@ -201,8 +201,8 @@ class _LocationTestBodyState extends State<LocationTestBody> {
               final String isMovingStr = loc.getBooleanString(
                 location["is_moving"]!,
               );
-              final String timestamp = location["timestamp"]!;
-              final String uuidPart = location["uuid"]!.split("-").last;
+              final String timestamp = location["created_at"]!;
+              final String uuidPart = location["location_id"]!.split("-").last;
               String subtitleText = "${loc.gpsPositionAccuracy}: $accuracy\n";
               subtitleText +=
                   "${loc.gpsPositionIsMoving}: ${isMovingStr.toLowerCase()}\n";

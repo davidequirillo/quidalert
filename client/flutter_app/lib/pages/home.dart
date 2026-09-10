@@ -162,6 +162,7 @@ class _HomeBodyState extends State<HomeBody> {
           loc.gpsPermissionsRequiredTitle,
           loc.gpsPermissionsRequiredMessage,
         );
+        await BackgroundLocationService.refreshGpsTokenInConfig();
         await BackgroundLocationService.startTracking();
       }
     } catch (e) {

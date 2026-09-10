@@ -433,6 +433,7 @@ class GpsCoordinatesSchema(BaseModel):
     is_moving: Optional[bool] = Field(default=None)
     speed: Optional[float] = Field(default=None) # in meters per second
     activity: Optional[str] = Field(default=None, max_length=64) # e.g., "walking", "driving", "unknown"
+    timestamp: Optional[str] = Field(default=None, max_length=64) # ISO 8601 formatted timestamp
 
     @field_validator("latitude")
     @classmethod
@@ -447,6 +448,9 @@ class GpsCoordinatesSchema(BaseModel):
         if not (-180 <= v <= 180):
             raise ValueError("Longitude must be between -180 and 180")
         return v
+
+class GpsLocationUpdateSchema(BaseModel):
+    location: GpsCoordinatesSchema
 
 ## ALERT MODELS
 
