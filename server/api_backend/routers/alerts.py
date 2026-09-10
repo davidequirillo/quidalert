@@ -36,7 +36,7 @@ from models.general import (
     User, UserRole, Alert, AlertOut, 
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
-    GpsCoordinatesSchema, GpsTokenData,
+    GpsCoordinatesSchema, GpsLocationUpdateSchema, GpsTokenData,
     VotingSchema, ClosingSchema, ClosingType,
     CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
     CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,  
@@ -559,16 +559,17 @@ def expand_alert(alert_id: int,
 
 @router.post("/api/update-gps-position")
 async def update_gps_position(
-    gps_data: GpsCoordinatesSchema,
+    gps_data: GpsLocationUpdateSchema,
     user_data: GpsTokenData = Depends(get_geoposition_token_data),
     redis_client = Depends(get_redis_session)
 ):
+    gps_location: GpsCoordinatesSchema = gps_data.location
     user_id_str = user_data.user_id # already a string, no need to convert from UUID
     is_chief = user_data.user_is_chief
     user_role = user_data.user_role
     now = now_tz_aware()
     now_int_ts = int(now.timestamp())
-    lat, lon = gps_data.latitude, gps_data.longitude
+    lat, lon = gps_location.latitude, gps_location.longitude
     userloc_key = get_redis_user_locations_key(user_id_str)
     chiefloc_key = get_redis_chief_locations_key(user_id_str)
     last_upd_key = get_redis_location_last_updates_key(user_id_str)
@@ -594,8 +595,8 @@ async def update_gps_position(
             await pipe.execute()
             log_gps_position_updated(
                 user_id_str, lat, lon, 
-                gps_data.location_id, gps_data.accuracy, 
-                gps_data.is_moving, gps_data.speed, gps_data.activity)
+                gps_location.location_id, gps_location.accuracy, 
+                gps_location.is_moving, gps_location.speed, gps_location.activity, gps_location.timestamp)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
     return {"status": "success", "message": "GPS position updated"}

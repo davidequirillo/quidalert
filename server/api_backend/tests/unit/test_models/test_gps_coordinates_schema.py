@@ -71,6 +71,7 @@ def test_gps_coordinates_schema_default_values():
     assert request.is_moving is None
     assert request.speed is None
     assert request.activity is None
+    assert request.timestamp is None
 
 def test_gps_coordinates_schema_all_fields():
     data = {
@@ -80,7 +81,8 @@ def test_gps_coordinates_schema_all_fields():
         "location_id": "loc123",
         "is_moving": True,
         "speed": 10.5,
-        "activity": "walking"
+        "activity": "walking",
+        "timestamp": "2024-06-05T12:34:56Z"
     }
     request = GpsCoordinatesSchema.model_validate(data)
     assert request.latitude == data["latitude"]
@@ -90,6 +92,7 @@ def test_gps_coordinates_schema_all_fields():
     assert request.is_moving == data["is_moving"]
     assert request.speed == data["speed"]
     assert request.activity == data["activity"]
+    assert request.timestamp == data["timestamp"]
 
 def test_gps_coordinates_schema_invalid_accuracy():
     data = {
@@ -180,6 +183,24 @@ def test_gps_coordinates_schema_activity_too_long():
         "latitude": 45.4642,
         "longitude": 9.19,
         "activity": "a" * 65 # assuming the max length is 64
+    }
+    with pytest.raises(ValueError):
+        GpsCoordinatesSchema.model_validate(data)
+
+def test_gps_coordinates_schema_timestamp_invalid():
+    data = {
+        "latitude": 45.4642,
+        "longitude": 9.19,
+        "timestamp": 12345 # it should be a string
+    }
+    with pytest.raises(ValueError):
+        GpsCoordinatesSchema.model_validate(data)
+
+def test_gps_coordinates_schema_timestamp_too_long():
+    data = {
+        "latitude": 45.4642,
+        "longitude": 9.19,
+        "timestamp": "a" * 65 # assuming the max length is 64
     }
     with pytest.raises(ValueError):
         GpsCoordinatesSchema.model_validate(data)

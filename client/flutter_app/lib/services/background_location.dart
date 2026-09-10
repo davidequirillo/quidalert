@@ -17,6 +17,7 @@ import 'package:quidalert_flutter/utils/strings.dart';
 // which starts in the main.dart file and runs in the background even when the app is closed.
 class BackgroundLocationService {
   static AuthClient? authClient = null;
+  static DateTime? httpConfigUpdatedAt = null;
 
   static void setAuthClient(AuthClient client) {
     authClient = client;
@@ -25,21 +26,38 @@ class BackgroundLocationService {
   static Future<void> refreshGpsTokenInConfig() async {
     try {
       debugPrintC(
-        "[BackgroundLocationService] Refreshing GPS token in configuration...",
+        "[BackgroundLocationService] Refreshing http configuration with new GPS token...",
       );
+      if (authClient?.gpsToken == null) {
+        debugPrintC(
+          "[BackgroundLocationService] No GPS token available, skipping http configuration refresh.",
+        );
+        return;
+      }
       debugPrintC(
         "[BackgroundLocationService] Current GPS token: ${authClient?.gpsToken ?? 'NO_GPS_TOKEN'}",
       );
+      if (httpConfigUpdatedAt != null) {
+        final timeElapsed = DateTime.now()
+            .difference(httpConfigUpdatedAt!)
+            .inSeconds;
+        if (timeElapsed < 300) {
+          debugPrintC(
+            "[BackgroundLocationService] Http configuration was updated recently, skipping GPS token refresh.",
+          );
+          return;
+        }
+      }
+      httpConfigUpdatedAt = DateTime.now();
       await bg.BackgroundGeolocation.setConfig(
         bg.Config(http: getHttpConfig()),
-      ).then((bg.State state) {
-        print(
-          '[BackgroundLocationService] GPS Token updated successfully in the native plugin!',
-        );
-      });
+      );
+      debugPrintC(
+        '[BackgroundLocationService] Http configuration refreshed successfully with new GPS token!',
+      );
     } catch (e) {
-      print(
-        '[BackgroundLocationService] Error updating GPS Token in the native plugin: $e',
+      debugPrintC(
+        '[BackgroundLocationService] Error refreshing http configuration with new GPS token: $e',
       );
     }
   }
@@ -63,22 +81,10 @@ class BackgroundLocationService {
     );
     await bg.BackgroundGeolocation.removeListeners();
     debugPrintC("Initializing background location service...");
-    bg.BackgroundGeolocation.onAuthorization((bg.AuthorizationEvent event) {
-      // Authorization event is related to autoSync feature (to update background locations automatically to the server):
-      // this event indicates whether the gps token for background location update API has been successfully authorized by the server.
-      if (event.success) {
-        debugPrintC('[onAuthorization] SUCCESS: ${event.response}');
-      } else {
-        debugPrintC('[onAuthorization] ERROR: ${event.error}');
-      }
-    });
     bg.BackgroundGeolocation.onHttp((bg.HttpEvent response) {
       if (!response.success) {
         if (response.status == 401) {
           debugPrintC('[onHttp] UNAUTHORIZED: ${response}');
-          debugPrintC(
-            '[onHttp] Refreshing GPS token in the background location service configuration...',
-          );
           refreshGpsTokenInConfig();
         } else {
           debugPrintC('[onHttp] FAILURE: ${response}');
@@ -128,7 +134,8 @@ class BackgroundLocationService {
             "accuracy": <%= accuracy %>,
             "is_moving": <%= is_moving %>,
             "speed": <%= speed %>,
-            "activity": "<%= activity.type %>"
+            "activity": "<%= activity.type %>",
+            "timestamp": "<%= timestamp %>"
           }''',
         ),
         geolocation: bg.GeoConfig(
@@ -144,7 +151,7 @@ class BackgroundLocationService {
           disableElasticity:
               false, // We use elasticity to improve battery efficiency (if speed is high, location updates are delayed)
           elasticityMultiplier:
-              3, // multiplier for elasticity effect (higher -> more delay in location updates)
+              10, // multiplier for elasticity effect (higher -> more delay in location updates). Default is 1.
           showsBackgroundLocationIndicator: true,
           allowIdenticalLocations: false,
         ),
@@ -234,13 +241,13 @@ class BackgroundLocationService {
           ? datetimeAsStringWithoutMilliseconds(locationDatetime)
           : "n/a";
       locations.add({
-        "uuid": location["uuid"]?.toString() ?? "n/a",
-        "latitude": location["coords"]?["latitude"]?.toString() ?? "n/a",
-        "longitude": location["coords"]?["longitude"]?.toString() ?? "n/a",
-        "accuracy": location["coords"]?["accuracy"]?.toString() ?? "n/a",
+        "location_id": location["location_id"]?.toString() ?? "n/a",
+        "latitude": location["latitude"]?.toString() ?? "n/a",
+        "longitude": location["longitude"]?.toString() ?? "n/a",
+        "accuracy": location["accuracy"]?.toString() ?? "n/a",
         "is_moving": location["is_moving"]?.toString() ?? "n/a",
-        "activity": location["activity"]["type"]?.toString() ?? "n/a",
-        "timestamp": locationDatetimeStr,
+        "activity": location["activity"]?.toString() ?? "n/a",
+        "created_at": locationDatetimeStr,
       });
     }
     return locations;
