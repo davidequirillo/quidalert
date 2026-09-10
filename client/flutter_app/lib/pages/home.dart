@@ -70,6 +70,8 @@ class _HomeBodyState extends State<HomeBody> {
       // but it's not strictly necessary, as the tokens are refreshed automatically
       // by the AuthClient when we do a protected API request (like fetchProfile) and the access token is expired.
       // await authClient.refreshTokens();
+      //
+      // We refresh the GPS token in the background location service configuration.
       debugPrintC("Home page: tokens refreshed successfully.");
     } catch (e) {
       debugPrintC("Home page: error refreshing tokens: $e");

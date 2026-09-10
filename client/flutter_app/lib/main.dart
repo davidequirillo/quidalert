@@ -10,11 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
-    as bg;
 import 'package:quidalert_flutter/services/background_location.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
-import 'package:quidalert_flutter/services/headless_task.dart';
 import 'package:quidalert_flutter/firebase_options.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/config.dart';
@@ -53,12 +50,6 @@ import 'package:quidalert_flutter/pages/profile/complete.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrintC("Registering headless task for background geolocation...");
-  await bg.BackgroundGeolocation.registerHeadlessTask(
-    backgroundLocationHeadlessTask,
-  );
-  debugPrintC("Initializing background location service...");
-  await BackgroundLocationService.init();
   debugPrintC("Initializing Firebase plugin...");
   try {
     if (Firebase.apps.isEmpty) {

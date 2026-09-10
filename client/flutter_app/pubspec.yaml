@@ -41,7 +41,7 @@ dependencies:
   jose: ^0.3.5+2
   file_picker: ^10.3.9
   geocoding: ^4.0.0
-  flutter_background_geolocation: ^5.0.5 # it requires commercial license key for production release
+  flutter_background_geolocation: ^5.7.0 # it requires commercial license key for production release
   firebase_core: ^4.5.0
   firebase_messaging: ^16.1.2
   url_launcher: ^6.3.2
