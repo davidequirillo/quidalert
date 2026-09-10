@@ -1,6 +1,6 @@
 # Technical advice
 
-- It is recommended to refresh at least once every 6 months to maintain the session, thus avoiding the needing of login, typing email and password.
+- It is recommended to refresh (tapping on the "refresh" button in the home page) at least once every 6 months to maintain the session, thus avoiding the needing of login, typing email and password.
 
 - Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations. There's also a log of the latest GPS locations detected locally in the background, allowing you to verify proper operation.
 

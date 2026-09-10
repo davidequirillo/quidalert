@@ -1,6 +1,6 @@
 # Consigli tecnici
 
-- Si consiglia di fare un refresh almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password.
+- Si consiglia di fare un'operazione di refresh (con l'apposito pulsante nella pagina home) almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password.
 
 - Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine. È presente anche un registro delle ultime posizioni GPS in background rilevate dal dispositivo localmente, in modo da verificarne il corretto funzionamento.
 
