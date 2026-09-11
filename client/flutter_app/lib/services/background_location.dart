@@ -226,7 +226,8 @@ class BackgroundLocationService {
 
   static Future<List<Map<String, String>>> getLocationLog() async {
     List<Map<String, String>> locations = [];
-    List<dynamic> storedLocations = await bg.BackgroundGeolocation.locations;
+    List<dynamic> storedLocations =
+        await bg.BackgroundGeolocation.getLocations();
     debugPrintC(
       "Retrieved ${storedLocations.length} stored locations from the database",
     );
