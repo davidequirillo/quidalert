@@ -17,47 +17,35 @@ import 'package:quidalert_flutter/utils/strings.dart';
 // which starts in the main.dart file and runs in the background even when the app is closed.
 class BackgroundLocationService {
   static AuthClient? authClient = null;
-  static DateTime? httpConfigUpdatedAt = null;
+  static DateTime? gpsTokenRefreshedAt = null;
 
   static void setAuthClient(AuthClient client) {
     authClient = client;
   }
 
-  static Future<void> refreshGpsTokenInConfig() async {
+  static Future<void> updateGpsTokenInConfig() async {
     try {
       debugPrintC(
-        "[BackgroundLocationService] Refreshing http configuration with new GPS token...",
+        "[BackgroundLocationService] Updating http configuration with new GPS token...",
       );
       if (authClient?.gpsToken == null) {
         debugPrintC(
-          "[BackgroundLocationService] No GPS token available, skipping http configuration refresh.",
+          "[BackgroundLocationService] No GPS token available, skipping http configuration update.",
         );
         return;
       }
       debugPrintC(
         "[BackgroundLocationService] Current GPS token: ${authClient?.gpsToken ?? 'NO_GPS_TOKEN'}",
       );
-      if (httpConfigUpdatedAt != null) {
-        final timeElapsed = DateTime.now()
-            .difference(httpConfigUpdatedAt!)
-            .inSeconds;
-        if (timeElapsed < 300) {
-          debugPrintC(
-            "[BackgroundLocationService] Http configuration was updated recently, skipping GPS token refresh.",
-          );
-          return;
-        }
-      }
-      httpConfigUpdatedAt = DateTime.now();
       await bg.BackgroundGeolocation.setConfig(
         bg.Config(http: getHttpConfig()),
       );
       debugPrintC(
-        '[BackgroundLocationService] Http configuration refreshed successfully with new GPS token!',
+        '[BackgroundLocationService] Http configuration updated successfully with new GPS token!',
       );
     } catch (e) {
       debugPrintC(
-        '[BackgroundLocationService] Error refreshing http configuration with new GPS token: $e',
+        '[BackgroundLocationService] Error updating http configuration with new GPS token: $e',
       );
     }
   }
@@ -67,6 +55,12 @@ class BackgroundLocationService {
       url: "${AppConfig.apiUrl}/update-gps-position",
       method: "POST",
       autoSync: true,
+      batchSync:
+          true, // the server will receive batched location updates, but it will keep only the latest location in the batch.
+      rootProperty:
+          'locations', // JSON property that contains the array of locations
+      autoSyncThreshold:
+          1, // if the batchsize is at least 1, it will trigger an automatic sync
       headers: {
         'Content-Type': 'application/json',
         'Authorization': "Bearer ${authClient?.gpsToken ?? 'NO_GPS_TOKEN'}",
@@ -81,16 +75,46 @@ class BackgroundLocationService {
     );
     await bg.BackgroundGeolocation.removeListeners();
     debugPrintC("Initializing background location service...");
-    bg.BackgroundGeolocation.onHttp((bg.HttpEvent response) {
+    // Listen for HTTP events from the background geolocation service.
+    bg.BackgroundGeolocation.onHttp((bg.HttpEvent response) async {
       if (!response.success) {
         if (response.status == 401) {
           debugPrintC('[onHttp] UNAUTHORIZED: ${response}');
-          refreshGpsTokenInConfig();
+          if (gpsTokenRefreshedAt != null) {
+            final timeElapsed = DateTime.now()
+                .difference(gpsTokenRefreshedAt!)
+                .inSeconds;
+            if (timeElapsed < 3600) {
+              debugPrintC(
+                "[BackgroundLocationService] GPS token was updated recently, skipping refresh.",
+              );
+              return;
+            }
+          }
+          if (authClient == null) {
+            debugPrintC(
+              '[BackgroundLocationService] No auth client available, cannot refresh GPS token.',
+            );
+            return;
+          }
+          gpsTokenRefreshedAt = DateTime.now();
+          try {
+            // At the moment, we are not refreshing the auth tokens, because it is not needed:
+            // the GPS token will be updated directly with the function updateGpsTokenInConfig(),
+            // which take the new GPS token from authClient (authClient!.gpsToken), already refreshed by the auth client automatic mechanism.
+            // await authClient!.refreshTokens();
+            await updateGpsTokenInConfig();
+          } catch (e) {
+            debugPrintC(
+              '[BackgroundLocationService] Error refreshing auth tokens: $e',
+            );
+          }
         } else {
           debugPrintC('[onHttp] FAILURE: ${response}');
         }
       }
     });
+    // Initialize the background geolocation service with the specified configuration.
     await bg.BackgroundGeolocation.ready(
       bg.Config(
         activity: bg.ActivityConfig(
@@ -124,7 +148,8 @@ class BackgroundLocationService {
         persistence: bg.PersistenceConfig(
           persistMode: bg.PersistMode.location,
           maxRecordsToPersist: 100,
-          maxDaysToPersist: 30,
+          locationsOrderDirection: 'ASC',
+          maxDaysToPersist: 14,
           // Template for location data to be persisted (it also defines the HTTP payload structure)
           locationTemplate: '''{
             "latitude": <%= latitude %>,
@@ -209,9 +234,11 @@ class BackgroundLocationService {
     }
   }
 
-  static Future<bg.Location> getForegroundCurrentPosition() async {
+  static Future<bg.Location> getForegroundCurrentPosition({
+    bool withPersistence = false,
+  }) async {
     bg.Location location = await bg.BackgroundGeolocation.getCurrentPosition(
-      persist: false,
+      persist: withPersistence,
       samples: 3,
       desiredAccuracy:
           10, // 10 meters accuracy for foreground location fetches, since it's used for user-initiated actions that require more precision

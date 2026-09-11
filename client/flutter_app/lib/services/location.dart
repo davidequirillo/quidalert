@@ -67,6 +67,7 @@ class LocationClient extends ChangeNotifier {
   String? _currentAddress;
   bool _isFetching = false;
   double accuracyLimit = 75.0; // meters
+  DateTime? _lastFetchTime;
 
   String? get currentAddress => _currentAddress;
 
@@ -92,10 +93,22 @@ class LocationClient extends ChangeNotifier {
     _isFetching = true;
     notifyListeners();
     debugPrintC("Fetching foreground location...");
+    bool persistEnabled = true;
+    if (_lastFetchTime != null) {
+      final timeSinceLastFetch = DateTime.now()
+          .difference(_lastFetchTime!)
+          .inSeconds;
+      if (timeSinceLastFetch < 3600) {
+        persistEnabled = false;
+      }
+    }
     try {
       try {
         _currentPosition =
-            await BackgroundLocationService.getForegroundCurrentPosition();
+            await BackgroundLocationService.getForegroundCurrentPosition(
+              withPersistence: persistEnabled,
+            );
+        _lastFetchTime = DateTime.now();
       } on bg.LocationError catch (e) {
         final msg = e.message.toLowerCase();
         // it can throw an error code (int) if the position cannot be fetched, for example:

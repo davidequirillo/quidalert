@@ -116,6 +116,13 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     }
   }
 
+  Future<void> _reloadPage() async {
+    setState(() {
+      coords = "";
+      accuracy = "";
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -168,7 +175,20 @@ class _LocationTestBodyState extends State<LocationTestBody> {
                     child: Text(loc.buttonTest),
                   ),
             Divider(height: 50, thickness: 1),
-            buildSectionTitle(loc.sectionLocationLog),
+            buildSectionTitle(loc.sectionLocationsNotYetSync),
+            InkWell(
+              onTap: () {
+                _reloadPage();
+              },
+              child: Text(
+                loc.labelReloadPage,
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  color: Colors.blue,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             buildLocationLogListView(),
           ],
         ),
@@ -186,7 +206,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
         } else if (snapshot.hasError) {
           return Text('${loc.errorError}: ${snapshot.error}');
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Text(loc.entriesNotFound);
+          return Text(loc.gpsLocationsAlreadySent);
         } else {
           final locations = snapshot.data!;
           return ListView.builder(

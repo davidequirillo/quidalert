@@ -23,9 +23,9 @@ Verranno quindi chieste all'utente le seguenti autorizzazioni:
 
 Questo processo di tracciamento in background si avvierà automaticamente solo dopo aver effettuato correttamente il login, e verrà interrotto immediatamente se deciderai di disconnetterti dal server (logout).
 
-Nota: il sistema è ottimizzato per rilevare localmente solo le posizioni GPS relative a spostamenti significativi (almeno 250 metri), garantendo così il massimo risparmio della batteria e del traffico dati, soprattutto quando l'utente rimane nella stessa zona. In aggiunta, la distanza percorsa necessaria per far scattare il rilevamento gps, diventa progressivamente più grande all'aumentare della velocità.
+Nota: al fine di garantire il massimo risparmio della batteria, quando è fermo il sistema non interroga quasi mai il sistema di geolocalizzazione, mentre quando è in movimento è ottimizzato per rilevare solo le posizioni GPS relative a spostamenti significativi (almeno 250 metri). In aggiunta, la distanza percorsa necessaria per far scattare il rilevamento gps, diventa progressivamente più grande all'aumentare della velocità, così ad alte velocità il dispositivo non interrogherà di continuo il gps, ma solo di tanto in tanto.
 
-Nota: il server memorizzerà temporaneamente, per ciascun utente, solo l'ultima posizione GPS ricevuta, non l'intera cronologia di tracciamento. Se l'utente effettua il logout, la sua posizione GPS non verrà più aggiornata e, dopo alcuni giorni, il sistema eliminerà automaticamente questa vecchia posizione.
+Nota: il server memorizzerà temporaneamente, per ciascun utente, solo l'ultima posizione GPS ricevuta, non l'intera cronologia di tracciamento. Se l'utente effettua il logout, la sua posizione GPS non verrà più aggiornata e, dopo alcuni giorni, il server eliminerà automaticamente questa vecchia posizione.
 
 ## [Login](/login)
 

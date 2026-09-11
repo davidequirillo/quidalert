@@ -36,7 +36,7 @@ from models.general import (
     User, UserRole, Alert, AlertOut, 
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
-    GpsCoordinatesSchema, GpsLocationUpdateSchema, GpsTokenData,
+    GpsLocationSchema, GpsBatchLocations, GpsTokenData,
     VotingSchema, ClosingSchema, ClosingType,
     CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
     CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,  
@@ -559,11 +559,14 @@ def expand_alert(alert_id: int,
 
 @router.post("/api/update-gps-position")
 async def update_gps_position(
-    gps_data: GpsLocationUpdateSchema,
+    gps_data: GpsBatchLocations,
     user_data: GpsTokenData = Depends(get_geoposition_token_data),
     redis_client = Depends(get_redis_session)
 ):
-    gps_location: GpsCoordinatesSchema = gps_data.location
+    if not gps_data.locations:
+        raise invalid_request_exception("No GPS locations provided")
+    # We only take the last location from the batch
+    gps_location: GpsLocationSchema = gps_data.locations[-1]
     user_id_str = user_data.user_id # already a string, no need to convert from UUID
     is_chief = user_data.user_is_chief
     user_role = user_data.user_role

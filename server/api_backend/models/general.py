@@ -418,14 +418,14 @@ class EmailListWithPrivileges(BaseModel):
             raise ValueError("Wrong role")
         return s
 
-## GPS LOCATION UPDATE MODELS
+## GPS LOCATION MODELS
 
 class GpsTokenData(BaseModel):
     user_id: str # here we use a string instead of UUID
     user_is_chief: bool
     user_role: str
 
-class GpsCoordinatesSchema(BaseModel):
+class GpsLocationSchema(BaseModel):
     latitude: float
     longitude: float
     location_id: Optional[str] = Field(default=None, max_length=256)
@@ -449,8 +449,8 @@ class GpsCoordinatesSchema(BaseModel):
             raise ValueError("Longitude must be between -180 and 180")
         return v
 
-class GpsLocationUpdateSchema(BaseModel):
-    location: GpsCoordinatesSchema
+class GpsBatchLocations(BaseModel):
+    locations: List[GpsLocationSchema]
 
 ## ALERT MODELS
 

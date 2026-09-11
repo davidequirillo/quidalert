@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:quidalert_flutter/services/background_location.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
 import 'package:quidalert_flutter/firebase_options.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
