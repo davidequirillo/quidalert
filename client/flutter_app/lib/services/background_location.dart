@@ -99,10 +99,6 @@ class BackgroundLocationService {
           }
           gpsTokenRefreshedAt = DateTime.now();
           try {
-            // At the moment, we are not refreshing the auth tokens, because it is not needed:
-            // the GPS token will be updated directly with the function updateGpsTokenInConfig(),
-            // which take the new GPS token from authClient (authClient!.gpsToken), already refreshed by the auth client automatic mechanism.
-            // await authClient!.refreshTokens();
             await updateGpsTokenInConfig();
           } catch (e) {
             debugPrintC(

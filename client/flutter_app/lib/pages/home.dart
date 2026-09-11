@@ -65,18 +65,10 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   Future<void> _refreshProfile() async {
-    try {
-      // Calling authClient.refreshTokens function can be helpful for debugging,
-      // but it's not strictly necessary, as the tokens are refreshed automatically
-      // by the AuthClient when we do a protected API request (like fetchProfile) and the access token is expired.
-      // await authClient.refreshTokens();
-      debugPrintC("Home page: tokens refreshed successfully.");
-    } catch (e) {
-      debugPrintC("Home page: error refreshing tokens: $e");
-    }
+    // Trigger a rebuild to refresh the profile information (fetchProfile will be called again).
+    // the fetchProfile function will call a protected API request to get the latest profile data.
     setState(() {
       debugPrintC("Home page: refreshProfile called, triggering rebuild.");
-      // it triggers rebuild to fetch profile again
     });
   }
 

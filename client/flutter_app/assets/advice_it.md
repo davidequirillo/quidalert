@@ -1,6 +1,8 @@
 # Consigli tecnici
 
-- Si consiglia di fare un'operazione di refresh (con l'apposito pulsante nella pagina home) almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password.
+- Si consiglia di fare un'operazione di refresh (con l'apposito pulsante nella pagina home) almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password. NOTA: il sistema, ad ogni apertura dell'app, o durante l'uso di essa, gestisce da solo il refresh, quindi non è necessario effettuarlo. Tuttavia, un click manuale su "refresh" in caso di prolungato inutilizzo dell'app, è una buona idea.
+
+- L'operazione di refresh è anche utile dopo un'eventuale promozione da parte degli amministratori alla tipologia di utente "chief" (capo) o ad un certo ruolo (esempio "volunteer", "policeman", eccetera), in modo da rinfrescare subito il token di autenticazione usato dal modulo GPS dell'applicazione, il quale trasmette assieme alla posizione dell'utente anche alcune informazioni sul suo ruolo e sul tipo di account.
 
 - Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine. È presente anche un registro delle ultime posizioni GPS in background (rilevate dal dispositivo localmente) che non sono state ancora inviate al server a causa di assenza di rete internet, o semplicemente se nel dispositivo è attiva la modalità aereo (internet disabilitato). Non appena tornerà disponibile la rete internet, esse verranno inviate al server (il server prenderà solo quella più recente).
 

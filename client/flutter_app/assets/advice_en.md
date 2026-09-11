@@ -1,6 +1,8 @@
 # Technical advice
 
-- It is recommended to refresh (tapping on the "refresh" button in the home page) at least once every 6 months to maintain the session, thus avoiding the needing of login, typing email and password.
+- It would be helpful to refresh your session (using the dedicated button "refresh" on the home page) at least once every six months to maintain your session, thus avoiding the need to log in by entering your email address and password. NOTE: The system automatically refreshes each time you open the app or while using it, so it's not a necessary operation. However, manually clicking on "refresh", in case of prolonged non-use, it's a good idea. 
+
+- The refresh operation is also useful after a possible promotion by administrators to the "chief" user type or to a certain role (e.g. "volunteer", "policeman", etc.), in order to refresh immediately the authentication token used by the application's GPS module, which transmits, together with the user's location, some information about their role and account type.
 
 - Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations. There is also a log of the latest GPS positions in the background (detected by the device locally) that have not yet been sent to the server due to no internet connection, or simply if the device is in airplane mode (internet disabled). As soon as the Internet is available again, they will be sent to the server (the server will only take the most recent one).
 
