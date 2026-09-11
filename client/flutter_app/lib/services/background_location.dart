@@ -125,7 +125,6 @@ class BackgroundLocationService {
           persistMode: bg.PersistMode.location,
           maxRecordsToPersist: 100,
           maxDaysToPersist: 30,
-          locationsOrderDirection: 'DESC',
           // Template for location data to be persisted (it also defines the HTTP payload structure)
           locationTemplate: '''{
             "latitude": <%= latitude %>,
@@ -226,8 +225,9 @@ class BackgroundLocationService {
 
   static Future<List<Map<String, String>>> getLocationLog() async {
     List<Map<String, String>> locations = [];
-    List<dynamic> storedLocations =
-        await bg.BackgroundGeolocation.getLocations();
+    List<dynamic> storedLocations = await bg.BackgroundGeolocation.getLocations(
+      bg.LocationQuery(limit: 100, page: 0, order: bg.LocationQuery.ORDER_DESC),
+    );
     debugPrintC(
       "Retrieved ${storedLocations.length} stored locations from the database",
     );
