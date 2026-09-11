@@ -15,6 +15,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:quidalert_flutter/config.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/utils/strings.dart';
+import 'package:quidalert_flutter/services/background_location.dart';
 
 class ExpiredTokenException implements Exception {
   final String message;
@@ -201,7 +202,7 @@ class AuthClient extends ChangeNotifier {
     return DateTime.now().toUtc().isAfter(expiry);
   }
 
-  Future<void> refreshTokens() async {
+  Future<void> refreshTokens({bool propagateGpsToken = false}) async {
     // Get new refresh, access, and GPS tokens (api/auth/refresh),
     // using current refresh token as api input
     if (refreshToken == null) {
@@ -250,6 +251,10 @@ class AuthClient extends ChangeNotifier {
     String? gToken = jsonResp['gps_token'];
     await setAuthTokens(rToken, aToken, gToken);
     debugPrintC('The new refresh token is: $refreshToken');
+    if (propagateGpsToken) {
+      debugPrintC('Updating new GPS token in background location config.');
+      await BackgroundLocationService.updateGpsTokenInConfig();
+    }
   }
 
   Future<void> setAuthTokens(String? rtok, String? atok, String? gtok) async {
@@ -545,9 +550,9 @@ class AuthClient extends ChangeNotifier {
           );
         } else {
           debugPrintC(
-            '$m (retry auth), access token expired, refreshing tokens',
+            '$m (retry auth), access token expired, refreshing tokens (with GPS token propagation)',
           );
-          await refreshTokens();
+          await refreshTokens(propagateGpsToken: true);
           debugPrintC('$m (retry auth), access token: $accessToken');
           debugPrintC('$m (retry auth), retrying original request');
           return await doProtectedApiRequest(
