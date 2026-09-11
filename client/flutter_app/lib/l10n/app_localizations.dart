@@ -971,6 +971,12 @@ abstract class AppLocalizations {
   /// **'GPS location test'**
   String get gpsLocationTest;
 
+  /// No description provided for @gpsLocationsAlreadySent.
+  ///
+  /// In en, this message translates to:
+  /// **'All locations are already sent'**
+  String get gpsLocationsAlreadySent;
+
   /// No description provided for @gpsPosition.
   ///
   /// In en, this message translates to:
@@ -1046,7 +1052,7 @@ abstract class AppLocalizations {
   /// No description provided for @gpsPermissionsRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'These permissions will be required: precise GPS position, \'allow all the time\', allow motion tracking, battery \'without restrictions\''**
+  /// **'These permissions will be required (if not already granted): precise GPS position, \'allow all the time\', allow motion tracking, battery \'without restrictions\''**
   String get gpsPermissionsRequiredMessage;
 
   /// No description provided for @gpsBatteryWithoutRestrictionsTitle.
@@ -1504,6 +1510,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background locations log'**
   String get sectionLocationLog;
+
+  /// No description provided for @sectionLocationsNotYetSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Background locations not yet sent to the server'**
+  String get sectionLocationsNotYetSync;
 
   /// No description provided for @successAccountDismissed.
   ///

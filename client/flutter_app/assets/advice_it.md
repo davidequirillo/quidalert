@@ -2,7 +2,7 @@
 
 - Si consiglia di fare un'operazione di refresh (con l'apposito pulsante nella pagina home) almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password.
 
-- Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine. È presente anche un registro delle ultime posizioni GPS in background rilevate dal dispositivo localmente, in modo da verificarne il corretto funzionamento.
+- Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine. È presente anche un registro delle ultime posizioni GPS in background (rilevate dal dispositivo localmente) che non sono state ancora inviate al server a causa di assenza di rete internet, o semplicemente se nel dispositivo è attiva la modalità aereo (internet disabilitato). Non appena tornerà disponibile la rete internet, esse verranno inviate al server (il server prenderà solo quella più recente).
 
 - Per localizzare il dispositivo mobile dell'utente, il sistema sfrutta prevalentemente il segnale GPS nei luoghi aperti, e le tecniche di triangolazione dei segnali Wi-Fi circostanti nei luoghi chiusi (dove il segnale GPS non viene ricevuto). Per questo motivo, si raccomanda di tenere il Wi-Fi del dispositivo abilitato, oltre al GPS.
 

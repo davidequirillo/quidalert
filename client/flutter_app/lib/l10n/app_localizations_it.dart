@@ -449,6 +449,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsLocationTest => 'Test locazione GPS';
 
   @override
+  String get gpsLocationsAlreadySent => 'Tutte le locazioni sono già state inviate';
+
+  @override
   String get gpsPosition => 'Posizione GPS';
 
   @override
@@ -485,7 +488,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsPermissionsRequiredTitle => 'Permessi richiesti';
 
   @override
-  String get gpsPermissionsRequiredMessage => 'Verranno richiesti i seguenti permessi: posizione GPS esatta, \'consenti sempre\', consenti rilevamento attività fisica, batteria \'senza restrizioni\'';
+  String get gpsPermissionsRequiredMessage => 'Verranno richiesti i seguenti permessi (se non sono già stati concessi): posizione GPS esatta, \'consenti sempre\', consenti rilevamento attività fisica, batteria \'senza restrizioni\'';
 
   @override
   String get gpsBatteryWithoutRestrictionsTitle => 'Disabilita limiti batteria';
@@ -714,6 +717,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get sectionLocationLog => 'Log posizioni gps in background';
+
+  @override
+  String get sectionLocationsNotYetSync => 'Posizioni in background non ancora inviate al server';
 
   @override
   String get successAccountDismissed => 'Account disdetto con successo. Se cambi idea ed effettui di nuovo il login entro 30 giorni, la disdetta verrà annullata e il tuo account rimarrà attivo';

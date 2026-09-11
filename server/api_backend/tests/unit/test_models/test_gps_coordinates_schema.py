@@ -3,14 +3,14 @@
 # Licensed under the GNU GPL v3 or later. See LICENSE for details.
 
 import pytest
-from models.general import GpsCoordinatesSchema
+from models.general import GpsLocationSchema
 
 def test_gps_coordinates_schema_success():
     data = {
         "latitude": 45.4642,
         "longitude": 9.19
     }
-    request = GpsCoordinatesSchema.model_validate(data)
+    request = GpsLocationSchema.model_validate(data)
     assert request.latitude == data["latitude"]
     assert request.longitude == data["longitude"]
 
@@ -20,13 +20,13 @@ def test_gps_coordinates_schema_empty_coordinates():
         "longitude": 9.19
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
     data = {
         "latitude": 70.4642,
         "longitude": None
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_coordinates():
     data = {
@@ -34,27 +34,27 @@ def test_gps_coordinates_schema_invalid_coordinates():
         "longitude": 9.19
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
     data = {
         "latitude": 45.4642,
         "longitude": 200.0 # invalid longitude, should be between -180 and 180
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_boundary_coordinates():
     data = {
         "latitude": -90.0, # Boundary latitude, should be valid
         "longitude": -180.0 # Boundary longitude, should be valid
     }
-    request = GpsCoordinatesSchema.model_validate(data)
+    request = GpsLocationSchema.model_validate(data)
     assert request.latitude == data["latitude"]
     assert request.longitude == data["longitude"]
     data = {
         "latitude": 90.0, # Boundary latitude, should be valid
         "longitude": 180.0 # Boundary longitude, should be valid
     }
-    request = GpsCoordinatesSchema.model_validate(data)
+    request = GpsLocationSchema.model_validate(data)
     assert request.latitude == data["latitude"]
     assert request.longitude == data["longitude"]
 
@@ -63,7 +63,7 @@ def test_gps_coordinates_schema_default_values():
             "latitude": 45.4642,
             "longitude": 9.19
         }
-    request = GpsCoordinatesSchema.model_validate(data)
+    request = GpsLocationSchema.model_validate(data)
     assert request.latitude == data["latitude"]
     assert request.longitude == data["longitude"]
     assert request.accuracy is None
@@ -84,7 +84,7 @@ def test_gps_coordinates_schema_all_fields():
         "activity": "walking",
         "timestamp": "2024-06-05T12:34:56Z"
     }
-    request = GpsCoordinatesSchema.model_validate(data)
+    request = GpsLocationSchema.model_validate(data)
     assert request.latitude == data["latitude"]
     assert request.longitude == data["longitude"]
     assert request.accuracy == data["accuracy"]
@@ -101,7 +101,7 @@ def test_gps_coordinates_schema_invalid_accuracy():
         "accuracy": "blah blah" # it should be a float
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_speed():
     data = {
@@ -110,7 +110,7 @@ def test_gps_coordinates_schema_invalid_speed():
         "speed": "fast" # it should be a float
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_location_id():
     data = {
@@ -119,7 +119,7 @@ def test_gps_coordinates_schema_invalid_location_id():
         "location_id": 123 # it should be a string
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_activity():
     data = {
@@ -128,7 +128,7 @@ def test_gps_coordinates_schema_invalid_activity():
         "activity": 123 # it should be a string
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_is_moving():
     data = {
@@ -137,7 +137,7 @@ def test_gps_coordinates_schema_invalid_is_moving():
         "is_moving": "invalid" # it should be a boolean
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_latitude():
     data = {
@@ -145,7 +145,7 @@ def test_gps_coordinates_schema_invalid_latitude():
         "longitude": 9.19
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_invalid_longitude():
     data = {
@@ -153,21 +153,21 @@ def test_gps_coordinates_schema_invalid_longitude():
         "longitude": "east" # it should be a float
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_missing_latitude():
     data = {
         "longitude": 9.19
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_missing_longitude():
     data = {
         "latitude": 45.4642
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_location_id_too_long():
     data = {
@@ -176,7 +176,7 @@ def test_gps_coordinates_schema_location_id_too_long():
         "location_id": "a" * 257 # assuming the max length is 256
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_activity_too_long():
     data = {
@@ -185,7 +185,7 @@ def test_gps_coordinates_schema_activity_too_long():
         "activity": "a" * 65 # assuming the max length is 64
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_timestamp_invalid():
     data = {
@@ -194,7 +194,7 @@ def test_gps_coordinates_schema_timestamp_invalid():
         "timestamp": 12345 # it should be a string
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)
 
 def test_gps_coordinates_schema_timestamp_too_long():
     data = {
@@ -203,4 +203,4 @@ def test_gps_coordinates_schema_timestamp_too_long():
         "timestamp": "a" * 65 # assuming the max length is 64
     }
     with pytest.raises(ValueError):
-        GpsCoordinatesSchema.model_validate(data)
+        GpsLocationSchema.model_validate(data)

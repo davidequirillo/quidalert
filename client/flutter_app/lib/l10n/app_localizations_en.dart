@@ -449,6 +449,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsLocationTest => 'GPS location test';
 
   @override
+  String get gpsLocationsAlreadySent => 'All locations are already sent';
+
+  @override
   String get gpsPosition => 'GPS position';
 
   @override
@@ -485,7 +488,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsPermissionsRequiredTitle => 'Required permissions';
 
   @override
-  String get gpsPermissionsRequiredMessage => 'These permissions will be required: precise GPS position, \'allow all the time\', allow motion tracking, battery \'without restrictions\'';
+  String get gpsPermissionsRequiredMessage => 'These permissions will be required (if not already granted): precise GPS position, \'allow all the time\', allow motion tracking, battery \'without restrictions\'';
 
   @override
   String get gpsBatteryWithoutRestrictionsTitle => 'Disable battery limits';
@@ -714,6 +717,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionLocationLog => 'Background locations log';
+
+  @override
+  String get sectionLocationsNotYetSync => 'Background locations not yet sent to the server';
 
   @override
   String get successAccountDismissed => 'Account dismissed successfully. If you change your mind and log in again within 30 days, your account will not be dismissed, and it will remain active';
