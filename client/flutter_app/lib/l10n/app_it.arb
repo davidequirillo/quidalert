@@ -147,6 +147,8 @@
   "gpsLocation": "Locazione GPS",
   "gpsLocationTest": "Test locazione GPS",
   "gpsLocationNotFound": "Posizione non trovata",
+  "gpsLocationsNoRecentPositionUploaded": "Nessuna recente posizione è stata trovata sul server",
+  "gpsLocationsNoLocalPositionsToSync": "Nessuna posizione locale è in attesa di essere inviata al server",
   "gpsLocationsAlreadySent": "Tutte le locazioni sono già state inviate",
   "gpsPosition": "Posizione GPS",
   "gpsPositionForegroundInfo": "Sto rilevando la tua posizione… Attendere in questa schermata… Nei luoghi chiusi, l’attesa può durare fino a 60 secondi…",

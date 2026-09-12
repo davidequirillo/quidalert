@@ -251,7 +251,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
           return Center(child: Text(errorMessage));
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text(loc.gpsLocationNotFound));
+          return Center(child: Text(loc.gpsLocationsNoRecentPositionUploaded));
         } else {
           final location = snapshot.data!;
           final coords = "${location["latitude"]}, ${location["longitude"]}";
@@ -298,7 +298,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
         } else if (snapshot.hasError) {
           return Text('${loc.errorError}: ${snapshot.error}');
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Text(loc.gpsLocationsAlreadySent);
+          return Text(loc.gpsLocationsNoLocalPositionsToSync);
         } else {
           final locations = snapshot.data!;
           return ListView.builder(

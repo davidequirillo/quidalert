@@ -977,6 +977,18 @@ abstract class AppLocalizations {
   /// **'Location not found'**
   String get gpsLocationNotFound;
 
+  /// No description provided for @gpsLocationsNoRecentPositionUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent position found on the server'**
+  String get gpsLocationsNoRecentPositionUploaded;
+
+  /// No description provided for @gpsLocationsNoLocalPositionsToSync.
+  ///
+  /// In en, this message translates to:
+  /// **'No local positions are waiting to be sent to the server.'**
+  String get gpsLocationsNoLocalPositionsToSync;
+
   /// No description provided for @gpsLocationsAlreadySent.
   ///
   /// In en, this message translates to:
