@@ -4,7 +4,9 @@
 
 - The refresh operation is also useful after a possible promotion by administrators to the "chief" user type or to a certain role (e.g. "volunteer", "policeman", etc.), in order to refresh immediately the authentication token used by the application's GPS module, which transmits, together with the user's location, some information about their role and account type.
 
-- Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations. There is also a log of the latest GPS positions in the background (detected by the device locally) that have not yet been sent to the server due to no internet connection, or simply if the device is in airplane mode (internet disabled). As soon as the Internet is available again, they will be sent to the server (the server will only take the most recent one).
+- Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations.  
+You can see the last GPS location sent to the server.  
+There is also a log of the latest local GPS positions in the background that have not yet been sent to the server due to no internet connection or device in airplane mode. As soon as the Internet is available again, they will be sent automatically to the server (and the server will only take the most recent one).
 
 - To localize the user's mobile device, the system mainly uses the GPS signal in open spaces, and triangulation techniques of surrounding Wi-Fi signals in closed spaces (where the GPS signal is not received). For this reason, it is recommended to keep the device's Wi-Fi enabled, in addition to GPS.
 

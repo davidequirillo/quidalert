@@ -9,6 +9,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
+import 'package:quidalert_flutter/services/auth.dart';
 import 'package:quidalert_flutter/l10n/app_localizations.dart';
 import 'package:quidalert_flutter/l10n/app_localizations_extension.dart';
 import 'package:quidalert_flutter/services/location.dart';
@@ -116,10 +118,41 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     }
   }
 
+  Future<Map<String, String>> _getLastSentLocation() async {
+    final authCLient = context.read<AuthClient>();
+    final response = await authCLient.doLastKnownLocationAPI();
+    final respJson = jsonDecode(response.body) as Map<String, dynamic>?;
+    if ((respJson == null) || (respJson.isEmpty)) {
+      return {};
+    }
+    Map<String, String> location = {};
+    String lastUpdateIsoStr = respJson['last_update'] as String;
+    double latitude = respJson['latitude'] as double;
+    double longitude = respJson['longitude'] as double;
+    debugPrintC(
+      'Last known location fetched: latitude=$latitude, longitude=$longitude, last_update=$lastUpdateIsoStr',
+    );
+    final lastUpdate = DateTime.parse(lastUpdateIsoStr).toLocal();
+    location['latitude'] = latitude.toStringAsFixed(6);
+    location['longitude'] = longitude.toStringAsFixed(6);
+    location['last_update'] = datetimeAsStringWithoutMilliseconds(lastUpdate);
+    return location;
+  }
+
   Future<void> _reloadPage() async {
-    setState(() {
-      coords = "";
-      accuracy = "";
+    final loc = AppLocalizations.of(context)!;
+    showLoadingDialog(context, loc.labelWaitPlease);
+    Future.delayed(Duration(milliseconds: 4000), () {
+      if (mounted) {
+        debugPrintC(
+          "Waited 4 seconds, now popping the loading dialog, and refreshing the page",
+        );
+        Navigator.pop(context);
+        setState(() {
+          coords = "";
+          accuracy = "";
+        });
+      }
     });
   }
 
@@ -130,69 +163,128 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     return SingleChildScrollView(
       controller: _scrollController,
       padding: const EdgeInsets.all(16.0),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Icon(Icons.location_on, size: 50, color: Colors.blue),
-            const SizedBox(height: 15),
-            const SizedBox(height: 15),
-            if (coords.isNotEmpty)
-              SelectableText(
-                '(${loc.gpsLatitude}, ${loc.gpsLongitude}): $coords',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            if (coords.isNotEmpty) const SizedBox(height: 10),
-            if (coords.isNotEmpty)
-              Text(
-                "${loc.gpsPositionAccuracy}: $accuracy",
-                textAlign: TextAlign.center,
-              ),
-            if (coords.isNotEmpty) const SizedBox(height: 10),
-            if (coords.isNotEmpty)
-              locationClient.isFetching
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: copyCoordsToClipboard,
-                      child: Text(loc.buttonCopy),
-                    ),
-            if (coords.isNotEmpty) const SizedBox(height: 20),
-            if (coords.isNotEmpty)
-              SelectableText(
-                (locationClient.currentPosition != null &&
-                        locationClient.currentAddress != null)
-                    ? locationClient.currentAddress!
-                    : loc.errorLocationAddressNotFound,
-                textAlign: TextAlign.center,
-              ),
-            const SizedBox(height: 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(Icons.location_on, size: 50, color: Colors.blue),
+          const SizedBox(height: 15),
+          const SizedBox(height: 15),
+          if (coords.isNotEmpty)
+            SelectableText(
+              '(${loc.gpsLatitude}, ${loc.gpsLongitude}): $coords',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          if (coords.isNotEmpty) const SizedBox(height: 10),
+          if (coords.isNotEmpty)
+            Text(
+              "${loc.gpsPositionAccuracy}: $accuracy",
+              textAlign: TextAlign.center,
+            ),
+          if (coords.isNotEmpty) const SizedBox(height: 10),
+          if (coords.isNotEmpty)
             locationClient.isFetching
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
-                    onPressed: _fetchCurrentLocation,
-                    child: Text(loc.buttonTest),
+                    onPressed: copyCoordsToClipboard,
+                    child: Text(loc.buttonCopy),
                   ),
-            Divider(height: 50, thickness: 1),
-            buildSectionTitle(loc.sectionLocationsNotYetSync),
-            InkWell(
-              onTap: () {
-                _reloadPage();
-              },
-              child: Text(
-                loc.labelReloadPage,
-                style: TextStyle(
-                  decoration: TextDecoration.underline,
-                  color: Colors.blue,
+          if (coords.isNotEmpty) const SizedBox(height: 20),
+          if (coords.isNotEmpty)
+            SelectableText(
+              (locationClient.currentPosition != null &&
+                      locationClient.currentAddress != null)
+                  ? locationClient.currentAddress!
+                  : loc.errorLocationAddressNotFound,
+              textAlign: TextAlign.center,
+            ),
+          const SizedBox(height: 20),
+          locationClient.isFetching
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  onPressed: _fetchCurrentLocation,
+                  child: Text(loc.buttonTest),
                 ),
+          Divider(height: 50, thickness: 1),
+          InkWell(
+            onTap: () {
+              _reloadPage();
+            },
+            child: Text(
+              loc.labelReloadPage,
+              style: TextStyle(
+                decoration: TextDecoration.underline,
+                color: Colors.blue,
               ),
             ),
-            const SizedBox(height: 20),
-            buildLocationLogListView(),
-          ],
-        ),
+          ),
+          const SizedBox(height: 30),
+          // Last sync GPS position section (last sent to the server)
+          buildSectionTitle(loc.sectionLocationLastSent),
+          buildLastSentGpsPositionSection(),
+          const SizedBox(height: 30),
+          // Location log list view showing locations not yet synced
+          buildSectionTitle(loc.sectionLocationsNotYetSync),
+          buildLocationLogListView(),
+        ],
       ),
+    );
+  }
+
+  Widget buildLastSentGpsPositionSection() {
+    final loc = AppLocalizations.of(context)!;
+    return FutureBuilder<Map<String, String>>(
+      future: _getLastSentLocation(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          debugPrint("Error fetching last sent location: ${snapshot.error}");
+          final exceptionName = snapshot.error.runtimeType.toString();
+          final errorMessage =
+              loc.getExceptionString(exceptionName) ?? loc.errorGeneric;
+          if (snapshot.error.toString().startsWith("GenericNotAuthorized")) {
+            goToLoginPagePostFrameCallback(context);
+          }
+          return Center(child: Text(errorMessage));
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text(loc.gpsLocationNotFound));
+        } else {
+          final location = snapshot.data!;
+          final coords = "${location["latitude"]}, ${location["longitude"]}";
+          final updatedAt = location["last_update"]!;
+          return ListTile(
+            title: Text(coords),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("${loc.labelLastUpdate}: $updatedAt"),
+                InkWell(
+                  onTap: () {
+                    final double? lat = double.tryParse(location["latitude"]!);
+                    final double? long = double.tryParse(
+                      location["longitude"]!,
+                    );
+                    if ((lat != null) && (long != null)) {
+                      viewOnMap(context, lat, long);
+                    }
+                  },
+                  child: Text(
+                    loc.labelViewOnMap,
+                    style: TextStyle(
+                      decoration: TextDecoration.underline,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      },
     );
   }
 

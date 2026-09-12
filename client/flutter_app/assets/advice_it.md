@@ -4,7 +4,9 @@
 
 - L'operazione di refresh è anche utile dopo un'eventuale promozione da parte degli amministratori alla tipologia di utente "chief" (capo) o ad un certo ruolo (esempio "volunteer", "policeman", eccetera), in modo da rinfrescare subito il token di autenticazione usato dal modulo GPS dell'applicazione, il quale trasmette assieme alla posizione dell'utente anche alcune informazioni sul suo ruolo e sul tipo di account.
 
-- Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine. È presente anche un registro delle ultime posizioni GPS in background (rilevate dal dispositivo localmente) che non sono state ancora inviate al server a causa di assenza di rete internet, o semplicemente se nel dispositivo è attiva la modalità aereo (internet disabilitato). Non appena tornerà disponibile la rete internet, esse verranno inviate al server (il server prenderà solo quella più recente).
+- Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine.  
+È possibile vedere qual è l'ultima posizione GPS inviata al server.  
+C'è anche un registro delle ultime posizioni GPS in background locali che non sono state ancora inviate al server a causa di assenza di rete internet, o modalità aereo del dispositivo. Non appena tornerà disponibile la rete internet, esse verranno automaticamente inviate al server (e il server prenderà solo quella più recente).
 
 - Per localizzare il dispositivo mobile dell'utente, il sistema sfrutta prevalentemente il segnale GPS nei luoghi aperti, e le tecniche di triangolazione dei segnali Wi-Fi circostanti nei luoghi chiusi (dove il segnale GPS non viene ricevuto). Per questo motivo, si raccomanda di tenere il Wi-Fi del dispositivo abilitato, oltre al GPS.
 

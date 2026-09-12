@@ -12,31 +12,18 @@ from haversine import haversine, Unit
 from rapidfuzz import fuzz
 from dependencies import (
     get_current_user, 
-    get_db_session, get_redis_session, 
-    get_geoposition_token_data,
+    get_db_session
 )
 from core.exceptions import (
     forbidden_exception,
     not_found_exception,
     invalid_request_exception
 )
-from core.logging import get_request_info
-from core.api_events import (
-    log_gps_position_updated
-)   
-from core.dbmgr import (
-    get_redis_chief_locations_key, 
-    get_redis_user_locations_key, 
-    get_redis_location_last_updates_key,
-    get_redis_chief_demotions_key,
-    get_redis_spec_locations_key,
-    get_redis_spec_location_last_updates_key
-)
+from core.logging import get_request_info   
 from models.general import (
     User, UserRole, Alert, AlertOut, 
     AlertType, AlertIn, AlertOutWithInfo, 
     AlertedUser, AlertedUserJoined, AlertedUserJoinedPaginated, 
-    GpsLocationSchema, GpsBatchLocations, GpsTokenData,
     VotingSchema, ClosingSchema, ClosingType,
     CLOSING_VOTE_POSITIVE, CLOSING_VOTE_NEGATIVE, 
     CLOSING_VOTE_NEUTRAL, CLOSING_VOTE_PUNITIVE,  
@@ -46,7 +33,7 @@ from models.general import (
     MessageIn, Message, MessageOut, ALERT_MAX_MESSAGES_NUM
 )
 from services.security import (
-    now_tz_naive, now_tz_aware
+    now_tz_naive
 )
 from services.alert_btasks import (
     task_alert_search_and_notify,
@@ -554,55 +541,6 @@ def expand_alert(alert_id: int,
         db_engine=request.app.state.db_engine,
         redis_handle=request.app.state.redis_handle)
     return {"message": "Alert expanded successfully"}
-
-## GPS position update endpoint
-
-@router.post("/api/update-gps-position")
-async def update_gps_position(
-    gps_data: GpsBatchLocations,
-    user_data: GpsTokenData = Depends(get_geoposition_token_data),
-    redis_client = Depends(get_redis_session)
-):
-    if not gps_data.locations:
-        raise invalid_request_exception("No GPS locations provided")
-    # We only take the last location from the batch
-    gps_location: GpsLocationSchema = gps_data.locations[-1]
-    user_id_str = user_data.user_id # already a string, no need to convert from UUID
-    is_chief = user_data.user_is_chief
-    user_role = user_data.user_role
-    now = now_tz_aware()
-    now_int_ts = int(now.timestamp())
-    lat, lon = gps_location.latitude, gps_location.longitude
-    userloc_key = get_redis_user_locations_key(user_id_str)
-    chiefloc_key = get_redis_chief_locations_key(user_id_str)
-    last_upd_key = get_redis_location_last_updates_key(user_id_str)
-    chief_dem_key = get_redis_chief_demotions_key(user_id_str)
-    chief_demoted_at = await redis_client.zscore(chief_dem_key, user_id_str)
-    # Potential race condition here if a chief is demoted while updating position,
-    # but it's not a big issue because the inconsistency will be temporary (until the next position update)
-    # and in the case of an alert, chiefs returned by redis are always checked against the postgres database for safety
-    try:
-        async with redis_client.pipeline(transaction=True) as pipe:
-            if is_chief and (not chief_demoted_at):
-                pipe.zrem(userloc_key, user_id_str)
-                pipe.geoadd(chiefloc_key, (lon, lat, user_id_str))
-            else:
-                pipe.zrem(chiefloc_key, user_id_str)
-                pipe.geoadd(userloc_key, (lon, lat, user_id_str))
-            pipe.zadd(last_upd_key, {user_id_str: now_int_ts})
-            if user_role and (user_role in [r.value for r in UserRole]):
-                specloc_key = get_redis_spec_locations_key(user_id_str, user_role)
-                spec_last_upd_key = get_redis_spec_location_last_updates_key(user_id_str, user_role)
-                pipe.geoadd(specloc_key, (lon, lat, user_id_str))
-                pipe.zadd(spec_last_upd_key, {user_id_str: now_int_ts})
-            await pipe.execute()
-            log_gps_position_updated(
-                user_id_str, lat, lon, 
-                gps_location.location_id, gps_location.accuracy, 
-                gps_location.is_moving, gps_location.speed, gps_location.activity, gps_location.timestamp)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Temporarily unable to update position")
-    return {"status": "success", "message": "GPS position updated"}
 
 ## Alert messages endpoints (create, list)
 
