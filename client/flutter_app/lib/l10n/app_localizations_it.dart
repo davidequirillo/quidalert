@@ -449,7 +449,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get gpsLocationTest => 'Test locazione GPS';
 
   @override
-  String get gpsLocationNotFound => 'Location non trovata';
+  String get gpsLocationNotFound => 'Posizione non trovata';
+
+  @override
+  String get gpsLocationsNoRecentPositionUploaded => 'Nessuna recente posizione è stata trovata sul server';
+
+  @override
+  String get gpsLocationsNoLocalPositionsToSync => 'Nessuna posizione locale è in attesa di essere inviata al server';
 
   @override
   String get gpsLocationsAlreadySent => 'Tutte le locazioni sono già state inviate';

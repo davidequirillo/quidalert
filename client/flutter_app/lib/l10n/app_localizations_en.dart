@@ -452,6 +452,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsLocationNotFound => 'Location not found';
 
   @override
+  String get gpsLocationsNoRecentPositionUploaded => 'No recent position found on the server';
+
+  @override
+  String get gpsLocationsNoLocalPositionsToSync => 'No local positions are waiting to be sent to the server.';
+
+  @override
   String get gpsLocationsAlreadySent => 'All locations are already sent';
 
   @override
