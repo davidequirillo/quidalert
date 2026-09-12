@@ -52,7 +52,7 @@ class BackgroundLocationService {
 
   static bg.HttpConfig getHttpConfig() {
     return bg.HttpConfig(
-      url: "${AppConfig.apiUrl}/update-gps-position",
+      url: "${AppConfig.apiUrl}/locations/update-gps-position",
       method: "POST",
       autoSync: true,
       batchSync:

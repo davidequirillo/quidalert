@@ -706,4 +706,43 @@ class AuthClient extends ChangeNotifier {
       debugPrintC('Unexpected error: $e');
     }
   }
+
+  Future<http.Response> doLastKnownLocationAPI() async {
+    debugPrintC('Fetching last known location from the backend...');
+    final relPath = '/locations/last-known-gps-position';
+    final url = '$baseUrl$relPath';
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer ${gpsToken}'},
+      );
+      if (response.statusCode < 200) {
+        throw BadRequestException();
+      } else if (response.statusCode >= 500) {
+        throw ServerException();
+      } else if (response.statusCode >= 300) {
+        if (response.statusCode == 401) {
+          throw GenericNotAuthorizedException();
+        } else if (response.statusCode == 404) {
+          throw NotFoundException();
+        } else {
+          throw BadRequestException();
+        }
+      }
+      return response;
+    } on GenericNotAuthorizedException catch (_) {
+      rethrow;
+    } on BadRequestException catch (_) {
+      rethrow;
+    } on NotFoundException catch (_) {
+      rethrow;
+    } on ServerException catch (_) {
+      rethrow;
+    } on http.ClientException catch (_) {
+      throw ConnectionFailedException();
+    } catch (e) {
+      debugPrintC('Unexpected error on last known location API: $e');
+      throw UnknownException(e.toString());
+    }
+  }
 }

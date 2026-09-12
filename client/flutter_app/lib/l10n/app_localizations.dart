@@ -971,6 +971,12 @@ abstract class AppLocalizations {
   /// **'GPS location test'**
   String get gpsLocationTest;
 
+  /// No description provided for @gpsLocationNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Location not found'**
+  String get gpsLocationNotFound;
+
   /// No description provided for @gpsLocationsAlreadySent.
   ///
   /// In en, this message translates to:
@@ -1210,6 +1216,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File selected'**
   String get labelFileSelected;
+
+  /// No description provided for @labelLastUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last update'**
+  String get labelLastUpdate;
 
   /// No description provided for @labelNewPassword.
   ///
@@ -1510,6 +1522,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background locations log'**
   String get sectionLocationLog;
+
+  /// No description provided for @sectionLocationLastSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Last known location sent to the server'**
+  String get sectionLocationLastSent;
 
   /// No description provided for @sectionLocationsNotYetSync.
   ///

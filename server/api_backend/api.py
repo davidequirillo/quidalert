@@ -62,7 +62,10 @@ from core.exceptions import (
     )
 from core.responses import two_factor_required_response
 from dependencies import get_db_session, get_current_user
-from routers import users, alerts, terms, whitelist_entries
+from routers import (
+    terms, whitelist_entries, 
+    users, alerts, locations
+)
 
 def init_logging_and_others():
     setup_logging()
@@ -245,10 +248,11 @@ def check_login_token(token_data: dict | None, user: User):
     return True
 
 # ENDPOINTS FROM DIFFERENT MODULES (users, alerts, etc.)
-app.include_router(users.router)
-app.include_router(alerts.router)
 app.include_router(terms.router)
 app.include_router(whitelist_entries.router)
+app.include_router(users.router)
+app.include_router(alerts.router)
+app.include_router(locations.router)
 
 # AUTHENTICATION ENDPOINTS (login, tokens, device)
 @app.post("/api/auth/refresh")

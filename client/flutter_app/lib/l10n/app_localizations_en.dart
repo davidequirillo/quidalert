@@ -449,6 +449,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gpsLocationTest => 'GPS location test';
 
   @override
+  String get gpsLocationNotFound => 'Location not found';
+
+  @override
   String get gpsLocationsAlreadySent => 'All locations are already sent';
 
   @override
@@ -567,6 +570,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labelFileSelected => 'File selected';
+
+  @override
+  String get labelLastUpdate => 'Last update';
 
   @override
   String get labelNewPassword => 'New password';
@@ -717,6 +723,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionLocationLog => 'Background locations log';
+
+  @override
+  String get sectionLocationLastSent => 'Last known location sent to the server';
 
   @override
   String get sectionLocationsNotYetSync => 'Background locations not yet sent to the server';
