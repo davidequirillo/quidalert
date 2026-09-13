@@ -223,7 +223,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
           // Last sync GPS position section (last sent to the server)
           buildSectionTitle(loc.sectionLocationLastSent),
           buildLastSentGpsPositionSection(),
-          const SizedBox(height: 30),
+          const SizedBox(height: 50),
           // Location log list view showing locations not yet synced
           buildSectionTitle(loc.sectionLocationsNotYetSync),
           buildLocationLogListView(),

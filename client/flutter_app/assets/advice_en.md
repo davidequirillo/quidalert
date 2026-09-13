@@ -6,7 +6,7 @@
 
 - Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations.  
 You can see the last GPS location sent to the server.  
-There is also a log of the latest local GPS positions in the background that have not yet been sent to the server due to no internet connection or device in airplane mode. As soon as the Internet is available again, they will be sent automatically to the server (and the server will only take the most recent one).
+There is also a log of the latest local GPS positions in the background that have not yet been sent to the server due to no internet connection or device in airplane mode. Once the internet is available again, they will be sent automatically to the server (and the server will only take the most recent one).
 
 - To localize the user's mobile device, the system mainly uses the GPS signal in open spaces, and triangulation techniques of surrounding Wi-Fi signals in closed spaces (where the GPS signal is not received). For this reason, it is recommended to keep the device's Wi-Fi enabled, in addition to GPS.
 
@@ -18,11 +18,11 @@ There is also a log of the latest local GPS positions in the background that hav
 
 # Advice regarding alerts
 
-- Remember to complete your profile so that chiefs can contact you if necessary, during an alert. Note: your address, email, phone number, and date of birth will not be visible to regular users, but only to chiefs and users with administrative privileges.
+- Remember to complete your profile so that the chief manager can contact you if necessary, during an alert. Note: your address, email, phone number, and date of birth will not be visible to regular users, but only to chiefs and users with administrative privileges.
 
 - To send an alert, you must fill in only the description field. The app uses built-in geopositioning systems to automatically get your location and associate it to the alert. However, to address some rare cases of inaccuracy and to make you easier to find, it would be better to give some information about the place where you are, if possible, adding it in the description. What the user enters in the form will be visible to all alerted users (chief and nearby users).
 
-- The user, after sending an alert, will be able to write additional messages in the "messages" section (reachable on alert details page). So, don't worry if you accidentally forget to write something in the "description" field of the alert form. These messages will be visible to all alerted users (chief and nearby users). The alert chief can also post messages in the same section to provide alerted users with any helpful instructions.
+- The user, after sending an alert, will be able to write additional messages in the "chat" section (reachable on alert details page). So, don't worry if you accidentally forget to write something in the "description" field of the alert form. These chat messages will be visible to all alerted users (chief and nearby users). The alert chief can also post messages in the same section to provide involved alert users with any helpful instructions.
 
 # Vote, reliability and hero score
 

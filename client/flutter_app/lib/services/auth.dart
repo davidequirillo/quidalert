@@ -709,13 +709,15 @@ class AuthClient extends ChangeNotifier {
 
   Future<http.Response> doLastKnownLocationAPI() async {
     debugPrintC('Fetching last known location from the backend...');
+    if (gpsToken == null || gpsToken!.isEmpty) {
+      debugPrintC('GPS token is null or empty, refreshing tokens...');
+      await refreshTokens();
+    }
     final relPath = '/locations/last-known-gps-position';
     final url = '$baseUrl$relPath';
+    final headers = {'Authorization': 'Bearer ${gpsToken}'};
     try {
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'Authorization': 'Bearer ${gpsToken}'},
-      );
+      final response = await sendJsonRequest("get", url, headers: headers);
       if (response.statusCode < 200) {
         throw BadRequestException();
       } else if (response.statusCode >= 500) {
@@ -730,6 +732,12 @@ class AuthClient extends ChangeNotifier {
         }
       }
       return response;
+    } on InvalidTokenException catch (e) {
+      debugPrintC('Invalid token: $e');
+      throw GenericNotAuthorizedException();
+    } on ExpiredTokenException catch (_) {
+      debugPrintC('Expired token');
+      throw GenericNotAuthorizedException();
     } on GenericNotAuthorizedException catch (_) {
       rethrow;
     } on BadRequestException catch (_) {

@@ -6,7 +6,7 @@
 
 - Ricordarsi di fare il test della posizione GPS, per essere sicuri che il sistema di rilevamento della posizione geografica del dispositivo funzioni correttamente, così da poter inviare allerte e ricevere allerte vicine.  
 È possibile vedere qual è l'ultima posizione GPS inviata al server.  
-C'è anche un registro delle ultime posizioni GPS in background locali che non sono state ancora inviate al server a causa di assenza di rete internet, o modalità aereo del dispositivo. Non appena tornerà disponibile la rete internet, esse verranno automaticamente inviate al server (e il server prenderà solo quella più recente).
+C'è anche un registro delle ultime posizioni GPS in background locali che non sono state ancora inviate al server a causa di assenza di rete internet, o modalità aereo del dispositivo. Dopo che la rete internet sarà tornata disponibile, esse verranno automaticamente inviate al server (e il server prenderà solo quella più recente).
 
 - Per localizzare il dispositivo mobile dell'utente, il sistema sfrutta prevalentemente il segnale GPS nei luoghi aperti, e le tecniche di triangolazione dei segnali Wi-Fi circostanti nei luoghi chiusi (dove il segnale GPS non viene ricevuto). Per questo motivo, si raccomanda di tenere il Wi-Fi del dispositivo abilitato, oltre al GPS.
 
@@ -18,11 +18,11 @@ C'è anche un registro delle ultime posizioni GPS in background locali che non s
 
 # Consigli riguardanti le allerte
 
-- Si raccomanda di completare il proprio profilo, al fine di essere contattabili dai capi in caso di necessità, durante un'allerta. Nota: indirizzo, email, telefono e data di nascita non saranno visibili agli utenti normali, ma soltanto ai capi e agli utenti che hanno privilegi amministrativi.
+- Si raccomanda di completare il proprio profilo, al fine di essere contattabili dal capo dei soccorsi in caso di necessità, durante un'allerta. Nota: indirizzo, email, telefono e data di nascita non saranno visibili agli utenti di base, ma soltanto ai capi e agli utenti che hanno privilegi amministrativi.
 
 - L'invio di un'allerta prevede la sola compilazione del campo descrizione. L'app sfrutta i sistemi di tracciamento della posizione integrati nel dispositivo per rilevare in automatico la vostra posizione da associare all'allerta. Comunque, per risolvere quei rari problemi di inaccuratezza della localizzazione e per farvi trovare più facilmente, se possibile, sarebbe meglio dare qualche informazione sul posto in cui vi trovate, aggiungendola nella descrizione. Ciò che l'utente inserisce nel campo "descrizione" del modulo di allerta sarà visibile a tutti gli utenti allertati (capo e utenti nelle vicinanze).
 
-- L'utente, dopo l'invio di un'allerta, potrà scrivere ulteriormente nella relativa sezione "messaggi" (presente nella pagina dell'allerta creata), quindi, niente paura se per caso ci si dimentica di scrivere qualcosa nel campo "descrizione". Questi messaggi saranno visibili a tutti gli utenti allertati (capo e utenti nelle vicinanze). Anche il capo dell'allerta potrà scrivere messaggi nella stessa sezione, al fine di dare agli utenti coinvolti eventuali istruzioni utili.
+- L'utente, dopo l'invio di un'allerta, potrà scrivere ulteriormente dei messaggi nella relativa sezione "chat" (presente nella pagina dei dettagli dell'allerta creata), quindi, niente paura se per caso ci si dimentica di scrivere qualcosa nel campo "descrizione". I messaggi della chat saranno visibili a tutti gli utenti allertati (capo e utenti nelle vicinanze). Anche il capo dell'allerta potrà scrivere messaggi nella stessa chat, al fine di dare agli utenti coinvolti eventuali istruzioni utili.
 
 # Voto, affidabilità e punteggio eroe
 
