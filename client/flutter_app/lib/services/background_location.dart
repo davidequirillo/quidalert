@@ -65,7 +65,8 @@ class BackgroundLocationService {
         'Content-Type': 'application/json',
         'Authorization': "Bearer ${authClient?.gpsToken ?? 'NO_GPS_TOKEN'}",
       },
-      timeout: 45, // timeout for HTTP requests in seconds
+      // There is also a timeout property, but it's better to rely on the default provided timeout,
+      // so we don't explicitly set it here.
     );
   }
 
@@ -246,7 +247,7 @@ class BackgroundLocationService {
     return location;
   }
 
-  static Future<List<Map<String, String>>> getLocationLog() async {
+  static Future<List<Map<String, String>>> getPendingLocationLog() async {
     List<Map<String, String>> locations = [];
     List<dynamic> storedLocations = await bg.BackgroundGeolocation.getLocations(
       bg.LocationQuery(limit: 100, page: 0, order: bg.LocationQuery.ORDER_ASC),
@@ -275,5 +276,15 @@ class BackgroundLocationService {
       });
     }
     return locations;
+  }
+
+  static Future<void> forcePendingLocationSync() async {
+    try {
+      await bg.BackgroundGeolocation.sync();
+      debugPrintC("Pending locations sync successfully.");
+    } catch (e) {
+      debugPrintC("Error forcing pending location sync: $e");
+      rethrow;
+    }
   }
 }

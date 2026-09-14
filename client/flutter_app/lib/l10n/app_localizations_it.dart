@@ -227,6 +227,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get buttonGoToAppSettings => 'Vai alle impostazioni app';
 
   @override
+  String get buttonLocationsForceUpload => 'Forza il caricamento';
+
+  @override
   String get entriesAll => 'Tutte le voci';
 
   @override
@@ -333,6 +336,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get errorLocationAccuracyIsLow => 'L\'accuratezza della posizione trovata è troppo bassa. Riprovare';
+
+  @override
+  String get errorLocationsForceUpload => 'Errore durante il caricamento';
 
   @override
   String get errorLoginLocked => 'Troppi tentativi, l\'accesso (login) è bloccato per 24 ore';
@@ -768,6 +774,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get successEntryAdded => 'Voce aggiunta';
+
+  @override
+  String get successLocationsForceUpload => 'Caricamento completato';
 
   @override
   String get successLogin => 'Login effettuato con successo';

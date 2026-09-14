@@ -227,6 +227,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonGoToAppSettings => 'Go to app settings';
 
   @override
+  String get buttonLocationsForceUpload => 'Force upload';
+
+  @override
   String get entriesAll => 'All entries';
 
   @override
@@ -333,6 +336,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorLocationAccuracyIsLow => 'The fetched position has a very low accuracy. Please retry';
+
+  @override
+  String get errorLocationsForceUpload => 'Upload error';
 
   @override
   String get errorLoginLocked => 'Too many attempts, login is locked for 24 hours';
@@ -768,6 +774,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get successEntryAdded => 'Entry added';
+
+  @override
+  String get successLocationsForceUpload => 'Upload successful';
 
   @override
   String get successLogin => 'Login successful';

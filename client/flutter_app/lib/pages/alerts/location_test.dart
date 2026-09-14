@@ -156,6 +156,50 @@ class _LocationTestBodyState extends State<LocationTestBody> {
     });
   }
 
+  Future<List<Map<String, String>>> _getPendingLocations() async {
+    final pendingLocations =
+        await BackgroundLocationService.getPendingLocationLog();
+    return pendingLocations;
+  }
+
+  Future<void> _submitForceUpload() async {
+    final loc = AppLocalizations.of(context)!;
+    showLoadingDialog(context, loc.labelWaitPlease);
+    _forcePendingLocationUpload().whenComplete(() {
+      if (mounted) {
+        debugPrintC(
+          "Pending location force sync completed, pop 'loading dialog'",
+        );
+        Navigator.pop(context);
+      }
+      setState(() {
+        coords = "";
+        accuracy = "";
+      });
+    });
+  }
+
+  Future<void> _forcePendingLocationUpload() async {
+    final loc = AppLocalizations.of(context)!;
+    String retMessage = "";
+    await Future.delayed(Duration(milliseconds: 3000), () async {
+      try {
+        await BackgroundLocationService.forcePendingLocationSync();
+        retMessage = loc.successLocationsForceUpload;
+      } catch (e) {
+        debugPrintC("Error forcing pending location sync: $e");
+        retMessage = loc.errorLocationsForceUpload;
+      } finally {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(retMessage),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
@@ -290,8 +334,8 @@ class _LocationTestBodyState extends State<LocationTestBody> {
 
   Widget buildLocationLogListView() {
     final loc = AppLocalizations.of(context)!;
-    return FutureBuilder<List<dynamic>>(
-      future: BackgroundLocationService.getLocationLog(),
+    return FutureBuilder<List<Map<String, String>>>(
+      future: _getPendingLocations(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
@@ -301,57 +345,75 @@ class _LocationTestBodyState extends State<LocationTestBody> {
           return Text(loc.gpsLocationsNoLocalPositionsToSync);
         } else {
           final locations = snapshot.data!;
-          return ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: locations.length,
-            itemBuilder: (context, index) {
-              final location = locations[index] as Map<String, String>;
-              final coords =
-                  "${location["latitude"]}, ${location["longitude"]}";
-              final String accuracy = "${location["accuracy"]} m";
-              final String isMovingStr = loc.getBooleanString(
-                location["is_moving"]!,
-              );
-              final String timestamp = location["created_at"]!;
-              final String uuidPart = location["location_id"]!.split("-").last;
-              String subtitleText = "${loc.gpsPositionAccuracy}: $accuracy\n";
-              subtitleText +=
-                  "${loc.gpsPositionIsMoving}: ${isMovingStr.toLowerCase()}\n";
-              final String activity = location["activity"]!;
-              subtitleText += "${loc.gpsPositionActivity}: $activity\n";
-              subtitleText += "ID: $uuidPart";
-              return ListTile(
-                title: Text(coords),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(subtitleText),
-                    InkWell(
-                      onTap: () {
-                        final double? lat = double.tryParse(
-                          location["latitude"]!,
-                        );
-                        final double? long = double.tryParse(
-                          location["longitude"]!,
-                        );
-                        if ((lat != null) && (long != null)) {
-                          viewOnMap(context, lat, long);
-                        }
-                      },
-                      child: Text(
-                        loc.labelViewOnMap,
-                        style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.blue,
+          return Column(
+            children: [
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: locations.length,
+                itemBuilder: (context, index) {
+                  final location = locations[index];
+                  final coords =
+                      "${location["latitude"]}, ${location["longitude"]}";
+                  final String accuracy = "${location["accuracy"]} m";
+                  final String isMovingStr = loc.getBooleanString(
+                    location["is_moving"]!,
+                  );
+                  final String timestamp = location["created_at"]!;
+                  final String uuidPart = location["location_id"]!
+                      .split("-")
+                      .last;
+                  String subtitleText =
+                      "${loc.gpsPositionAccuracy}: $accuracy\n";
+                  subtitleText +=
+                      "${loc.gpsPositionIsMoving}: ${isMovingStr.toLowerCase()}\n";
+                  final String activity = location["activity"]!;
+                  subtitleText += "${loc.gpsPositionActivity}: $activity\n";
+                  subtitleText += "ID: $uuidPart";
+                  return ListTile(
+                    title: Text(coords),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(subtitleText),
+                        InkWell(
+                          onTap: () {
+                            final double? lat = double.tryParse(
+                              location["latitude"]!,
+                            );
+                            final double? long = double.tryParse(
+                              location["longitude"]!,
+                            );
+                            if ((lat != null) && (long != null)) {
+                              viewOnMap(context, lat, long);
+                            }
+                          },
+                          child: Text(
+                            loc.labelViewOnMap,
+                            style: TextStyle(
+                              decoration: TextDecoration.underline,
+                              color: Colors.blue,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                    trailing: Text(
+                      timestamp,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 20),
+              if (locations.isNotEmpty)
+                ElevatedButton(
+                  onPressed: () {
+                    _submitForceUpload();
+                  },
+                  child: Text(loc.buttonLocationsForceUpload),
                 ),
-                trailing: Text(timestamp, style: const TextStyle(fontSize: 12)),
-              );
-            },
+            ],
           );
         }
       },

@@ -527,6 +527,12 @@ abstract class AppLocalizations {
   /// **'Go to app settings'**
   String get buttonGoToAppSettings;
 
+  /// No description provided for @buttonLocationsForceUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Force upload'**
+  String get buttonLocationsForceUpload;
+
   /// No description provided for @entriesAll.
   ///
   /// In en, this message translates to:
@@ -742,6 +748,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The fetched position has a very low accuracy. Please retry'**
   String get errorLocationAccuracyIsLow;
+
+  /// No description provided for @errorLocationsForceUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload error'**
+  String get errorLocationsForceUpload;
 
   /// No description provided for @errorLoginLocked.
   ///
@@ -1612,6 +1624,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Entry added'**
   String get successEntryAdded;
+
+  /// No description provided for @successLocationsForceUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload successful'**
+  String get successLocationsForceUpload;
 
   /// No description provided for @successLogin.
   ///

@@ -6,7 +6,7 @@
 
 - Remember to run the GPS location test to ensure your device's location tracking system is working properly, allowing you to send and receive alerts for nearby locations.  
 You can see the last GPS location sent to the server.  
-There is also a log of the latest local GPS positions in the background that have not yet been sent to the server due to no internet connection or device in airplane mode. Once the internet is available again, they will be sent automatically to the server (and the server will only take the most recent one).
+There is also a log of the latest local GPS positions in the background that have not yet been sent to the server due to no internet connection or device in airplane mode. Once the internet is available again, they will be sent automatically to the server (and the server will only take the most recent one). If you don't want to wait for the system to do it automatically, you can manually force the upload of pending locations to the server.
 
 - To localize the user's mobile device, the system mainly uses the GPS signal in open spaces, and triangulation techniques of surrounding Wi-Fi signals in closed spaces (where the GPS signal is not received). For this reason, it is recommended to keep the device's Wi-Fi enabled, in addition to GPS.
 
