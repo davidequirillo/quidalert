@@ -11,7 +11,7 @@ val backgroundGeolocation = project(":flutter_background_geolocation")
 apply { from("${backgroundGeolocation.projectDir}/background_geolocation.gradle") }
 
 android {
-    namespace = "com.example.quidalert_flutter"
+    namespace = "eu.davidequirillo.quidalert"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -30,7 +30,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.quidalert_flutter"
+        applicationId = "eu.davidequirillo.quidalert"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -54,7 +54,7 @@ android {
 // Quidalert: dependencies, desugaring
 dependencies {
     coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:2.1.5")
-    implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
 }
 
 flutter {

@@ -44,7 +44,7 @@ const String appName = "Your Custom App Name";
 dart run change_app_package_name:main com.yourdomain.yourapp
 ```
 
-3. Display Name (Name under the phone icon):
+3. Display Name (name under the icon, in the home screen of the device):
 - Android: Update the android:label value in android/app/src/main/AndroidManifest.xml.
 - iOS: Update the CFBundleDisplayName entry in ios/Runner/Info.plist.
 
@@ -95,9 +95,9 @@ You must:
     ```bash
    flutterfire configure
    ```
-   Follow the instructions: this will generate lib/firebase_options.dart and fetches other files from Google, for your environment.
+   Follow the instructions. The system will ask you to select the remote "firebase project" to use (the one you created a little while ago in your Firebase account) and the platforms to support (android and ios): this will create the two applications (for android and ios) in the project's Firebase remote console, will generate lib/firebase_options.dart locally, and fetch other files from Google, for your environment.
 
-- If "flutterfire configure" has not downloaded and placed automatically the following platform files, you must manually download them and place them:
+- If "flutterfire configure" has not downloaded and placed automatically the following platform files (google-services.json and GoogleService-Info.plist), you must manually download them and place them to:
     - android/app/google-services.json
     - ios/Runner/GoogleService-Info.plist
 
@@ -247,7 +247,7 @@ As we just said, in development mode email messages will be displayed in the loc
 
 To be able to send push notifications to the clients, the backend need to connect to FCM cloud using the account secret key assigned to it by the FCM platform.
 
-In your Firebase Project web console, you must go to "Account Service" and generate private key (service Account Key). Download the json file and place it in your backend folder renaming it as "firebase_keys.json" (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH)
+In your Firebase Project web console, you must go to "Service account" and generate private key (service Account Key). Download the json file and place it in your backend folder renaming it as "firebase_keys.json" (the path of this file will be specified as an environment variable, FIREBASE_CONFIG_FPATH).
 
 ### Project debugging (run)
 

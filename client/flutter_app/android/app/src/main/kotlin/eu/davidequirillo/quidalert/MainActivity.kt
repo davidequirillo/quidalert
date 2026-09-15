@@ -1,4 +1,4 @@
-package com.example.quidalert_flutter
+package eu.davidequirillo.quidalert
 
 import io.flutter.embedding.android.FlutterActivity
 
