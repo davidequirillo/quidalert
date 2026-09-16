@@ -58,22 +58,11 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   }
 
   Future<void> submit() async {
-    if (!_formKey.currentState!.validate()) return;
     locationError = false;
     final loc = AppLocalizations.of(context)!;
     final locationClient = context.read<LocationClient>();
     final description = _description.text.trim();
     final customCoords = _customCoordinates.text.trim();
-    final bool result =
-        await showTwoWayAlertDialog(
-          context,
-          loc.labelSubmittingAlert,
-          loc.labelAreYouSure,
-        ) ??
-        false;
-    if (result == false) {
-      return;
-    }
     Map<String, dynamic> fields = {
       "type": _selectedType,
       "description": description,
@@ -352,6 +341,17 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                       onPressed: () async {
                         if (alertRequestInProgress) {
                           return; // Prevent multiple submissions
+                        }
+                        if (!_formKey.currentState!.validate()) return;
+                        final bool result =
+                            await showTwoWayAlertDialog(
+                              context,
+                              loc.labelSubmittingAlert,
+                              loc.labelAreYouSure,
+                            ) ??
+                            false;
+                        if (result == false) {
+                          return;
                         }
                         setState(() => alertRequestInProgress = true);
                         await submit();
