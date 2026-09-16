@@ -342,6 +342,8 @@ class _NewAlertBodyState extends State<NewAlertBody> {
                         if (alertRequestInProgress) {
                           return; // Prevent multiple submissions
                         }
+                        // Hide keyboard for formatting purposes before going on...
+                        FocusScope.of(context).unfocus();
                         if (!_formKey.currentState!.validate()) return;
                         final bool result =
                             await showTwoWayAlertDialog(

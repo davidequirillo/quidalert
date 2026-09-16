@@ -274,13 +274,19 @@ class _UsersSearchResultsBodyState extends State<UsersSearchResultsBody> {
                           ' ${_users[index].status}';
                       return ListTile(
                         title: Text('${_users[index].email} ($fname $sname)'),
-                        subtitle: Text(subtitle),
-                        trailing: Text(
-                          (_users[index].authorizedAt != null)
-                              ? datetimeAsStringWithoutMilliseconds(
-                                  _users[index].authorizedAt!,
-                                )
-                              : "N/A",
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(subtitle),
+                            Text(
+                              (_users[index].authorizedAt != null)
+                                  ? datetimeAsStringWithoutMilliseconds(
+                                      _users[index].authorizedAt!,
+                                    )
+                                  : "N/A",
+                              style: TextStyle(color: Colors.blueGrey),
+                            ),
+                          ],
                         ),
                         onTap: () => {
                           Navigator.pushNamed(

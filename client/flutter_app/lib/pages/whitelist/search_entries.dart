@@ -260,12 +260,13 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                             Text(
                               "${loc.whitelistEntryUserIsRegistered}: ${_entries[index].userIsRegistered ? 'yes' : 'no'}",
                             ),
+                            Text(
+                              style: TextStyle(color: Colors.blueGrey),
+                              datetimeAsStringWithoutMilliseconds(
+                                _entries[index].createdAt,
+                              ),
+                            ),
                           ],
-                        ),
-                        trailing: Text(
-                          datetimeAsStringWithoutMilliseconds(
-                            _entries[index].createdAt,
-                          ),
                         ),
                       );
                     } else {

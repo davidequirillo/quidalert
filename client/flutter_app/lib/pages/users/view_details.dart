@@ -130,16 +130,16 @@ class UserDetailsBody extends StatelessWidget {
           'Reset locked until : ${user.resetLockedUntil != null ? datetimeAsStringWithoutMilliseconds(user.resetLockedUntil!) : "N/A"}',
         ),
         Text(
-          'Last reset done at : ${user.lastResetDoneAt != null ? datetimeAsStringWithoutMilliseconds(user.lastResetDoneAt!) : "N/A"}',
+          'Last reset: ${user.lastResetDoneAt != null ? datetimeAsStringWithoutMilliseconds(user.lastResetDoneAt!) : "N/A"}',
         ),
         Text(
           'Login locked until : ${user.loginLockedUntil != null ? datetimeAsStringWithoutMilliseconds(user.loginLockedUntil!) : "N/A"}',
         ),
         Text(
-          'Last login done at : ${user.lastLoginDoneAt != null ? datetimeAsStringWithoutMilliseconds(user.lastLoginDoneAt!) : "N/A"}',
+          'Last login: ${user.lastLoginDoneAt != null ? datetimeAsStringWithoutMilliseconds(user.lastLoginDoneAt!) : "N/A"}',
         ),
         Text(
-          'Last refresh at : ${user.lastRefreshAt != null ? datetimeAsStringWithoutMilliseconds(user.lastRefreshAt!) : "N/A"}',
+          'Last refresh: ${user.lastRefreshAt != null ? datetimeAsStringWithoutMilliseconds(user.lastRefreshAt!) : "N/A"}',
         ),
         Text(
           'Created at : ${user.createdAt != null ? datetimeAsStringWithoutMilliseconds(user.createdAt!) : "N/A"}',

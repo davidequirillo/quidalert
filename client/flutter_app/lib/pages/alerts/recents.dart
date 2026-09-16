@@ -110,10 +110,21 @@ class RecentAlertsBody extends StatelessWidget {
               );
               return ListTile(
                 title: Text(description),
-                subtitle: Text(
-                  "ID: $shortAlertId, ${loc.labelType}: ${loc.getAlertTypeString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getAlertStatusString(alertStatusKey)}",
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "ID: $shortAlertId, ${loc.labelType}: ${loc.getAlertTypeString(alertTypeKey)}, ${loc.labelStatus}: ${loc.getAlertStatusString(alertStatusKey)}",
+                    ),
+                    Text(
+                      alertDateTimeStr,
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        color: Colors.blueGrey,
+                      ),
+                    ),
+                  ],
                 ),
-                trailing: Text(alertDateTimeStr),
                 onTap: () {
                   Navigator.pushNamed(
                     context,

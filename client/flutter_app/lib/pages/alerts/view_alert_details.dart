@@ -467,11 +467,13 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
           ),
         if (!alertIsGeneral)
           Text(loc.alertSpreadCountInfo(alertSpreadCount, alertMaxSpreadCount)),
+        Divider(),
+        Text(loc.gpsPosition, style: TextStyle(fontWeight: FontWeight.normal)),
         if (!alertIsGeneral)
           Row(
             children: [
               Text(
-                '${loc.gpsPosition}: ${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
+                '${gpsCoordinatesAsString(alertWithInfo.alert.latitude, alertWithInfo.alert.longitude)}',
               ),
               SizedBox(width: 10),
               InkWell(
@@ -493,7 +495,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             ],
           ),
         if (alertIsLocal)
-          Text("${loc.gpsPositionAccuracy}: ${alertWithInfo.alert.accuracy} m"),
+          Text("${loc.gpsAccuracy}: ${alertWithInfo.alert.accuracy} m"),
         if (!alertIsGeneral)
           Row(
             children: [
@@ -502,7 +504,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                   _showAddress(context, alertWithInfo.alert);
                 },
                 child: Text(
-                  loc.labelShowAddress,
+                  loc.labelAddress,
                   style: TextStyle(
                     decoration: TextDecoration.underline,
                     color: Colors.blue,
@@ -520,7 +522,7 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                   );
                 },
                 child: Text(
-                  loc.labelViewOnMap,
+                  loc.labelMap,
                   style: TextStyle(
                     decoration: TextDecoration.underline,
                     color: Colors.blue,
@@ -678,22 +680,28 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
             !alertIsClosed &&
             !alertIsExpanded &&
             (alertWithInfo.userVote == 0))
-          Row(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  _voteAlert(alertWithInfo.alert.id, 1);
-                },
-                child: Text(loc.buttonVotePositive),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      _voteAlert(alertWithInfo.alert.id, 1);
+                    },
+                    child: Text(loc.buttonVotePositive),
+                  ),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      _voteAlert(alertWithInfo.alert.id, -1);
+                    },
+                    child: Text(loc.buttonVoteNegative),
+                  ),
+                ],
               ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  _voteAlert(alertWithInfo.alert.id, -1);
-                },
-                child: Text(loc.buttonVoteNegative),
-              ),
-              SizedBox(width: 10),
+              SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
                   showSimpleAlertDialog(

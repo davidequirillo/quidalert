@@ -1247,6 +1247,12 @@ abstract class AppLocalizations {
   /// **'Last update'**
   String get labelLastUpdate;
 
+  /// No description provided for @labelMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get labelMap;
+
   /// No description provided for @labelNewPassword.
   ///
   /// In en, this message translates to:

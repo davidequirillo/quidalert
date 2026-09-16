@@ -587,6 +587,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelLastUpdate => 'Last update';
 
   @override
+  String get labelMap => 'Map';
+
+  @override
   String get labelNewPassword => 'New password';
 
   @override

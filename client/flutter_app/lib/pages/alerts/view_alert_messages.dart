@@ -166,10 +166,13 @@ class _AlertMessagesBodyState extends State<AlertMessagesBody> {
         // Messages area
         if (messages.isEmpty)
           Expanded(
-            child: Center(
-              child: Text(
-                loc.alertMessagesEmpty,
-                style: const TextStyle(fontSize: 16, color: Colors.black54),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Center(
+                child: Text(
+                  loc.alertMessagesEmpty,
+                  style: const TextStyle(fontSize: 16, color: Colors.black54),
+                ),
               ),
             ),
           )

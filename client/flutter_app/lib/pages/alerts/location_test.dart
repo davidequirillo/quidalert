@@ -216,7 +216,7 @@ class _LocationTestBodyState extends State<LocationTestBody> {
           const SizedBox(height: 15),
           if (coords.isNotEmpty)
             SelectableText(
-              '(${loc.gpsLatitude}, ${loc.gpsLongitude}): $coords',
+              coords,
               style: const TextStyle(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),

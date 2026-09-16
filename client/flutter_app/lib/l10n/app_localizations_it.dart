@@ -100,7 +100,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String alertSpreadCountInfo(Object count, Object max) {
-    return 'Numero di propagazioni: $count of $max';
+    return 'Numero di propagazioni: $count su $max';
   }
 
   @override
@@ -585,6 +585,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get labelLastUpdate => 'Ultimo aggiornamento';
+
+  @override
+  String get labelMap => 'Mappa';
 
   @override
   String get labelNewPassword => 'Nuova password';
