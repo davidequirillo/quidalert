@@ -164,7 +164,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(5.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -195,7 +195,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                           },
                     label: Text("by Email"),
                   ),
-                  const SizedBox(width: 25),
+                  const SizedBox(width: 15),
                   ElevatedButton.icon(
                     onPressed: _isLoadingPage
                         ? null
@@ -207,7 +207,7 @@ class _WhiteListSearchBodyState extends State<WhiteListSearchBody> {
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 2),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

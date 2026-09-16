@@ -121,7 +121,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -145,18 +145,18 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
               });
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 5),
           Text(
             '${loc.labelSelect} file:',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 5),
           // Area di Drag & Drop / Click to Select
           InkWell(
             onTap: _pickFile,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: Colors.blueAccent,
@@ -178,7 +178,7 @@ class _UploadTermsBodyState extends State<UploadTermsBody> {
               ),
             ),
           ),
-          SizedBox(height: 15),
+          SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             height: 50,

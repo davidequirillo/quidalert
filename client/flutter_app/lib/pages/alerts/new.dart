@@ -43,6 +43,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   final _formKey = GlobalKey<FormState>();
   final _description = TextEditingController();
   final _customCoordinates = TextEditingController();
+  final _scrollController = ScrollController();
   String _selectedType = AlertType.local.name;
   bool alertRequestInProgress = false;
   bool locationError = false;
@@ -52,6 +53,7 @@ class _NewAlertBodyState extends State<NewAlertBody> {
     debugPrintC("Disposing NewAlert widget state");
     _description.dispose();
     _customCoordinates.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -259,112 +261,119 @@ class _NewAlertBodyState extends State<NewAlertBody> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final authClient = context.read<AuthClient>();
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.disabled,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (authClient.isChief())
-                SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(
-                      value: AlertType.local.name,
-                      label: Text(loc.getAlertTypeString(AlertType.local.name)),
-                      icon: Icon(Icons.place),
-                    ),
-                    ButtonSegment(
-                      value: AlertType.managed.name,
-                      label: Text(
-                        loc.getAlertTypeString(AlertType.managed.name),
+    return Scrollbar(
+      controller: _scrollController,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        child: Form(
+          key: _formKey,
+          autovalidateMode: AutovalidateMode.disabled,
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (authClient.isChief())
+                  SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                        value: AlertType.local.name,
+                        label: Text(
+                          loc.getAlertTypeString(AlertType.local.name),
+                        ),
+                        icon: Icon(Icons.place),
                       ),
-                      icon: Icon(Icons.manage_accounts),
-                    ),
-                    ButtonSegment(
-                      value: AlertType.general.name,
-                      label: Text(
-                        loc.getAlertTypeString(AlertType.general.name),
+                      ButtonSegment(
+                        value: AlertType.managed.name,
+                        label: Text(
+                          loc.getAlertTypeString(AlertType.managed.name),
+                        ),
+                        icon: Icon(Icons.manage_accounts),
                       ),
-                      icon: Icon(Icons.public),
+                      ButtonSegment(
+                        value: AlertType.general.name,
+                        label: Text(
+                          loc.getAlertTypeString(AlertType.general.name),
+                        ),
+                        icon: Icon(Icons.public),
+                      ),
+                      ButtonSegment(
+                        value: AlertType.empty.name,
+                        label: Text(
+                          loc.getAlertTypeString(AlertType.empty.name),
+                        ),
+                        icon: Icon(Icons.block),
+                      ),
+                    ],
+                    selected: {_selectedType},
+                    onSelectionChanged: (Set<String> newSelection) {
+                      setState(() {
+                        _selectedType = newSelection.first;
+                      });
+                    },
+                  ),
+                if (authClient.isChief() &&
+                    (_selectedType == AlertType.managed.name ||
+                        _selectedType == AlertType.empty.name))
+                  TextFormField(
+                    controller: _customCoordinates,
+                    decoration: InputDecoration(
+                      labelText: loc.gpsPosition,
+                      hintText: "lat, long",
+                      border: const OutlineInputBorder(),
                     ),
-                    ButtonSegment(
-                      value: AlertType.empty.name,
-                      label: Text(loc.getAlertTypeString(AlertType.empty.name)),
-                      icon: Icon(Icons.block),
-                    ),
-                  ],
-                  selected: {_selectedType},
-                  onSelectionChanged: (Set<String> newSelection) {
-                    setState(() {
-                      _selectedType = newSelection.first;
-                    });
-                  },
-                ),
-              if (authClient.isChief() &&
-                  (_selectedType == AlertType.managed.name ||
-                      _selectedType == AlertType.empty.name))
+                    validator: (value) {
+                      if (_selectedType == AlertType.general.name ||
+                          _selectedType == AlertType.local.name) {
+                        return null; // Manual coordinates are only required for "custom" or "empty" alerts
+                      }
+                      return validateGpsCoordinates(context, value);
+                    },
+                  ),
                 TextFormField(
-                  controller: _customCoordinates,
+                  controller: _description,
                   decoration: InputDecoration(
-                    labelText: loc.gpsPosition,
-                    hintText: "lat, long",
+                    labelText: loc.alertDescription,
                     border: const OutlineInputBorder(),
                   ),
+                  maxLength: 512,
+                  minLines: 4,
+                  maxLines: 4,
                   validator: (value) {
-                    if (_selectedType == AlertType.general.name ||
-                        _selectedType == AlertType.local.name) {
-                      return null; // Manual coordinates are only required for "custom" or "empty" alerts
-                    }
-                    return validateGpsCoordinates(context, value);
+                    return validateDescription(context, value);
                   },
                 ),
-              TextFormField(
-                controller: _description,
-                decoration: InputDecoration(
-                  labelText: loc.alertDescription,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLength: 256,
-                minLines: 4,
-                maxLines: 4,
-                validator: (value) {
-                  return validateDescription(context, value);
-                },
-              ),
-              const SizedBox(height: 5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (alertRequestInProgress) {
-                        return; // Prevent multiple submissions
-                      }
-                      setState(() => alertRequestInProgress = true);
-                      await submit();
-                      setState(() => alertRequestInProgress = false);
-                    },
-                    child: Text("OK"),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(loc.buttonBack),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              if (alertRequestInProgress) ...[
-                Text(loc.gpsPositionForegroundInfo),
                 const SizedBox(height: 5),
-                const CircularProgressIndicator(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (alertRequestInProgress) {
+                          return; // Prevent multiple submissions
+                        }
+                        setState(() => alertRequestInProgress = true);
+                        await submit();
+                        setState(() => alertRequestInProgress = false);
+                      },
+                      child: Text("OK"),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(loc.buttonBack),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (alertRequestInProgress) ...[
+                  Text(loc.gpsPositionForegroundInfo),
+                  const SizedBox(height: 5),
+                  const CircularProgressIndicator(),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
