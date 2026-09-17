@@ -396,11 +396,11 @@ class _LocationTestBodyState extends State<LocationTestBody> {
                             ),
                           ),
                         ),
+                        Text(
+                          timestamp,
+                          style: const TextStyle(color: Colors.blueGrey),
+                        ),
                       ],
-                    ),
-                    trailing: Text(
-                      timestamp,
-                      style: const TextStyle(fontSize: 12),
                     ),
                   );
                 },
