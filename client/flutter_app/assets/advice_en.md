@@ -1,6 +1,8 @@
 # Technical advice
 
-- It would be helpful to refresh your session (using the dedicated button "refresh" on the home page) at least once every six months to maintain your session, thus avoiding the need to log in by entering your email address and password. NOTE: The system automatically refreshes each time you open the app or while using it, so it's not a necessary operation. However, manually clicking on "refresh", in case of prolonged non-use, it's a good idea. 
+- It would be helpful to refresh your session (using the dedicated button "refresh" on the home page) at least once every six months to maintain your session, thus avoiding the need to log in by entering your email address and password.  
+NOTE: the system automatically refreshes each time you open the app, so it's not a necessary operation. However, manually clicking on "refresh", in case of prolonged non-use, it's a good idea.  
+NOTE: if 24 hours have not passed since the last refresh, the refresh operation is ignored.
 
 - The refresh operation is also useful after a possible promotion by administrators to the "chief" user type or to a certain role (e.g. "volunteer", "policeman", etc.), in order to refresh immediately the authentication token used by the application's GPS module, which transmits, together with the user's location, some information about their role and account type.
 

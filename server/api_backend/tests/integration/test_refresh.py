@@ -87,7 +87,7 @@ def test_refresh_with_a_cloned_valid_token(client, test_baseuser):
     assert "refresh_token" in response.json()
     assert "gps_token" in response.json()
 
-def test_refresh_token_iat_too_old(client, test_baseuser):
+def test_refresh_iat_too_old(client, test_baseuser):
     user: User = test_baseuser['user']
     refresh_token = test_baseuser['refresh_token']
     refresh_token_decoded = decode_token(refresh_token)
@@ -154,7 +154,7 @@ def test_refresh_reuse_old_token(client, db_session, test_baseuser, frozen_now):
     assert response2.status_code == token_not_valid_exception().status_code
     assert response2.json()["detail"] == token_not_valid_exception().detail
 
-def test_refresh_token_user_not_found(client, test_baseuser):
+def test_refresh_user_not_found(client, test_baseuser):
     refresh_token = test_baseuser['refresh_token']
     refresh_token_decoded = decode_token(refresh_token)
     token_raw = refresh_token_decoded.get("raw")
@@ -169,7 +169,7 @@ def test_refresh_token_user_not_found(client, test_baseuser):
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
-def test_refresh_token_user_not_active(client, db_session, test_baseuser):
+def test_refresh_user_not_active(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     refresh_token = test_baseuser['refresh_token']
     # Set the user to inactive
@@ -180,7 +180,7 @@ def test_refresh_token_user_not_active(client, db_session, test_baseuser):
     assert response.status_code == token_not_valid_exception().status_code
     assert response.json()["detail"] == token_not_valid_exception().detail
 
-def test_refresh_token_user_is_active(client, db_session, test_baseuser):
+def test_refresh_user_is_active(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     refresh_token = test_baseuser['refresh_token']
     assert user.is_active == True
@@ -191,7 +191,7 @@ def test_refresh_token_user_is_active(client, db_session, test_baseuser):
     assert "refresh_token" in response.json()
     assert "gps_token" in response.json()
 
-def test_refresh_token_user_with_negative_reliability_score_for_too_long(client, db_session, test_baseuser):
+def test_refresh_user_with_negative_reliability_score_for_too_long(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # so that it's not in cooldown anymore, and the reliability score should be reset to a minimal positive value on refresh
@@ -210,7 +210,7 @@ def test_refresh_token_user_with_negative_reliability_score_for_too_long(client,
     assert user.last_reliability_score_at is not None
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
 
-def test_refresh_token_with_negative_reliability_score_in_cooldown(client, db_session, test_baseuser):
+def test_refresh_user_with_negative_reliability_score_in_cooldown(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # but not enough to expire the cooldown, so the reliability score should not be reset on refresh
@@ -230,7 +230,7 @@ def test_refresh_token_with_negative_reliability_score_in_cooldown(client, db_se
     assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 2)
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS)
 
-def test_refresh_token_with_low_reliability_score_for_too_long(client, db_session, test_baseuser):
+def test_refresh_user_with_low_reliability_score_for_too_long(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # so that it's not in cooldown anymore, and the reliability score should be increased on refresh
@@ -250,7 +250,7 @@ def test_refresh_token_with_low_reliability_score_for_too_long(client, db_sessio
     assert user.last_reliability_score_at is not None
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
 
-def test_refresh_token_with_low_reliability_score_in_cooldown(client, db_session, test_baseuser):
+def test_refresh_user_with_low_reliability_score_in_cooldown(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # but not enough to expire the cooldown, so the reliability score should not be increased on refresh
@@ -271,7 +271,7 @@ def test_refresh_token_with_low_reliability_score_in_cooldown(client, db_session
     assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 2)
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS)
 
-def test_refresh_token_with_low_reliability_score_and_null_timestamp(client, db_session, test_baseuser):
+def test_refresh_user_with_low_reliability_score_and_null_timestamp(client, db_session, test_baseuser):
     # If reliability_score is low, but the last_reliability_score_at is None (null timestamp), 
     # we don't increase the reliability score
     user: User = test_baseuser['user']
@@ -286,7 +286,7 @@ def test_refresh_token_with_low_reliability_score_and_null_timestamp(client, db_
     assert user.reliability_score == 50
     assert user.last_reliability_score_at is None
 
-def test_refresh_token_with_reliability_score_near_maximum_for_too_long(client, db_session, test_baseuser):
+def test_refresh_user_with_reliability_score_near_maximum_for_too_long(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # so that it's not in cooldown anymore, and the reliability score should be increased on refresh
@@ -307,7 +307,7 @@ def test_refresh_token_with_reliability_score_near_maximum_for_too_long(client, 
     assert user.last_reliability_score_at is not None
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(minutes=1)
 
-def test_refresh_token_with_reliability_score_near_maximum_in_cooldown(client, db_session, test_baseuser):
+def test_refresh_user_with_reliability_score_near_maximum_in_cooldown(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     # Set the last reliability score time in the past,
     # but not enough to expire the cooldown, so the reliability score should not be increased on refresh
@@ -328,7 +328,7 @@ def test_refresh_token_with_reliability_score_near_maximum_in_cooldown(client, d
     assert user.last_reliability_score_at < now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS - 2)
     assert user.last_reliability_score_at > now_tz_naive() - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS)
 
-def test_refresh_token_with_pending_delete_status(client, db_session, test_baseuser):
+def test_refresh_user_with_pending_delete_status(client, db_session, test_baseuser):
     user: User = test_baseuser['user']
     refresh_token = test_baseuser['refresh_token']
     # Set the pending_delete_since to a recent past time to simulate a user that is pending deletion
@@ -342,3 +342,35 @@ def test_refresh_token_with_pending_delete_status(client, db_session, test_baseu
     # because the user has refreshed his token (to continue using his account)
     # so he is no longer considered pending deletion
     assert user.pending_delete_since is None
+
+def test_refresh_only_secondary_tokens(client, db_session, test_baseuser):
+    user: User = test_baseuser['user']
+    access_token = test_baseuser['access_token']
+    gps_token = test_baseuser['gps_token']
+    refresh_token = test_baseuser['refresh_token']
+    # We select the refresh token from database
+    statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
+    rtoken_from_db = db_session.exec(statement).first()
+    assert rtoken_from_db is not None
+    rtoken_hash = rtoken_from_db.raw_hash
+    payload = {"refresh_token": refresh_token, "only_secondary_tokens": True}
+    response = client.post("/api/auth/refresh", json=payload)
+    assert response.status_code == status.HTTP_200_OK
+    db_session.refresh(user) # Refresh the user instance to get the updated data
+    # Now we assert that response contains the expected keys for all tokens, 
+    # but the refresh_token (main token) is equal to the previous one.
+    response_data = response.json()
+    assert "access_token" in response_data
+    assert "refresh_token" in response_data
+    assert "gps_token" in response_data
+    assert "token_type" in response_data
+    # Assert that the main token (refresh_token) has not changed
+    assert response_data["refresh_token"] == refresh_token
+    # Assert that the secondary tokens have been refreshed
+    assert response_data["access_token"] != access_token
+    assert response_data["gps_token"] != gps_token
+    # Assert that the refresh token in the database has not changed
+    db_session.refresh(rtoken_from_db)
+    rtoken_hash_new = rtoken_from_db.raw_hash
+    assert rtoken_hash_new == rtoken_hash
+    

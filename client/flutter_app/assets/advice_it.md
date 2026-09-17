@@ -1,6 +1,8 @@
 # Consigli tecnici
 
-- Si consiglia di fare un'operazione di refresh (con l'apposito pulsante nella pagina home) almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password. NOTA: il sistema, ad ogni apertura dell'app, o durante l'uso di essa, gestisce da solo il refresh, quindi non è necessario effettuarlo. Tuttavia, un click manuale su "refresh" in caso di prolungato inutilizzo dell'app, è una buona idea.
+- Si consiglia di fare un'operazione di refresh (con l'apposito pulsante nella pagina home) almeno una volta ogni 6 mesi per mantenere la sessione, evitando così la necessità di effettuare il login digitando email e password.  
+NOTA: il sistema, ad ogni apertura dell'app, gestisce da solo il refresh, quindi non è necessario effettuarlo. Tuttavia, un click manuale su "refresh" in caso di prolungato inutilizzo dell'app, è una buona idea.  
+NOTA: se non sono passate 24 ore rispetto all'ultima refresh, l'operazione di refresh viene ignorata.
 
 - L'operazione di refresh è anche utile dopo un'eventuale promozione da parte degli amministratori alla tipologia di utente "chief" (capo) o ad un certo ruolo (esempio "volunteer", "policeman", eccetera), in modo da rinfrescare subito il token di autenticazione usato dal modulo GPS dell'applicazione, il quale trasmette assieme alla posizione dell'utente anche alcune informazioni sul suo ruolo e sul tipo di account.
 

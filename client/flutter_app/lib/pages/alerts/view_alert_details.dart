@@ -722,15 +722,6 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
         if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
           Row(
             children: [
-              ElevatedButton(
-                onPressed: positiveCloseUnblocked
-                    ? () {
-                        _closeAlert(alertWithInfo.alert.id, "positive");
-                      }
-                    : null,
-                child: Text(loc.buttonClosingPositive),
-              ),
-              SizedBox(width: 2),
               Checkbox(
                 value: positiveCloseUnblocked,
                 onChanged: (value) {
@@ -739,21 +730,21 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                   });
                 },
               ),
+              SizedBox(width: 2),
+              ElevatedButton(
+                onPressed: positiveCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "positive");
+                      }
+                    : null,
+                child: Text(loc.buttonClosingPositive),
+              ),
             ],
           ),
         if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 10),
         if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
           Row(
             children: [
-              ElevatedButton(
-                onPressed: negativeCloseUnblocked
-                    ? () {
-                        _closeAlert(alertWithInfo.alert.id, "negative");
-                      }
-                    : null,
-                child: Text(loc.buttonClosingNegative),
-              ),
-              SizedBox(width: 2),
               Checkbox(
                 value: negativeCloseUnblocked,
                 onChanged: (value) {
@@ -762,21 +753,21 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                   });
                 },
               ),
+              SizedBox(width: 2),
+              ElevatedButton(
+                onPressed: negativeCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "negative");
+                      }
+                    : null,
+                child: Text(loc.buttonClosingNegative),
+              ),
             ],
           ),
         if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 10),
         if (alertWithInfo.userIsManager && !alertIsClosed)
           Row(
             children: [
-              ElevatedButton(
-                onPressed: neutralCloseUnblocked
-                    ? () {
-                        _closeAlert(alertWithInfo.alert.id, "neutral");
-                      }
-                    : null,
-                child: Text(loc.buttonClosingNeutral),
-              ),
-              SizedBox(width: 2),
               Checkbox(
                 value: neutralCloseUnblocked,
                 onChanged: (value) {
@@ -785,21 +776,21 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                   });
                 },
               ),
+              SizedBox(width: 2),
+              ElevatedButton(
+                onPressed: neutralCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "neutral");
+                      }
+                    : null,
+                child: Text(loc.buttonClosingNeutral),
+              ),
             ],
           ),
         if (alertWithInfo.userIsManager && !alertIsClosed) SizedBox(height: 10),
         if (alertWithInfo.userIsManager && !alertIsClosed && alertIsLocal)
           Row(
             children: [
-              ElevatedButton(
-                onPressed: punitiveCloseUnblocked
-                    ? () {
-                        _closeAlert(alertWithInfo.alert.id, "punitive");
-                      }
-                    : null,
-                child: Text(loc.buttonClosingPunitive),
-              ),
-              SizedBox(width: 2),
               Checkbox(
                 value: punitiveCloseUnblocked,
                 onChanged: (value) {
@@ -807,6 +798,15 @@ class _AlertDetailsBodyState extends State<AlertDetailsBody> {
                     punitiveCloseUnblocked = value!;
                   });
                 },
+              ),
+              SizedBox(width: 2),
+              ElevatedButton(
+                onPressed: punitiveCloseUnblocked
+                    ? () {
+                        _closeAlert(alertWithInfo.alert.id, "punitive");
+                      }
+                    : null,
+                child: Text(loc.buttonClosingPunitive),
               ),
             ],
           ),

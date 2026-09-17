@@ -360,8 +360,9 @@ class LoginSchema(BaseModel):
             raise ValueError("Wrong language")
         return s
 
-class RefreshTokenWrapper(BaseModel):
+class RefreshRequestSchema(BaseModel):
     refresh_token: str
+    only_secondary_tokens: Optional[bool] = Field(default=False)
 
 class FcmTokenWrapper(BaseModel):
     fcm_token: str

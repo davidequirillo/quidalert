@@ -92,6 +92,7 @@ class AuthClient extends ChangeNotifier {
   bool initDone = false;
   Map<String, dynamic> userInfo = {};
   String? lastFcmTokenSent;
+  DateTime? refreshTokenUpdatedAt;
 
   AuthClient({FlutterSecureStorage? storage})
     : _secureStorage = storage ?? FlutterSecureStorage(),
@@ -109,7 +110,8 @@ class AuthClient extends ChangeNotifier {
     await loadRefreshToken(); // load local refresh token
     await loadGpsToken(); // load local GPS token
     try {
-      await refreshTokens(); // get new auth tokens if needed
+      // Get new auth tokens, including a new refresh token (the main token)
+      await refreshTokens(refreshMainToken: true);
     } on InvalidTokenException catch (_) {
       debugPrintC('AuthClient init, refresh token not valid');
     } on ExpiredTokenException catch (_) {
@@ -202,7 +204,10 @@ class AuthClient extends ChangeNotifier {
     return DateTime.now().toUtc().isAfter(expiry);
   }
 
-  Future<void> refreshTokens({bool propagateGpsToken = false}) async {
+  Future<void> refreshTokens({
+    bool propagateGpsToken = false,
+    bool refreshMainToken = false,
+  }) async {
     // Get new refresh, access, and GPS tokens (api/auth/refresh),
     // using current refresh token as api input
     if (refreshToken == null) {
@@ -211,11 +216,27 @@ class AuthClient extends ChangeNotifier {
       gpsToken = null;
       return;
     }
+    // Skip refreshing all tokens if the main token option is enabled,
+    // and the last refresh token update is not null, and if it was updated less than 24 hours ago.
+    if (refreshMainToken && (refreshTokenUpdatedAt != null)) {
+      final timeElapsed = DateTime.now()
+          .difference(refreshTokenUpdatedAt!)
+          .inSeconds;
+      if (timeElapsed < 86400) {
+        debugPrintC(
+          "[BackgroundLocationService] Refresh token was updated recently, skipping refresh.",
+        );
+        return;
+      }
+    }
     final uri = Uri.parse('$baseUrl/auth/refresh');
     final resp = await http.post(
       uri,
       headers: {"Content-Type": "application/json"},
-      body: json.encode({'refresh_token': refreshToken}),
+      body: json.encode({
+        'refresh_token': refreshToken,
+        'only_secondary_tokens': !refreshMainToken,
+      }),
     );
     final jsonResp = jsonDecode(resp.body);
     final String respMessage = jsonResp['detail'] ?? '';
@@ -250,7 +271,14 @@ class AuthClient extends ChangeNotifier {
     String? aToken = jsonResp['access_token'];
     String? gToken = jsonResp['gps_token'];
     await setAuthTokens(rToken, aToken, gToken);
-    debugPrintC('The new refresh token is: $refreshToken');
+    if (refreshMainToken) {
+      debugPrintC('The new refresh token is: $refreshToken');
+      refreshTokenUpdatedAt = DateTime.now();
+    } else {
+      debugPrintC(
+        'The refresh token (main token) was not updated. Keeping: $refreshToken',
+      );
+    }
     if (propagateGpsToken) {
       debugPrintC('Updating new GPS token in background location config.');
       await BackgroundLocationService.updateGpsTokenInConfig();

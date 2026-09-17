@@ -64,11 +64,12 @@ class _HomeBodyState extends State<HomeBody> {
     super.dispose();
   }
 
-  Future<void> _refreshProfile() async {
-    // Trigger a rebuild to refresh the profile information (fetchProfile will be called again).
-    // the fetchProfile function will call a protected API request to get the latest profile data.
+  Future<void> _refreshAllTokens() async {
+    // It refreshes all authentication tokens (refresh, access, and GPS tokens) if needed.
+    final authClient = context.read<AuthClient>();
+    await authClient.refreshTokens(refreshMainToken: true);
     setState(() {
-      debugPrintC("Home page: refreshProfile called, triggering rebuild.");
+      debugPrintC("Home page: _refreshAllTokens called, triggering rebuild");
     });
   }
 
@@ -260,7 +261,7 @@ class _HomeBodyState extends State<HomeBody> {
                   ),
                   SizedBox(height: 15),
                   ElevatedButton.icon(
-                    onPressed: _refreshProfile,
+                    onPressed: _refreshAllTokens,
                     icon: Icon(Icons.refresh),
                     label: Text("Refresh"),
                   ),

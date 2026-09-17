@@ -31,7 +31,7 @@ from models.general import (string_as_uuid,
     USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS, 
     UserType,
     PasswordResetRequest, PasswordResetConfirm, 
-    RefreshToken, LoginSchema, RefreshTokenWrapper, FcmTokenWrapper,
+    RefreshToken, LoginSchema, RefreshRequestSchema, FcmTokenWrapper,
     WhiteListEntry
     )
 from services.security import (
@@ -257,7 +257,7 @@ app.include_router(locations.router)
 # AUTHENTICATION ENDPOINTS (login, tokens, device)
 @app.post("/api/auth/refresh")
 def refresh_auth_tokens(
-            wrapper: RefreshTokenWrapper, 
+            wrapper: RefreshRequestSchema, 
             db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(wrapper.refresh_token)
@@ -277,12 +277,18 @@ def refresh_auth_tokens(
         raise token_not_valid_exception()
     now = now_tz_naive()
     now_tz = ensure_tz_aware(now)
-    new_raw_secret = generate_random_token()
-    new_raw_secret_hash = get_token_hash(new_raw_secret)
-    rtoken.raw_hash = new_raw_secret_hash
-    rtoken.ip_address=get_client_ip()
-    rtoken.updated_at=now
-    user.last_refresh_at=now
+    # If "only secondary tokens" is True, we do not generate a new refresh token (the main token)
+    # so, "last_refresh_at" will not be updated for the user in the database.
+    if (wrapper.only_secondary_tokens):
+        new_raw_secret = None
+    else:
+        new_raw_secret = generate_random_token()
+        new_raw_secret_hash = get_token_hash(new_raw_secret)
+        rtoken.raw_hash = new_raw_secret_hash
+        rtoken.ip_address=get_client_ip()
+        user.last_refresh_at=now
+        rtoken.updated_at=now
+        db_session.add(rtoken)
     # If user has reliability score < 100, we check if we can increase it based on the last score update time and the time defined for score increase
     if (user.reliability_score < 100):
         if (user.last_reliability_score_at) and (user.last_reliability_score_at < (now - timedelta(days=USER_RELIABILITY_SCORE_WAIT_FOR_INC_DAYS))):
@@ -296,14 +302,18 @@ def refresh_auth_tokens(
     if user.pending_delete_since is not None:
         user.pending_delete_since = None # no more in pending delete status after an eventual dismissal, because the user has changed idea (he has refreshed the auth tokens, so he wants to keep the account active)
     db_session.add(user)
-    db_session.add(rtoken)
     db_session.commit()
     new_access_token = create_access_token(str(user.id))
     new_gps_token = create_geoposition_token(
         str(user.id), user.is_chief, user.role)
-    new_refresh_token = create_refresh_token(
-        str(user.id), str(rtoken.id), 
-        new_raw_secret, issued_at=now_tz)
+    # If no new raw secret was generated (only secondary tokens will be refreshed), 
+    # return the existing refresh token as is
+    if not new_raw_secret:
+        new_refresh_token = wrapper.refresh_token
+    else:
+        new_refresh_token = create_refresh_token(
+            str(user.id), str(rtoken.id), 
+            new_raw_secret, issued_at=now_tz)
     return {
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
@@ -313,7 +323,7 @@ def refresh_auth_tokens(
 
 @app.post("/api/auth/revoke")
 def revoke_token(
-            wrapper: RefreshTokenWrapper,
+            wrapper: RefreshRequestSchema,
             db_session: Session = Depends(get_db_session)):
     try:
         token_data = decode_token(wrapper.refresh_token)
