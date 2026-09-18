@@ -288,7 +288,7 @@ In server/api_backend/scripts folder there are some seeding scripts, useful to p
 docker exec -it fastapi_backend_dev python -m scripts.seed_users
 ```
 
-There is also a script to populate Redis database with random gps locations and other temp data for fake users. Note, fake gps locations will be considered expired after a certain period (more or less 48 hours) and consequently they will be deleted, so, after that period, if you want to assign new random locations to fake users you will need to run the same script. 
+There is also a script to populate Redis database with random gps locations and other temp data for fake users. Note, fake gps locations will be considered expired after a certain period (more or less 7 days) and consequently they will be deleted, so, after that period, if you want to assign new random locations to fake users you will need to run the same script. 
 
 ```bash
 docker exec -it fastapi_backend_dev python -m scripts.seed_redis_data

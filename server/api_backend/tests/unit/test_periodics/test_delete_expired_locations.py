@@ -69,7 +69,7 @@ async def test_delete_expired_locations_for_each_shard(redis_session):
         # It's not a realistic scenario, but it allows us to test the cleanup function.
         await redis_session.geoadd(user_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
         await redis_session.geoadd(chief_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + (i * 0.001)) # we set the last update time to be more than 48 hours ago, so that it is expired
+        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + (i * 0.001)) # we set the last update time to be more than 168 hours ago, so that it is expired
         await redis_session.zadd(last_updates_key, {user_id_str: int(last_update.timestamp())})
         shard_expired_counts[last_updates_key] += 1
     # We check that the number of locations we inserted is correct
@@ -82,7 +82,7 @@ async def test_delete_expired_locations_for_each_shard(redis_session):
         # to fill at least 2 batches (more than batch_size) of expired locations for each shard, to ensure that we test the batching logic of the cleanup function correctly
     # Now we call the delete_expired_locations_shard function
     # to test the cleanup of expired locations for a specific shard (testing each shard individually).
-    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
+    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 168 hours (7 days)
     exp_int_ts = int(exp_dt.timestamp())
     print(f"Calling cleanup_expired_locations for each shard with expiration threshold timestamp: {exp_int_ts}")
     for shard_index in range(get_redis_shards_num()):
@@ -176,7 +176,7 @@ async def test_cleanup_expired_locations_lock_already_acquired(redis_session):
         # It's not a realistic scenario, but it allows us to test the cleanup function.
         await redis_session.geoadd(user_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
         await redis_session.geoadd(chief_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 48 hours ago, so that it is expired
+        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 168 hours (7 days) ago, so that it is expired
         await redis_session.zadd(last_updates_key, {user_id_str: int(last_update.timestamp())})
     # Now we call the do_locations_cleanup function to acquire the lock and start the cleanup process
     deleted_count, _ = await do_locations_cleanup(redis_session)
@@ -191,7 +191,7 @@ async def test_cleanup_expired_locations_lock_already_acquired(redis_session):
         # It's not a realistic scenario, but it allows us to test the cleanup function.
         await redis_session.geoadd(user_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
         await redis_session.geoadd(chief_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 48 hours ago, so that it is expired
+        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 168 hours (7 days) ago, so that it is expired
         await redis_session.zadd(last_updates_key, {user_id_str: int(last_update.timestamp())})
     # we call the do_locations_cleanup function again while the lock is still active, to test that it correctly skips the execution
     deleted_count, _ = await do_locations_cleanup(redis_session)
@@ -231,7 +231,7 @@ async def test_cleanup_expired_locations_lock_released(redis_session, frozen_now
         # It's not a realistic scenario, but it allows us to test the cleanup function.
         await redis_session.geoadd(user_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
         await redis_session.geoadd(chief_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 48 hours ago, so that it is expired
+        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 168 hours (7 days) ago, so that it is expired
         await redis_session.zadd(last_updates_key, {user_id_str: int(last_update.timestamp())})
     # Now we call the do_locations_cleanup function to acquire the lock and start the cleanup process
     deleted_count, _ = await do_locations_cleanup(redis_session)
@@ -246,7 +246,7 @@ async def test_cleanup_expired_locations_lock_released(redis_session, frozen_now
         # It's not a realistic scenario, but it allows us to test the cleanup function.
         await redis_session.geoadd(user_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
         await redis_session.geoadd(chief_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 48 hours ago, so that it is expired
+        last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + 1) # we set the last update time to be more than 168 hours (7 days) ago, so that it is expired
         await redis_session.zadd(last_updates_key, {user_id_str: int(last_update.timestamp())})
     # We wait for the lock cooldown to expire before calling again the do_locations_cleanup function, to ensure that the lock has been released and can be acquired again
     # We simulate the passage of time by advancing the frozen time by more than the lock cooldown duration
@@ -304,7 +304,7 @@ async def test_delete_expired_special_locations_for_each_shard(redis_session):
             spec_locations_key = get_redis_spec_locations_key(user_id_str, role)
             # We add some dummy location data for the specialist user
             await redis_session.geoadd(spec_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-            last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + (i * 0.001)) # we set the last update time to be more than 48 hours ago, so that it is expired
+            last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + (i * 0.001)) # we set the last update time to be more than 168 hours ago, so that it is expired
             await redis_session.zadd(spec_last_updates_key, {user_id_str: int(last_update.timestamp())})
             shard_expired_counts[spec_last_updates_key] += 1
     # We check that the number of locations we inserted is correct
@@ -316,7 +316,7 @@ async def test_delete_expired_special_locations_for_each_shard(redis_session):
         # If this assertion fails, it means that we don't have enough expired locations in this shard to test the batching logic of the cleanup function, so we need to insert more samples of expired locations, 
         # to fill at least 2 batches (more than batch_size) of expired locations for each shard, to ensure that we test the batching logic of the cleanup function correctly
     # Now we call the delete_expired_special_locations function
-    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
+    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 168 hours (7 days)
     exp_int_ts = int(exp_dt.timestamp())
     print(f"Calling cleanup_expired_special_locations for each shard with expiration threshold timestamp: {exp_int_ts}")
     for shard_index in range(get_redis_shards_num()):
@@ -393,7 +393,7 @@ async def test_delete_expired_normal_and_special_locations(redis_session):
             spec_locations_key = get_redis_spec_locations_key(user_id_str, role)
             # We add some dummy location data for the specialist user
             await redis_session.geoadd(spec_locations_key, (12.34 + i*0.01, 56.78 + i*0.01, user_id_str))
-            last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + (i * 0.001)) # we set the last update time to be more than 48 hours ago, so that it is expired
+            last_update = now - timedelta(hours=LOCATIONS_TTL_HOURS + (i * 0.001)) # we set the last update time to be more than 168 hours (7 days) ago, so that it is expired
             await redis_session.zadd(spec_last_updates_key, {user_id_str: int(last_update.timestamp())})
     # We check that the number of locations we inserted is correct
     shards = get_all_redis_spec_location_last_updates_keys()

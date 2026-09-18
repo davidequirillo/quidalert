@@ -60,7 +60,7 @@ from core.dbmgr import (
     REDIS_COOLDOWN_ALERTS_CLEANUP_TIMEOUT,
     get_redis_shards_num)
 
-LOCATIONS_TTL_HOURS = 48
+LOCATIONS_TTL_HOURS = 168 # 168 hours (7 days)
 
 # Chief demotion expiration threshold: same as geoposition token TTL, 
 # since the demotion is linked to the geoposition update and should last as long as the token validity
@@ -92,7 +92,7 @@ async def do_locations_cleanup(redis_handle):
 async def cleanup_expired_locations(redis_client): # Redis client can be either a redis_handle (in cluster mode) or a redis_session from pool (in single node mode)
     redis_shards_num = get_redis_shards_num()
     now = now_tz_aware()
-    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 48 hours
+    exp_dt = now - timedelta(hours=LOCATIONS_TTL_HOURS) # expiration threshold: 168 hours (7 days)
     exp_int_ts = int(exp_dt.timestamp())
     normal_locations_del_num = 0
     special_locations_del_num = 0
