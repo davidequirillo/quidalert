@@ -93,11 +93,7 @@ class LocationClient extends ChangeNotifier {
     _isFetching = true;
     notifyListeners();
     debugPrintC("Fetching foreground location...");
-    // At the moment, we keep persistence always disabled for foreground location requests.
-    // But we still leave the logic for enabling persistence based on the last fetch time, for future use.
-    // For example, persistEnabled could be initialized to true, and if the last fetch was recent, it could be set to false.
-    // At the moment, it's always false.
-    bool persistEnabled = false;
+    bool persistEnabled = true;
     if (_lastFetchTime != null) {
       final timeSinceLastFetch = DateTime.now()
           .difference(_lastFetchTime!)
