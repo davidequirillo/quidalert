@@ -69,7 +69,7 @@ class AlertOperation(str, Enum):
 
 # We search for chiefs within a very large radius, 
 # to be sure to find at least one closest chief (because a chief must be alerted, even if he is outside the alert radius)
-GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 10000
+GEOSEARCH_RADIUS_FOR_CLOSEST_CHIEFS_KM = 1000
 
 ## CREATE ALERT BTASK: this is the main function that will be executed as a background task when a new alert is created.
 async def task_alert_search_and_notify(
