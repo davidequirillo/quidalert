@@ -446,7 +446,7 @@ Note: before running the following command, we need to make sure that port 9001 
 ssh -L 9001:localhost:9001 root@quidalert.example.com
 ```
 
-Now, with the web browser in our local machine, we connect to the following url
+Now, with the web browser in our local machine, we connect to the following url:
 
 http://localhost:9001
 
