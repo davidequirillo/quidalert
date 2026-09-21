@@ -76,3 +76,25 @@ This application utilizes the [flutter_background_geolocation](https://github.co
 **Important:** In accordance with Section 7 of the GPL v3, I have granted a specific exception in the `LICENSE` file. This allows you to compile and distribute this app with the Transistor Software SDK without violating the GPL, provided that all other parts of the application remain under the GPL v3. 
 
 *Note: You are responsible for acquiring your own commercial license from Transistor Software if you intend to release a production version of this app.*
+
+## 💖 Sponsors & Supporters
+
+A huge thank you to all the amazing individuals and organizations supporting the development of **Quidalert**!
+
+### Ways to Support
+
+If you find **Quidalert** useful, you can support its development through any of the following platforms:
+
+- **[GitHub Sponsors](https://github.com/sponsors/davidequirillo)** (Monthly & One-time)
+- **[Buy Me a Coffee](https://buymeacoffee.com/davidequirillo)**
+- **[PayPal](https://paypal.me/davidequirillo)**
+
+All funds raised will be used to cover hardware, tooling, development/test server hosting, and to support the ongoing open-source development of Quidalert.
+
+> ℹ️ **Supporter Recognition:** Anyone contributing **$25/€25 or more** (either via a monthly sponsorship or a cumulative/one-time donation through GitHub Sponsors, Buy Me a Coffee, or PayPal) will be featured in our project supporters section!
+
+### Supporters
+
+**[View the full list of all our Sponsors & Supporters](SPONSORS.md)**
+
+*Be the first to sponsor this project! Your support helps cover hosting, test infrastructure, and ongoing development.*
