@@ -1,5 +1,9 @@
 # Quidalert
 
+<p align="center">
+  <img src="client/flutter_app/assets/icon.png" alt="Quidalert Logo" width="128">
+</p>
+
 *"Together we are stronger"*
 
 Quidalert is a network alert manager that can be used by users to send alerts and receive help from others: when the server receives an alert from a client (which runs the mobile app), it takes the alert description and the alert gps location, then it sends a push notification to all geolocalized nearby clients and to the closest chief (called "chief manager"), to notify them about the alert.  
