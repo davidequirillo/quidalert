@@ -89,9 +89,9 @@ A huge thank you to all the amazing individuals and organizations supporting the
 
 If you find **Quidalert** useful, you can support its development through any of the following platforms:
 
-- **[GitHub Sponsors](https://github.com/sponsors/davidequirillo)** (Monthly & One-time)
-- **[Buy Me a Coffee](https://buymeacoffee.com/davidequirillo)**
-- **[PayPal](https://paypal.me/davidequirillo)**
+- **[Ko-fi](https://ko-fi.com/davidequirillo)** *(Credit card or PayPal, no account required)*
+- **[Buy Me a Coffee](https://buymeacoffee.com/davidequirillo)** *(Credit card, Apple/Google Pay, no account required)*
+- **[GitHub Sponsors](https://github.com/sponsors/davidequirillo)** *(GitHub account required)*
 
 All funds raised will be used to cover hardware, tooling, development/test server hosting, and to support the ongoing open-source development of Quidalert.
 
