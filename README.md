@@ -1,7 +1,7 @@
 # Quidalert
 
 <p align="center">
-  <img src="client/flutter_app/assets/icon.png" alt="Quidalert Logo" width="128">
+  <img src="client/flutter_app/assets/icon/icon.png" alt="Quidalert Logo" width="128">
 </p>
 
 *"Together we are stronger"*
