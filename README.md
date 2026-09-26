@@ -95,7 +95,7 @@ If you find **Quidalert** useful, you can support its development through any of
 
 All funds raised will be used to cover hardware, tooling, development/test server hosting, and to support the ongoing open-source development of Quidalert.
 
-> ℹ️ **Supporter Recognition:** Anyone contributing **$25/€25 or more** (either via a monthly sponsorship or a one-time donation through GitHub Sponsors, Buy Me a Coffee, or Ko-fi) will be featured in our project supporters section! (Please leave your GitHub username or your public website/social link in the donation note so I can credit you!)
+> ℹ️ **Supporter Recognition:** Anyone contributing **$25/€25 or more** (either via a monthly sponsorship or a one-time donation through GitHub Sponsors, Buy Me a Coffee, or Ko-fi) will be featured in our project supporters section! (If you'd like to be credited, please include your GitHub username or public link in the donation note)
 
 ### Supporters
 
