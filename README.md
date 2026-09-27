@@ -56,7 +56,7 @@ Note: the server will temporarily store, for each user, only the last received g
 
 The app interface currently supports:
 * 🇮🇹 **Italian**
-* 🇬🇧 **English** *(Default fallback)*
+* 🇬🇧 **English** *(default fallback)*
 
 *If your device system language is not set to Italian, the app automatically defaults to English.*
 
