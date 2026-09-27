@@ -48,7 +48,7 @@ When the user does a "gps location test" (pressing the relative button), or when
 
 To receive alerts coming from nearby, the app needs to detect the user position periodically in background (only gps coordinates in this case, without address translation) and send it to the server, even when the app is closed. This background process will start automatically once the user does a successful login, and will be immediately stopped if he decides to logout from the server.
 
-Note: to maximize the device battery efficiency and to avoid server overloading, the app only requests a position update when the device become stationary after a significative movement, or a significant change in location is detected, also depending on the speed (more detections at walking speed, and few detections at high speeds).
+Note: to maximize the device battery efficiency and to avoid server overloading, the app only requests a position update when the device become stationary after a significative movement, or a significant change in location is detected, also depending on the speed (the required significant distance increases with speed, so we will have more detections at walking speed, and less detections at high speeds).
 
 Note: the server will temporarily store, for each user, only the last received gps position, not the complete tracking history. If the user does a logout, their gps location will no longer be refreshed, and after a week the system will automatically delete this old location.
 
