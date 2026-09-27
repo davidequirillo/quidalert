@@ -44,13 +44,13 @@ The reverse proxy (ex. "Nginx" or "Caddy") will be seen by the client as the onl
 
 ## 🌍 Notes about GPS location
 
-When the user does a "gps location test" (pressing the relative button), or when he sends a help (alert) request, the client app will access the device GPS coordinates, instantly, using the relative platform calls, and after that it will translate the coordinates to an address, using default platform free services. If it's an alert request, the position will be sent to the server.
+When the user does a "gps location test" (pressing the relative button), or when he sends a help (alert) request, the client app will access the device GPS coordinates, and it will translate the coordinates to an address. If it's an alert request, the position will be sent to the server.
 
-To receive alerts from others nearby, the app needs to update the user position locally (only gps coordinates in this case, without address translation) and send it to the server, even when the app is closed. This background process will start automatically once the user does a successful login, and will be immediately stopped if he decides to logout from the server.
+To receive alerts coming from nearby, the app needs to detect the user position periodically in background (only gps coordinates in this case, without address translation) and send it to the server, even when the app is closed. This background process will start automatically once the user does a successful login, and will be immediately stopped if he decides to logout from the server.
 
-Note: to maximize the device battery efficiency and to avoid server overloading, the app only requests a position update when the device become stationary after a significative movement, or a significant change in location is detected at low speed and enough time is passed.
+Note: to maximize the device battery efficiency and to avoid server overloading, the app only requests a position update when the device become stationary after a significative movement, or a significant change in location is detected, also depending on the speed (more detections at walking speed, and few detections at high speeds).
 
-Note: the server will temporarily store, for each user, only the last received gps position, not the complete tracking history. If the user does a logout, their gps location will no longer be refreshed, and after a few days the system will automatically delete this old location.
+Note: the server will temporarily store, for each user, only the last received gps position, not the complete tracking history. If the user does a logout, their gps location will no longer be refreshed, and after a week the system will automatically delete this old location.
 
 ## 🌐 Languages
 
