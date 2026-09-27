@@ -52,6 +52,14 @@ Note: to maximize the device battery efficiency and to avoid server overloading,
 
 Note: the server will temporarily store, for each user, only the last received gps position, not the complete tracking history. If the user does a logout, their gps location will no longer be refreshed, and after a few days the system will automatically delete this old location.
 
+## 🌐 Languages
+
+The app interface currently supports:
+* 🇮🇹 **Italian**
+* 🇬🇧 **English** *(Default fallback)*
+
+*If your device system language is not set to Italian, the app automatically defaults to English.*
+
 ## 🔌 Installation
 
 See INSTALL.md
