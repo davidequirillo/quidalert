@@ -294,8 +294,13 @@ There is also a script to populate Redis database with random gps locations and 
 docker exec -it fastapi_backend_dev python -m scripts.seed_redis_data
 ```
 
-There is a script to assign the same FCM token (related to your client device logged user) to all fake users (whose email ends with "@example.com"), to send all push notifications destined to them in bulk to your device.  
-Note: use this feature with caution as your single device will receive notifications intended for all fake users, thus bombarding your device with notifications.
+There is a script to assign a fake FCM token to all fake users (whose email ends with "@example.com").
+
+```bash
+docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --fake-fcm-token "my-fake-fcm-token"
+```
+
+As alternative, there is an option to assign the same FCM token (related to your client device logged user) to all fake users, to send all push notifications destined to them in bulk to your device. NOTE: use this feature with caution as your single device will receive notifications intended for all fake users, thus bombarding your device with notifications.
 
 ```bash
 docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --email device-logged-user-email
