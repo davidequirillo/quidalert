@@ -36,7 +36,7 @@ def assign_fcm_token_to_all_fake_users(seeding_fcm_token, seeding_user_id, db_se
     print(f"Found {len(fake_users)} fake users. Updating their FCM tokens...")
     for user in fake_users:
         if seeding_user_id and user.id == seeding_user_id:
-            print(f"Skipping user '{user.email}' as it is the seeding user (he already has the valid FCM token).")
+            print(f"Skipping user '{user.email}' as it is the seeding user (he already has the FCM token).")
             continue
         # Select user refresh token if exists, otherwise we create a new one
         statement = select(RefreshToken).where(RefreshToken.user_id == user.id)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         if args.fake_fcm_token:
             seeding_fcm_token = args.fake_fcm_token
             seeding_user_id = None
-            print(f"Seeding FCM tokens for all fake users using the fake FCM token '{seeding_fcm_token}'...")
+            print(f"Assigning FCM token to all fake users...")
         elif args.email:
             email = args.email
             user = select_the_seeding_user(email, db_session)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
                 sys.exit(1)
             seeding_fcm_token = refresh_token.fcm_token
             seeding_user_id = user.id
-            print(f"Seeding FCM tokens for all fake users using the FCM token from user '{email}'...")
+            print(f"Assigning FCM tokens to all fake users using the FCM token from user '{email}'...")
         else:
             print("No FCM token specified for seeding. Exiting.")
             sys.exit(1)

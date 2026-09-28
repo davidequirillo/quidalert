@@ -294,7 +294,7 @@ There is also a script to populate Redis database with random gps locations and 
 docker exec -it fastapi_backend_dev python -m scripts.seed_redis_data
 ```
 
-There is a script to assign a fake FCM token to all fake users (whose email ends with "@example.com").
+There is a script to assign a fake FCM token to all fake users (whose email ends with "@example.com"). It's useful if we want to manually test the propagation of created alerts: when an alert is created, it is propagated to nearby notifiable users (having an FCM token not NULL). Therefore, this script is useful for making our test users appear notifiable so they are retrieved via the database query. NOTE: after the alert propagation, users with an invalid FCM token will have their FCM token field reset to NULL, so if we want to re-execute a new manual alert propagation test, it is advisable to refresh this script.
 
 ```bash
 docker exec -it fastapi_backend_dev python -m scripts.seed_fcm_tokens --fake-fcm-token "my-fake-fcm-token"
