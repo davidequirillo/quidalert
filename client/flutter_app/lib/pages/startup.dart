@@ -50,6 +50,9 @@ class StartupPageBodyState extends State<StartupPageBody> {
       debugPrintC(
         "User is not logged in, skipping background location tracking.",
       );
+      // Let's stop if there is the background tracking still active from a previous session.
+      // (this can happen if a previous logout didn't work properly or has not been done at all)
+      await BackgroundLocationService.stopTracking();
     } else {
       try {
         await BackgroundLocationService.startTracking();
