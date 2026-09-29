@@ -112,7 +112,7 @@ async def init_engines(app: FastAPI):
     print(f"Scheduling periodic task 'cleanup_expired_locations' every hour at: {random_minute:02d} minutes")
     app.state.scheduler.add_job(
         do_locations_cleanup,
-        trigger=CronTrigger(hour="*", minute=random_minute),  # every hour at the random minute
+        trigger=CronTrigger(hour="*", minute=random_minute, jitter=45),  # every hour at the random minute
         args=[app.state.redis_handle],
         id="cleanup_expired_locations_job_v1",
     )
@@ -121,7 +121,7 @@ async def init_engines(app: FastAPI):
     print(f"Scheduling periodic task 'cleanup_expired_demotions' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_demotions_cleanup,
-        trigger=CronTrigger(hour=random_hour, minute=random_minute),  # every day, UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute, jitter=45),  # every day, UTC time
         args=[app.state.redis_handle],
         id="cleanup_expired_demotions_job_v1",
     )
@@ -130,7 +130,7 @@ async def init_engines(app: FastAPI):
     print(f"Scheduling periodic task 'cleanup_old_alerts' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_alerts_cleanup,
-        trigger=CronTrigger(hour=random_hour, minute=random_minute),  # every day, UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute, jitter=45),  # every day, UTC time
         args=[app.state.db_engine, app.state.redis_handle],
         id="cleanup_old_alerts_job_v1",
     )
@@ -139,7 +139,7 @@ async def init_engines(app: FastAPI):
     print(f"Scheduling periodic task 'cleanup_dismissed_users' at random time: {random_hour:02d}:{random_minute:02d} UTC")
     app.state.scheduler.add_job(
         do_users_cleanup,
-        trigger=CronTrigger(hour=random_hour, minute=random_minute),  # every day, UTC time
+        trigger=CronTrigger(hour=random_hour, minute=random_minute, jitter=45),  # every day, UTC time
         args=[app.state.db_engine, app.state.redis_handle],
         id="cleanup_dismissed_users_job_v1",
     )
