@@ -23,8 +23,14 @@ class AlertedUsersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    final role = args["role"] as String?;
+    final tit = (role != null)
+        ? "${loc.alertAlertedSpecialists} ($role)"
+        : loc.alertAlertedUsers;
     return Scaffold(
-      appBar: CAppBar(title: loc.alertAlertedUsers, showBackButton: true),
+      appBar: CAppBar(title: tit, showBackButton: true),
       body: SafeArea(top: false, child: AlertedUsersBody()),
     );
   }
