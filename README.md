@@ -62,7 +62,11 @@ The app interface currently supports:
 
 ## 🔌 Installation
 
-See INSTALL.md
+See [INSTALL.md](INSTALL.md)
+
+## 📖 Usage
+
+For detailed instructions and examples, please refer to [USAGE.md](USAGE.md).
 
 ## 🔒 Disclaimer
 

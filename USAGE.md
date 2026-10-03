@@ -124,9 +124,17 @@ Click to "Battery" or "App battery usage", and then switch to "Unrestricted"
 
 Now you can go back by clicking on the "back" button in the top left corner, and then on the "back" button again until you return to the Quidalert app home page.
 
+## Home page
+
+This is the Quidalert home page
+
+<p align="center">
+  <img src="client/screenshots/home_page.png" alt="App battery unrestricted screenshot" width="256">
+</p>
+
 ## Advice page
 
-Remember to read the tips page. It's very helpful, and contains important info regarding the session maintenance, the technical functioning of the geolocation system, and other information regarding alerts.
+Remember to read the tips page (Quidalert home page, "Advice" button). It's very helpful, and contains important info regarding the session maintenance, the technical functioning of the geolocation system, and other information regarding alerts.
 
 ## Create an alert
 
