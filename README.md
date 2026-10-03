@@ -66,7 +66,7 @@ See [INSTALL.md](INSTALL.md)
 
 ## 📖 Usage
 
-For detailed instructions and examples, please refer to [USAGE.md](USAGE.md).
+For instructions on how to use the Quidalert app, please refer to [USAGE.md](USAGE.md).
 
 ## 🔒 Disclaimer
 
