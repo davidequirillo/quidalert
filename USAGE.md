@@ -124,7 +124,8 @@ Click to "Battery" or "App battery usage", and then switch to "Unrestricted"
 
 Now you can go back by clicking on the "back" button in the top left corner, and then on the "back" button again until you return to the Quidalert app home page.
 
-NOTE: if you want to check the permissions granted, or if you forget to grant any of the permissions just discussed, you can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions (notifications, authorizations, battery).
+NOTE: if you want to check the permissions granted, or if you forget to grant any of the permissions just discussed, don't worry. You can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions (notifications, authorizations->locations, autorizations->physical activity, "battery").  
+Furthermore, if the system detects that permissions are missing, it presents the user with the same screens seen a moment ago, giving them the opportunity to set the correct permissions.
 
 ## Home page
 
@@ -154,7 +155,8 @@ Useful for verifying the correct functioning of the GPS location detection syste
 
 On the same page, we also have the device's latest GPS location sent to the server in the background.
 
-Interesting note: the GPS location detected by this test will be sent to the server, ensuring the server has a new, updated GPS location (especially useful for "chief" users, if their device remains stationary for a long time without detecting new background locations to send to the server). Remember that the server deletes users' GPS locations that are older than a week, and in order to be alerted, users and chiefs must have a recent known GPS location stored on the server.
+Interesting note: the GPS location detected by this test will be sent to the server, ensuring the server has a new, updated GPS location (especially useful for "chief" users, if their device remains stationary for a long time without detecting new background locations to send to the server). Remember that the server deletes users' GPS locations that are older than a week, and in order to be alerted, users and chiefs must have a recent known GPS location stored on the server.  
+Simply put, the test button can be used to perform a GPS check, or it can be used to refresh the user's GPS location on the server.
 
 At the bottom of the page, there's also a list of locations detected by the device in the background, but not yet sent to the server (perhaps due to internet issues). The device will automatically send them as soon as internet is available again, but you can force the upload manually. The server will only store the most recent location.
 
@@ -170,10 +172,106 @@ NOTE: if an alert with a similar description is sent within an hour from the las
 
 NOTE FOR CHIEFS: Chief users can send regular alerts like other users, but they can also send "managed" alerts (the GPS location is customized) and global alerts (general alerts visible to all users within the server's scope). They can also create "empty" alerts (without alerted users), ready to be expanded later with a large radius. If the user is a "chief", a special selector will be shown to choose the alert type.
 
+<p align="center">
+  <img src="client/screenshots/new_alert_by_chief.png" alt="New alert by chief screenshot" width="256">
+</p>
+
+A NOTE ABOUT THE NUMBER OF ALERTED USERS
+
+For efficiency reasons, the server propagates the alert to a maximum of 1000 nearby users. This applies to both the creation of an alert and the expansion function.
+
+The system allows the rescue leader (chief) to perform 3 expansions, so, if we want to do a calculation: the maximum number of alerted users, for a given alert, is 4000 (1000 during creation, and then 1000 for each of the three expansions), 4001 if we include the chief in the calculation.
+
 ## Alert details
 
-To be continued... Under construction...
+### Alert details from the perspective of the sender
 
-## For admins
+This is the details page for an alert. We can see the GPS location of the user who issued the alert, their address, and by clicking on the map, we can view the GPS location in the device's built-in Maps app.
 
-Under construction...
+<p align="center">
+  <img src="client/screenshots/alert_details_by_sender.png" alt="Alert details perspective of the sender screenshot" width="256">
+</p>
+
+The data regarding the accuracy of the GPS position is interesting, so nearby users and the chief of the rescue team can get an idea of ​​the accuracy of the displayed GPS position, and perhaps the chief can ask the sender of the alert for clarification via message directly in the alert chat.
+
+There's also other useful data (name of the alert sender, name of the alerted leader, and number of alerted users).
+
+Then we see that there's also a chat feature, thanks to which the sender and the alert leader can write messages, and nearby alerted users can read them.
+
+### Alert details from the perspective of nearby users
+
+Nearby users see a page almost identical to this one. They have the option to vote on the alert (confirm, deny, or remain neutral).
+
+<p align="center">
+  <img src="client/screenshots/alert_details_by_nearby_users.png" alt="Alert details perspective of nearby users screenshot" width="256">
+</p>
+
+Votes must be carefully considered, because when the chief closes the alert, they can also confirm or deny it. If the alert is confirmed by the chief, the system will reward all users who confirmed it (including the alert sender) and penalize those who denied it. Conversely, if the alert is denied by the chief, the system will reward users who denied it and penalize those who confirmed it (also penalizing the alert sender).
+
+The penalty consists of a reduction in the reliability score. Users with a low score will be able to issue alerts with a more limited radius, and if the score drops to zero, or negative, they will not be able to issue alerts.
+
+After a few months, the reliability score slowly starts to increase again.
+
+### Alert details from the perspective of the chief
+
+Obviously, the manager, having more permissions, can see more details about an alert. 
+
+<p align="center">
+  <img src="client/screenshots/alert_details_by_chief.png" alt="Alert details perspective of the chief screenshot" width="256">
+</p>
+
+He can see the address and phone number of the alert sender. the list of alerted users sorted by distance 
+
+<p align="center">
+  <img src="client/screenshots/alerted_users.png" alt="Alerted users screenshot" width="256">
+</p>
+
+...and the list of alerted specialists (doctors, firefighters, military personnel, police officers, volunteers, etc.). He can also see the contact information (address, phone number) for these individuals.
+
+<p align="center">
+  <img src="client/screenshots/alerted_specialists.png" alt="Alerted specialists screenshot" width="256">
+</p>
+
+<p align="center">
+  <img src="client/screenshots/alerted_specialists_medics.png" alt="Alerted specialists (medics) screenshot" width="256">
+</p>
+
+The manager can vote on the alert like a normal user, but the most important action is closing the alert. This can be a neutral, affirmative, denial, or punitive closure. A neutral closure does not affect the reliability scores of the voting users or the alert sender. Other closures do, as we saw earlier. A punitive closure is like a denial closure, but is much more punitive (the alert description is banned as it is considered seriously false, and the sender's reliability score is directly reduced to zero, while the reliability scores of alerted users who voted in favor of the fake alert are significantly reduced).
+
+<p align="center">
+  <img src="client/screenshots/alert_closing.png" alt="Alerted details (closing) screenshot" width="256">
+</p>
+
+NOTE: the alert close buttons have a safety checkbox, to prevent you from accidentally clicking and closing the alert unintentionally.
+
+## Alert extension
+
+The manager can expand the alert beyond the kilometer (for example 30 kilometers or even more), warning normal users, or focusing on a certain role (for example if you want to warn all "medics" within a 30 kilometer radius).
+
+<p align="center">
+  <img src="client/screenshots/extend_alert.png" alt="Extend alert screenshot" width="256">
+</p>
+
+An alert can be expanded multiple times (for example, I could extend the alert to all medics within a 30-kilometer radius, and after that repeat the same operation, extending the alert to all police officers within a 100-kilometer radius).
+
+The maximum number of possible expansions is 3.
+
+## Chat
+
+The chat is very useful: if the alert sender forgets to write something in the alert description, they can write it later in the chat. The rescue manager can respond to reassure the sender and the alerted users and give instructions that are visible to all of them.
+
+<p align="center">
+  <img src="client/screenshots/chat.png" alt="Chat screenshot" width="256">
+</p>
+
+## Recent alerts
+
+On the "recents" page, you can see general alerts, as these are by nature visible to everyone, and then **only alerts in which the user is involved** in some way (as alerted "chief" manager, as an alerted nearby user, or as an alert sender).
+
+<p align="center">
+  <img src="client/screenshots/recents.png" alt="Recent alerts screenshot" width="256">
+</p>
+
+## Panel dedicated to admins and officers
+
+Tutorial under construction...
