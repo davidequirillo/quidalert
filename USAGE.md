@@ -24,7 +24,7 @@ After accepting the legal terms, the login page will open. To log in, you must b
 
 ## Registration
 
-Registration has one requirement, as explained on the "Info" page: the user's email address must have been authorized by the administrator or by the "officer" user, i.e. it must have been included in a white list, so make sure you have obtained this authorization.
+Registration has one requirement, as explained on the "Info" page: the user's email address must have been authorized by an administrator or by an "officer" user, i.e. it must have been included in a white list, so make sure you have obtained this authorization.
 
 Registration is simple: simply fill out the short form (first name, last name, email address, password). You must set a strong password, containing at least one uppercase character, one lowercase character, a symbol, and a number, and it must be sufficiently long.
 
@@ -96,9 +96,9 @@ To be notified about nearby alerts at any time, the device needs to periodically
   <img src="client/screenshots/gps_all_the_time_switch.png" alt="GPS all the time switch screenshot" width="256">
 </p>
 
-Now the device will automatically detect your GPS location occasionally, typically only when you've moved significantly (250 meters on foot, or a few kilometers or more when driving at car speeds) or when you experience a change in motion (movement followed by stationary, e.g., "I go to a café and sit at a table"), thus minimizing device battery consumption.
+Now the device will automatically detect in background your GPS location occasionally, typically only when you've moved significantly (250 meters on foot, or a few kilometers or more when driving at car speeds) or when you experience a change in motion (movement followed by stationary, e.g., "I go to a café and sit at a table"), thus minimizing device battery consumption.
 
-However, to ensure this background process isn't interrupted by the device power management mechanism, you should set the battery to "Unrestricted" in the "Battery" section of the system settings relative to Quidalert app. See the following section.
+However, to ensure this background process isn't interrupted by the device power management mechanisms, you should set the battery to "Unrestricted" in the "Battery" section of the system settings related to Quidalert app. See the following section.
 
 ### Battery unrestricted
 
@@ -124,8 +124,8 @@ Click to "Battery" or "App battery usage", and then switch to "Unrestricted"
 
 Now you can go back by clicking on the "back" button in the top left corner, and then on the "back" button again until you return to the Quidalert app home page.
 
-NOTE: if you want to check the permissions granted, or if you forget to grant any of the permissions just discussed, don't worry. You can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions (notifications, authorizations->locations, autorizations->physical activity, "battery").  
-Furthermore, if the system detects that permissions are missing, it presents the user with the same screens seen a moment ago, giving them the opportunity to set the correct permissions.
+NOTE: if you want to check the permissions granted, or if you forget to grant any of the permissions just discussed, don't worry. You can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions in these sections: notifications, authorizations->locations, autorizations->physical activity, "battery".  
+Furthermore, if the system detects that some permissions are missing, it presents the user with the same screens seen a moment ago, giving them the opportunity to set the correct permissions.
 
 ## Home page
 
@@ -153,10 +153,10 @@ Useful for verifying the correct functioning of the GPS location detection syste
   <img src="client/screenshots/gps_location_test.png" alt="GPS location test screenshot" width="256">
 </p>
 
-On the same page, we also have the device's latest GPS location sent to the server in the background.
+On the same page, we can also see the device's latest GPS location sent to the server in the background.
 
-Interesting note: the GPS location detected by this test will be sent to the server, ensuring the server has a new, updated GPS location (especially useful for "chief" users, if their device remains stationary for a long time without detecting new background locations to send to the server). Remember that the server deletes users' GPS locations that are older than a week, and in order to be alerted, users and chiefs must have a recent known GPS location stored on the server.  
-Simply put, the test button can be used to perform a GPS check, or it can be used to refresh the user's GPS location on the server.
+NOTE: the GPS location detected by this test will be sent to the server if enough time has passed from the last test, ensuring the server has a new, updated GPS location (especially useful for "chief" users, if their device remains stationary for a long time without detecting new background locations to send to the server). Remember that the server deletes users' GPS locations that are older than a week, and in order to be alerted, users and chiefs must have a recent known GPS location stored on the server.  
+Simply put, the test button can be used to perform a GPS check, and it can also be used to refresh the user's GPS location on the server.
 
 At the bottom of the page, there's also a list of locations detected by the device in the background, but not yet sent to the server (perhaps due to internet issues). The device will automatically send them as soon as internet is available again, but you can force the upload manually. The server will only store the most recent location.
 
@@ -170,7 +170,7 @@ Creating an alert is easy. Just go to "New Alert" and enter a description. The d
 
 NOTE: if an alert with a similar description is sent within an hour from the last alert and within the same radius, it will be ignored and the user will immediately receive an error message.
 
-NOTE FOR CHIEFS: Chief users can send regular alerts like other users, but they can also send "managed" alerts (the GPS location is customized) and global alerts (general alerts visible to all users within the server's scope). They can also create "empty" alerts (without alerted users), ready to be expanded later with a large radius. If the user is a "chief", a special selector will be shown to choose the alert type.
+NOTE FOR CHIEFS: chiefs can send regular alerts like other users, but they can also send "managed" alerts (the GPS location is customized) and general alerts (global alerts visible to all users within the server's scope). They can also create "empty" alerts (without alerted users), ready to be expanded later with a large radius. If the user is a "chief", a special selector will be shown to choose the alert type.
 
 <p align="center">
   <img src="client/screenshots/new_alert_by_chief.png" alt="New alert by chief screenshot" width="256">
@@ -178,9 +178,9 @@ NOTE FOR CHIEFS: Chief users can send regular alerts like other users, but they 
 
 A NOTE ABOUT THE NUMBER OF ALERTED USERS
 
-For efficiency reasons, the server propagates the alert to a maximum of 1000 nearby users. This applies to both the creation of an alert and the expansion function.
+For efficiency reasons, the server propagates the alert to a maximum of 1000 nearby users. This applies to both the creation and the expansion of an alert.
 
-The system allows the rescue leader (chief) to perform 3 expansions, so, if we want to do a calculation: the maximum number of alerted users, for a given alert, is 4000 (1000 during creation, and then 1000 for each of the three expansions), 4001 if we include the chief in the calculation.
+The system allows the rescue leader (chief) to perform 3 expansions, so, if we want to do a calculation: the maximum number of alerted users, for a given alert, is 4000 (1000 during creation, and then 1000 for each of the three expansions), 4001 if we include the alerted chief in the calculation.
 
 ## Alert details
 
@@ -192,25 +192,26 @@ This is the details page for an alert. We can see the GPS location of the user w
   <img src="client/screenshots/alert_details_by_sender.png" alt="Alert details perspective of the sender screenshot" width="256">
 </p>
 
-The data regarding the accuracy of the GPS position is interesting, so nearby users and the chief of the rescue team can get an idea of ​​the accuracy of the displayed GPS position, and perhaps the chief can ask the sender of the alert for clarification via message directly in the alert chat.
+The data regarding the accuracy of the GPS position is interesting, so nearby users and the chief of the rescue team can get an idea of ​​the accuracy of the displayed GPS position, and perhaps the chief can ask the sender of the alert for clarification regarding where he is located, via message directly in the alert chat, explained below.
 
-There's also other useful data (name of the alert sender, name of the alerted leader, and number of alerted users).
+There's also other useful data (name of the alert sender, name of the alerted chief, and number of alerted users).
 
 Then we see that there's also a chat feature, thanks to which the sender and the alert leader can write messages, and nearby alerted users can read them.
 
 ### Alert details from the perspective of nearby users
 
-Nearby users see a page almost identical to this one. They have the option to vote on the alert (confirm, deny, or remain neutral).
+Nearby users see a page almost identical to the previous one just examined. They have the option to vote on the alert (confirm, deny, or remain neutral).
 
 <p align="center">
   <img src="client/screenshots/alert_details_by_nearby_users.png" alt="Alert details perspective of nearby users screenshot" width="256">
 </p>
 
-Votes must be carefully considered, because when the chief closes the alert, they can also confirm or deny it. If the alert is confirmed by the chief, the system will reward all users who confirmed it (including the alert sender) and penalize those who denied it. Conversely, if the alert is denied by the chief, the system will reward users who denied it and penalize those who confirmed it (also penalizing the alert sender).
+Votes must be carefully considered, because when the chief closes the alert, he can also confirm or deny it. If the alert is confirmed by the chief, the system will reward all users who confirmed it (including the alert sender) and penalize those who denied it. Conversely, if the alert is denied by the chief, the system will reward users who denied it and penalize those who confirmed it (also penalizing the alert sender).
 
-The penalty consists of a reduction in the reliability score. Users with a low score will be able to issue alerts with a more limited radius, and if the score drops to zero, or negative, they will not be able to issue alerts.
-
+The penalty consists of a reduction in the reliability score. Users with a low score will be able to issue alerts with a more limited radius, and if the score drops to zero, or negative, they will not be able to issue alerts.  
 After a few months, the reliability score slowly starts to increase again.
+
+The reward, conversely, is an increase in the reliability score and in the "hero score" (the latter is more of a symbolic score).
 
 ### Alert details from the perspective of the chief
 
@@ -266,7 +267,7 @@ The chat is very useful: if the alert sender forgets to write something in the a
 
 ## Recent alerts
 
-On the "recents" page, you can see general alerts, as these are by nature visible to everyone, and then **only alerts in which the user is involved** in some way (as alerted "chief" manager, as an alerted nearby user, or as an alert sender).
+On the "recents" page, you can see general alerts, as these are by nature visible to everyone, and regarding the other ones, you can see **only alerts in which the user is involved** in some way (as alerted "chief" manager, as an alerted nearby user, or as an alert sender).
 
 <p align="center">
   <img src="client/screenshots/recents.png" alt="Recent alerts screenshot" width="256">
@@ -286,32 +287,34 @@ But be careful to write it down correctly, because after three incorrect attempt
 
 Regular users and chiefs can delete their accounts if they no longer wish to use the service: at the bottom of the Quidalert app home page, there's a button to request account deletion. Simply type "DELETE" and click OK. Deletion isn't immediate; it takes 30 days. If the user logs in again within 30 days, the deletion will be instantly reversed (the account will remain active).
 
-After 30 days, the account will be inactivated and can no longer be used (unless a new account is created).
+After 30 days, the account will be inactivated and can no longer be used (unless a new account with the same email address is created).
 
 The user will remain technically stored in the database (the email address will remain stored), but their personal data will be anonymized.
 
-After 2 years, all traces of the user will be deleted from the database, including the email address used to authorize registration.
+After 2 years, all traces of the inactive user will be deleted from the database, including the email address used to authorize registration.
 
 ## Section dedicated to admins and officers
 
-The first user to register on the server, with the password set at the server environment level, gains superuser privileges, meaning they are an "admin" user with some additional privileges. NOTE: The superuser does not need to be authorized (whitelisted) to register their account.
+The first user to register his account on the server, with the password set at the server environment level, gains superuser privileges, meaning he becomes an "admin" user with some additional privileges. NOTE: The superuser does not need to be authorized (whitelisted) to register their account.
 
-The superuser can authorize other "admin" users if desired, or they can authorize "officer" users (which are actually the municipalities in the area).
+All the other users **must be authorized in the whitelist** to be able to register their account.
+
+The superuser can authorize other "admin" users if desired, or he can authorize "officer" users (which are actually the municipalities in the area).
 
 Admins (or the superuser) must authorize the "chiefs" in addition to the "officers".
 
-NOTE: by "authorize" we mean **adding the email address of the user** to be authorized to the whitelist.
+NOTE: by the word "authorize" we mean **adding the email address of the user** (to be authorized) to the whitelist.
 
 Once authorized, "officers" and "chiefs" will register their accounts as explained at the beginning of the tutorial.
 
-Officers will then authorize their own citizens or specialists in their territory of ​​responsibility on the whitelist.
+Officers will then authorize (on the whitelist) their own citizens or specialists, residing in their territory of ​​responsibility.
 
 Citizens and specialists authorized by officers will register normally, as explained at the beginning of the tutorial.
 
-NOTE: This process does not need to be completed in one go. It may take some time. As users are authorized by their municipalities (officers), they register and begin using the system.
+NOTE: this process does not need to be completed in one go. It may take some time. As users are authorized by their municipalities (officers), they register and begin using the system.
 
-However, we'll see that admins and officers can add users to the whitelist in bulk using a CSV file. 
-This process can be repeated, that is, you can add other users to the whitelist always with another CSV file, and so on.
+We'll see that admins and officers can add users to the whitelist in bulk using a CSV file. 
+This process can be repeated, that is, you can add other users to the whitelist, with another CSV file, and so on.
 
 Of course, you can also add users to the whitelist individually.
 
@@ -343,11 +346,11 @@ To authorize (insert email addresses in the whitelist), as we mentioned, there a
   <img src="client/screenshots/whitelist_add.png" alt="Add entries to whitelist screenshot" width="256">
 </p>
 
-IMPORTANT: For each insertion operation, make sure you have selected the type or role of the user (or users) you are authorizing, who will register later.
+IMPORTANT: For each insertion operation, make sure you have selected the pending type or role of the user (or users) you are authorizing, who will register their account later.
 
-Officers can select only the role: they cannot define the "type", obviously, because they have less privileges than the admins.
+Officers can select only the pending "role": they cannot define the "type", obviously, because they have less privileges than the admins.
 
-NOTE: by leaving the "type" and "role" fields blank, the authorized user or users will be simple base users with the default role "citizen".
+NOTE: by leaving the pending "type" and "role" fields blank, the authorized user or users will be, after the later registration, simple base users with the default role "citizen".
 
 NOTE: if you make a mistake when whitelisting entries, please note that as long as users do not register, these entries can be deleted by using the whitelist deletion process, which we will see below.
 
@@ -368,7 +371,7 @@ Officers can bulk view only the email addresses authorized by them (with "All" b
 
 ### Delete whitelist entries
 
-Regarding deletion, you can delete whitelisted email addresses (i.e., remove their registration authorization) associated to users who have not yet registered. This is a strict rule: you can only remove the email addresses of users who haven't yet registered their accounts from the whitelist.
+Regarding deletion, you can delete whitelisted email addresses associated to users who have not yet registered. This is a strict rule: from the whitelist, you can only remove the email addresses of users who haven't yet registered their accounts.
 
 <p align="center">
   <img src="client/screenshots/whitelist_delete.png" alt="Delete entries in whitelist screenshot" width="256">
@@ -393,9 +396,9 @@ We show the result page.
   <img src="client/screenshots/users_search_result.png" alt="Search users result screenshot" width="256">
 </p>
 
-NOTE (about bulk mode): any admin can perform global searches (based on the criteria available in the module) on all registered users, while an officer can mass search only for users authorized by him.
+NOTE (about bulk mode): any admin can perform bulk searches (based on the criteria available in the module) on all registered users, while an officer can bulk search only for users authorized by him.
 
-NOTE (about single mode): in single mode, officers can search for a single user, even if they have been authorized by someone else.
+NOTE (about single mode): in single mode, officers can search for a single user by email, even if the single user has been authorized by someone else.
 
 ### Promote users
 
@@ -403,7 +406,7 @@ Now, pay attention to how promoting users (or "updating" users) works.
 
 Using the search form, we search for all users who meet a certain criteria (for example, all users with the "alpinerescuer" role), and the results are displayed.
 
-Now, if we click "promote" the system remembers the query we entered, and the change we make will be based on these same search criteria. In practice, in this example, we will promote (update) to "volunteer" all users with the alpinerescuer role.
+Now, if we click "Promote/modify query users" the system remembers the query we entered, and the change we will make in the promotion page will be based on these same search criteria. In practice, in this example, we will promote (update) all users with the "alpinerescuer" role to the new "volunteer" role.
 
 <p align="center">
   <img src="client/screenshots/users_promote.png" alt="Promote users screenshot" width="256">
@@ -417,10 +420,10 @@ NOTE: officers cannot promote users who have been authorized by others.
 
 Earlier, we saw how to search for registered users using the search form.
 
-You can search for users using a CSV file containing the email addresses you want to search for.
+You can also search for users using a CSV file containing the email addresses you want to search for.
 
 <p align="center">
   <img src="client/screenshots/users_search_by_csv.png" alt="Search users by CSV screenshot" width="256">
 </p>
 
-Any promotion of found users will apply to these users.
+...and an eventual click on "promote/modify query users" will be applied to these found users.

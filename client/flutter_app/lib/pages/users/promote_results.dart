@@ -23,7 +23,10 @@ class UsersPromoteResultsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuUsers, showBackButton: true),
+      appBar: CAppBar(
+        title: "${loc.menuUsers} (${loc.buttonPromote.toLowerCase()})",
+        showBackButton: true,
+      ),
       body: SafeArea(top: false, child: UsersPromoteResultsBody()),
     );
   }
