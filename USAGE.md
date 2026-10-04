@@ -124,7 +124,7 @@ Click to "Battery" or "App battery usage", and then switch to "Unrestricted"
 
 Now you can go back by clicking on the "back" button in the top left corner, and then on the "back" button again until you return to the Quidalert app home page.
 
-NOTE: if you forget to grant any of the permissions just discussed, you can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions (notifications, permissions, battery).
+NOTE: if you want to check the permissions granted, or if you forget to grant any of the permissions just discussed, you can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions (notifications, authorizations, battery).
 
 ## Home page
 
@@ -168,7 +168,7 @@ Creating an alert is easy. Just go to "New Alert" and enter a description. The d
 
 NOTE: if an alert with a similar description is sent within an hour from the last alert and within the same radius, it will be ignored and the user will immediately receive an error message.
 
-NOTE FOR CHIEFS: Chief users can send regular alerts like other users, but they can also send "managed" alerts (the GPS location is customized) and global alerts (general alerts visible to all users within the server's scope). They can also create "empty" alerts (without alerted users), ready to be expanded later with a large radius.
+NOTE FOR CHIEFS: Chief users can send regular alerts like other users, but they can also send "managed" alerts (the GPS location is customized) and global alerts (general alerts visible to all users within the server's scope). They can also create "empty" alerts (without alerted users), ready to be expanded later with a large radius. If the user is a "chief", a special selector will be shown to choose the alert type.
 
 ## Alert details
 
