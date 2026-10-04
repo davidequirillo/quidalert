@@ -220,7 +220,7 @@ Obviously, the manager, having more permissions, can see more details about an a
   <img src="client/screenshots/alert_details_by_chief.png" alt="Alert details perspective of the chief screenshot" width="256">
 </p>
 
-He can see the address and phone number of the alert sender. the list of alerted users sorted by distance 
+He can see the address and phone number of the alert sender, the list of alerted users sorted by distance
 
 <p align="center">
   <img src="client/screenshots/alerted_users.png" alt="Alerted users screenshot" width="256">
@@ -271,6 +271,26 @@ On the "recents" page, you can see general alerts, as these are by nature visibl
 <p align="center">
   <img src="client/screenshots/recents.png" alt="Recent alerts screenshot" width="256">
 </p>
+
+## Change password
+
+If the user is unable to log in because they forgot their password, it can be reset: simply click "Forgot Password" on the login page.
+
+At this point, the user will be asked for their email address and will receive a verification code that must be entered on the next screen along with the new password you have chosen.
+
+Don't rush to read and write this code: you have 10 minutes (so you can write it down on a piece of paper if you prefer) before entering it on the app's verification screen.
+
+But be careful to write it down correctly, because after three incorrect attempts, the procedure will be blocked for 24 hours and you will have to try again the following day.
+
+## Account cancellation
+
+Regular users and chiefs can delete their accounts if they no longer wish to use the service: at the bottom of the Quidalert app home page, there's a button to request account deletion. Simply type "DELETE" and click OK. Deletion isn't immediate; it takes 30 days. If the user logs in again within 30 days, the deletion will be instantly reversed (the account will remain active).
+
+After 30 days, the account will be inactivated and can no longer be used (unless a new account is created).
+
+The user will remain technically stored in the database (the email address will remain stored), but their personal data will be anonymized.
+
+After 2 years, all traces of the user will be deleted from the database, including the email address used to authorize registration.
 
 ## Panel dedicated to admins and officers
 
