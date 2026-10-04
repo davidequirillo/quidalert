@@ -1454,7 +1454,7 @@ abstract class AppLocalizations {
   /// No description provided for @menuWhitelist.
   ///
   /// In en, this message translates to:
-  /// **'Registration white list'**
+  /// **'Whitelist'**
   String get menuWhitelist;
 
   /// No description provided for @notificationSwipeDownToHide.

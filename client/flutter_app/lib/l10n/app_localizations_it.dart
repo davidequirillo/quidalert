@@ -689,7 +689,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuUsers => 'Utenti';
 
   @override
-  String get menuWhitelist => 'White list per registrazione';
+  String get menuWhitelist => 'Whitelist';
 
   @override
   String get notificationSwipeDownToHide => '⬇ per nascondere';

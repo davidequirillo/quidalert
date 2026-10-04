@@ -26,7 +26,10 @@ class WhiteListAddPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuWhitelist, showBackButton: true),
+      appBar: CAppBar(
+        title: "${loc.menuWhitelist} (${loc.buttonAdd.toLowerCase()})",
+        showBackButton: true,
+      ),
       body: SafeArea(top: false, child: WhiteListAddBody()),
     );
   }

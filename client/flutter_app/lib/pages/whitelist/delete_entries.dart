@@ -22,7 +22,10 @@ class WhiteListDeletePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuWhitelist, showBackButton: true),
+      appBar: CAppBar(
+        title: "${loc.menuWhitelist} (${loc.buttonDelete.toLowerCase()})",
+        showBackButton: true,
+      ),
       body: SafeArea(top: false, child: WhiteListDeleteBody()),
     );
   }

@@ -300,7 +300,7 @@ The superuser can authorize other "admin" users if desired, or they can authoriz
 
 Admins (or the superuser) must authorize the "chiefs" in addition to the "officers".
 
-NOTE: by "authorize" we mean adding the email address of the user to be authorized to the whitelist.
+NOTE: by "authorize" we mean **adding the email address of the user** to be authorized to the whitelist.
 
 Once authorized, "officers" and "chiefs" will register their accounts as explained at the beginning of the tutorial.
 
@@ -337,7 +337,7 @@ Choose the language ("IT" or "EN") and upload the file. A system page to browse 
 
 ### Add to whitelist
 
-To authorize (insert) email addresses in the whitelist, as we mentioned, there are two ways: single and bulk (using a CSV file)
+To authorize (insert email addresses in the whitelist), as we mentioned, there are two ways: single and bulk (using a CSV file)
 
 <p align="center">
   <img src="client/screenshots/whitelist_add.png" alt="Add entries to whitelist screenshot" width="256">
@@ -351,6 +351,76 @@ NOTE: by leaving the "type" and "role" fields blank, the authorized user or user
 
 NOTE: if you make a mistake when whitelisting entries, please note that as long as users do not register, these entries can be deleted by using the whitelist deletion process, which we will see below.
 
-NOTE: eventually, after users register their account, admins and officers can optionally change the user type or role using the user promotion feature, so don't worry.
+NOTE: eventually, after users register their account, admins and officers can optionally change the user type or role using the user promotion feature.
 
-Tutorial under construction...
+### Search whitelist entries
+
+Administrators can view all whitelisted email addresses in the following ways:
+- Individual addresses, writing the email address in the search field, and clicking to "by email"
+- Email addresses authorized by a certain "officer" (e.g., "officer1@example.com"), writing the authorizer email in the search field and clicking on "by Authorizer".
+- All email addresses
+
+<p align="center">
+  <img src="client/screenshots/whitelist_search.png" alt="Search entries in whitelist screenshot" width="256">
+</p>
+
+Officers can bulk view only the email addresses authorized by them (with "All" button), or they can individually search for any email address (authorized by anyone).
+
+### Delete whitelist entries
+
+Regarding deletion, you can delete whitelisted email addresses (i.e., remove their registration authorization) associated to users who have not yet registered. This is a strict rule: you can only remove the email addresses of users who haven't yet registered their accounts from the whitelist.
+
+<p align="center">
+  <img src="client/screenshots/whitelist_delete.png" alt="Delete entries in whitelist screenshot" width="256">
+</p>
+
+The deletion can be done individually or in bulk. In the latter case, however, not all email addresses will be deleted: only those authorized by the current user (admin or officer) will be deleted, even if the user is an administrator.
+In simple terms, you can delete all email addresses at once, but these only apply to email addresses entered by the current administrator or officer. Each administrator or officer only deletes their own emails in bulk.
+
+In single mode, things are different: administrators can delete any email address individually (authorized by anyone), while officers can only delete their own emails (only those authorized by them).
+
+### Search users
+
+This is the useful form to search for registered users. In the following example, we are searching for all users having role "alpinerescuer".
+
+<p align="center">
+  <img src="client/screenshots/users_search_module.png" alt="Search users module screenshot" width="256">
+</p>
+
+We show the result page.
+
+<p align="center">
+  <img src="client/screenshots/users_search_result.png" alt="Search users result screenshot" width="256">
+</p>
+
+NOTE (about bulk mode): any admin can perform global searches (based on the criteria available in the module) on all registered users, while an officer can mass search only for users authorized by him.
+
+NOTE (about single mode): in single mode, officers can search for a single user, even if they have been authorized by someone else.
+
+### Promote users
+
+Now, pay attention to how promoting users (or "updating" users) works.
+
+Using the search form, we search for all users who meet a certain criteria (for example, all users with the "alpinerescuer" role), and the results are displayed.
+
+Now, if we click "promote" the system remembers the query we entered, and the change we make will be based on these same search criteria. In practice, in this example, we will promote (update) to "volunteer" all users with the alpinerescuer role.
+
+<p align="center">
+  <img src="client/screenshots/users_promote.png" alt="Promote users screenshot" width="256">
+</p>
+
+So, when promoting users, pay attention to the criteria used to search for users to promote, to avoid unwanted promotions.
+
+NOTE: officers cannot promote users who have been authorized by others.
+
+### Search users using a CSV file
+
+Earlier, we saw how to search for registered users using the search form.
+
+You can search for users using a CSV file containing the email addresses you want to search for.
+
+<p align="center">
+  <img src="client/screenshots/users_search_by_csv.png" alt="Search users by CSV screenshot" width="256">
+</p>
+
+Any promotion of found users will apply to these users.

@@ -24,7 +24,10 @@ class WhiteListSearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: CAppBar(title: loc.menuWhitelist, showBackButton: true),
+      appBar: CAppBar(
+        title: "${loc.menuWhitelist} (${loc.buttonSearch.toLowerCase()})",
+        showBackButton: true,
+      ),
       body: SafeArea(top: false, child: WhiteListSearchBody()),
     );
   }
