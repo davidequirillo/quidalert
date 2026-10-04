@@ -46,7 +46,7 @@ You must enter the email address and password you chose during registration. The
   <img src="client/screenshots/login.png" alt="Login screenshot" width="256">
 </p>
 
-Click Login. This will open another page titled "2FA," where you'll need to enter the verification code that will be sent to you shortly via email. Don't worry: this verification code is valid for 10 minutes, so you have plenty of time to open the email, read the code (or write it down on a piece of paper if you're comfortable doing so), and then enter it on the "2FA" verification page.
+Click Login. This will open another page titled "2FA" where you'll need to enter the verification code that will be sent to you shortly via email. Don't worry: this verification code is valid for 10 minutes, so you have plenty of time to open the email, read the code (or write it down on a piece of paper if you're comfortable doing so), and then enter it on the "2FA" verification page.
 
 <p align="center">
   <img src="client/screenshots/2fa.png" alt="2FA screenshot" width="256">
@@ -124,19 +124,53 @@ Click to "Battery" or "App battery usage", and then switch to "Unrestricted"
 
 Now you can go back by clicking on the "back" button in the top left corner, and then on the "back" button again until you return to the Quidalert app home page.
 
+NOTE: if you forget to grant any of the permissions just discussed, you can fix this by going to the system settings for the Quidalert app (settings -> apps -> Quidalert) and manually changing the various permissions (notifications, permissions, battery).
+
 ## Home page
 
 This is the Quidalert home page
 
 <p align="center">
-  <img src="client/screenshots/home_page.png" alt="App battery unrestricted screenshot" width="256">
+  <img src="client/screenshots/home_page.png" alt="Home page screenshot" width="256">
 </p>
 
 ## Advice page
 
 Remember to read the tips page (Quidalert home page, "Advice" button). It's very helpful, and contains important info regarding the session maintenance, the technical functioning of the geolocation system, and other information regarding alerts.
 
+## Complete profile
+
+The profile completion page is important to give rescue leaders (chiefs) the ability to view your personal details and phone number in case you send an alert or are involved as an alerted user.
+
+Alerted basic users cannot see the personal details of the users involved in an alert: they only see the first and last name of the alert sender.
+
+## GPS location test
+
+Useful for verifying the correct functioning of the GPS location detection system.
+
+<p align="center">
+  <img src="client/screenshots/gps_location_test.png" alt="GPS location test screenshot" width="256">
+</p>
+
+On the same page, we also have the device's latest GPS location sent to the server in the background.
+
+Interesting note: the GPS location detected by this test will be sent to the server, ensuring the server has a new, updated GPS location (especially useful for "chief" users, if their device remains stationary for a long time without detecting new background locations to send to the server). Remember that the server deletes users' GPS locations that are older than a week, and in order to be alerted, users and chiefs must have a recent known GPS location stored on the server.
+
+At the bottom of the page, there's also a list of locations detected by the device in the background, but not yet sent to the server (perhaps due to internet issues). The device will automatically send them as soon as internet is available again, but you can force the upload manually. The server will only store the most recent location.
+
 ## Create an alert
+
+Creating an alert is easy. Just go to "New Alert" and enter a description. The device will calculate the current GPS location and send it to the server (it also works indoors, using nearby Wi-Fi or cell tower signals instead of satellite signals).
+
+<p align="center">
+  <img src="client/screenshots/new_alert.png" alt="New alert screenshot" width="256">
+</p>
+
+NOTE: if an alert with a similar description is sent within an hour from the last alert and within the same radius, it will be ignored and the user will immediately receive an error message.
+
+NOTE FOR CHIEFS: Chief users can send regular alerts like other users, but they can also send "managed" alerts (the GPS location is customized) and global alerts (general alerts visible to all users within the server's scope). They can also create "empty" alerts (without alerted users), ready to be expanded later with a large radius.
+
+## Alert details
 
 To be continued... Under construction...
 
