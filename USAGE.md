@@ -272,7 +272,7 @@ On the "recents" page, you can see general alerts, as these are by nature visibl
   <img src="client/screenshots/recents.png" alt="Recent alerts screenshot" width="256">
 </p>
 
-## Change password
+## How to change password
 
 If the user is unable to log in because they forgot their password, it can be reset: simply click "Forgot Password" on the login page.
 
@@ -292,6 +292,65 @@ The user will remain technically stored in the database (the email address will 
 
 After 2 years, all traces of the user will be deleted from the database, including the email address used to authorize registration.
 
-## Panel dedicated to admins and officers
+## Section dedicated to admins and officers
+
+The first user to register on the server, with the password set at the server environment level, gains superuser privileges, meaning they are an "admin" user with some additional privileges. NOTE: The superuser does not need to be authorized (whitelisted) to register their account.
+
+The superuser can authorize other "admin" users if desired, or they can authorize "officer" users (which are actually the municipalities in the area).
+
+Admins (or the superuser) must authorize the "chiefs" in addition to the "officers".
+
+NOTE: by "authorize" we mean adding the email address of the user to be authorized to the whitelist.
+
+Once authorized, "officers" and "chiefs" will register their accounts as explained at the beginning of the tutorial.
+
+Officers will then authorize their own citizens or specialists in their territory of ​​responsibility on the whitelist.
+
+Citizens and specialists authorized by officers will register normally, as explained at the beginning of the tutorial.
+
+NOTE: This process does not need to be completed in one go. It may take some time. As users are authorized by their municipalities (officers), they register and begin using the system.
+
+However, we'll see that admins and officers can add users to the whitelist in bulk using a CSV file. 
+This process can be repeated, that is, you can add other users to the whitelist always with another CSV file, and so on.
+
+Of course, you can also add users to the whitelist individually.
+
+### Administration menu 
+
+Admins and officers can view this page in the menu (click on the top-left button) and click on "Accounts" to open this administrative page.
+
+<p align="center">
+  <img src="client/screenshots/admin_page.png" alt="Administration page screenshot" width="256">
+</p>
+
+NOTE: officers cannot upload "legal terms" file. Only admins can upload this file.
+
+### Upload legal terms
+
+Admins can upload legal terms file, a markdown formatted file (.md)
+
+<p align="center">
+  <img src="client/screenshots/upload_terms.png" alt="Upload legal terms screenshot" width="256">
+</p>
+
+Choose the language ("IT" or "EN") and upload the file. A system page to browse the file will open. Select the file, and upload it to the server.
+
+### Add to whitelist
+
+To authorize (insert) email addresses in the whitelist, as we mentioned, there are two ways: single and bulk (using a CSV file)
+
+<p align="center">
+  <img src="client/screenshots/whitelist_add.png" alt="Add entries to whitelist screenshot" width="256">
+</p>
+
+IMPORTANT: For each insertion operation, make sure you have selected the type or role of the user (or users) you are authorizing, who will register later.
+
+Officers can select only the role: they cannot define the "type", obviously, because they have less privileges than the admins.
+
+NOTE: by leaving the "type" and "role" fields blank, the authorized user or users will be simple base users with the default role "citizen".
+
+NOTE: if you make a mistake when whitelisting entries, please note that as long as users do not register, these entries can be deleted by using the whitelist deletion process, which we will see below.
+
+NOTE: eventually, after users register their account, admins and officers can optionally change the user type or role using the user promotion feature, so don't worry.
 
 Tutorial under construction...
