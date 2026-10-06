@@ -9,7 +9,7 @@
 Quidalert is a network system designed for the **rapid propagation of emergency alerts**. 
 
 When a client (mobile app) sends an alert to the server, a push notification is dispatched along two immediate paths:
-* **Command level:** notifies the closest emergency "chief", even if hundreds of kilometers away.
+* **Command level:** notifies the closest emergency "chief", even if hundreds of kilometers away (max 1000 km).
 * **Local level:** warns geolocalized nearby users within a default 1 km radius from the point of origin.
 
 Tapping the notification opens the alert detail page in the app, which displays the alert description, exact GPS coordinates (visible on the map), and a relative address, allowing both "chief" and nearby users to immediately assess the situation and offer timely assistance if appropriate.
