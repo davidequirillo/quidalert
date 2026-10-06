@@ -340,7 +340,7 @@ Choose the language ("IT" or "EN") and upload the file. A system page to browse 
 
 ### Add to whitelist
 
-To authorize (insert email addresses in the whitelist), as we mentioned, there are two ways: single and bulk (using a CSV file)
+To authorize (insert email addresses in the whitelist), as we mentioned, there are two ways: single and bulk (using a CSV file that contains an email address within each line).
 
 <p align="center">
   <img src="client/screenshots/whitelist_add.png" alt="Add entries to whitelist screenshot" width="256">
@@ -420,10 +420,12 @@ NOTE: officers cannot promote users who have been authorized by others.
 
 Earlier, we saw how to search for registered users using the search form.
 
-You can also search for users using a CSV file containing the email addresses you want to search for.
+You can also search for users using a CSV file containing the email addresses (one email address in each row) you want to search for.
 
 <p align="center">
   <img src="client/screenshots/users_search_by_csv.png" alt="Search users by CSV screenshot" width="256">
 </p>
 
 ...and an eventual click on "promote/modify query users" will be applied to these found users.
+
+REMEMBER: officers cannot promote users who have been authorized by others; they can only promote their own authorized users. Therefore, it's possible to potentially find users through the email list (CSV file), but not all of them are editable, if by chance some of them have been authorized by other officers.
