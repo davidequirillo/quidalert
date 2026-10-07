@@ -537,10 +537,10 @@ flutter run --dart-define=API_URL=https://quidalert.example.com/api -d <your-dev
 
 ### Case 3: building an APK file
 
-It is also possible to build a debug APK file and upload it to an app distribution platform (e.g., Firebase App Distribution) to distribute the test version of the app directly to users, making it ideal for conducting field trials and testing with multiple users without publishing to official app stores.
+It is also possible to build a debug APK file and upload it to an app distribution platform (e.g., Firebase App Distribution) to distribute the test version of the app directly to users, making it ideal for conducting field trials and testing with multiple users before publishing the release version to official app stores.
 
 ```bash
 flutter build apk --debug --dart-define=API_URL=https://quidalert.example.com/api
 ```
 
-Thanks to the above command, an apk file will be generated, which can be uploaded to the distribution platform.
+Thanks to the above command, a debug apk file will be generated, which can be uploaded to the distribution platform.
