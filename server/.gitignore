@@ -15,3 +15,9 @@ __pycache__/
 
 # Firebase keys (secret)
 firebase_keys.json
+
+# Docker Compose production overrides
+docker-compose.override.yml
+docker-compose.override.yaml
+docker-compose.prod.override.yml
+docker-compose.prod.override.yaml
