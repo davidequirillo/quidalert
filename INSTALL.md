@@ -227,7 +227,7 @@ These two keys ("my-s3-access-key" and "my-s3-complex-secret-123"), must be inse
 
 Now you must create the bucket. Go to http://localhost:9001, login as admin user, and create the bucket (see S3_BUCKET_NAME in .env).
 
-### A note about minio: hardware compatibility & legacy VPS support
+### Minio: hardware compatibility & legacy VPS support
 
 By default, Quidalert uses the modern, lightweight, and secure Chainguard MinIO image (`cgr.dev/chainguard/minio:latest`).
 
