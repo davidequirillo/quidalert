@@ -153,8 +153,12 @@ services:
     # New working image (Chainguard's image for MinIO)
     image: cgr.dev/chainguard/minio:latest
     # Old image (no longer available): minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
-    # Recommended approach if you need to change the image: 
-    # to not alter this file directly, use docker-compose.prod.override.yml to override the image, if needed.
+    # NOTE FOR LEGACY HARDWARE / VPS (No-AVX2 CPUs):
+    # Official legacy builds (e.g., minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1)
+    # are no longer available on public registries. If you experience 'illegal instruction'
+    # crashes, download `minio_image_cpuv1.tar` from our GitHub Release Assets,
+    # load it via `docker load -i minio_image_cpuv1.tar`, and set `image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1`
+    # inside your local `docker-compose.prod.override.yml`.
     container_name: minio_storage
     restart: unless-stopped
     environment:
