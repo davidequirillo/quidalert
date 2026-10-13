@@ -214,7 +214,7 @@ docker exec -it minio_storage_dev mc alias list
 Create an additional service account, choosing access key and secret key.
 
 ```bash
-docker exec -it minio_storage_dev mc admin user svcacct add local admin --access-key "my-fastapi-complex-key" --secret-key "my-fastapi-complex-secret-123"
+docker exec -it minio_storage_dev mc admin user svcacct add local admin --access-key "my-s3-access-key" --secret-key "my-s3-complex-secret-123"
 ```
 
 We can verify the operation using this list command:
@@ -223,7 +223,7 @@ We can verify the operation using this list command:
 docker exec -it minio_storage_dev mc admin user svcacct list local admin
 ```
 
-These two keys ("my-fastapi-complex-key" and "my-fastapi-complex-secret-123"), must be inserted in .env file, assigning them to S3_ACCESS_KEY and S3_SECRET_KEY variables.
+These two keys ("my-s3-access-key" and "my-s3-complex-secret-123"), must be inserted in .env file, assigning them to S3_ACCESS_KEY and S3_SECRET_KEY variables.
 
 Now you must create the bucket. Go to http://localhost:9001, login as admin user, and create the bucket (see S3_BUCKET_NAME in .env).
 

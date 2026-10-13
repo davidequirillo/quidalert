@@ -161,7 +161,11 @@ services:
 
   # --- STORAGE for uploads (s3 compatible) ---
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # New working image (Chainguard's image for MinIO)
+    image: cgr.dev/chainguard/minio:latest
+    # Old image (no longer available): minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # Recommended approach if you need to change the image: 
+    # to not alter this file directly, use docker-compose.dev.override.yml to override the image, if needed.
     container_name: minio_storage_dev
     ports:
       - "9000:9000" # API port
