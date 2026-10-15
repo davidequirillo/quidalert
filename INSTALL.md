@@ -227,28 +227,6 @@ These two keys ("my-s3-access-key" and "my-s3-complex-secret-123"), must be inse
 
 Now you must create the bucket. Go to http://localhost:9001, login as admin user, and create the bucket (see S3_BUCKET_NAME in .env).
 
-### Minio: hardware compatibility & legacy VPS support
-
-By default, Quidalert uses the modern, lightweight, and secure Chainguard MinIO image (`cgr.dev/chainguard/minio:latest`).
-
-If you deploy on legacy CPUs or certain VPS environments lacking AVX2 instruction support, the default MinIO container may exit with an `illegal instruction` error.
-
-To resolve this:
-1. Download the legacy image offline bundle (`minio_image_cpuv1.tar`) from our [GitHub Releases](https://github.com/davidequirillo/quidalert/releases).
-2. Load the image into Docker:
-   ```bash
-   docker load -i minio_image_cpuv1.tar
-
-After that, create or update your docker-compose.prod.override.yml:
-
-```yaml
-services:
-  minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
-```
-
-The legacy cpuv1 build is distributed under the GNU AGPLv3 license. The exact matching source code repository and tag corresponding to this release are preserved in our public fork: [Davide Quirillo Minio Fork](https://github.com/davidequirillo/minio)
-
 ### About SMTP
 
 Some API, for example registration, login, password reset, etc., require a smtp server to send email messages to users. So, in a real production system, set the correct SMTP_HOST and SMTP_PORT in environment file (.env file).
@@ -478,6 +456,28 @@ Now, with the web browser in our local machine, we connect to the following url:
 http://localhost:9001
 
 Thanks to the ssh tunnel, the remote web console of the s3 bucket, located in the VPS, will open. We login with minio credentials (S3_USER value and S3_PASS value, defined in .env file, in the vps), and we create "quidalert-uploads" bucket.
+
+### Minio: hardware compatibility & legacy VPS support
+
+By default, Quidalert uses the modern, lightweight, and secure Chainguard MinIO image (`cgr.dev/chainguard/minio:latest`).
+
+If you deploy on legacy CPUs or certain VPS environments lacking AVX2 instruction support, the default MinIO container may exit with an `illegal instruction` error.
+
+To resolve this:
+1. Download the legacy image offline bundle (`minio_image_cpuv1.tar`) from [Quidalert GitHub Releases - v1.0.12.1](https://github.com/davidequirillo/quidalert/releases/tag/v1.0.12.1).
+2. Load the image into Docker:
+   ```bash
+   docker load -i minio_image_cpuv1.tar
+
+After that, create or update your docker-compose.prod.override.yml:
+
+```yaml
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+```
+
+The legacy cpuv1 build is distributed under the GNU AGPLv3 license. The exact matching source code repository and tag corresponding to this release are preserved in our public fork: [Davide Quirillo Minio Fork](https://github.com/davidequirillo/minio)
 
 ### A note about .env security
 
